@@ -1,0 +1,28 @@
+{
+  "name": "@wave/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "seed": "tsx prisma/seed.ts",
+    "validate": "prisma validate",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "prisma": "^6.16.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}

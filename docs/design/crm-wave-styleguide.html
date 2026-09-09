@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Wave — Guía de estilos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#2F6F8F; --blue-d:#255a74; --tint:#eaf2f6; --tint-line:#cfe0e8;
+    --ink:#20201d; --text:#22221f; --muted:#8f8e85; --faint:#a6a49b;
+    --page:#faf9f5; --cream:#f5f6ec; --cream-line:#eaebdc;
+    --white:#fff; --line:#edece5; --line2:#eae9e2;
+    --ok:#2f8f5b; --ok-tint:#e9f5ee;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--page);color:var(--text);-webkit-font-smoothing:antialiased;line-height:1.5;}
+  .num{font-variant-numeric:tabular-nums;}
+  .wrap{max-width:1140px;margin:0 auto;padding:44px 24px 90px;}
+
+  /* cover */
+  .cover{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:13px;}
+  .logo{width:46px;height:46px;border-radius:13px;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:24px;box-shadow:0 3px 10px rgba(47,111,143,.28);}
+  .brand h1{font-size:25px;font-weight:800;letter-spacing:-.6px;margin:0;}
+  .brand p{margin:2px 0 0;font-size:13px;color:var(--faint);font-weight:500;letter-spacing:.3px;}
+  .note{font-size:12px;color:var(--muted);background:var(--white);border:1px solid var(--line);border-radius:10px;padding:9px 13px;max-width:340px;}
+
+  .eyebrow{display:flex;align-items:center;gap:10px;margin:46px 0 14px;}
+  .eyebrow span{font-size:11px;font-weight:700;letter-spacing:1.6px;color:var(--blue);text-transform:uppercase;}
+  .eyebrow em{flex:1;height:1px;background:var(--line2);font-style:normal;}
+
+  /* fundamentos */
+  .card{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(40,40,30,.05);}
+  .grid-fund{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;}
+  .pad{padding:20px 22px;}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--faint);text-transform:uppercase;margin:0 0 12px;}
+  .swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;}
+  .sw{border-radius:11px;border:1px solid var(--line);overflow:hidden;}
+  .sw .chip{height:52px;}
+  .sw .meta{padding:8px 10px;}
+  .sw .meta b{font-size:11.5px;font-weight:600;display:block;}
+  .sw .meta span{font-size:10.5px;color:var(--faint);}
+
+  .type-row{display:flex;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px dashed var(--line2);}
+  .type-row:last-child{border-bottom:0;}
+  .type-row .k{width:74px;font-size:11px;color:var(--faint);font-weight:600;flex-shrink:0;}
+
+  .btn{display:inline-flex;align-items:center;gap:7px;border-radius:10px;font-size:13px;font-weight:600;padding:9px 15px;border:1px solid transparent;cursor:pointer;}
+  .btn.primary{background:var(--blue);color:#fff;box-shadow:0 1px 2px rgba(47,111,143,.3);}
+  .btn.secondary{background:#fff;color:var(--text);border-color:var(--line);}
+  .btn.ghost{background:transparent;color:var(--muted);}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:11.5px;font-weight:600;color:#54534d;}
+  .inp{height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 12px;font:inherit;font-size:13px;color:var(--text);display:flex;align-items:center;}
+  .inp.focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--tint);}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;border-radius:20px;padding:3px 10px;}
+  .b-blue{background:var(--tint);color:var(--blue-d);}
+  .b-ok{background:var(--ok-tint);color:var(--ok);}
+  .b-warn{background:#fbf1dd;color:#a9791b;}
+  .b-gray{background:#f0efe8;color:#77766e;}
+
+  /* device frame */
+  .device{margin-top:8px;border:1px solid var(--line2);border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(40,40,30,.10);background:#fff;}
+  .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f4f3ee;border-bottom:1px solid var(--line);}
+  .bar i{width:11px;height:11px;border-radius:50%;display:block;}
+  .url{margin-left:10px;font-size:11px;color:var(--faint);background:#fff;border:1px solid var(--line);border-radius:7px;padding:4px 12px;font-weight:500;}
+
+  /* app shell */
+  .app{display:grid;grid-template-columns:210px 1fr;min-height:520px;}
+  .side{background:#fff;border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:22px;}
+  .side .lg{display:flex;align-items:center;gap:10px;padding:2px 6px;}
+  .side .lg span{width:32px;height:32px;border-radius:9px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;}
+  .side .lg b{font-size:16px;font-weight:800;letter-spacing:-.3px;}
+  .side .lg em{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:2px;color:var(--faint);display:block;}
+  .nav{display:flex;flex-direction:column;gap:3px;}
+  .nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;font-size:13px;color:#77766e;font-weight:500;text-decoration:none;}
+  .nav a.on{background:var(--tint);color:var(--blue);font-weight:600;}
+  .nav svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;}
+  .me{margin-top:auto;display:flex;align-items:center;gap:9px;padding-top:12px;border-top:1px solid var(--line);}
+  .av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;}
+
+  .main{background:var(--page);display:flex;flex-direction:column;}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 22px;background:#fff;border-bottom:1px solid var(--line);}
+  .top h2{margin:0;font-size:17px;font-weight:700;letter-spacing:-.4px;}
+  .top .sub{font-size:11.5px;color:var(--faint);font-weight:500;margin-top:1px;}
+  .search{display:flex;align-items:center;gap:8px;background:#f5f4ee;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--faint);min-width:210px;}
+  .search svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;}
+
+  /* dashboard */
+  .content{padding:18px 22px;display:flex;flex-direction:column;gap:15px;}
+  .band{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;}
+  .chart{background:var(--cream);border:1px solid var(--cream-line);border-radius:15px;padding:16px 18px;}
+  .bars{display:flex;align-items:flex-end;gap:12px;height:96px;margin-top:16px;}
+  .bars div{flex:1;background:#d3e2ea;border-radius:6px 6px 0 0;}
+  .bars div.hi{background:var(--blue);}
+  .barlbl{display:flex;justify-content:space-between;margin-top:9px;font-size:10px;color:var(--faint);font-weight:500;}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 17px;box-shadow:0 1px 2px rgba(40,40,30,.05);}
+  .kpi .k{font-size:10.5px;color:var(--faint);font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+  .kpi .v{font-size:27px;font-weight:800;letter-spacing:-.8px;margin-top:4px;}
+  .cols{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;align-items:start;}
+  .col-h{display:flex;align-items:center;justify-content:space-between;padding:0 3px 2px;}
+  .col-h b{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px;}
+  .col-h em{font-style:normal;font-size:11px;color:var(--faint);font-weight:700;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .deal{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 13px;box-shadow:0 1px 2px rgba(40,40,30,.05);margin-bottom:10px;}
+  .deal .co{font-size:12.5px;font-weight:600;}
+  .deal .mt{font-size:10.5px;color:var(--faint);margin-top:2px;font-weight:500;}
+  .deal .ft{display:flex;align-items:center;justify-content:space-between;margin-top:11px;}
+  .deal .amt{font-size:14px;font-weight:700;color:var(--blue);letter-spacing:-.3px;}
+  .deal.dark{background:var(--ink);border-color:var(--ink);box-shadow:0 6px 16px rgba(30,30,25,.18);}
+  .deal.dark .co{color:#fff;} .deal.dark .mt{color:#9d9c93;} .deal.dark .amt{color:#7fb8cf;}
+
+  /* table screen */
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px;background:#fff;border-bottom:1px solid var(--line);}
+  .chips{display:flex;gap:8px;}
+  .fchip{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#77766e;background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 11px;}
+  .fchip svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;}
+  table{width:100%;border-collapse:collapse;background:#fff;}
+  thead th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--faint);padding:12px 16px;border-bottom:1px solid var(--line);}
+  tbody td{padding:13px 16px;border-bottom:1px solid var(--line2);font-size:13px;vertical-align:middle;}
+  tbody tr:hover{background:#faf9f4;}
+  .cell-name{display:flex;align-items:center;gap:11px;}
+  .cell-name b{font-weight:600;font-size:13px;display:block;}
+  .cell-name span{font-size:11px;color:var(--faint);}
+  .tfoot{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:#fff;border-top:1px solid var(--line);font-size:12px;color:var(--muted);}
+  .pager{display:flex;gap:5px;}
+  .pager a{min-width:29px;height:29px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:8px;font-size:12px;font-weight:600;color:#77766e;text-decoration:none;}
+  .pager a.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+
+  /* form screen */
+  .formwrap{padding:22px;display:grid;grid-template-columns:1fr 300px;gap:22px;background:var(--page);}
+  .formcard{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(40,40,30,.05);overflow:hidden;}
+  .formhead{padding:16px 20px;border-bottom:1px solid var(--line);}
+  .formhead h3{margin:0;font-size:15px;font-weight:700;}
+  .formhead p{margin:3px 0 0;font-size:12px;color:var(--faint);}
+  .formbody{padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+  .col-2{grid-column:span 2;}
+  .sel{height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 12px;font-size:13px;color:var(--text);display:flex;align-items:center;justify-content:space-between;}
+  .sel svg{width:15px;height:15px;stroke:var(--faint);fill:none;stroke-width:1.8;}
+  .hint{font-size:11px;display:flex;align-items:center;gap:5px;}
+  .hint.ok{color:var(--ok);}
+  .tags{display:flex;flex-wrap:wrap;gap:7px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:40px;}
+  .tag{display:inline-flex;align-items:center;gap:5px;background:var(--tint);color:var(--blue-d);font-size:11.5px;font-weight:600;border-radius:7px;padding:3px 8px;}
+  .ta{border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:13px;color:var(--faint);min-height:70px;}
+  .formfoot{display:flex;justify-content:flex-end;gap:10px;padding:15px 20px;border-top:1px solid var(--line);background:#fbfbf8;}
+  .aside-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;height:fit-content;box-shadow:0 1px 2px rgba(40,40,30,.05);}
+  .aside-card h4{margin:0 0 10px;font-size:12.5px;font-weight:700;}
+  .aside-card li{font-size:12px;color:var(--muted);margin-bottom:8px;list-style:none;display:flex;gap:8px;}
+  .aside-card ul{margin:0;padding:0;}
+  .aside-card .ck{color:var(--ok);flex-shrink:0;}
+
+  /* login */
+  .login{display:grid;grid-template-columns:1fr 1fr;min-height:470px;}
+  .login .left{background:linear-gradient(150deg,#2F6F8F,#20201d);padding:38px;color:#fff;display:flex;flex-direction:column;justify-content:space-between;}
+  .login .left .lg{display:flex;align-items:center;gap:11px;}
+  .login .left .lg span{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;}
+  .login .left h2{font-size:26px;font-weight:800;letter-spacing:-.6px;line-height:1.2;margin:0 0 10px;}
+  .login .left p{font-size:13.5px;color:rgba(255,255,255,.8);margin:0;max-width:290px;line-height:1.6;}
+  .login .left .foot{font-size:11px;color:rgba(255,255,255,.55);}
+  .login .right{background:#fff;display:flex;align-items:center;justify-content:center;padding:38px;}
+  .loginbox{width:100%;max-width:310px;}
+  .loginbox h3{font-size:19px;font-weight:800;letter-spacing:-.4px;margin:0 0 4px;}
+  .loginbox .s{font-size:12.5px;color:var(--faint);margin:0 0 22px;}
+  .loginbox .field{margin-bottom:14px;}
+  .flink{font-size:11.5px;color:var(--blue);font-weight:600;text-align:right;display:block;margin-top:-6px;margin-bottom:18px;}
+  .footnote{margin-top:44px;text-align:center;font-size:12px;color:var(--faint);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="cover">
+    <div class="brand">
+      <div class="logo">W</div>
+      <div>
+        <h1>CRM Wave</h1>
+        <p>GUÍA DE ESTILOS · REFERENCIA VISUAL</p>
+      </div>
+    </div>
+    <div class="note">Referencia aproximada para el equipo — muestra la dirección visual (colores, tipografía y pantallas tipo). No es la app final; los datos son de ejemplo.</div>
+  </div>
+
+  <!-- FUNDAMENTOS -->
+  <div class="eyebrow"><span>Fundamentos</span><em></em></div>
+  <div class="grid-fund">
+    <div class="card pad">
+      <p class="lbl">Paleta</p>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#2F6F8F"></div><div class="meta"><b>Azul Wave</b><span>#2F6F8F</span></div></div>
+        <div class="sw"><div class="chip" style="background:#20201d"></div><div class="meta"><b>Tinta</b><span>#20201D</span></div></div>
+        <div class="sw"><div class="chip" style="background:#f5f6ec;border-bottom:1px solid #eaebdc"></div><div class="meta"><b>Crema</b><span>#F5F6EC</span></div></div>
+        <div class="sw"><div class="chip" style="background:#eaf2f6"></div><div class="meta"><b>Azul suave</b><span>#EAF2F6</span></div></div>
+        <div class="sw"><div class="chip" style="background:#ffffff;border-bottom:1px solid #edece5"></div><div class="meta"><b>Blanco</b><span>#FFFFFF</span></div></div>
+        <div class="sw"><div class="chip" style="background:#8f8e85"></div><div class="meta"><b>Gris texto</b><span>#8F8E85</span></div></div>
+      </div>
+      <p class="lbl" style="margin-top:20px">Componentes</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+        <button class="btn primary">Nuevo negocio</button>
+        <button class="btn secondary">Cancelar</button>
+        <button class="btn ghost">Ver más</button>
+        <span class="badge b-blue">Propuesta</span>
+        <span class="badge b-ok">Ganado</span>
+        <span class="badge b-warn">Negociación</span>
+        <span class="badge b-gray">Contactado</span>
+      </div>
+    </div>
+
+    <div class="card pad">
+      <p class="lbl">Tipografía — Plus Jakarta Sans</p>
+      <div class="type-row"><span class="k">Display 800</span><span style="font-size:26px;font-weight:800;letter-spacing:-.6px;">Pipeline de ventas</span></div>
+      <div class="type-row"><span class="k">Título 700</span><span style="font-size:18px;font-weight:700;">Contactos y empresas</span></div>
+      <div class="type-row"><span class="k">Cuerpo 400</span><span style="font-size:14px;">Gestiona tus negocios y cierra más rápido.</span></div>
+      <div class="type-row"><span class="k">Etiqueta 700</span><span style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint)">VALOR PIPELINE</span></div>
+      <div class="type-row"><span class="k">Número</span><span class="num" style="font-size:22px;font-weight:800;letter-spacing:-.6px;">$84.500,00</span></div>
+      <p class="lbl" style="margin-top:20px">Campos</p>
+      <div style="display:flex;gap:12px;">
+        <div class="field" style="flex:1"><label>Nombre</label><div class="inp">Comercial Andina</div></div>
+        <div class="field" style="flex:1"><label>RUC</label><div class="inp focus">1791234567001</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA 1: DASHBOARD -->
+  <div class="eyebrow"><span>Pantalla · Pipeline (Dashboard)</span><em></em></div>
+  <div class="device">
+    <div class="bar"><i style="background:#ec6a5e"></i><i style="background:#f4bf4f"></i><i style="background:#61c554"></i><span class="url">crm.wave.ec / pipeline</span></div>
+    <div class="app">
+      <aside class="side">
+        <div class="lg"><span>W</span><div><b>Wave</b><em>CRM</em></div></div>
+        <nav class="nav">
+          <a class="on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Pipeline</a>
+          <a><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>Contactos</a>
+          <a><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Empresas</a>
+          <a><svg viewBox="0 0 24 24"><path d="M14 3v4h4"/><path d="M6 3h8l5 5v13H6z"/><path d="M9 13h6M9 17h4"/></svg>Cotizaciones</a>
+          <a><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Actividades</a>
+          <a><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reportes</a>
+        </nav>
+        <div style="background:var(--cream);border-radius:12px;padding:12px 13px;">
+          <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.3px;">META DEL MES</div>
+          <div class="num" style="margin-top:4px;"><b style="font-size:16px;font-weight:800;">$15.9k</b> <span style="font-size:11px;color:var(--faint)">/ $23k</span></div>
+          <div style="height:6px;background:#e3e4d6;border-radius:20px;margin-top:8px;overflow:hidden;"><div style="width:69%;height:100%;background:var(--blue);"></div></div>
+        </div>
+        <div class="me"><span class="av" style="width:31px;height:31px;background:var(--blue);font-size:11px;">RM</span><div><div style="font-size:12px;font-weight:600;">Renzo Malla</div><div style="font-size:10px;color:var(--faint);">Administrador</div></div></div>
+      </aside>
+      <div class="main">
+        <div class="top">
+          <div><h2>Pipeline de ventas</h2><div class="sub">Quito, Ecuador · Agosto 2026</div></div>
+          <div style="display:flex;align-items:center;gap:13px;">
+            <div style="display:flex;"><span class="av" style="width:28px;height:28px;font-size:10px;background:#2F6F8F;border:2px solid #fff;">RM</span><span class="av" style="width:28px;height:28px;font-size:10px;background:#7a9aa8;border:2px solid #fff;margin-left:-8px;">EG</span><span class="av" style="width:28px;height:28px;font-size:10px;background:#b58b5a;border:2px solid #fff;margin-left:-8px;">ZM</span></div>
+            <button class="btn primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>Nuevo negocio</button>
+          </div>
+        </div>
+        <div class="content">
+          <div class="band">
+            <div class="chart">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;"><b style="font-size:13px;font-weight:600;">Nuevos negocios</b><span class="badge b-blue">+12%</span></div>
+              <div class="bars"><div style="height:38%"></div><div style="height:56%"></div><div style="height:44%"></div><div style="height:72%"></div><div class="hi" style="height:100%"></div><div style="height:63%"></div><div style="height:83%"></div></div>
+              <div class="barlbl num"><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span><span>Jun</span><span>Jul</span><span>Ago</span></div>
+            </div>
+            <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;">
+              <svg width="118" height="118" viewBox="0 0 96 96">
+                <circle cx="48" cy="48" r="38" fill="none" stroke="#eef0e6" stroke-width="10"/>
+                <circle cx="48" cy="48" r="38" fill="none" stroke="#2F6F8F" stroke-width="10" stroke-linecap="round" stroke-dasharray="238.8" stroke-dashoffset="76.4" transform="rotate(-90 48 48)"/>
+                <text x="48" y="45" text-anchor="middle" font-family="'Plus Jakarta Sans'" font-size="21" font-weight="800" fill="#22221f">68%</text>
+                <text x="48" y="60" text-anchor="middle" font-family="'Plus Jakarta Sans'" font-size="8" font-weight="700" letter-spacing="1" fill="#a6a49b">GANADOS</text>
+              </svg>
+              <div style="font-size:12px;color:var(--muted);font-weight:500;margin-top:6px;">Tasa de cierre del mes</div>
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi"><div class="k">Negocios abiertos</div><div class="v num">37</div></div>
+            <div class="kpi"><div class="k">Valor pipeline</div><div class="v num">$84.5k</div></div>
+            <div class="kpi"><div class="k" >Ganados (mes)</div><div class="v num" style="color:var(--blue)">$15.9k</div></div>
+          </div>
+          <div class="cols">
+            <div>
+              <div class="col-h"><b><span class="dot" style="background:#c9c7bc"></span>Contactado</b><em class="num">12</em></div>
+              <div class="deal"><div class="co">Comercial Andina</div><div class="mt">RUC 1791…001</div><div class="ft"><span class="amt num">$4.200</span><span class="av" style="width:22px;height:22px;font-size:9px;background:#7a9aa8;">EG</span></div></div>
+              <div class="deal"><div class="co">Distribuidora Sur</div><div class="ft"><span class="amt num">$2.800</span><span class="av" style="width:22px;height:22px;font-size:9px;background:#b58b5a;">ZM</span></div></div>
+            </div>
+            <div>
+              <div class="col-h"><b><span class="dot" style="background:#e0b15a"></span>Negociación</b><em class="num">9</em></div>
+              <div class="deal dark"><div class="co">Textiles Pichincha</div><div class="mt">Cierre estimado · 12 ago</div><div style="height:4px;background:#3a3a34;border-radius:20px;margin-top:9px;overflow:hidden;"><div style="width:60%;height:100%;background:#5fa3c2;"></div></div><div class="ft"><span class="amt num">$12.500</span><span style="display:flex;align-items:center;gap:8px;color:#8a897f;font-size:10px;" class="num"><span>3 notas</span><span class="av" style="width:22px;height:22px;font-size:9px;background:#2F6F8F;">RM</span></span></div></div>
+              <div class="deal"><div class="co">Agro Manabí</div><div class="ft"><span class="amt num">$6.900</span><span class="av" style="width:22px;height:22px;font-size:9px;background:#7a9aa8;">EG</span></div></div>
+            </div>
+            <div>
+              <div class="col-h"><b><span class="dot" style="background:#6f9fd8"></span>Propuesta</b><em class="num">7</em></div>
+              <div class="deal"><div class="co">Farmacia Vida</div><div class="mt">Cotización enviada</div><div class="ft"><span class="amt num">$9.300</span><span class="av" style="width:22px;height:22px;font-size:9px;background:#2F6F8F;">RM</span></div></div>
+            </div>
+            <div>
+              <div class="col-h"><b><span class="dot" style="background:#2F6F8F"></span>Ganado</b><em class="num" style="color:var(--blue)">9</em></div>
+              <div class="deal" style="border-color:#cfe0e8;"><div class="co">Constructora GYE</div><div style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:var(--blue);margin-top:5px;font-weight:600;background:var(--tint);border-radius:6px;padding:3px 7px;">→ A facturar en Wave Billing</div><div class="ft"><span class="amt num">$8.100</span><span class="av" style="width:22px;height:22px;font-size:9px;background:#b58b5a;">ZM</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA 2: TABLA CONTACTOS -->
+  <div class="eyebrow"><span>Pantalla · Contactos (tabla)</span><em></em></div>
+  <div class="device">
+    <div class="bar"><i style="background:#ec6a5e"></i><i style="background:#f4bf4f"></i><i style="background:#61c554"></i><span class="url">crm.wave.ec / contactos</span></div>
+    <div class="app">
+      <aside class="side">
+        <div class="lg"><span>W</span><div><b>Wave</b><em>CRM</em></div></div>
+        <nav class="nav">
+          <a><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Pipeline</a>
+          <a class="on"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>Contactos</a>
+          <a><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Empresas</a>
+          <a><svg viewBox="0 0 24 24"><path d="M14 3v4h4"/><path d="M6 3h8l5 5v13H6z"/><path d="M9 13h6M9 17h4"/></svg>Cotizaciones</a>
+          <a><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Actividades</a>
+          <a><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reportes</a>
+        </nav>
+        <div class="me"><span class="av" style="width:31px;height:31px;background:var(--blue);font-size:11px;">RM</span><div><div style="font-size:12px;font-weight:600;">Renzo Malla</div><div style="font-size:10px;color:var(--faint);">Administrador</div></div></div>
+      </aside>
+      <div class="main">
+        <div class="top">
+          <div><h2>Contactos</h2><div class="sub">248 contactos · 62 empresas</div></div>
+          <div style="display:flex;align-items:center;gap:11px;">
+            <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Buscar por nombre o RUC…</div>
+            <button class="btn primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>Nuevo contacto</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="chips">
+            <span class="fchip"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>Provincia</span>
+            <span class="fchip"><svg viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></svg>Etiqueta</span>
+            <span class="fchip"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M4 20a5 5 0 0 1 10 0"/></svg>Responsable</span>
+          </div>
+          <span class="fchip"><svg viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></svg>Ordenar</span>
+        </div>
+        <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Contacto</th><th>Empresa</th><th>RUC / Cédula</th><th>Provincia</th><th>Etiqueta</th><th>Responsable</th></tr></thead>
+          <tbody>
+            <tr><td><div class="cell-name"><span class="av" style="width:34px;height:34px;font-size:12px;background:#2F6F8F;">MC</span><div><b>María Cordero</b><span>maria.cordero@andina.ec</span></div></div></td><td>Comercial Andina</td><td class="num">1791234567001</td><td>Pichincha</td><td><span class="badge b-blue">Cliente</span></td><td><span class="av" style="width:26px;height:26px;font-size:10px;background:#7a9aa8;">EG</span></td></tr>
+            <tr><td><div class="cell-name"><span class="av" style="width:34px;height:34px;font-size:12px;background:#b58b5a;">JV</span><div><b>Jorge Vera</b><span>jvera@distribsur.com</span></div></div></td><td>Distribuidora Sur</td><td class="num">0912345678001</td><td>Guayas</td><td><span class="badge b-ok">Activo</span></td><td><span class="av" style="width:26px;height:26px;font-size:10px;background:#b58b5a;">ZM</span></td></tr>
+            <tr><td><div class="cell-name"><span class="av" style="width:34px;height:34px;font-size:12px;background:#5b7f8f;">AL</span><div><b>Ana López</b><span>ana.lopez@agromanabi.ec</span></div></div></td><td>Agro Manabí</td><td class="num">1312233445</td><td>Manabí</td><td><span class="badge b-warn">Prospecto</span></td><td><span class="av" style="width:26px;height:26px;font-size:10px;background:#7a9aa8;">EG</span></td></tr>
+            <tr><td><div class="cell-name"><span class="av" style="width:34px;height:34px;font-size:12px;background:#8a6f9e;">RP</span><div><b>Ricardo Paz</b><span>rpaz@farmaciavida.ec</span></div></div></td><td>Farmacia Vida</td><td class="num">1790011223001</td><td>Azuay</td><td><span class="badge b-blue">Cliente</span></td><td><span class="av" style="width:26px;height:26px;font-size:10px;background:#2F6F8F;">RM</span></td></tr>
+            <tr><td><div class="cell-name"><span class="av" style="width:34px;height:34px;font-size:12px;background:#9e6f6f;">CS</span><div><b>Carla Suárez</b><span>csuarez@construgye.com</span></div></div></td><td>Constructora GYE</td><td class="num">0992556677001</td><td>Guayas</td><td><span class="badge b-gray">Nuevo</span></td><td><span class="av" style="width:26px;height:26px;font-size:10px;background:#b58b5a;">ZM</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="tfoot"><span class="num">Mostrando 1–5 de 248</span><div class="pager"><a>‹</a><a class="on">1</a><a>2</a><a>3</a><a>…</a><a>50</a><a>›</a></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA 3: FORMULARIO -->
+  <div class="eyebrow"><span>Pantalla · Nuevo contacto (formulario)</span><em></em></div>
+  <div class="device">
+    <div class="bar"><i style="background:#ec6a5e"></i><i style="background:#f4bf4f"></i><i style="background:#61c554"></i><span class="url">crm.wave.ec / contactos / nuevo</span></div>
+    <div class="app">
+      <aside class="side">
+        <div class="lg"><span>W</span><div><b>Wave</b><em>CRM</em></div></div>
+        <nav class="nav">
+          <a><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Pipeline</a>
+          <a class="on"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>Contactos</a>
+          <a><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Empresas</a>
+          <a><svg viewBox="0 0 24 24"><path d="M14 3v4h4"/><path d="M6 3h8l5 5v13H6z"/><path d="M9 13h6M9 17h4"/></svg>Cotizaciones</a>
+          <a><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Actividades</a>
+          <a><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reportes</a>
+        </nav>
+        <div class="me"><span class="av" style="width:31px;height:31px;background:var(--blue);font-size:11px;">RM</span><div><div style="font-size:12px;font-weight:600;">Renzo Malla</div><div style="font-size:10px;color:var(--faint);">Administrador</div></div></div>
+      </aside>
+      <div class="main">
+        <div class="top"><div><h2>Nuevo contacto</h2><div class="sub">Contactos · Crear</div></div></div>
+        <div class="formwrap">
+          <div class="formcard">
+            <div class="formhead"><h3>Datos del contacto</h3><p>Los campos con validación ecuatoriana se verifican al escribir.</p></div>
+            <div class="formbody">
+              <div class="field"><label>Nombres</label><div class="inp">María Fernanda</div></div>
+              <div class="field"><label>Apellidos</label><div class="inp">Cordero Ríos</div></div>
+              <div class="field"><label>Tipo de identificación</label><div class="sel">Cédula<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div></div>
+              <div class="field"><label>Número</label><div class="inp focus">1712345678</div><span class="hint ok">✓ Cédula válida</span></div>
+              <div class="field"><label>Correo</label><div class="inp">maria.cordero@andina.ec</div></div>
+              <div class="field"><label>Teléfono</label><div class="inp">+593 99 123 4567</div></div>
+              <div class="field"><label>Empresa</label><div class="sel">Comercial Andina<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div></div>
+              <div class="field"><label>Provincia</label><div class="sel">Pichincha<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div></div>
+              <div class="field col-2"><label>Etiquetas</label><div class="tags"><span class="tag">Cliente ✕</span><span class="tag">Mayorista ✕</span><span style="font-size:12px;color:var(--faint)">+ agregar…</span></div></div>
+              <div class="field col-2"><label>Notas</label><div class="ta">Interesada en el catálogo de temporada. Volver a contactar la próxima semana…</div></div>
+            </div>
+            <div class="formfoot"><button class="btn secondary">Cancelar</button><button class="btn primary">Guardar contacto</button></div>
+          </div>
+          <div class="aside-card">
+            <h4>Buenas prácticas</h4>
+            <ul>
+              <li><span class="ck">✓</span>Verifica cédula/RUC antes de guardar.</li>
+              <li><span class="ck">✓</span>Asocia el contacto a una empresa.</li>
+              <li><span class="ck">✓</span>Usa etiquetas para segmentar campañas.</li>
+              <li><span class="ck">✓</span>Registra una actividad de seguimiento.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA 4: LOGIN -->
+  <div class="eyebrow"><span>Pantalla · Inicio de sesión</span><em></em></div>
+  <div class="device">
+    <div class="bar"><i style="background:#ec6a5e"></i><i style="background:#f4bf4f"></i><i style="background:#61c554"></i><span class="url">crm.wave.ec / login</span></div>
+    <div class="login">
+      <div class="left">
+        <div class="lg"><span>W</span><div><b style="font-size:17px;font-weight:800;">Wave CRM</b></div></div>
+        <div>
+          <h2>El CRM hecho<br>para Ecuador.</h2>
+          <p>Pipeline, contactos, cotizaciones y reportes en un solo lugar. Con validación de RUC y cédula, y montos en dólares.</p>
+        </div>
+        <div class="foot">© 2026 Wave · thewavesea.com</div>
+      </div>
+      <div class="right">
+        <div class="loginbox">
+          <h3>Inicia sesión</h3>
+          <p class="s">Ingresa con tu cuenta del equipo.</p>
+          <div class="field"><label>Correo</label><div class="inp">tucorreo@empresa.ec</div></div>
+          <div class="field"><label>Contraseña</label><div class="inp focus">••••••••••</div></div>
+          <a class="flink">¿Olvidaste tu contraseña?</a>
+          <button class="btn primary" style="width:100%;justify-content:center;padding:11px;">Entrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">CRM Wave · Guía de estilos de referencia — generada para validación del equipo.</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  SALES
+}
+
+enum DealStatus {
+  OPEN
+  WON
+  LOST
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  MEETING
+  TASK
+}
+
+enum ActivityStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model User {
+  id                 String      @id @default(cuid())
+  email              String      @unique
+  name               String
+  role               UserRole    @default(SALES)
+  active             Boolean     @default(true)
+  ownedCompanies     Company[]   @relation("CompanyOwner")
+  ownedContacts      Contact[]   @relation("ContactOwner")
+  ownedDeals         Deal[]      @relation("DealOwner")
+  assignedActivities Activity[]  @relation("ActivityAssignee")
+  notes              Note[]
+  auditLogs          AuditLog[]
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@index([active, role])
+}
+
+model Company {
+  id         String       @id @default(cuid())
+  name       String
+  legalName  String?
+  taxId      String?      @unique
+  website    String?
+  phone      String?
+  province   String?
+  city       String?
+  address    String?
+  ownerId    String?
+  owner      User?        @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  contacts   Contact[]
+  deals      Deal[]
+  activities Activity[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([name])
+  @@index([ownerId])
+  @@index([province, city])
+}
+
+model Contact {
+  id          String       @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  documentId  String?      @unique
+  province    String?
+  position    String?
+  tags        String[]     @default([])
+  companyId   String?
+  company     Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  ownerId     String?
+  owner       User?        @relation("ContactOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  deals       Deal[]
+  activities  Activity[]
+  notes       Note[]
+  attachments Attachment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([lastName, firstName])
+  @@index([companyId])
+  @@index([ownerId])
+  @@index([email])
+}
+
+model Pipeline {
+  id        String   @id @default(cuid())
+  name      String
+  isDefault Boolean  @default(false)
+  stages    Stage[]
+  deals     Deal[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isDefault])
+}
+
+model Stage {
+  id          String   @id @default(cuid())
+  name        String
+  position    Int
+  probability Int      @default(0)
+  color       String?
+  pipelineId  String
+  pipeline    Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals       Deal[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([pipelineId, position])
+  @@index([pipelineId, name])
+}
+
+model Deal {
+  id            String       @id @default(cuid())
+  title         String
+  value         Decimal      @db.Decimal(14, 2)
+  currency      String       @default("USD")
+  status        DealStatus   @default(OPEN)
+  expectedClose DateTime?
+  closedAt      DateTime?
+  pipelineId    String
+  pipeline      Pipeline     @relation(fields: [pipelineId], references: [id], onDelete: Restrict)
+  stageId       String
+  stage         Stage        @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  companyId     String?
+  company       Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  contactId     String?
+  contact       Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  ownerId       String?
+  owner         User?        @relation("DealOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  activities    Activity[]
+  quotes        Quote[]
+  notes         Note[]
+  attachments   Attachment[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([pipelineId, stageId, status])
+  @@index([companyId])
+  @@index([contactId])
+  @@index([ownerId, expectedClose])
+}
+
+model Activity {
+  id           String         @id @default(cuid())
+  type         ActivityType
+  status       ActivityStatus @default(PENDING)
+  subject      String
+  description  String?
+  dueAt        DateTime?
+  completedAt  DateTime?
+  assigneeId   String?
+  assignee     User?          @relation("ActivityAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  companyId    String?
+  company      Company?       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contactId    String?
+  contact      Contact?       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  dealId       String?
+  deal         Deal?          @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([assigneeId, status, dueAt])
+  @@index([companyId])
+  @@index([contactId])
+  @@index([dealId])
+}
+
+model Quote {
+  id        String      @id @default(cuid())
+  number    String      @unique
+  status    QuoteStatus @default(DRAFT)
+  subtotal  Decimal     @db.Decimal(14, 2)
+  tax       Decimal     @db.Decimal(14, 2)
+  total     Decimal     @db.Decimal(14, 2)
+  validUntil DateTime?
+  dealId    String
+  deal      Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([dealId, status])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  content   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  dealId    String?
+  deal      Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([contactId])
+  @@index([dealId])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  fileName  String
+  mimeType  String
+  size      Int
+  url       String
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  dealId    String?
+  deal      Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([contactId])
+  @@index([dealId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  changes    Json?
+  ipAddress  String?
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([userId, createdAt])
+}

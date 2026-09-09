@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wavecrm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wave
+      POSTGRES_PASSWORD: wave
+      POSTGRES_DB: wavecrm
+    ports:
+      - "5432:5432"
+    volumes:
+      - wavecrm_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wave -d wavecrm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  wavecrm_postgres_data:
+

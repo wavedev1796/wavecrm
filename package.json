@@ -1,0 +1,22 @@
+{
+  "name": "wave-crm",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @wave/web --filter @wave/api dev",
+    "dev:web": "pnpm --filter @wave/web dev",
+    "dev:api": "pnpm --filter @wave/api dev",
+    "build": "pnpm --filter @wave/database build && pnpm --filter @wave/api build && pnpm --filter @wave/web build",
+    "lint": "pnpm -r --if-present lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @wave/database generate",
+    "db:migrate": "pnpm --filter @wave/database migrate",
+    "db:seed": "pnpm --filter @wave/database seed"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
+  }
+}
