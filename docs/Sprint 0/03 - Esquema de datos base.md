@@ -18,7 +18,8 @@ Modelar el núcleo comercial del CRM en PostgreSQL mediante Prisma.
 
 - Esquema: `packages/database/prisma/schema.prisma`.
 - Migración: `packages/database/prisma/migrations/20260909000100_initial/migration.sql`.
-- Seed: `packages/database/prisma/seed.ts`.
+- Seed: `packages/database/prisma/seed.mjs`.
+- Configuración CLI: `packages/database/prisma.config.ts`.
 
 ## Convenciones
 
@@ -27,8 +28,8 @@ Modelar el núcleo comercial del CRM en PostgreSQL mediante Prisma.
 - Fechas `createdAt` y `updatedAt` en entidades mutables.
 - Relaciones opcionales usan `SetNull`; los registros dependientes usan `Cascade`; las referencias comerciales críticas usan `Restrict`.
 - `AuditLog` conserva el tipo e ID de la entidad para registrar cambios de cualquier módulo.
+- El cliente usa el motor `binary`, compatible tanto con Node x64 como con instalaciones locales x86.
 
 ## Validación
 
 El esquema pasa `prisma validate` y el cliente Prisma se genera correctamente. Para aplicar y poblar una base local se ejecutan `pnpm db:migrate` y `pnpm db:seed` con PostgreSQL activo.
-

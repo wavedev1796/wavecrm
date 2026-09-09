@@ -9,7 +9,7 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
-    "seed": "tsx prisma/seed.ts",
+    "seed": "node prisma/seed.mjs",
     "validate": "prisma validate",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
@@ -19,10 +19,6 @@
   "devDependencies": {
     "@types/node": "^22.18.1",
     "prisma": "^6.16.1",
-    "tsx": "^4.20.5",
     "typescript": "^5.9.2"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   }
 }

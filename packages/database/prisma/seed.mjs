@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -9,7 +9,7 @@ async function main() {
     create: {
       email: 'eduardo@thewavesea.com',
       name: 'Eduardo García',
-      role: UserRole.ADMIN,
+      role: 'ADMIN',
     },
   });
 
@@ -63,7 +63,10 @@ async function main() {
   const firstStage = pipeline.stages.find((stage) => stage.position === 1);
   if (!firstStage) throw new Error('No se creó la etapa inicial');
 
-  const existingDeal = await prisma.deal.findFirst({ where: { title: 'Renovación Comercial Andina' } });
+  const existingDeal = await prisma.deal.findFirst({
+    where: { title: 'Renovación Comercial Andina' },
+  });
+
   if (!existingDeal) {
     await prisma.deal.create({
       data: {

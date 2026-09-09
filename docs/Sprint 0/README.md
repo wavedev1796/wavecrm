@@ -12,5 +12,5 @@ Objetivo: dejar una base visual y técnica común para desarrollar las funcional
 
 ## Estado general
 
-La implementación está lista y validada mediante lint, compilación de producción, validación del esquema Prisma y comprobación HTTP del frontend, healthcheck y Swagger. La ejecución de la migración y el seed local requiere Docker Desktop.
+La implementación está lista y validada mediante lint, compilación de producción, validación del esquema Prisma y comprobación HTTP del frontend, healthcheck y Swagger. La migración y el seed se ejecutaron correctamente contra PostgreSQL local.
 
