@@ -12,10 +12,12 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @wave/database generate",
-    "db:migrate": "pnpm --filter @wave/database migrate",
-    "db:seed": "pnpm --filter @wave/database seed"
+    "db:migrate": "dotenv -e .env -- pnpm --filter @wave/database migrate",
+    "db:migrate:deploy": "dotenv -e .env -- pnpm --filter @wave/database migrate:deploy",
+    "db:seed": "dotenv -e .env -- pnpm --filter @wave/database seed"
   },
   "devDependencies": {
+    "dotenv-cli": "^8.0.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2"
   }
