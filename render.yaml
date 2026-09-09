@@ -16,6 +16,8 @@ services:
         sync: false
       - key: CORS_ORIGIN
         sync: false
+      - key: JWT_SECRET
+        sync: false
 
   - type: web
     name: wavecrm-web

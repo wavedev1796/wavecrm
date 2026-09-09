@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ActivitiesModule } from './modules/activities/activities.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { CompaniesModule } from './modules/companies/companies.module';
@@ -18,6 +19,7 @@ import { UsersModule } from './modules/users/users.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['../../.env', '.env'] }),
     PrismaModule,
+    AuthModule,
     HealthModule,
     UsersModule,
     CompaniesModule,

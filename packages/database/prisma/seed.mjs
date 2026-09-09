@@ -2,14 +2,30 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Hash argon2id de la contraseña de desarrollo "Wave2026!". Solo para entornos locales.
+const DEV_PASSWORD_HASH =
+  '$argon2id$v=19$m=65536,p=4,t=3$gZSN4lsGXJohrKkjgCFxHA$GAxXj/pcSVG5RwvO6wBGFOslD2o8XsOGSWHxCTdSUZk';
+
 async function main() {
   const owner = await prisma.user.upsert({
     where: { email: 'eduardo@thewavesea.com' },
-    update: {},
+    update: { passwordHash: DEV_PASSWORD_HASH },
     create: {
       email: 'eduardo@thewavesea.com',
       name: 'Eduardo García',
       role: 'ADMIN',
+      passwordHash: DEV_PASSWORD_HASH,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'vendedor@thewavesea.com' },
+    update: { passwordHash: DEV_PASSWORD_HASH },
+    create: {
+      email: 'vendedor@thewavesea.com',
+      name: 'Vendedor Demo',
+      role: 'VENDEDOR',
+      passwordHash: DEV_PASSWORD_HASH,
     },
   });
 
