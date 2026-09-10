@@ -18,6 +18,7 @@
   --wave-warning: #a9791b;
   --wave-warning-soft: #fbf1dd;
   --wave-danger: #b44545;
+  --wave-danger-soft: #fbeeee;
   --shadow-sm: 0 1px 2px rgb(40 40 30 / 5%);
   --shadow-md: 0 10px 30px rgb(40 40 30 / 8%);
   --sidebar-width: 244px;
@@ -171,10 +172,10 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .field label { color: #54534d; font-size: .72rem; font-weight: 650; }
 .auth-link { display: block; margin: -4px 0 18px; color: var(--wave-blue); font-size: .72rem; font-weight: 650; text-align: right; text-decoration: none; }
 .auth-link:hover { color: var(--wave-blue-dark); text-decoration: underline; }
-.auth-error, .auth-success { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; padding: 10px 12px; border: 1px solid; border-radius: 10px; font-size: .75rem; font-weight: 600; }
+.auth-error, .auth-success { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; padding: 10px 12px; border-radius: 10px; font-size: .75rem; font-weight: 600; }
 .auth-error svg, .auth-success svg { width: 16px; height: 16px; flex: 0 0 auto; }
-.auth-error { color: var(--wave-danger); background: #fbeeee; border-color: #f0d3d3; }
-.auth-success { color: var(--wave-success); background: var(--wave-success-soft); border-color: #cde6d8; }
+.auth-error { color: var(--wave-danger); background: var(--wave-danger-soft); }
+.auth-success { color: var(--wave-success); background: var(--wave-success-soft); }
 .auth-note { margin: 0 0 18px; padding: 11px 12px; border: 1px dashed var(--wave-line-strong); border-radius: 10px; color: var(--wave-muted); font-size: .72rem; line-height: 1.5; }
 .auth-note b { color: var(--wave-warning); }
 .auth-submit { width: 100%; padding: 11px; }

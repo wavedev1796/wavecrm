@@ -17,6 +17,7 @@ La fuente de verdad ejecutable vive en `apps/web/app/globals.css`. La guía visu
 | `--wave-success` | `#2F8F5B` | Estado positivo |
 | `--wave-warning` | `#A9791B` | Estado de atención |
 | `--wave-danger` | `#B44545` | Error o acción destructiva |
+| `--wave-danger-soft` | `#FBEEEE` | Fondo de mensajes de error |
 
 ## Tipografía y escala
 
