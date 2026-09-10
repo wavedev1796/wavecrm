@@ -45,12 +45,13 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   display: flex; flex-direction: column; gap: 26px; padding: 24px 18px 18px;
   background: var(--wave-white); border-right: 1px solid var(--wave-line);
 }
-.brand-row { display: flex; align-items: center; gap: 11px; padding: 0 7px; }
-.brand-mark, .empty-mark { display: grid; place-items: center; background: var(--wave-blue); color: white; font-weight: 800; box-shadow: 0 3px 10px rgb(47 111 143 / 28%); }
-.brand-mark { width: 38px; height: 38px; border-radius: 11px; font-size: 18px; }
-.brand-name { display: flex; flex-direction: column; font-size: 17px; font-weight: 800; letter-spacing: -.03em; line-height: 1.05; }
-.brand-name small { color: var(--wave-faint); font-size: 10px; font-weight: 700; letter-spacing: .2em; }
-.sidebar-close { display: none; margin-left: auto; }
+.brand-row { display: flex; align-items: center; gap: 9px; padding: 0 7px; }
+.empty-mark { display: grid; place-items: center; background: var(--wave-blue); color: white; font-weight: 800; box-shadow: 0 3px 10px rgb(47 111 143 / 28%); }
+/* Logotipo Wave: un solo archivo enmascarado que se pinta con el color del contexto. */
+.brand-logo { flex: 0 0 auto; background: currentColor; -webkit-mask: url(/logo-wave.svg) center / contain no-repeat; mask: url(/logo-wave.svg) center / contain no-repeat; }
+.brand-tag { color: var(--wave-faint); font-size: 10px; font-weight: 700; letter-spacing: .2em; }
+.brand-row .brand-logo { width: 84px; height: 40px; color: var(--wave-blue); }
+.icon-button.sidebar-close { display: none; margin-left: auto; }
 .sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
 .nav-link { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 10px 12px; border-radius: 10px; color: #706f68; font-size: .875rem; font-weight: 550; text-decoration: none; transition: background .16s ease, color .16s ease, transform .16s ease; }
 .nav-link svg { width: 19px; height: 19px; stroke-width: 1.8; }
@@ -79,7 +80,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .global-search > svg, .table-search > svg { position: absolute; left: 12px; z-index: 1; width: 17px; color: var(--wave-muted); pointer-events: none; }
 .global-search .input { width: 250px; padding-left: 38px; padding-right: 46px; background: var(--wave-cream); }
 .global-search kbd { position: absolute; right: 10px; color: var(--wave-faint); font-family: inherit; font-size: .68rem; }
-.menu-button { display: none; }
+.icon-button.menu-button { display: none; }
 .icon-button, .notification-button { display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid var(--wave-line); border-radius: 10px; color: var(--wave-muted); background: white; cursor: pointer; }
 .icon-button:hover, .notification-button:hover { color: var(--wave-blue); border-color: var(--wave-blue-line); background: var(--wave-blue-soft); }
 .icon-button svg, .notification-button svg { width: 19px; }
@@ -157,8 +158,9 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 
 .auth-screen { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
 .auth-aside { display: flex; flex-direction: column; justify-content: space-between; gap: 30px; padding: 38px; color: white; background: linear-gradient(150deg, var(--wave-blue), #20201d); }
-.auth-brand { display: flex; align-items: center; gap: 11px; font-size: 1.06rem; font-weight: 800; }
-.auth-brand span { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: rgb(255 255 255 / 15%); font-size: 1.19rem; }
+.auth-brand { display: flex; align-items: center; gap: 10px; }
+.auth-brand .brand-logo { width: 92px; height: 43px; }
+.auth-brand .brand-tag { color: rgb(255 255 255 / 65%); }
 .auth-aside h2 { margin: 0 0 10px; font-size: 1.63rem; font-weight: 800; letter-spacing: -.035em; line-height: 1.2; }
 .auth-aside p { max-width: 290px; margin: 0; color: rgb(255 255 255 / 80%); font-size: .84rem; line-height: 1.6; }
 .auth-aside small { color: rgb(255 255 255 / 55%); font-size: .69rem; }
@@ -200,7 +202,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 
 @media (max-width: 760px) {
   .sidebar { width: min(290px, 86vw); transform: translateX(-105%); transition: transform .22s ease; box-shadow: var(--shadow-md); }
-  .sidebar--open { transform: translateX(0); }.sidebar-close, .menu-button { display: inline-grid; }
+  .sidebar--open { transform: translateX(0); }.icon-button.sidebar-close, .icon-button.menu-button { display: inline-grid; }
   .sidebar-backdrop { position: fixed; inset: 0; z-index: 25; display: block; width: 100%; height: 100%; border: 0; background: rgb(31 31 31 / 34%); backdrop-filter: blur(2px); }
   .main-area { margin-left: 0; }.topbar { min-height: 70px; padding: 12px 16px; gap: 11px; }
   .page-heading h1 { font-size: 1rem; }.page-heading p { display: none; }.global-search { display: none; }

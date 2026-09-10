@@ -48,8 +48,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="app-shell">
       <aside className={`sidebar ${mobileOpen ? 'sidebar--open' : ''}`} aria-label="Navegación principal">
         <div className="brand-row">
-          <span className="brand-mark">W</span>
-          <span className="brand-name">Wave<small>CRM</small></span>
+          <span className="brand-logo" role="img" aria-label="Wave" />
+          <span className="brand-tag">CRM</span>
           <button className="icon-button sidebar-close" onClick={() => setMobileOpen(false)} aria-label="Cerrar menú"><X /></button>
         </div>
 

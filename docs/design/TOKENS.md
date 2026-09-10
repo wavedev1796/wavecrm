@@ -19,6 +19,10 @@ La fuente de verdad ejecutable vive en `apps/web/app/globals.css`. La guía visu
 | `--wave-danger` | `#B44545` | Error o acción destructiva |
 | `--wave-danger-soft` | `#FBEEEE` | Fondo de mensajes de error |
 
+## Marca
+
+El logotipo vive en `apps/web/public/logo-wave.svg` (wordmark horizontal, proporción 2.12:1). Se pinta con la clase `.brand-logo`, que lo aplica como máscara CSS sobre `currentColor`: un solo archivo sirve para cualquier color según el contexto (azul en el sidebar, blanco sobre el panel oscuro de las pantallas de acceso). Al usarlo, fijar `width`/`height` respetando la proporción y acompañarlo del descriptor `CRM` (`.brand-tag`).
+
 ## Tipografía y escala
 
 - Familia: Plus Jakarta Sans Variable.

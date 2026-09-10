@@ -3,8 +3,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="auth-screen">
       <aside className="auth-aside">
         <div className="auth-brand">
-          <span aria-hidden>W</span>
-          <b>Wave CRM</b>
+          <span className="brand-logo" role="img" aria-label="Wave" />
+          <span className="brand-tag">CRM</span>
         </div>
         <div>
           <h2>
