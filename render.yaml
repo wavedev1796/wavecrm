@@ -2,6 +2,7 @@ services:
   - type: web
     name: wavecrm-api
     runtime: node
+    region: virginia
     plan: starter
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @wave/database generate && pnpm --filter @wave/api build
     preDeployCommand: corepack enable && pnpm --filter @wave/database migrate:deploy
@@ -22,6 +23,7 @@ services:
   - type: web
     name: wavecrm-web
     runtime: node
+    region: virginia
     plan: starter
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @wave/web build
     startCommand: pnpm --filter @wave/web start
