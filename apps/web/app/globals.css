@@ -63,11 +63,10 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .goal-card strong small { color: var(--wave-faint); font-size: .75rem; font-weight: 500; }
 .goal-track { height: 6px; margin-top: 10px; overflow: hidden; border-radius: 999px; background: #e3e4d6; }
 .goal-track span { display: block; width: 69%; height: 100%; border-radius: inherit; background: var(--wave-blue); }
-.profile-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; width: 100%; padding: 13px 7px 0; color: inherit; text-align: left; background: none; border: 0; border-top: 1px solid var(--wave-line); cursor: pointer; }
+.profile-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 13px 7px 0; border-top: 1px solid var(--wave-line); }
 .profile-card > span:nth-child(2) { min-width: 0; }
 .profile-card strong, .profile-card small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .profile-card strong { font-size: .78rem; }.profile-card small { color: var(--wave-faint); font-size: .68rem; }
-.profile-card svg { width: 15px; color: var(--wave-muted); }
 .avatar { display: inline-grid; place-items: center; width: 34px; height: 34px; flex: 0 0 auto; border-radius: 50%; background: var(--wave-blue); color: white; font-size: .7rem; font-weight: 750; }
 .avatar--small { width: 27px; height: 27px; font-size: .6rem; }
 

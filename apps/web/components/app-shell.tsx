@@ -5,9 +5,9 @@ import {
   BarChart3,
   Building2,
   CalendarDays,
-  ChevronDown,
   FileText,
   LayoutDashboard,
+  LogOut,
   Menu,
   Search,
   Users,
@@ -16,6 +16,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { logout } from '@/app/(auth)/actions';
 import { Input } from './ui/input';
 
 const navItems = [
@@ -71,11 +72,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="goal-track"><span /></div>
         </div>
 
-        <button className="profile-card">
+        <form className="profile-card" action={logout}>
           <span className="avatar">EG</span>
           <span><strong>Eduardo García</strong><small>Administrador</small></span>
-          <ChevronDown aria-hidden="true" />
-        </button>
+          <button className="icon-button" type="submit" aria-label="Cerrar sesión" title="Cerrar sesión"><LogOut aria-hidden="true" /></button>
+        </form>
       </aside>
 
       {mobileOpen && <button className="sidebar-backdrop" onClick={() => setMobileOpen(false)} aria-label="Cerrar menú" />}

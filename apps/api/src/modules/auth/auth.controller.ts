@@ -28,6 +28,14 @@ export class AuthController {
     return this.authService.refresh(dto.refreshToken);
   }
 
+  @Public()
+  @Post('logout')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Cierra la sesión revocando el refresh token vigente' })
+  logout(@Body() dto: RefreshTokenDto) {
+    return this.authService.logout(dto.refreshToken);
+  }
+
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Devuelve el usuario autenticado' })

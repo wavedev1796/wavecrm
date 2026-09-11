@@ -1,25 +1,29 @@
-import { cookies } from 'next/headers';
-
 /**
- * Sesión del navegador. Hoy los tokens viajan dentro de cookies httpOnly, así que
- * JavaScript del cliente nunca los ve.
+ * Sesión del navegador. Los tokens viajan en cookies httpOnly, así que el JavaScript
+ * del cliente nunca los ve.
  *
  * ponytail: cookie como único almacén; para migrar a Redis (invalidación central,
  * sesión compartida entre instancias) basta con cambiar ESTE archivo: guardar un
- * sessionId opaco en la cookie y los tokens en Redis bajo esa clave. El resto de la
- * aplicación solo conoce estas funciones, no dónde viven los datos.
+ * sessionId opaco en la cookie y los tokens en Redis bajo esa clave. Por eso las
+ * funciones ya son asíncronas y reciben el almacén de cookies de quien llama
+ * (`await cookies()` en server actions, `request.cookies`/`response.cookies` en el
+ * middleware): el resto de la aplicación no sabe dónde viven los datos.
  */
 
 export type Session = {
-  /** Ausente cuando el access token ya expiró; renovarlo con el refresh es tarea de CRM-10. */
+  /** Ausente cuando el access token ya expiró; el middleware lo renueva con el refresh. */
   accessToken: string | null;
   refreshToken: string;
 };
 
+type CookieReader = { get(name: string): { value: string } | undefined };
+type CookieWriter = {
+  set(name: string, value: string, options: typeof cookieOptions & { maxAge: number }): unknown;
+  delete(name: string): unknown;
+};
+
 const ACCESS_COOKIE = 'wave_access';
 const REFRESH_COOKIE = 'wave_refresh';
-const ACCESS_MAX_AGE = 15 * 60; // igual al TTL del access token que emite el API
-const REFRESH_MAX_AGE = 7 * 24 * 60 * 60;
 
 const cookieOptions = {
   httpOnly: true,
@@ -28,15 +32,29 @@ const cookieOptions = {
   path: '/',
 } as const;
 
-export async function createSession(accessToken: string, refreshToken: string) {
-  const jar = await cookies();
-  jar.set(ACCESS_COOKIE, accessToken, { ...cookieOptions, maxAge: ACCESS_MAX_AGE });
-  jar.set(REFRESH_COOKIE, refreshToken, { ...cookieOptions, maxAge: REFRESH_MAX_AGE });
+/**
+ * Segundos de vida que le quedan al token según su claim `exp`, para que la cookie muera
+ * a la vez que el token sin duplicar aquí la duración que decide el API. No verifica la
+ * firma: nunca se usa para autorizar, eso lo hace el API en cada petición.
+ */
+function secondsUntilExpiry(token: string) {
+  const payload = token.split('.')[1] ?? '';
+  const { exp } = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))) as { exp: number };
+  return exp - Math.floor(Date.now() / 1000);
 }
 
-export async function getSession(): Promise<Session | null> {
-  const jar = await cookies();
+export async function readSession(jar: CookieReader): Promise<Session | null> {
   const refreshToken = jar.get(REFRESH_COOKIE)?.value;
   if (!refreshToken) return null;
   return { accessToken: jar.get(ACCESS_COOKIE)?.value ?? null, refreshToken };
+}
+
+export async function writeSession(jar: CookieWriter, accessToken: string, refreshToken: string) {
+  jar.set(ACCESS_COOKIE, accessToken, { ...cookieOptions, maxAge: secondsUntilExpiry(accessToken) });
+  jar.set(REFRESH_COOKIE, refreshToken, { ...cookieOptions, maxAge: secondsUntilExpiry(refreshToken) });
+}
+
+export async function clearSession(jar: CookieWriter) {
+  jar.delete(ACCESS_COOKIE);
+  jar.delete(REFRESH_COOKIE);
 }

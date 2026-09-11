@@ -1,9 +1,9 @@
 'use server';
 
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { createSession } from '@/lib/session';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
+import { API_URL } from '@/lib/api';
+import { clearSession, readSession, writeSession } from '@/lib/session';
 
 export type LoginState = {
   error: string | null;
@@ -46,6 +46,23 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
     return { email, error: 'El servidor devolvió una respuesta inesperada. Avisa al equipo técnico.' };
   }
 
-  await createSession(data.accessToken, data.refreshToken);
+  await writeSession(await cookies(), data.accessToken, data.refreshToken);
   redirect('/pipeline');
+}
+
+export async function logout() {
+  const jar = await cookies();
+  const session = await readSession(jar);
+  if (session) {
+    // Si el API no responde, la sesión local se cierra igual; el refresh token seguiría
+    // válido en el servidor hasta expirar.
+    await fetch(`${API_URL}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: session.refreshToken }),
+      cache: 'no-store',
+    }).catch(() => undefined);
+  }
+  await clearSession(jar);
+  redirect('/login');
 }

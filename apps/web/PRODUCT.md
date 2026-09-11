@@ -39,7 +39,8 @@ Tres cosas que deben preservarse en cualquier trabajo futuro:
 Implementado hoy:
 
 - Rutas del producto: `/pipeline`, `/contactos`, `/empresas`, `/cotizaciones`, `/actividades`, `/reportes`, más `/login` y `/recuperar-contrasena`.
-- Autenticación con JWT (access 15 min + refresh 7 días con rotación), contraseñas con argon2, límite de 5 intentos por minuto en el login, guards por rol y sesión en cookies `httpOnly`.
+- Autenticación con JWT (access 15 min + refresh de 8 horas renovables con rotación), contraseñas con argon2, límite de 5 intentos por minuto en el login, guards por rol y sesión en cookies `httpOnly`.
+- Sesión de trabajo de una jornada: quien usa la app no pierde la sesión; tras 8 horas sin actividad se pide login. Todas las rutas internas exigen sesión y el cierre de sesión la revoca en el servidor.
 - Entidades: User, Company, Contact, Deal, Pipeline, Stage, Activity, Quote, Note, Attachment, AuditLog.
 
 Restricciones técnicas:
@@ -52,7 +53,6 @@ Restricciones técnicas:
 Decisiones de producto abiertas (no inventar una respuesta):
 
 - El envío de correo para recuperar contraseña está pendiente del ticket CRM-7; la pantalla existe pero no envía nada.
-- La protección de rutas del dashboard, el logout y la expiración de sesión son del ticket CRM-10; hoy las rutas internas son accesibles sin sesión.
 - No hay definición de precios, planes ni modelo de licenciamiento.
 
 ## Brand Commitments

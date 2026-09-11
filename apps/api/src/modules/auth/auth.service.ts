@@ -13,7 +13,7 @@ export type JwtPayload = {
 };
 
 const ACCESS_TTL = '15m';
-const REFRESH_TTL = '7d';
+const REFRESH_TTL = '8h';
 
 @Injectable()
 export class AuthService {
@@ -32,24 +32,17 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    let payload: JwtPayload;
-    try {
-      payload = await this.jwt.verifyAsync<JwtPayload>(refreshToken);
-    } catch {
-      throw new UnauthorizedException('Refresh token inválido o expirado.');
-    }
-    const user =
-      payload.type === 'refresh'
-        ? await this.prisma.user.findUnique({ where: { id: payload.sub } })
-        : null;
-    if (
-      !user?.active ||
-      !user.refreshTokenHash ||
-      !(await argon2.verify(user.refreshTokenHash, refreshToken))
-    ) {
-      throw new UnauthorizedException('Refresh token inválido o expirado.');
-    }
+    const user = await this.userForRefreshToken(refreshToken);
+    if (!user) throw new UnauthorizedException('Refresh token inválido o expirado.');
     return this.issueTokens(user.id, user.email, user.name, user.role);
+  }
+
+  /** Revoca la sesión vigente. Un token que no es el vigente no revoca nada. */
+  async logout(refreshToken: string) {
+    const user = await this.userForRefreshToken(refreshToken);
+    if (user) {
+      await this.prisma.user.update({ where: { id: user.id }, data: { refreshTokenHash: null } });
+    }
   }
 
   async me(userId: string) {
@@ -59,6 +52,17 @@ export class AuthService {
     });
     if (!user?.active) throw new UnauthorizedException('Sesión inválida.');
     return user;
+  }
+
+  private async userForRefreshToken(refreshToken: string) {
+    const payload = await this.jwt.verifyAsync<JwtPayload>(refreshToken).catch(() => null);
+    if (payload?.type !== 'refresh') return null;
+    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    const isCurrent =
+      user?.active &&
+      user.refreshTokenHash &&
+      (await argon2.verify(user.refreshTokenHash, refreshToken));
+    return isCurrent ? user : null;
   }
 
   private async issueTokens(id: string, email: string, name: string, role: UserRole) {
