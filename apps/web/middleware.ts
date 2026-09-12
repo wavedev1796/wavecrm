@@ -1,32 +1,62 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { API_URL } from '@/lib/api';
-import { clearSession, readSession, writeSession } from '@/lib/session';
+import { NextResponse, type NextRequest } from "next/server";
+import { API_URL } from "@/lib/api";
+import { clearSession, readSession, writeSession } from "@/lib/session";
 
-const PUBLIC_PATHS = ['/login', '/recuperar-contrasena'];
+const PUBLIC_PATHS = ["/login", "/recuperar-contrasena", "/activar-cuenta"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const session = await readSession(request.cookies);
 
   if (!session) {
-    return PUBLIC_PATHS.includes(pathname) ? NextResponse.next() : redirectTo('/login', request);
+    return PUBLIC_PATHS.includes(pathname)
+      ? NextResponse.next()
+      : redirectTo("/login", request);
   }
-  if (pathname === '/login') return redirectTo('/pipeline', request);
-
-  if (session.accessToken) return NextResponse.next();
-
-  const tokens = await refreshTokens(session.refreshToken);
-  if (!tokens) {
-    const response = redirectTo('/login', request);
+  if (session.accessToken) {
+    if (await accessTokenIsActive(session.accessToken)) {
+      return pathname === "/login"
+        ? redirectTo("/pipeline", request)
+        : NextResponse.next();
+    }
+    const response = redirectTo("/login", request);
     await clearSession(response.cookies);
     return response;
   }
-  const response = NextResponse.next();
+
+  const tokens = await refreshTokens(session.refreshToken);
+  if (!tokens) {
+    const response = redirectTo("/login", request);
+    await clearSession(response.cookies);
+    return response;
+  }
+  // Propaga los tokens también a esta misma petición para que los Server Components
+  // puedan llamar al API durante la navegación que acaba de renovar la sesión.
+  request.cookies.set("wave_access", tokens.accessToken);
+  request.cookies.set("wave_refresh", tokens.refreshToken);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("cookie", request.cookies.toString());
+  const response =
+    pathname === "/login"
+      ? redirectTo("/pipeline", request)
+      : NextResponse.next({ request: { headers: requestHeaders } });
   await writeSession(response.cookies, tokens.accessToken, tokens.refreshToken);
   return response;
 }
 
 type Tokens = { accessToken: string; refreshToken: string };
+
+async function accessTokenIsActive(accessToken: string) {
+  try {
+    const response = await fetch(`${API_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
 
 // El refresh rota el token: si dos peticiones con el access vencido renovaran por separado
 // (pasar el ratón sobre un enlace y hacer clic), la segunda usaría un token ya rotado y
@@ -52,10 +82,10 @@ function refreshTokens(refreshToken: string) {
 async function requestRefresh(refreshToken: string): Promise<Tokens | null> {
   try {
     const response = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
-      cache: 'no-store',
+      cache: "no-store",
     });
     return response.ok ? ((await response.json()) as Tokens) : null;
   } catch {
@@ -71,5 +101,5 @@ export const config = {
   // Todo menos los assets de Next y los archivos de public/ (rutas con punto). El punto va
   // como [.] porque Next elimina las barras invertidas del matcher: `\.` acabaría siendo
   // "cualquier carácter" y el middleware dejaría de ejecutarse en casi todas las rutas.
-  matcher: ['/((?!_next/static|_next/image|.*[.]).*)'],
+  matcher: ["/((?!_next/static|_next/image|.*[.]).*)"],
 };

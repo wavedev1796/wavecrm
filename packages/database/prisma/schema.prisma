@@ -47,6 +47,10 @@ model User {
   name               String
   passwordHash       String?
   refreshTokenHash   String?
+  invitationTokenHash String?    @unique
+  invitationExpiresAt DateTime?
+  invitationSentAt   DateTime?
+  activatedAt        DateTime?
   role               UserRole    @default(VENDEDOR)
   active             Boolean     @default(true)
   ownedCompanies     Company[]   @relation("CompanyOwner")
@@ -59,6 +63,7 @@ model User {
   updatedAt          DateTime    @updatedAt
 
   @@index([active, role])
+  @@index([invitationExpiresAt])
 }
 
 model Company {

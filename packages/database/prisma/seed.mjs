@@ -9,23 +9,25 @@ const DEV_PASSWORD_HASH =
 async function main() {
   const owner = await prisma.user.upsert({
     where: { email: 'eduardo@thewavesea.com' },
-    update: { passwordHash: DEV_PASSWORD_HASH },
+    update: { passwordHash: DEV_PASSWORD_HASH, active: true, activatedAt: new Date() },
     create: {
       email: 'eduardo@thewavesea.com',
       name: 'Eduardo García',
       role: 'ADMIN',
       passwordHash: DEV_PASSWORD_HASH,
+      activatedAt: new Date(),
     },
   });
 
   await prisma.user.upsert({
     where: { email: 'vendedor@thewavesea.com' },
-    update: { passwordHash: DEV_PASSWORD_HASH },
+    update: { passwordHash: DEV_PASSWORD_HASH, active: true, activatedAt: new Date() },
     create: {
       email: 'vendedor@thewavesea.com',
       name: 'Vendedor Demo',
       role: 'VENDEDOR',
       passwordHash: DEV_PASSWORD_HASH,
+      activatedAt: new Date(),
     },
   });
 
