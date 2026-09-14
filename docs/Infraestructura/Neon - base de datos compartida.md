@@ -1,7 +1,7 @@
 # Neon: base de datos compartida de desarrollo
 
 > **Caso aparte de los tickets.** Indicación del arquitecto de software: que los dos desarrolladores compartan la misma base de datos en Neon.
-> **Estado:** fase 0 en curso (ramas del equipo ya sincronizadas; falta integrar en `develop`). Neon todavía no está creado.
+> **Estado (2026-09-13):** fases 1, 2 y 4 aplicadas. Pendiente: PR a `develop` (fase 0) y conectar a Eduardo García (fase 3).
 
 ## Objetivo
 
@@ -32,9 +32,9 @@ Conclusión: el desfase entre ramas es silencioso con los comandos seguros y des
 ## Criterios de aceptación
 
 - [x] Las ramas de ambos desarrolladores tienen exactamente las mismas migraciones antes de conectarse a Neon.
-- [ ] Existe una rama de Neon exclusiva para desarrollo, separada de la que usará producción.
-- [ ] Los dos ejecutan la app en local contra la base compartida con sus propios `.env`, sin credenciales en el repositorio.
-- [ ] `pnpm db:migrate` (migrate dev) no puede apuntar a Neon.
+- [x] Existe una rama de Neon exclusiva para desarrollo, separada de la que usará producción.
+- [ ] Los dos ejecutan la app en local contra la base compartida con sus propios `.env`, sin credenciales en el repositorio. *(Zaith conectado; falta Eduardo.)*
+- [x] `pnpm db:migrate` (migrate dev) no puede apuntar a Neon.
 - [ ] El protocolo de migraciones está documentado y ambos lo conocen.
 
 ## Plan
@@ -102,7 +102,8 @@ Conclusión: el desfase entre ramas es silencioso con los comandos seguros y des
 - **`db:migrate` apunta a Docker por configuración, no por disciplina**, porque el fallo cuesta los datos de los dos y está a una tecla de distancia.
 - **Sin cambios de código en la app.** El schema ya separa `url` y `directUrl`, el API lee el `.env` raíz y la web no toca la base.
 - **Zaith Manangón, dueño del proyecto Neon.** Decisión del equipo (2026-09-10).
-- **Render y Neon en Virginia.** Decisión del equipo (2026-09-10). Es la región más cercana a Ecuador entre las que ofrecen los dos proveedores (Oregon, Ohio, Virginia, Frankfurt y Singapur), y ponerlos juntos evita latencia entre el API y la base. Ninguno de los dos permite cambiarla después, por eso queda fijada en `render.yaml` antes del primer despliegue.
+- **Neon en Ohio (`aws-us-east-2`), Render en Virginia.** Decisión de Zaith Manangón (2026-09-13). El proyecto se creó en Ohio por error, en contra de la decisión del 2026-09-10 que sigue abajo. Como Neon no permite cambiar la región, se evaluó recrearlo y se decidió mantenerlo: el coste es latencia adicional entre regiones en cada consulta del API desplegado. Si en producción se nota, la salida es crear un proyecto nuevo en Virginia y migrar los datos.
+- **Render y Neon en Virginia** *(sustituida para Neon el 2026-09-13)*. Decisión del equipo (2026-09-10). Es la región más cercana a Ecuador entre las que ofrecen los dos proveedores (Oregon, Ohio, Virginia, Frankfurt y Singapur), y ponerlos juntos evita latencia entre el API y la base. Ninguno de los dos permite cambiarla después, por eso queda fijada en `render.yaml` antes del primer despliegue.
 - **Ramas sincronizadas y `develop` solo por PR.** Regla del equipo desde 2026-09-10 (`ai-rules/GIT_WORKFLOW.md`): `ZaithManangon-Dev` y `EduardoGarcia-Dev` contienen siempre el mismo código, así que la divergencia de migraciones que motivó la fase 0 no debería repetirse.
 
 ## Decisiones abiertas (a confirmar con el arquitecto)
@@ -116,7 +117,7 @@ Conclusión: el desfase entre ramas es silencioso con los comandos seguros y des
 - **Datos compartidos.** Lo que uno crea o borra lo ve el otro. Las pruebas que modifican datos o sesiones en masa (por ejemplo, la batería de `curl` de CRM-10, que inicia y cierra sesiones) se ejecutan contra Docker.
 - **Restauración de 6 horas.** Si alguien borra datos por error, hay que restaurar desde la consola de Neon dentro de ese plazo y avisar de inmediato.
 - **Arranque en frío.** La primera petición tras 5 minutos sin uso tarda unos segundos; no es un fallo.
-- **Pooler y Prisma 6.** La guía de Neon (escrita para Prisma 7) no menciona `pgbouncer=true`. Si al usar el pooler aparece un error de *prepared statement*, se añade `pgbouncer=true` a `DATABASE_URL`. Verificar en la fase 2.
+- **Pooler y Prisma 6.** La guía de Neon (escrita para Prisma 7) no menciona `pgbouncer=true`. Verificado en la fase 2: 40 consultas repetidas por el pooler sin `pgbouncer=true` y sin errores. Si aun así aparece un error de *prepared statement*, se añade `pgbouncer=true` a `DATABASE_URL`.
 - **Límites gratuitos.** 0,5 GB y 100 CU-horas al mes sobran para datos de desarrollo; si se acercan, el siguiente plan es *Launch*, de pago por uso.
 
 ## Validación (al implementar)
@@ -139,5 +140,18 @@ Conclusión: el desfase entre ramas es silencioso con los comandos seguros y des
 **Fase 1**
 
 - Hecho: `render.yaml` con `region: virginia` en los dos servicios.
+- Hecho (2026-09-13): proyecto `restless-rain-91397961` en la organización `org-jolly-haze-25198560`, dueño Zaith Manangón, región **Ohio** (ver *Decisiones*). Rama por defecto `production` (Render) y rama `development` (`br-frosty-wave-a57jg4ey`) creada a partir de ella.
+- Hecho: configuración de Neon CLI versionada en la raíz del repo: `neon.ts` (política vacía, sin servicios extra; Neon Auth desactivado porque el login es propio) y `.neon` (IDs de organización y proyecto, rama `development`; sin secretos). `@neon/config` como devDependency raíz. Comprobación: `neon config plan` → *"branch development already matches the policy"*.
+- Pendiente: invitar a Eduardo García a la organización de Neon.
 
-<!-- Completar el resto al ejecutar las fases 1 a 4: archivos modificados, cadenas configuradas (sin secretos) y comprobaciones hechas. -->
+**Fase 2 (2026-09-13)**
+
+- Hecho: `.env` raíz de Zaith con las cadenas de `development` (`DATABASE_URL` por el pooler y `DIRECT_URL` directa, ambas con `connect_timeout=15`), las 3 migraciones aplicadas con `pnpm db:migrate:deploy` y `pnpm db:seed`.
+- Incidencia corregida: la inicialización se hizo primero, por error, contra la rama `production` (migraciones y seed, incluido el ADMIN con contraseña pública). Al crear `development` desde ella se heredaron esos datos, y después se vaciaron las tablas de `production` con `TRUNCATE ... CASCADE`, conservando `_prisma_migrations`.
+- Comprobación en `development`: `migrate deploy` → *"No pending migrations to apply"*; 2 usuarios, 1 pipeline con 4 etapas, 1 empresa, 1 contacto y 1 negocio. En `production`: 0 filas de datos y 3 migraciones registradas.
+- Pendiente: levantar el API contra Neon e iniciar sesión.
+
+**Fase 4 (2026-09-13)**
+
+- Hecho: `.env.docker` versionado y `db:migrate` en `package.json` cambiado a `dotenv -e .env.docker`. Actualizados `.env.example`, `README.md`, `ai-rules/ARCHITECTURE.md` y `product/SYSTEM_MAP.md`.
+- Comprobación: con `.env.docker`, Prisma muestra `Datasource "db" … at "localhost:5432"` (con Docker apagado responde `P1001`, nunca un host de Neon).

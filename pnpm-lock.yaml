@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@neon/config':
+        specifier: ^1.4.2
+        version: 1.4.2
       dotenv-cli:
         specifier: ^8.0.0
         version: 8.0.0
@@ -761,6 +764,14 @@ packages:
     peerDependencies:
       '@emnapi/core': ^1.7.1 || ^2.0.0-alpha.4
       '@emnapi/runtime': ^1.7.1 || ^2.0.0-alpha.4
+
+  '@neon/config@1.4.2':
+    resolution: {integrity: sha512-KZQwp3SNxYsB3bmUOdCTG0GwVy4uJBGtvBVuyxx18BoJ3stmtGs3wfmUSUO0C513a5GZzpUddpVnD/SGRrB8fQ==}
+    engines: {node: '>=20.19.0'}
+
+  '@neon/sdk@4.2.0':
+    resolution: {integrity: sha512-C2/HXK8mNdxM1m5VlzRBa0FxrfRyplhpfI8FPedJ03ct+01J55PGNBJ6ph0uSRP0nmOkPjAIeQ9DjmqYjEfegA==}
+    engines: {node: '>=20.19.0'}
 
   '@nestjs/cli@11.0.24':
     resolution: {integrity: sha512-aIHxQLSYtXShifA3zwWIeznEsZnNa3Iz2QRykFj+sl9IcbERBHr5nH87FRgywM+He3NxoF5WazHfR8FsmVeWxw==}
@@ -3344,6 +3355,9 @@ packages:
     resolution: {integrity: sha512-U/PBtDf35ff0D8X8D0jfdzHYEPFxAI7jJlxZXwCSez5M3190m+QobIfh+sWDWSHMCWWJN2AWamkegn6vr6YBTw==}
     engines: {node: '>=18'}
 
+  zod@4.6.4:
+    resolution: {integrity: sha512-AXSD6hvGdvRjajG/l1cC+d6IrhH+sjmPKtYeQdJIK8MFJl3LyClzS+o/YsVC+zQZPupAaeH5skwwm8YqYH7BqA==}
+
 snapshots:
 
   '@angular-devkit/core@19.2.24(chokidar@4.0.3)':
@@ -3854,6 +3868,14 @@ snapshots:
       '@emnapi/runtime': 1.10.0
       '@tybys/wasm-util': 0.10.3
     optional: true
+
+  '@neon/config@1.4.2':
+    dependencies:
+      '@neon/sdk': 4.2.0
+      jiti: 2.7.0
+      zod: 4.6.4
+
+  '@neon/sdk@4.2.0': {}
 
   '@nestjs/cli@11.0.24(@types/node@22.20.1)(esbuild@0.28.2)(postcss@8.4.31)(prettier@3.9.6)':
     dependencies:
@@ -6799,3 +6821,5 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yoctocolors-cjs@2.1.3: {}
+
+  zod@4.6.4: {}
