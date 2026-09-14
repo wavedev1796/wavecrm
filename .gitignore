@@ -9,6 +9,6 @@ coverage/
 !.env.example
 *.log
 .DS_Store
-
+CLAUDE.md
 
 docker-compose.override.yml
