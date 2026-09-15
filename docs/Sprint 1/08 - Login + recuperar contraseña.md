@@ -45,3 +45,35 @@ Crear las pantallas de acceso al sistema con validación y flujo de recuperació
   - `/recuperar-contrasena`: envío del formulario → pantalla de confirmación con el correo escrito y el aviso de envío pendiente.
   - Diseño verificado en escritorio (1280 px, pantalla partida como el styleguide) y en móvil (375 px, panel de marca compacto arriba).
 - Pendiente para CRM-10: protección de rutas (hoy `/pipeline` y el resto del dashboard siguen siendo accesibles sin sesión), logout y renovación del access token al expirar.
+
+## Rediseño de las pantallas de acceso (2026-09-14)
+
+### Implementación
+
+- `apps/web/app/(auth)/layout.tsx` — panel de marca con gradiente, titular, subtítulo, tres beneficios con iconos y tarjeta "Vista de ejemplo" (decorativa, `aria-hidden`); pie de marca fuera del panel para mostrarse en todas las anchuras.
+- `apps/web/components/ui/alert.tsx` — mensajes de error, éxito y nota con icono y `role` adecuado.
+- `apps/web/components/ui/password-input.tsx` — campo de contraseña con botón mostrar/ocultar.
+- `apps/web/components/ui/button.tsx` — prop `loading` (spinner, deshabilitado y `aria-busy`).
+- `apps/web/lib/password-rules.ts` — reglas de contraseña del API reutilizadas en la activación, con test en `password-rules.test.mjs`.
+- `apps/web/app/(auth)/login`, `activar-cuenta` y `recuperar-contrasena` — formularios migrados a las primitivas.
+- `apps/web/app/globals.css` y `docs/design/TOKENS.md` — estilos de acceso, tokens `--wave-muted-strong` y `--wave-success-strong`, y excepción de movimiento.
+
+### Decisiones
+
+- **Sin Tailwind ni Framer Motion.** El proyecto usa CSS propio con tokens; añadir un segundo sistema de estilos y una librería de animación contradecía "mantener arquitectura" y "sin librerías pesadas". Las animaciones son CSS (200–280 ms) y respetan `prefers-reduced-motion`.
+- **Tarjeta "Vista de ejemplo".** Demuestra el producto (etapa, monto en USD, RUC validado, cotización) sin presentar métricas ficticias como reales, como exige PRODUCT.md.
+- **Tokens de texto AA.** `--wave-muted` y `--wave-faint` no alcanzan 4,5:1 en texto pequeño; las pantallas de acceso usan `--wave-muted-strong` y `--wave-success-strong`.
+- **Toggle de contraseña con etiqueta fija y `aria-pressed`**, para no anunciar el estado dos veces.
+- **Confirmación validada al enviar y al salir del campo**, sin `setCustomValidity`, para que el mensaje en línea sea el único y siga correcto si cambia la primera contraseña.
+- **Titular del panel como párrafo, no `h2`**, para que el primer encabezado de cada pantalla sea el `h1` del formulario.
+- **Titular con escala fluida** (`clamp(2rem, 1.1rem + 1.6vw, 2.6rem)`) y tarjeta alineada con la columna del texto: enmienda aprobada tras la revisión de diseño.
+- **`/activar-cuenta` pertenece a CRM-7 (Eduardo García).** Se rediseñó su pantalla sin modificar su ticket.
+
+### Validación
+
+- `node --test apps/web/lib/password-rules.test.mjs`: 6 pruebas en verde.
+- `tsc --noEmit` y `eslint` de `apps/web` sin errores; detector de Impeccable sin hallazgos.
+- Capturas de `/login`, `/login?activated=1`, `/recuperar-contrasena` y `/activar-cuenta` sin token a 1440, 780 y 390 px (móvil con emulación de dispositivo por DevTools): sin scroll horizontal; card de 358 px en móvil.
+- Contraste medido ≥ 4,5:1 en textos del panel y de la card (el más justo, el subtítulo del panel: 4,84:1).
+- Revisión de diseño independiente: 8 arreglos (ejes en tablet, pie de marca en móvil, tracking de títulos, placeholder de contraseña, orden de encabezados, lockup del logo, contraste de "CRM" y escala del titular), verificados sobre capturas nuevas.
+- Pendiente de prueba manual: login con credenciales (errores y estado de carga) y activación con un token válido.
