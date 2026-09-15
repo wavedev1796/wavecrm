@@ -232,6 +232,7 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
 .auth-back { display: inline-flex; align-items: center; gap: 6px; margin-top: 20px; color: var(--wave-muted-strong); font-size: .8rem; font-weight: 650; text-decoration: none; transition: color .2s ease; }
 .auth-back svg { width: 15px; height: 15px; }
 .auth-back:hover { color: var(--wave-blue); }
+.auth-lead + .auth-back { margin-top: 0; }
 .password-rules { display: grid; gap: 6px; margin: -6px 0 18px; padding: 0; list-style: none; }
 .password-rules li { display: flex; align-items: center; gap: 8px; color: var(--wave-muted-strong); font-size: .8rem; font-weight: 600; transition: color .2s ease; }
 .password-rules svg { width: 16px; height: 16px; flex: 0 0 auto; }
