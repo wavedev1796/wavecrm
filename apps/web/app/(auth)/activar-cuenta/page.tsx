@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { API_URL } from "@/lib/api";
 import { ActivationForm } from "./activation-form";
@@ -12,11 +13,12 @@ export default async function ActivateAccountPage({ searchParams }: Props) {
     return (
       <div className="auth-box">
         <h1>Invitación no disponible</h1>
-        <p>
+        <p className="auth-lead">
           El enlace no existe, venció o ya fue utilizado. Pide a un
           administrador que envíe una nueva invitación.
         </p>
         <Link className="auth-back" href="/login">
+          <ArrowLeft aria-hidden />
           Volver al inicio de sesión
         </Link>
       </div>
@@ -26,9 +28,9 @@ export default async function ActivateAccountPage({ searchParams }: Props) {
   return (
     <div className="auth-box">
       <h1>Activa tu cuenta</h1>
-      <p>
+      <p className="auth-lead">
         Hola <b>{invitation.name}</b>. Crea una contraseña para la cuenta{" "}
-        {invitation.email}.
+        <b>{invitation.email}</b>.
       </p>
       <ActivationForm token={token} />
     </div>
