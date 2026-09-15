@@ -19,11 +19,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <span className="brand-tag">CRM</span>
         </div>
         <div className="auth-pitch">
-          <h2>
+          {/* Párrafo y no h2: el primer encabezado de la página es el h1 del formulario. */}
+          <p className="auth-title">
             El CRM hecho
             <br />
             para Ecuador.
-          </h2>
+          </p>
           <p>Sabe cómo atender tu negocio y mantener a tu equipo siempre al día.</p>
           <ul className="auth-benefits">
             {BENEFITS.map(({ icon: Icon, text }) => (
@@ -37,9 +38,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </ul>
         </div>
         <DealPreview />
-        <small>© 2026 Wave · thewavesea.com</small>
       </aside>
       <main className="auth-main">{children}</main>
+      <small className="auth-footer">© 2026 Wave · thewavesea.com</small>
     </div>
   );
 }

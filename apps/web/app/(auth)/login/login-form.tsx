@@ -46,7 +46,6 @@ export function LoginForm() {
           id="password"
           name="password"
           autoComplete="current-password"
-          placeholder="••••••••"
           required
         />
       </div>
