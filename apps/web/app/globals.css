@@ -6,6 +6,7 @@
   --wave-ink: #1f1f1f;
   --wave-text: #22221f;
   --wave-muted: #8f8e85;
+  --wave-muted-strong: #6b6a63;
   --wave-faint: #a6a49b;
   --wave-page: #faf9f5;
   --wave-cream: #f5f6ec;
@@ -15,6 +16,7 @@
   --wave-line-strong: #deddd4;
   --wave-success: #2f8f5b;
   --wave-success-soft: #e9f5ee;
+  --wave-success-strong: #25744a;
   --wave-warning: #a9791b;
   --wave-warning-soft: #fbf1dd;
   --wave-danger: #b44545;
@@ -102,6 +104,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .input:hover { border-color: #c8c7bf; }
 .input:focus { border-color: var(--wave-blue); outline: 0; box-shadow: 0 0 0 3px var(--wave-blue-soft); }
 .input:disabled { background: #f1f0eb; cursor: not-allowed; }
+@keyframes rise-in { from { opacity: 0; transform: translateY(10px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.button-spinner { width: 15px; height: 15px; flex: 0 0 auto; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+.button--primary[aria-busy="true"] { color: white; background: var(--wave-blue); border-color: transparent; opacity: .88; cursor: progress; }
+.alert { display: flex; align-items: flex-start; gap: 9px; margin: 0 0 16px; padding: 11px 13px; border: 1px solid transparent; border-radius: 10px; font-size: .8rem; font-weight: 600; line-height: 1.45; animation: rise-in .2s cubic-bezier(.16, 1, .3, 1) both; }
+.alert svg { width: 17px; height: 17px; flex: 0 0 auto; margin-top: 1px; }
+.alert--error { color: var(--wave-danger); border-color: #f1d4d4; background: var(--wave-danger-soft); }
+.alert--success { color: var(--wave-success-strong); border-color: #cfe8d9; background: var(--wave-success-soft); }
+.alert--note { color: var(--wave-muted-strong); border-color: var(--wave-line-strong); background: var(--wave-cream); }
+.alert--note b { color: #8a6212; }
+.password-field { position: relative; }
+.password-field .input { padding-right: 48px; }
+.password-field .input::-ms-reveal { display: none; }
+.password-toggle { position: absolute; top: 50%; right: 4px; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 8px; color: var(--wave-muted-strong); background: transparent; cursor: pointer; transform: translateY(-50%); transition: color .2s ease, background .2s ease; }
+.password-toggle:hover { color: var(--wave-blue-dark); background: var(--wave-blue-soft); }
+.password-toggle[aria-pressed="true"] { color: var(--wave-blue); }
+.password-toggle svg { width: 18px; height: 18px; }
 select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line-strong); border-radius: 10px; color: var(--wave-text); background: white; font-size: .82rem; cursor: pointer; }
 .card { border: 1px solid var(--wave-line); border-radius: 14px; background: white; box-shadow: var(--shadow-sm); }
 .badge { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 10px; border-radius: 999px; font-size: .7rem; font-weight: 700; }

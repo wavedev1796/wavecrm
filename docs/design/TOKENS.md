@@ -13,8 +13,10 @@ La fuente de verdad ejecutable vive en `apps/web/app/globals.css`. La guía visu
 | `--wave-page` | `#FAF9F5` | Fondo de aplicación |
 | `--wave-cream` | `#F5F6EC` | Superficie secundaria |
 | `--wave-white` | `#FFFFFF` | Superficie dominante |
-| `--wave-muted` | `#8F8E85` | Texto secundario |
-| `--wave-success` | `#2F8F5B` | Estado positivo |
+| `--wave-muted` | `#8F8E85` | Texto secundario decorativo (no apto para texto pequeño: 3,4:1 sobre blanco) |
+| `--wave-muted-strong` | `#6B6A63` | Texto secundario y placeholders que deben pasar AA (5,4:1 sobre blanco) |
+| `--wave-success` | `#2F8F5B` | Estado positivo en iconos y fondos |
+| `--wave-success-strong` | `#25744A` | Texto de estado positivo (5,7:1 sobre blanco) |
 | `--wave-warning` | `#A9791B` | Estado de atención |
 | `--wave-danger` | `#B44545` | Error o acción destructiva |
 | `--wave-danger-soft` | `#FBEEEE` | Fondo de mensajes de error |
