@@ -1,10 +1,11 @@
 'use client';
 
-import { CircleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useActionState } from 'react';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { login, type LoginState } from '../actions';
 
 const initialState: LoginState = { error: null, email: '' };
@@ -13,7 +14,18 @@ export function LoginForm() {
   const [state, formAction, pending] = useActionState(login, initialState);
 
   return (
-    <form className="auth-form" action={formAction}>
+    <form
+      className="auth-form"
+      action={formAction}
+      aria-busy={pending || undefined}
+      aria-describedby={state.error ? 'login-error' : undefined}
+    >
+      {state.error ? (
+        <Alert id="login-error" tone="error">
+          {state.error}
+        </Alert>
+      ) : null}
+
       <div className="field">
         <label htmlFor="email">Correo</label>
         <Input
@@ -30,10 +42,9 @@ export function LoginForm() {
 
       <div className="field">
         <label htmlFor="password">Contraseña</label>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="current-password"
           placeholder="••••••••"
           required
@@ -44,14 +55,7 @@ export function LoginForm() {
         ¿Olvidaste tu contraseña?
       </Link>
 
-      {state.error ? (
-        <p className="auth-error" role="alert">
-          <CircleAlert aria-hidden />
-          {state.error}
-        </p>
-      ) : null}
-
-      <Button className="auth-submit" type="submit" disabled={pending}>
+      <Button className="auth-submit" type="submit" loading={pending}>
         {pending ? 'Entrando…' : 'Entrar'}
       </Button>
     </form>
