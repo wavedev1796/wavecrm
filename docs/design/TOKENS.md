@@ -42,6 +42,8 @@ El logotipo vive en `apps/web/public/logo-wave.svg` (wordmark horizontal, propor
 - Borde: `#EDECE5`; foco: anillo azul de `3px`.
 - Sombras bajas para separar superficies, nunca como decoración dominante.
 - Transiciones funcionales de `160ms`; se desactivan con `prefers-reduced-motion`.
+- Excepción, pantallas de acceso (`/login`, `/activar-cuenta`, `/recuperar-contrasena`): entrada escalonada de 200–280 ms con `cubic-bezier(.16, 1, .3, 1)`, hover y focus a 200 ms y flotación de 6 s en la tarjeta "Vista de ejemplo". Todo se desactiva con `prefers-reduced-motion`.
+- Panel de marca de acceso: gradiente de 155° `#2F6F8F → #22536B → #172A33`; texto secundario en blanco al 90 %.
 
 ## Estados
 
