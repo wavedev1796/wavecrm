@@ -45,6 +45,47 @@ function service(overrides = {}) {
   return { users: new UsersService(prisma, mailer), prisma, sent };
 }
 
+test("lista usuarios aplicando búsqueda, estado y paginación", async () => {
+  let findManyArgs;
+  let countArgs;
+  const listedUser = { ...baseUser, active: true, passwordHash: "hash" };
+  const { users } = service({
+    user: {
+      findMany: async (args) => {
+        findManyArgs = args;
+        return [listedUser];
+      },
+      count: async (args) => {
+        countArgs = args;
+        return 1;
+      },
+    },
+    prisma: {
+      $transaction: async (operations) => Promise.all(operations),
+    },
+  });
+
+  const result = await users.list({
+    page: 2,
+    limit: 10,
+    search: "ana",
+    status: "active",
+  });
+
+  assert.equal(findManyArgs.skip, 10);
+  assert.equal(findManyArgs.take, 10);
+  assert.equal(findManyArgs.where.active, true);
+  assert.equal(findManyArgs.where.OR[0].name.contains, "ana");
+  assert.deepEqual(countArgs.where, findManyArgs.where);
+  assert.equal(result.data[0].status, "active");
+  assert.deepEqual(result.meta, {
+    page: 2,
+    limit: 10,
+    total: 1,
+    totalPages: 1,
+  });
+});
+
 test("crea una cuenta pendiente y envía un token cuyo hash se persiste", async () => {
   let createData;
   const { users, sent } = service({
@@ -133,4 +174,63 @@ test("impide desactivar al último administrador activo", async () => {
     users.deactivate("admin-2", "admin-1"),
     ForbiddenException,
   );
+});
+
+test("edita nombre, correo y asigna un rol", async () => {
+  let updateData;
+  const { users } = service({
+    user: {
+      update: async ({ data }) => {
+        updateData = data;
+        return { ...baseUser, ...data };
+      },
+    },
+  });
+  const result = await users.update(
+    "user-2",
+    { name: "Ana Admin", email: "admin@empresa.ec", role: "ADMIN" },
+    "admin-1",
+  );
+  assert.deepEqual(updateData, {
+    name: "Ana Admin",
+    email: "admin@empresa.ec",
+    role: "ADMIN",
+  });
+  assert.equal(result.role, "ADMIN");
+});
+
+test("desactiva un usuario y revoca su refresh token", async () => {
+  let updateData;
+  const { users } = service({
+    user: {
+      findUnique: async () => ({
+        ...baseUser,
+        active: true,
+        passwordHash: "hash",
+      }),
+      update: async ({ data }) => {
+        updateData = data;
+        return { ...baseUser, passwordHash: "hash", ...data };
+      },
+    },
+  });
+  const result = await users.deactivate("user-2", "admin-1");
+  assert.deepEqual(updateData, { active: false, refreshTokenHash: null });
+  assert.equal(result.status, "inactive");
+});
+
+test("reactiva una cuenta previamente activada", async () => {
+  const { users } = service({
+    user: {
+      findUnique: async () => ({ ...baseUser, passwordHash: "hash" }),
+      update: async ({ data }) => ({
+        ...baseUser,
+        passwordHash: "hash",
+        ...data,
+      }),
+    },
+  });
+  const result = await users.reactivate("user-2", "admin-1");
+  assert.equal(result.active, true);
+  assert.equal(result.status, "active");
 });

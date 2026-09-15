@@ -15,10 +15,12 @@ Instala primero [Node.js 22 LTS](https://nodejs.org/) y [Docker Desktop](https:/
 ```powershell
 corepack enable
 corepack prepare pnpm@11.19.0 --activate
-Copy-Item .env.example .env   # poner las cadenas de la rama development de Neon
+Copy-Item .env.example .env   # por defecto usa PostgreSQL y SMTP locales
 pnpm install
 pnpm db:generate
-pnpm db:migrate:deploy          # solo si hay migraciones pendientes en Neon
+docker compose up -d
+pnpm db:migrate
+pnpm db:seed
 pnpm dev
 ```
 
@@ -32,6 +34,7 @@ Si PowerShell indica que `corepack` no existe, reinstala Node.js 22 LTS marcando
 - API: http://localhost:4000/api/v1
 - Swagger: http://localhost:4000/docs
 - Healthcheck: http://localhost:4000/api/v1/health
+- Correos locales (Mailpit): http://localhost:8025
 
 ## Estructura
 
@@ -48,7 +51,7 @@ La documentación funcional se organiza por sprint. Consulta [Sprint 0](docs/Spr
 
 ## Base de datos
 
-En desarrollo el equipo comparte la rama `development` de Neon (`.env`); Docker Compose se usa solo para crear migraciones (`pnpm db:migrate` lee `.env.docker`). En Render se configuran `DATABASE_URL` (pooled) y `DIRECT_URL` (directa) de la rama `production` como secretos. Nunca se versiona `.env`. Detalle y protocolo: `docs/Infraestructura/Neon - base de datos compartida.md`.
+El proyecto puede ejecutarse completamente en Docker local o usar la rama compartida `development` de Neon mediante `.env`. Incluso al usar Neon, Docker se conserva para crear migraciones (`pnpm db:migrate` siempre lee `.env.docker`). En Render se configuran `DATABASE_URL` (pooled) y `DIRECT_URL` (directa) de la rama `production` como secretos. Nunca se versiona `.env`. Detalle y protocolo: `docs/Infraestructura/Neon - base de datos compartida.md`.
 
 Para comprobar el contenedor local:
 

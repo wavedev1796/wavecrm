@@ -30,13 +30,16 @@ Todos los endpoints `/users` requieren Bearer token y rol `ADMIN`, salvo los dos
 
 ## Correo
 
-La integración usa la API HTTP de Resend sin agregar dependencias. Variables:
+La integración usa SMTP mediante Nodemailer y no depende de un proveedor concreto. Variables:
 
 - `APP_URL`: origen público de la web que se incluye en el enlace.
-- `RESEND_API_KEY`: clave de Resend.
+- `SMTP_HOST`: servidor SMTP.
+- `SMTP_PORT`: puerto; normalmente 587 con STARTTLS o 465 con TLS directo.
+- `SMTP_SECURE`: `true` para TLS directo (normalmente 465), `false` para SMTP/STARTTLS.
+- `SMTP_USER` y `SMTP_PASS`: credenciales; pueden quedar vacías en Mailpit local.
 - `EMAIL_FROM`: remitente verificado.
 
-En desarrollo, si no hay clave, el API imprime el enlace de activación en su consola. En producción la ausencia de configuración falla explícitamente y no deja una cuenta huérfana. El enlace no se devuelve en la respuesta HTTP.
+Docker levanta Mailpit en `localhost:1025` y su bandeja web en `http://localhost:8025`. En desarrollo, si no hay `SMTP_HOST`, el API imprime el enlace en su consola. En producción la ausencia de configuración falla explícitamente y no deja una cuenta huérfana. El enlace no se devuelve en la respuesta HTTP.
 
 ## Puesta en marcha y validación
 
@@ -52,7 +55,7 @@ pnpm build
 Prueba manual recomendada:
 
 1. Iniciar sesión como administrador y abrir `/usuarios`.
-2. Invitar un correo nuevo y comprobar el mensaje recibido (o copiar el enlace de la consola en desarrollo).
+2. Invitar un correo nuevo y comprobar el mensaje en `http://localhost:8025`.
 3. Abrir el enlace en una ventana privada, crear una contraseña y verificar la redirección al login.
 4. Iniciar sesión con la cuenta nueva.
 5. Como administrador, editarla, desactivarla y comprobar que una petición con su token anterior recibe `401`.
