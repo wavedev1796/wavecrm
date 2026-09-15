@@ -203,16 +203,16 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
 .invite-panel > p { margin: 10px 0 0; color: var(--wave-muted); font-size: .7rem; }
 .user-form { display: grid; grid-template-columns: 1.2fr 1.4fr .8fr auto; align-items: end; gap: 12px; margin-top: 16px; }
 .user-form label, .edit-form label { display: flex; flex-direction: column; gap: 5px; color: #54534d; font-size: .7rem; font-weight: 650; }
-.row-actions { position: relative; display: flex; align-items: center; gap: 5px; }
+.row-actions { display: flex; align-items: center; gap: 5px; }
 .row-actions form { display: inline-flex; }
-.row-actions .icon-button, .edit-popover > summary { width: 34px; height: 34px; }
+.row-actions .icon-button { width: 34px; height: 34px; }
 .row-actions .icon-button svg { width: 16px; }
-.edit-popover { position: relative; }
-.edit-popover > summary { list-style: none; }
-.edit-popover > summary::-webkit-details-marker { display: none; }
-.edit-form { position: absolute; z-index: 10; top: 40px; right: 0; width: 290px; padding: 16px; border: 1px solid var(--wave-line); border-radius: 12px; background: white; box-shadow: var(--shadow-md); }
-.edit-form label { margin-bottom: 10px; }
-.edit-form .button { width: 100%; margin-top: 4px; }
+.edit-form { width: min(380px, calc(100vw - 32px)); padding: 20px; border: 1px solid var(--wave-line); border-radius: 14px; color: var(--wave-text); background: white; box-shadow: var(--shadow-md); }
+.edit-form:popover-open { display: flex; flex-direction: column; gap: 12px; }
+.edit-form::backdrop { background: rgb(31 31 31 / 34%); backdrop-filter: blur(2px); }
+.edit-form h2 { margin: 0 0 2px; font-size: .95rem; font-weight: 800; letter-spacing: -.02em; }
+.edit-form select { width: 100%; }
+.edit-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 .empty-table { height: 140px; color: var(--wave-muted); text-align: center; }
 
 @media (max-width: 860px) {
@@ -243,7 +243,6 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
   .table-footer { align-items: flex-start; flex-direction: column; }
   .user-summary { grid-template-columns: 1fr 1fr; }
   .user-form { grid-template-columns: 1fr; }
-  .edit-form { position: fixed; inset: auto 16px 16px; width: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
