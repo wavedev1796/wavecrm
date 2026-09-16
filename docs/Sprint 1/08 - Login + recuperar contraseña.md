@@ -8,7 +8,7 @@ Crear las pantallas de acceso al sistema con validación y flujo de recuperació
 
 - [x] Formulario de login validado.
 - [x] Errores claros al usuario.
-- [ ] Flujo "olvidé mi contraseña". *(UI completa; el envío del correo depende de CRM-7 — ver Decisiones.)*
+- [ ] Flujo "olvidé mi contraseña". _(UI completa; el envío del correo depende de CRM-7 — ver Decisiones.)_
 - [x] Redirección post-login.
 
 ## Implementación
@@ -77,3 +77,11 @@ Crear las pantallas de acceso al sistema con validación y flujo de recuperació
 - Contraste medido ≥ 4,5:1 en textos del panel y de la card (el más justo, el subtítulo del panel: 4,84:1).
 - Revisión de diseño independiente: 8 arreglos (ejes en tablet, pie de marca en móvil, tracking de títulos, placeholder de contraseña, orden de encabezados, lockup del logo, contraste de "CRM" y escala del titular), verificados sobre capturas nuevas.
 - Pendiente de prueba manual: login con credenciales (errores y estado de carga) y activación con un token válido.
+
+## Ajuste visual Wave (2026-09-16)
+
+- El acceso usa una tarjeta editorial centrada: formulario a la izquierda y una ilustración de conexiones comerciales a la derecha, siguiendo la referencia aprobada sin incorporar imágenes ni librerías externas.
+- La ilustración está construida con SVG, iconos del sistema y CSS; conserva Plus Jakarta Sans, la paleta Wave y el logo existente.
+- En móvil el panel visual se convierte en una cabecera compacta y el formulario ocupa el ancho disponible.
+- Se mantiene el toggle de contraseña, alertas, estado de carga y soporte para `prefers-reduced-motion`.
+- Validación: `/login` respondió HTTP 200; lint, pruebas y build de producción finalizaron sin errores.

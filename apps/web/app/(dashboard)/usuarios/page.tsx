@@ -2,7 +2,6 @@ import {
   AlertCircle,
   CheckCircle2,
   MailPlus,
-  Pencil,
   RefreshCw,
   Search,
   Trash2,
@@ -22,8 +21,8 @@ import {
   inviteUser,
   reactivateUser,
   resendInvitation,
-  updateUser,
 } from "./actions";
+import { EditUserDialog } from "./edit-user-dialog";
 
 type User = {
   id: string;
@@ -206,59 +205,8 @@ export default async function UsersPage({ searchParams }: PageProps) {
                     : "—"}
                 </td>
                 <td>
-                  {/* ponytail: popover nativo (top layer): la tabla con overflow no lo recorta y no necesita JS.
-                      La key cambia al guardar datos distintos, así el formulario se remonta y el popover se cierra. */}
-                  <form
-                    key={`${user.name}|${user.email}|${user.role}`}
-                    id={`edit-${user.id}`}
-                    popover="auto"
-                    action={updateUser}
-                    className="edit-form"
-                  >
-                    <h2>Editar usuario</h2>
-                    <input type="hidden" name="id" value={user.id} />
-                    <label>
-                      Nombre
-                      <Input name="name" required defaultValue={user.name} />
-                    </label>
-                    <label>
-                      Correo
-                      <Input
-                        name="email"
-                        type="email"
-                        required
-                        defaultValue={user.email}
-                      />
-                    </label>
-                    <label>
-                      Rol
-                      <select name="role" defaultValue={user.role}>
-                        <option value="VENDEDOR">Vendedor</option>
-                        <option value="ADMIN">Administrador</option>
-                      </select>
-                    </label>
-                    <div className="edit-form-actions">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        popoverTarget={`edit-${user.id}`}
-                        popoverTargetAction="hide"
-                      >
-                        Cancelar
-                      </Button>
-                      <Button type="submit">Guardar cambios</Button>
-                    </div>
-                  </form>
                   <div className="row-actions">
-                    <button
-                      type="button"
-                      className="icon-button"
-                      title="Editar"
-                      popoverTarget={`edit-${user.id}`}
-                    >
-                      <Pencil />
-                      <span className="sr-only">Editar {user.name}</span>
-                    </button>
+                    <EditUserDialog user={user} />
                     {user.status === "pending" && (
                       <Action
                         action={resendInvitation}

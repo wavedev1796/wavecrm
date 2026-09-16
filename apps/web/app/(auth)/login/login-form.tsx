@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useActionState } from 'react';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { PasswordInput } from '@/components/ui/password-input';
-import { login, type LoginState } from '../actions';
+import Link from "next/link";
+import { useActionState } from "react";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { login, type LoginState } from "../actions";
 
-const initialState: LoginState = { error: null, email: '' };
+const initialState: LoginState = { error: null, email: "" };
 
 export function LoginForm() {
   const [state, formAction, pending] = useActionState(login, initialState);
@@ -18,7 +18,7 @@ export function LoginForm() {
       className="auth-form"
       action={formAction}
       aria-busy={pending || undefined}
-      aria-describedby={state.error ? 'login-error' : undefined}
+      aria-describedby={state.error ? "login-error" : undefined}
     >
       {state.error ? (
         <Alert id="login-error" tone="error">
@@ -41,7 +41,12 @@ export function LoginForm() {
       </div>
 
       <div className="field">
-        <label htmlFor="password">Contraseña</label>
+        <div className="field-heading">
+          <label htmlFor="password">Contraseña</label>
+          <Link className="auth-link" href="/recuperar-contrasena">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
         <PasswordInput
           id="password"
           name="password"
@@ -50,13 +55,12 @@ export function LoginForm() {
         />
       </div>
 
-      <Link className="auth-link" href="/recuperar-contrasena">
-        ¿Olvidaste tu contraseña?
-      </Link>
-
       <Button className="auth-submit" type="submit" loading={pending}>
-        {pending ? 'Entrando…' : 'Entrar'}
+        {pending ? "Entrando…" : "Entrar"}
       </Button>
+      <p className="auth-security">
+        Acceso seguro para miembros autorizados de tu equipo.
+      </p>
     </form>
   );
 }

@@ -1,54 +1,93 @@
-import { BadgeCheck, CircleCheck, FileText, SquareKanban } from 'lucide-react';
+import {
+  CircleCheck,
+  CircleDollarSign,
+  FileText,
+  Handshake,
+  Mail,
+  MessageCircle,
+  Sparkles,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 
-const BENEFITS = [
-  { icon: BadgeCheck, text: 'Validación de RUC y cédula' },
-  { icon: SquareKanban, text: 'Pipeline por etapas con montos en USD' },
-  { icon: FileText, text: 'Cotizaciones dentro de cada negocio' },
-];
-
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="auth-screen">
-      <aside className="auth-aside">
-        <svg className="auth-waves" viewBox="0 0 600 240" preserveAspectRatio="none" aria-hidden>
-          <path d="M0 150 C120 90 240 210 360 150 S540 90 600 130" />
-          <path d="M0 192 C140 132 260 240 400 182 S560 142 600 172" />
-        </svg>
-        <div className="auth-brand">
-          <span className="brand-logo" role="img" aria-label="Wave" />
-          <span className="brand-tag">CRM</span>
-        </div>
-        <div className="auth-pitch">
-          {/* Párrafo y no h2: el primer encabezado de la página es el h1 del formulario. */}
-          <p className="auth-title">
-            El CRM hecho
-            <br />
-            para Ecuador.
-          </p>
-          <p>Sabe cómo atender tu negocio y mantener a tu equipo siempre al día.</p>
-          <ul className="auth-benefits">
-            {BENEFITS.map(({ icon: Icon, text }) => (
-              <li key={text}>
-                <span>
-                  <Icon aria-hidden />
-                </span>
-                {text}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <DealPreview />
-      </aside>
-      <main className="auth-main">{children}</main>
+      <div className="auth-ambient auth-ambient--one" aria-hidden />
+      <div className="auth-ambient auth-ambient--two" aria-hidden />
+      <div className="auth-frame">
+        <main className="auth-main">{children}</main>
+        <aside className="auth-aside">
+          <div className="auth-brand">
+            <span className="brand-logo" role="img" aria-label="Wave" />
+            <span className="brand-tag">CRM</span>
+          </div>
+          <CrmIllustration />
+          <div className="auth-pitch">
+            <p className="auth-title">
+              Tu operación comercial, siempre conectada.
+            </p>
+            <p>
+              Clientes, negocios y equipo en un solo lugar pensado para Ecuador.
+            </p>
+          </div>
+          <DealPreview />
+        </aside>
+      </div>
       <small className="auth-footer">© 2026 Wave · thewavesea.com</small>
     </div>
   );
 }
 
-// ponytail: datos inventados con etiqueta visible; no son métricas de clientes (PRODUCT.md).
+function CrmIllustration() {
+  return (
+    <div className="auth-visual" aria-hidden>
+      <div className="auth-visual-glow" />
+      <svg className="auth-network" viewBox="0 0 500 430">
+        <path d="M250 205 118 118M250 205 382 105M250 205 414 265M250 205 112 300M250 205 245 58" />
+        <circle cx="250" cy="205" r="118" />
+        <circle cx="250" cy="205" r="164" />
+      </svg>
+      <div className="auth-visual-core">
+        <Sparkles />
+        <strong>Wave</strong>
+        <span>Todo fluye</span>
+      </div>
+      <VisualNode className="auth-node--mail" icon={Mail} />
+      <VisualNode className="auth-node--people" icon={Users} />
+      <VisualNode className="auth-node--deal" icon={Handshake} />
+      <VisualNode className="auth-node--growth" icon={TrendingUp} />
+      <VisualNode className="auth-node--chat" icon={MessageCircle} />
+      <VisualNode className="auth-node--value" icon={CircleDollarSign} />
+    </div>
+  );
+}
+
+function VisualNode({
+  className,
+  icon: Icon,
+}: {
+  className: string;
+  icon: typeof Mail;
+}) {
+  return (
+    <span className={`auth-node ${className}`}>
+      <Icon />
+    </span>
+  );
+}
+
 function DealPreview() {
   return (
-    <div className="deal-preview" aria-hidden>
+    <div
+      className="deal-preview"
+      role="img"
+      aria-label="Ejemplo de un negocio en Wave CRM"
+    >
       <div className="deal-preview-head">
         <span className="deal-preview-tag">Vista de ejemplo</span>
         <span className="deal-preview-stage">Negociación · 45 %</span>

@@ -9,6 +9,8 @@
 | Activar/desactivar | Acciones de desactivar/reactivar; revocación de refresh token                                          | Verifica ambos cambios y protege al último admin |
 | Asignar rol        | Selector `ADMIN` / `VENDEDOR` al crear y editar                                                        | Verifica persistencia del nuevo rol              |
 
+La edición se presenta en un modal nativo `<dialog>`, centrado y responsive. Puede cerrarse con el botón, con `Escape` o pulsando el fondo, y mantiene la actualización mediante la Server Action existente.
+
 ## Acceso y reglas
 
 - Solo un usuario con rol `ADMIN` puede abrir `/usuarios` o consumir el CRUD.
