@@ -1,0 +1,63 @@
+{
+  "email": [
+    {"valor":"","error":"Ingresa tu correo."},
+    {"valor":"   ","error":"Ingresa tu correo."},
+    {"valor":"ana@empresa","error":"Escribe un correo válido, por ejemplo nombre@empresa.ec."},
+    {"valor":"ana@empresa.c","error":"Escribe un correo válido, por ejemplo nombre@empresa.ec."},
+    {"valor":"ana@empresa.c0m","error":"Escribe un correo válido, por ejemplo nombre@empresa.ec."},
+    {"valor":"ana empresa@correo.ec","error":"Escribe un correo válido, por ejemplo nombre@empresa.ec."},
+    {"valor":"ana@@correo.ec","error":"Escribe un correo válido, por ejemplo nombre@empresa.ec."},
+    {"valor":"ana.@correo.ec","error":"Escribe un correo válido, por ejemplo nombre@empresa.ec."},
+    {"valor":".ana@correo.ec","error":"Escribe un correo válido, por ejemplo nombre@empresa.ec."},
+    {"valor":"ana@correo..ec","error":"Escribe un correo válido, por ejemplo nombre@empresa.ec."},
+    {"valor":"<script>@correo.ec","error":"Escribe un correo válido, por ejemplo nombre@empresa.ec."},
+    {"valor":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@empresa.ec","error":"El correo no puede superar 64 caracteres."},
+    {"valor":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@empresa.ec","error":null},
+    {"valor":" Ana.Lopez+ventas@Empresa.EC ","error":null},
+    {"valor":"o'brien@correo.com.ec","error":null},
+    {"valor":"ana@sub-dominio.empresa.ec","error":null}
+  ],
+  "nombre": [
+    {"valor":"","error":"Ingresa el nombre."},
+    {"valor":"   ","error":"Ingresa el nombre."},
+    {"valor":"A","error":"El nombre debe tener entre 2 y 100 caracteres."},
+    {"valor":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","error":"El nombre debe tener entre 2 y 100 caracteres."},
+    {"valor":"Ana2","error":"El nombre solo puede tener letras, espacios, apóstrofos, guiones y puntos."},
+    {"valor":"<script>alert(1)</script>","error":"El nombre solo puede tener letras, espacios, apóstrofos, guiones y puntos."},
+    {"valor":"Ana 😀","error":"El nombre solo puede tener letras, espacios, apóstrofos, guiones y puntos."},
+    {"valor":"-Ana","error":"El nombre solo puede tener letras, espacios, apóstrofos, guiones y puntos."},
+    {"valor":"Ana_López","error":"El nombre solo puede tener letras, espacios, apóstrofos, guiones y puntos."},
+    {"valor":"  María   José  ","error":null},
+    {"valor":"O'Brien","error":null},
+    {"valor":"Ana-María López","error":null},
+    {"valor":"Juan Pérez Jr.","error":null},
+    {"valor":"D’Alessandro Núñez","error":null},
+    {"valor":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","error":null}
+  ],
+  "contrasenaLogin": [
+    {"valor":"","error":"Ingresa tu contraseña."},
+    {"valor":"x","error":null},
+    {"valor":"aaaaaaaaaaaaaaaa","error":null},
+    {"valor":"aaaaaaaaaaaaaaaaa","error":"La contraseña no puede superar 16 caracteres."}
+  ],
+  "contrasenaNueva": [
+    {"valor":"","error":"La contraseña debe tener entre 8 y 16 caracteres."},
+    {"valor":"Ab1!","error":"La contraseña debe tener entre 8 y 16 caracteres."},
+    {"valor":"Abcdefgh1!Abcdefg","error":"La contraseña debe tener entre 8 y 16 caracteres."},
+    {"valor":"abcdefg1!","error":"La contraseña debe incluir una mayúscula, una minúscula, un número y un carácter especial."},
+    {"valor":"ABCDEFG1!","error":"La contraseña debe incluir una mayúscula, una minúscula, un número y un carácter especial."},
+    {"valor":"Abcdefgh!","error":"La contraseña debe incluir una mayúscula, una minúscula, un número y un carácter especial."},
+    {"valor":"Abcdefg12","error":"La contraseña debe incluir una mayúscula, una minúscula, un número y un carácter especial."},
+    {"valor":"Ñandú#2026","error":"La contraseña debe incluir una mayúscula, una minúscula, un número y un carácter especial."},
+    {"valor":"Wave2026!","error":null},
+    {"valor":"Clave 2026!","error":null},
+    {"valor":"Abcdefgh1!Abcdef","error":null}
+  ],
+  "rol": [
+    {"valor":"ADMIN","error":null},
+    {"valor":"VENDEDOR","error":null},
+    {"valor":"ROOT","error":"Elige un rol válido."},
+    {"valor":"","error":"Elige un rol válido."},
+    {"valor":"admin","error":"Elige un rol válido."}
+  ]
+}

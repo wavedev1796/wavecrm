@@ -12,3 +12,8 @@ coverage/
 CLAUDE.md
 
 docker-compose.override.yml
+
+# SonarQube y Playwright (artefactos locales)
+.scannerwork/
+test-results/
+playwright-report/
