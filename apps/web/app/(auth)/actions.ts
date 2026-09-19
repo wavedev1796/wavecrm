@@ -3,24 +3,28 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { API_URL } from '@/lib/api';
+import { apiError } from '@/lib/authenticated-api';
 import { clearSession, readSession, writeSession } from '@/lib/session';
+import { emailError, fieldErrors, loginPasswordError, normalizeEmail } from '@/lib/validation';
 
 export type LoginState = {
   error: string | null;
   /** Se devuelve para no obligar al usuario a reescribir el correo tras un error. */
   email: string;
+  fieldErrors: { email?: string; password?: string };
 };
 
 const ERROR_BY_STATUS: Record<number, string> = {
-  400: 'Revisa el correo y la contraseña ingresados.',
   401: 'Correo o contraseña incorrectos.',
+  403: 'Tu cuenta está desactivada. Pide a un administrador que la reactive.',
   429: 'Demasiados intentos. Espera un minuto e inténtalo de nuevo.',
 };
 
 export async function login(_previous: LoginState, formData: FormData): Promise<LoginState> {
-  const email = String(formData.get('email') ?? '').trim();
+  const email = normalizeEmail(String(formData.get('email') ?? ''));
   const password = String(formData.get('password') ?? '');
-  if (!email || !password) return { email, error: 'Ingresa tu correo y tu contraseña.' };
+  const invalid = fieldErrors({ email: emailError(email), password: loginPasswordError(password) });
+  if (invalid) return { email, error: null, fieldErrors: invalid };
 
   let response: Response;
   try {
@@ -31,19 +35,20 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
       cache: 'no-store',
     });
   } catch {
-    return { email, error: 'No pudimos conectar con el servidor. Inténtalo en unos segundos.' };
+    return { email, fieldErrors: {}, error: 'No pudimos conectar con el servidor. Inténtalo de nuevo.' };
   }
 
   if (!response.ok) {
-    return {
-      email,
-      error: ERROR_BY_STATUS[response.status] ?? 'No pudimos iniciar sesión. Inténtalo de nuevo.',
-    };
+    // Un 400 significa que las reglas de la web y del API se separaron: se muestra el motivo del API.
+    const error =
+      ERROR_BY_STATUS[response.status] ??
+      (response.status === 400 ? await apiError(response) : 'No pudimos iniciar sesión. Inténtalo de nuevo.');
+    return { email, fieldErrors: {}, error };
   }
 
   const data = (await response.json()) as { accessToken?: string; refreshToken?: string };
   if (!data.accessToken || !data.refreshToken) {
-    return { email, error: 'El servidor devolvió una respuesta inesperada. Avisa al equipo técnico.' };
+    return { email, fieldErrors: {}, error: 'El servidor devolvió una respuesta inesperada. Avisa al equipo técnico.' };
   }
 
   await writeSession(await cookies(), data.accessToken, data.refreshToken);

@@ -4,19 +4,23 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { EMAIL_MAX, LOGIN_PASSWORD_MAX } from "@/lib/validation";
 import { login, type LoginState } from "../actions";
 
-const initialState: LoginState = { error: null, email: "" };
+const initialState: LoginState = { error: null, email: "", fieldErrors: {} };
 
 export function LoginForm() {
   const [state, formAction, pending] = useActionState(login, initialState);
+  const { fieldErrors } = state;
 
   return (
     <form
       className="auth-form"
       action={formAction}
+      noValidate
       aria-busy={pending || undefined}
       aria-describedby={state.error ? "login-error" : undefined}
     >
@@ -34,10 +38,13 @@ export function LoginForm() {
           type="email"
           autoComplete="email"
           placeholder="tucorreo@empresa.ec"
+          maxLength={EMAIL_MAX}
           defaultValue={state.email}
           required
           autoFocus
+          {...invalidProps("email", fieldErrors.email)}
         />
+        <FieldError id="email" message={fieldErrors.email} />
       </div>
 
       <div className="field">
@@ -51,8 +58,11 @@ export function LoginForm() {
           id="password"
           name="password"
           autoComplete="current-password"
+          maxLength={LOGIN_PASSWORD_MAX}
           required
+          {...invalidProps("password", fieldErrors.password)}
         />
+        <FieldError id="password" message={fieldErrors.password} />
       </div>
 
       <Button className="auth-submit" type="submit" loading={pending}>
