@@ -8,9 +8,11 @@ function token(secondsLeft: number) {
   return `cabecera.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.firma`;
 }
 
+type CookieOptions = { httpOnly: boolean; sameSite: string; path: string; secure: boolean; maxAge: number };
+
 function jar(values: Record<string, string> = {}) {
   return {
-    get: (name: string) => (name in values ? { value: values[name] } : undefined),
+    get: (name: string) => (name in values ? { value: String(values[name]) } : undefined),
     set: vi.fn(),
     delete: vi.fn(),
   };
@@ -29,11 +31,14 @@ test('writeSession guarda cookies httpOnly que viven lo mismo que cada token', a
   const access = token(900);
   const refresh = token(28_800);
   await writeSession(cookies, access, refresh);
-  const [[accessName, accessValue, accessOptions], [refreshName, , refreshOptions]] = cookies.set.mock.calls;
-  expect([accessName, accessValue, refreshName]).toEqual(['wave_access', access, 'wave_refresh']);
-  expect(accessOptions).toMatchObject({ httpOnly: true, sameSite: 'lax', path: '/', secure: false });
-  expect(accessOptions.maxAge).toBeGreaterThanOrEqual(899);
-  expect(refreshOptions.maxAge).toBeGreaterThanOrEqual(28_799);
+  const [accessCall, refreshCall] = cookies.set.mock.calls as [
+    [string, string, CookieOptions],
+    [string, string, CookieOptions],
+  ];
+  expect([accessCall[0], accessCall[1], refreshCall[0]]).toEqual(['wave_access', access, 'wave_refresh']);
+  expect(accessCall[2]).toMatchObject({ httpOnly: true, sameSite: 'lax', path: '/', secure: false });
+  expect(accessCall[2].maxAge).toBeGreaterThanOrEqual(899);
+  expect(refreshCall[2].maxAge).toBeGreaterThanOrEqual(28_799);
 });
 
 test('clearSession borra las dos cookies', async () => {

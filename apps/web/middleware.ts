@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { API_URL } from "@/lib/api";
-import { clearSession, readSession, writeSession } from "@/lib/session";
+import { clearSession, readSession, SESSION_EXPIRED_PATH, writeSession } from "@/lib/session";
 
 const PUBLIC_PATHS = ["/login", "/recuperar-contrasena", "/activar-cuenta"];
 
@@ -19,17 +19,11 @@ export async function middleware(request: NextRequest) {
         ? redirectTo("/pipeline", request)
         : NextResponse.next();
     }
-    const response = redirectTo("/login", request);
-    await clearSession(response.cookies);
-    return response;
+    return endSession(request);
   }
 
   const tokens = await refreshTokens(session.refreshToken);
-  if (!tokens) {
-    const response = redirectTo("/login", request);
-    await clearSession(response.cookies);
-    return response;
-  }
+  if (!tokens) return endSession(request);
   // Propaga los tokens también a esta misma petición para que los Server Components
   // puedan llamar al API durante la navegación que acaba de renovar la sesión.
   request.cookies.set("wave_access", tokens.accessToken);
@@ -91,6 +85,13 @@ async function requestRefresh(refreshToken: string): Promise<Tokens | null> {
   } catch {
     return null;
   }
+}
+
+/** La sesión dejó de servir (cuenta desactivada, refresh vencido o revocado): se borra y se avisa en /login. */
+async function endSession(request: NextRequest) {
+  const response = redirectTo(SESSION_EXPIRED_PATH, request);
+  await clearSession(response.cookies);
+  return response;
 }
 
 function redirectTo(path: string, request: NextRequest) {
