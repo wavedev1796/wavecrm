@@ -1,6 +1,6 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { UnauthorizedException } = require("@nestjs/common");
+const { ForbiddenException, UnauthorizedException } = require("@nestjs/common");
 const argon2 = require("argon2");
 const { AuthService } = require("../dist/modules/auth/auth.service.js");
 
@@ -159,4 +159,31 @@ test("me devuelve una cuenta activa y rechaza una inactiva", async () => {
 
   const inactive = createService({ user: { ...baseUser, active: false } });
   await assert.rejects(inactive.auth.me(baseUser.id), UnauthorizedException);
+});
+
+test("login con la contraseña correcta de una cuenta desactivada explica el motivo", async () => {
+  const passwordHash = await argon2.hash("Wave2026!");
+  const { auth, updates } = createService({ user: { ...baseUser, active: false, passwordHash } });
+  await assert.rejects(
+    auth.login(baseUser.email, "Wave2026!"),
+    (error) =>
+      error instanceof ForbiddenException &&
+      error.message === "Tu cuenta está desactivada. Pide a un administrador que la reactive.",
+  );
+  assert.deepEqual(updates, []);
+});
+
+test("login de una cuenta pendiente de activación sigue siendo genérico", async () => {
+  const { auth } = createService({ user: { ...baseUser, active: false, passwordHash: null } });
+  await assert.rejects(
+    auth.login(baseUser.email, "Wave2026!"),
+    (error) => error instanceof UnauthorizedException && error.message === "Credenciales inválidas.",
+  );
+});
+
+test("login calcula argon2 aunque el correo no exista, para no revelarlo por el tiempo", async (t) => {
+  const verify = t.mock.method(argon2, "verify");
+  const { auth } = createService({ user: null });
+  await assert.rejects(auth.login("nadie@empresa.ec", "Wave2026!"), UnauthorizedException);
+  assert.equal(verify.mock.callCount(), 1);
 });

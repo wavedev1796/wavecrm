@@ -4,6 +4,7 @@ const { ForbiddenException, UnauthorizedException } = require("@nestjs/common");
 const {
   JwtAuthGuard,
   RolesGuard,
+  loginThrottleKey,
 } = require("../dist/modules/auth/auth.guards.js");
 
 function context(request = { headers: {} }) {
@@ -108,4 +109,12 @@ test("RolesGuard rechaza usuarios sin el rol requerido", () => {
       guard.canActivate(context({ headers: {}, user: { role: "VENDEDOR" } })),
     ForbiddenException,
   );
+});
+
+test("el límite de intentos del login cuenta por correo normalizado y, sin correo, por IP", () => {
+  assert.equal(loginThrottleKey({ body: { email: " Ana@Empresa.EC " }, ip: "10.0.0.1" }), "email:ana@empresa.ec");
+  assert.equal(loginThrottleKey({ body: {}, ip: "10.0.0.1" }), "ip:10.0.0.1");
+  assert.equal(loginThrottleKey({ body: { email: 42 }, ip: "10.0.0.1" }), "ip:10.0.0.1");
+  assert.equal(loginThrottleKey({ body: { email: "   " }, ip: "10.0.0.1" }), "ip:10.0.0.1");
+  assert.equal(loginThrottleKey({ ip: "10.0.0.1" }), "ip:10.0.0.1");
 });

@@ -77,3 +77,16 @@ export class RolesGuard implements CanActivate {
     return true;
   }
 }
+
+/**
+ * Clave del límite de intentos del login: el correo normalizado. Todo login llega desde el
+ * servidor web (misma IP), así que limitar por IP bloqueaba a toda la empresa con 5 fallos.
+ * ponytail: no frena probar muchas cuentas desde un mismo equipo; para eso la web debe
+ * reenviar la IP real del cliente de forma confiable (pendiente del Sprint 2).
+ */
+export function loginThrottleKey(request: { body?: { email?: unknown }; ip?: string }) {
+  const email = request.body?.email;
+  return typeof email === "string" && email.trim()
+    ? `email:${email.trim().toLowerCase()}`
+    : `ip:${request.ip}`;
+}
