@@ -59,6 +59,18 @@ Para comprobar el contenedor local:
 docker compose ps
 ```
 
+## Calidad y pruebas
+
+Ejecuta las comprobaciones principales desde la raíz:
+
+```powershell
+pnpm.cmd test             # pruebas unitarias
+pnpm.cmd test:coverage    # pruebas y reportes LCOV
+pnpm.cmd test:quality     # lint, pruebas y compilación completa
+```
+
+SonarQube se ejecuta en un perfil Docker independiente para no afectar el entorno normal. La instalación, el análisis y la estrategia de pruebas están documentados en [SonarQube y estrategia de pruebas](docs/Calidad/SonarQube%20y%20estrategia%20de%20pruebas.md).
+
 ## Despliegue
 
 `render.yaml` declara dos servicios: `wavecrm-web` y `wavecrm-api`. Conecta el repositorio a Render, crea el Blueprint y completa las variables marcadas como `sync: false`.

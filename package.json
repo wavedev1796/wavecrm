@@ -9,6 +9,12 @@
     "dev:api": "pnpm --filter @wave/api dev",
     "build": "pnpm --filter @wave/database build && pnpm --filter @wave/api build && pnpm --filter @wave/web build",
     "lint": "pnpm -r --if-present lint",
+    "test": "pnpm --filter @wave/api test && node --test apps/web/lib/*.test.mjs",
+    "test:coverage": "pnpm test:coverage:api && pnpm test:coverage:web",
+    "test:coverage:api": "pnpm --filter @wave/api build && c8 --reporter=lcov --reporter=text-summary --reports-dir=coverage/api --include=apps/api/dist/**/*.js --exclude=apps/api/dist/main.js node --test apps/api/test/*.test.cjs",
+    "test:coverage:web": "c8 --reporter=lcov --reporter=text-summary --reports-dir=coverage/web --include=apps/web/lib/**/*.ts node --test apps/web/lib/*.test.mjs",
+    "test:quality": "pnpm lint && pnpm test && pnpm build",
+    "sonar:scan": "pnpm test:coverage && sonar -Dsonar.host.url=http://localhost:9000",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "dotenv -e .env -- pnpm --filter @wave/database generate",
@@ -18,6 +24,8 @@
   },
   "devDependencies": {
     "@neon/config": "^1.4.2",
+    "@sonar/scan": "4.3.5",
+    "c8": "^12.0.0",
     "dotenv-cli": "^8.0.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2"

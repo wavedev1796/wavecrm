@@ -25,5 +25,22 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  sonarqube:
+    image: sonarqube:26.9.0.129388-community
+    container_name: wavecrm-sonarqube
+    profiles: ["quality"]
+    restart: unless-stopped
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    ports:
+      - "9000:9000"
+    volumes:
+      - wavecrm_sonarqube_data:/opt/sonarqube/data
+      - wavecrm_sonarqube_extensions:/opt/sonarqube/extensions
+      - wavecrm_sonarqube_logs:/opt/sonarqube/logs
+
 volumes:
   wavecrm_postgres_data:
+  wavecrm_sonarqube_data:
+  wavecrm_sonarqube_extensions:
+  wavecrm_sonarqube_logs:
