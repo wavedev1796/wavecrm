@@ -6,6 +6,7 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "test": "nest build && node --test test/*.test.cjs",
+    "test:integration": "nest build && node --test --test-concurrency=1 test/integracion/*.test.cjs",
     "start:prod": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\""
   },
@@ -30,6 +31,7 @@
     "@eslint/js": "^9.35.0",
     "@nestjs/cli": "^11.0.10",
     "@nestjs/schematics": "^11.0.7",
+    "@nestjs/testing": "^11.2.5",
     "@types/express": "^5.0.3",
     "@types/node": "^22.18.1",
     "@types/nodemailer": "^8.0.1",
