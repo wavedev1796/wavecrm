@@ -5,17 +5,23 @@ import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { FieldError, invalidProps } from '@/components/ui/field-error';
 import { Input } from '@/components/ui/input';
+import { EMAIL_MAX, emailError, normalizeEmail } from '@/lib/validation';
 
 export function ForgotPasswordForm() {
   const [requestedFor, setRequestedFor] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // ponytail: la pantalla no llama a ningún endpoint todavía. El envío del correo con
-  // token depende del mailer que trae CRM-7 (usuarios e invitaciones); cuando exista,
-  // este handler pasa a ser una server action contra POST /auth/forgot-password.
+  // ponytail: la pantalla no llama a ningún endpoint todavía. El envío del correo con token
+  // queda para el Sprint 2 (el mailer de CRM-7 ya existe); entonces este handler pasa a ser
+  // una server action contra POST /auth/forgot-password.
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setRequestedFor(String(new FormData(event.currentTarget).get('email') ?? ''));
+    const email = normalizeEmail(String(new FormData(event.currentTarget).get('email') ?? ''));
+    const problem = emailError(email);
+    setError(problem);
+    if (!problem) setRequestedFor(email);
   }
 
   if (requestedFor) {
@@ -28,8 +34,8 @@ export function ForgotPasswordForm() {
         </p>
         <Alert tone="success">Solicitud registrada.</Alert>
         <Alert tone="note">
-          <b>Pendiente:</b> el envío del correo se habilita junto con CRM-7 (usuarios e
-          invitaciones). Por ahora esta pantalla no envía nada.
+          <b>Pendiente:</b> el envío del correo se habilita en el próximo sprint. Por ahora esta
+          pantalla no envía nada.
         </Alert>
         <Link className="auth-back" href="/login">
           <ArrowLeft aria-hidden />
@@ -44,7 +50,7 @@ export function ForgotPasswordForm() {
       <h1>¿Olvidaste tu contraseña?</h1>
       <p className="auth-lead">Escribe tu correo y te enviaremos un enlace para crear una nueva.</p>
 
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <div className="field">
           <label htmlFor="email">Correo</label>
           <Input
@@ -53,9 +59,12 @@ export function ForgotPasswordForm() {
             type="email"
             autoComplete="email"
             placeholder="tucorreo@empresa.ec"
+            maxLength={EMAIL_MAX}
             required
             autoFocus
+            {...invalidProps('email', error)}
           />
+          <FieldError id="email" message={error} />
         </div>
 
         <Button className="auth-submit" type="submit">
