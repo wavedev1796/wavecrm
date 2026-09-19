@@ -25,6 +25,9 @@ type CookieWriter = {
 const ACCESS_COOKIE = 'wave_access';
 const REFRESH_COOKIE = 'wave_refresh';
 
+/** Destino cuando una sesión deja de servir: `/login` lo explica con un mensaje fijo. */
+export const SESSION_EXPIRED_PATH = '/login?sesion=expirada';
+
 const cookieOptions = {
   httpOnly: true,
   sameSite: 'lax',

@@ -1,12 +1,13 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { API_URL } from "./api";
-import { readSession } from "./session";
+import { readSession, SESSION_EXPIRED_PATH } from "./session";
 
 export async function authenticatedApi(path: string, init: RequestInit = {}) {
   const session = await readSession(await cookies());
-  if (!session?.accessToken) throw new Error("Sesión no disponible.");
-  return fetch(`${API_URL}${path}`, {
+  if (!session?.accessToken) redirect(SESSION_EXPIRED_PATH);
+  const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       ...init.headers,
@@ -15,6 +16,9 @@ export async function authenticatedApi(path: string, init: RequestInit = {}) {
     },
     cache: "no-store",
   });
+  // 401: el access token caducó o la cuenta se desactivó mientras la persona navegaba.
+  if (response.status === 401) redirect(SESSION_EXPIRED_PATH);
+  return response;
 }
 
 export async function apiError(response: Response) {
