@@ -2,8 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { API_URL } from "@/lib/api";
+import { apiError } from "@/lib/authenticated-api";
+import { confirmationError, passwordError } from "@/lib/password-rules";
+import { fieldErrors } from "@/lib/validation";
 
-export type ActivationState = { error: string | null };
+export type ActivationState = {
+  error: string | null;
+  fieldErrors: { password?: string; passwordConfirmation?: string };
+};
 
 export async function activateAccount(
   _state: ActivationState,
@@ -11,11 +17,12 @@ export async function activateAccount(
 ): Promise<ActivationState> {
   const token = String(formData.get("token") ?? "");
   const password = String(formData.get("password") ?? "");
-  const passwordConfirmation = String(
-    formData.get("passwordConfirmation") ?? "",
-  );
-  if (password !== passwordConfirmation)
-    return { error: "Las contraseñas no coinciden." };
+  const passwordConfirmation = String(formData.get("passwordConfirmation") ?? "");
+  const invalid = fieldErrors({
+    password: passwordError(password),
+    passwordConfirmation: confirmationError(password, passwordConfirmation),
+  });
+  if (invalid) return { error: null, fieldErrors: invalid };
 
   let response: Response;
   try {
@@ -29,20 +36,8 @@ export async function activateAccount(
       },
     );
   } catch {
-    return {
-      error: "No pudimos conectar con el servidor. Inténtalo de nuevo.",
-    };
+    return { error: "No pudimos conectar con el servidor. Inténtalo de nuevo.", fieldErrors: {} };
   }
-  if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as {
-      error?: { message?: string | string[] };
-    } | null;
-    const message = body?.error?.message;
-    return {
-      error: Array.isArray(message)
-        ? message.join(" ")
-        : (message ?? "No pudimos activar la cuenta."),
-    };
-  }
+  if (!response.ok) return { error: await apiError(response), fieldErrors: {} };
   redirect("/login?activated=1");
 }

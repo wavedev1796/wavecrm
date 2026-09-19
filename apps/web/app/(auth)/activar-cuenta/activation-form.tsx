@@ -4,28 +4,31 @@ import { Circle, CircleCheck } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { PasswordInput } from "@/components/ui/password-input";
-import { passwordChecks } from "@/lib/password-rules";
+import { confirmationError, PASSWORD_MAX, passwordChecks } from "@/lib/password-rules";
 import { activateAccount, type ActivationState } from "./actions";
 
-const initialState: ActivationState = { error: null };
-const MISMATCH = "Las contraseñas no coinciden.";
+const initialState: ActivationState = { error: null, fieldErrors: {} };
 
 export function ActivationForm({ token }: { token: string }) {
-  const [state, action, pending] = useActionState(
-    activateAccount,
-    initialState,
-  );
+  const [state, action, pending] = useActionState(activateAccount, initialState);
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [confirmationTouched, setConfirmationTouched] = useState(false);
+  // En vivo solo se avisa del desajuste; la confirmación vacía la reporta el envío.
   const mismatch = confirmation !== "" && confirmation !== password;
-  const showMismatch = confirmationTouched && mismatch;
+  const confirmationMessage =
+    confirmationTouched && mismatch
+      ? confirmationError(password, confirmation)
+      : state.fieldErrors.passwordConfirmation;
+  const passwordMessage = state.fieldErrors.password;
 
   return (
     <form
       className="auth-form"
       action={action}
+      noValidate
       aria-busy={pending || undefined}
       onSubmit={(event) => {
         // Controlados: React no los vacía tras un error del servidor. La API vuelve a validar.
@@ -43,13 +46,15 @@ export function ActivationForm({ token }: { token: string }) {
         <PasswordInput
           id="password"
           name="password"
-          minLength={8}
+          maxLength={PASSWORD_MAX}
           required
           autoComplete="new-password"
-          aria-describedby="password-rules"
+          aria-invalid={passwordMessage ? true : undefined}
+          aria-describedby={passwordMessage ? "password-rules password-error" : "password-rules"}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
+        <FieldError id="password" message={passwordMessage} />
       </div>
 
       <ul
@@ -73,20 +78,15 @@ export function ActivationForm({ token }: { token: string }) {
         <PasswordInput
           id="passwordConfirmation"
           name="passwordConfirmation"
-          minLength={8}
+          maxLength={PASSWORD_MAX}
           required
           autoComplete="new-password"
           value={confirmation}
           onChange={(event) => setConfirmation(event.target.value)}
           onBlur={() => setConfirmationTouched(true)}
-          aria-invalid={showMismatch || undefined}
-          aria-describedby={showMismatch ? "confirmation-error" : undefined}
+          {...invalidProps("passwordConfirmation", confirmationMessage)}
         />
-        {showMismatch && (
-          <p id="confirmation-error" className="field-error">
-            {MISMATCH}
-          </p>
-        )}
+        <FieldError id="passwordConfirmation" message={confirmationMessage} />
       </div>
 
       <Button className="auth-submit" type="submit" loading={pending}>
