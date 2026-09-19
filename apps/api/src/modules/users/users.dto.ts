@@ -1,74 +1,55 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { UserRole } from "@wave/database";
 import { Transform } from "class-transformer";
-import {
-  IsEmail,
-  IsEnum,
-  IsIn,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-  MinLength,
-} from "class-validator";
+import { IsEnum, IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
+import { IsAccountEmail, IsNewPassword, IsPersonName } from "../../common/validation";
 
-const trimmed = ({ value }: { value: unknown }) =>
-  typeof value === "string" ? value.trim() : value;
+const INVALID_ROLE = { message: "Elige un rol válido." };
+const CONFIRMATION_REQUIRED = { message: "Confirma tu contraseña." };
 
 export class CreateUserDto {
-  @ApiProperty({ example: "Ana López" })
-  @Transform(trimmed)
-  @IsString()
-  @IsNotEmpty({ message: "El nombre es obligatorio." })
-  @MaxLength(100)
+  @ApiProperty({ example: "Ana López", minLength: 2, maxLength: 100 })
+  @IsPersonName()
   name!: string;
 
-  @ApiProperty({ example: "ana@empresa.ec" })
-  @Transform(({ value }) =>
-    typeof value === "string" ? value.trim().toLowerCase() : value,
-  )
-  @IsEmail({}, { message: "El correo no es válido." })
-  @MaxLength(254)
+  @ApiProperty({ example: "ana@empresa.ec", maxLength: 64 })
+  @IsAccountEmail()
   email!: string;
 
   @ApiProperty({ enum: UserRole, default: UserRole.VENDEDOR })
-  @IsEnum(UserRole)
+  @IsEnum(UserRole, INVALID_ROLE)
   role!: UserRole;
 }
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {}
 
 export class ListUsersDto extends PaginationDto {
-  @ApiPropertyOptional({ description: "Busca por nombre o correo." })
+  @ApiPropertyOptional({ description: "Busca por nombre o correo.", maxLength: 100 })
   @IsOptional()
-  @Transform(trimmed)
-  @IsString()
-  @MaxLength(100)
+  @Transform(({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value))
+  @MaxLength(100, { message: "La búsqueda no puede superar 100 caracteres." })
+  @IsString({ message: "La búsqueda debe ser un texto." })
   search?: string;
 
   @ApiPropertyOptional({ enum: UserRole })
   @IsOptional()
-  @IsEnum(UserRole)
+  @IsEnum(UserRole, INVALID_ROLE)
   role?: UserRole;
 
   @ApiPropertyOptional({ enum: ["active", "inactive", "pending"] })
   @IsOptional()
-  @IsIn(["active", "inactive", "pending"])
+  @IsIn(["active", "inactive", "pending"], { message: "Elige un estado válido." })
   status?: "active" | "inactive" | "pending";
 }
 
 export class ActivateInvitationDto {
-  @ApiProperty({ minLength: 8 })
-  @IsString()
-  @MinLength(8, { message: "La contraseña debe tener al menos 8 caracteres." })
-  @Matches(/^(?=.*[A-Za-z])(?=.*\d).+$/, {
-    message: "La contraseña debe incluir al menos una letra y un número.",
-  })
+  @ApiProperty({ minLength: 8, maxLength: 16 })
+  @IsNewPassword()
   password!: string;
 
   @ApiProperty()
-  @IsString()
+  @IsNotEmpty(CONFIRMATION_REQUIRED)
+  @IsString(CONFIRMATION_REQUIRED)
   passwordConfirmation!: string;
 }

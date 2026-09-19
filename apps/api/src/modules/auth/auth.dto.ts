@@ -1,20 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsAccountEmail, IsLoginPassword } from '../../common/validation';
+
+const INVALID_REFRESH = { message: 'El refresh token no es válido.' };
 
 export class LoginDto {
-  @ApiProperty({ example: 'eduardo@thewavesea.com' })
-  @IsEmail({}, { message: 'El correo no es válido.' })
+  @ApiProperty({ example: 'eduardo@thewavesea.com', maxLength: 64 })
+  @IsAccountEmail()
   email!: string;
 
-  @ApiProperty({ example: 'contraseña' })
-  @IsString()
-  @IsNotEmpty({ message: 'La contraseña es obligatoria.' })
+  @ApiProperty({ example: 'Wave2026!', maxLength: 16 })
+  @IsLoginPassword()
   password!: string;
 }
 
 export class RefreshTokenDto {
   @ApiProperty()
-  @IsString()
-  @IsNotEmpty({ message: 'El refresh token es obligatorio.' })
+  @MaxLength(2048, INVALID_REFRESH)
+  @IsNotEmpty(INVALID_REFRESH)
+  @IsString(INVALID_REFRESH)
   refreshToken!: string;
 }
