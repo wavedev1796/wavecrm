@@ -32,28 +32,32 @@ Para eliminar también los datos se deben borrar explícitamente los tres volúm
 
 ## Comandos de calidad
 
-| Comando                | Propósito                                                     |
-| ---------------------- | ------------------------------------------------------------- |
-| pnpm.cmd lint          | ESLint y comprobación TypeScript del paquete de base de datos |
-| pnpm.cmd test          | Todas las pruebas unitarias disponibles                       |
-| pnpm.cmd test:coverage | Pruebas y reportes LCOV en coverage/api y coverage/web        |
-| pnpm.cmd build         | Generación Prisma y compilación de API y web                  |
-| pnpm.cmd test:quality  | Lint, pruebas y build completo                                |
-| pnpm.cmd sonar:scan    | Cobertura más análisis en SonarQube                           |
+| Comando                   | Propósito                                                                              |
+| ------------------------- | -------------------------------------------------------------------------------------- |
+| pnpm.cmd lint             | ESLint y comprobación TypeScript del paquete de base de datos                          |
+| pnpm.cmd test             | Unitarias del API (node:test) y de la web (Vitest). Sin red: es lo que corre CI         |
+| pnpm.cmd test:integration | API real por HTTP contra la rama `pruebas` de Neon (requiere `.env.test.local`)         |
+| pnpm.cmd test:e2e         | Flujos de navegador con Playwright (apaga `pnpm dev` antes)                             |
+| pnpm.cmd test:coverage    | Unitarias + integración con LCOV en coverage/api y coverage/web                         |
+| pnpm.cmd build            | Generación Prisma y compilación de API y web                                            |
+| pnpm.cmd test:quality     | Lint, pruebas y build completo                                                          |
+| pnpm.cmd sonar:scan       | Cobertura más análisis en SonarQube, esperando el resultado del Quality Gate            |
 
 ## Mapa de pruebas del proyecto
 
-| Área                    | Tipo actual           | Qué verifica                                                                                                                    |
-| ----------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Usuarios e invitaciones | Unitarias             | búsqueda, paginación, creación, token, activación, edición, roles, desactivar/reactivar y protecciones del último administrador |
-| Correo SMTP             | Unitarias             | construcción del transporte, autenticación, contenido seguro y errores de configuración                                         |
-| Contraseñas web         | Unitarias             | longitud, letras, números y textos mostrados durante la activación                                                              |
-| Auth y sesión           | Unitarias             | login, rotación y revocación de refresh token, usuario activo y guards de token/roles                                           |
-| Prisma                  | Validación/build      | schema válido, cliente generado y migraciones compilables                                                                       |
-| API HTTP                | Integración pendiente | status HTTP, DTOs, guards, throttling y serialización real                                                                      |
-| React/Next              | Build y lint          | tipos, Server/Client Components, rutas y compilación                                                                            |
-| Navegador               | E2E pendiente         | login, invitación, activación y administración completa desde la UI                                                             |
-| SonarQube               | Análisis estático     | bugs, vulnerabilidades, hotspots, duplicación, mantenibilidad y cobertura importada                                             |
+| Área                    | Tipo actual                  | Qué verifica                                                                                                                    |
+| ----------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Usuarios e invitaciones | Unitarias + integración      | búsqueda, paginación, creación, token, activación, edición, roles, desactivar/reactivar y protecciones del último administrador |
+| Correo SMTP             | Unitarias                    | construcción del transporte, autenticación, contenido seguro y errores de configuración                                         |
+| Validaciones de entrada | Unitarias (API y web)        | 51 casos compartidos de correo, nombre, contraseñas y rol desde `test/casos-de-validacion.json`                                 |
+| Auth y sesión           | Unitarias + integración      | login, cuenta desactivada, tiempo constante, límite por correo, rotación y revocación, guards de token/roles                    |
+| Prisma                  | Validación/build             | schema válido, cliente generado y migraciones compilables                                                                       |
+| API HTTP                | Integración contra Neon      | status HTTP, DTOs, guards, throttling, filtro de errores y restricciones reales (rama `pruebas`)                                |
+| React/Next              | Vitest + Testing Library     | formularios, páginas, server actions, middleware y componentes de `components/ui`                                               |
+| Navegador               | E2E con Playwright           | login, invitación, activación, administración y el flujo de la cuenta desactivada                                               |
+| SonarQube               | Análisis estático            | bugs, vulnerabilidades, hotspots, duplicación, mantenibilidad y cobertura importada                                             |
+
+El detalle prueba por prueba, con el paso a paso para ejecutarlas, está en [Pruebas del Sprint 1](Pruebas%20del%20Sprint%201.md).
 
 Los módulos activities, attachments, audit-logs, companies, contacts, deals, notes, pipelines, quotes y stages son actualmente módulos vacíos de tres líneas. Se añadirán pruebas cuando incorporen controladores o servicios; un test unitario de un módulo vacío no aportaría protección real.
 
@@ -61,7 +65,10 @@ Los módulos activities, attachments, audit-logs, companies, contacts, deals, no
 
 1. pnpm.cmd lint
 2. pnpm.cmd test
-3. pnpm.cmd test:coverage
-4. pnpm.cmd build
-5. pnpm.cmd sonar:scan
-6. Pruebas manuales o E2E contra Docker local, nunca contra Neon compartido si eliminan o mutan datos masivamente.
+3. pnpm.cmd test:integration
+4. pnpm.cmd test:coverage
+5. pnpm.cmd build
+6. pnpm.cmd test:e2e (con `pnpm dev` apagado)
+7. pnpm.cmd sonar:scan
+
+Las pruebas que crean o borran datos corren contra la rama `pruebas` de Neon (`.env.test.local`), nunca contra `development` ni Docker compartido. La guardia `assertTestDatabase` de `test/datos-de-prueba.cjs` lo impide.

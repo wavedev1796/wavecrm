@@ -64,7 +64,9 @@ docker compose ps
 Ejecuta las comprobaciones principales desde la raíz:
 
 ```powershell
-pnpm.cmd test             # pruebas unitarias
+pnpm.cmd test             # unitarias del API y de la web (sin red)
+pnpm.cmd test:integration # API real contra la rama "pruebas" de Neon (.env.test.local)
+pnpm.cmd test:e2e         # navegador con Playwright (apaga pnpm dev antes)
 pnpm.cmd test:coverage    # pruebas y reportes LCOV
 pnpm.cmd test:quality     # lint, pruebas y compilación completa
 ```
