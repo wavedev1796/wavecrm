@@ -21,8 +21,7 @@ test('envía el id y muestra el éxito en el aviso de la página', async () => {
   const action = renderAction({ tone: 'success', message: 'Usuario desactivado.' });
   await userEvent.setup().click(screen.getByRole('button', { name: 'Desactivar' }));
   expect(await screen.findByRole('status')).toHaveTextContent('Usuario desactivado.');
-  const [[formData]] = action.mock.calls;
-  expect(formData.get('id')).toBe('u1');
+  expect(action.mock.calls[0]?.[0].get('id')).toBe('u1');
 });
 
 test('un rechazo del API se anuncia como alerta', async () => {
