@@ -85,3 +85,30 @@ Crear las pantallas de acceso al sistema con validación y flujo de recuperació
 - En móvil el panel visual se convierte en una cabecera compacta y el formulario ocupa el ancho disponible.
 - Se mantiene el toggle de contraseña, alertas, estado de carga y soporte para `prefers-reduced-motion`.
 - Validación: `/login` respondió HTTP 200; lint, pruebas y build de producción finalizaron sin errores.
+
+## Calidad y validaciones (2026-09-19)
+
+### Implementación
+
+- `apps/web/lib/validation.ts` — reglas de correo, nombre, contraseña de login y rol, iguales a las del API.
+- `apps/web/components/ui/field-error.tsx` — mensaje bajo el campo y atributos `aria-invalid` / `aria-describedby`.
+- `apps/web/app/(auth)/actions.ts` — `login` valida antes de llamar al API, normaliza el correo y traduce 401, 403 (cuenta desactivada), 429 y 400.
+- `apps/web/app/(auth)/login/login-form.tsx` — `noValidate`, longitudes máximas y error por campo.
+- `apps/web/app/(auth)/login/page.tsx` — avisos por código fijo: `?activated=1` y `?sesion=expirada`.
+- `apps/web/app/(auth)/recuperar-contrasena/forgot-password-form.tsx` — valida el correo antes de confirmar.
+- `apps/web/app/globals.css` — `.input[aria-invalid="true"]` deja de estar limitado a `.auth-form`.
+
+### Decisiones
+
+- **`noValidate` en los formularios.** El mensaje siempre es el nuestro, en español y junto al campo; la validación del navegador se muestra en el idioma del sistema y con textos genéricos.
+- **Los avisos de `/login` viajan como códigos fijos**, nunca como texto libre: así nadie puede enviar un enlace que muestre un mensaje falso dentro del CRM.
+- **La contraseña del login solo valida longitud** (máx. 16): exigir composición impediría entrar a cuentas creadas antes de la regla.
+
+### Validación
+
+- `pnpm test`: 96 pruebas de la web en verde (7 de la server action de login, 4 del formulario, 3 de la página, 5 de recuperar contraseña y 7 de las reglas compartidas).
+- `pnpm test:e2e`: 6 flujos de acceso en navegador (errores de campo, credenciales incorrectas, login sin distinguir mayúsculas, cookies `httpOnly`, logout, recuperación y cabeceras de seguridad).
+- Cobertura de la web: 97,78 % de líneas.
+- Detalle completo en [docs/Calidad/Pruebas del Sprint 1.md](../Calidad/Pruebas%20del%20Sprint%201.md).
+
+**Pendiente para el Sprint 2:** el envío del correo de recuperación. El mailer de CRM-7 ya existe, así que solo falta el endpoint y convertir el handler en server action.

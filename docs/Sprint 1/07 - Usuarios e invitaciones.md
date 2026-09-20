@@ -62,3 +62,27 @@ Prueba manual recomendada:
 6. Reactivarla y comprobar que vuelve a poder iniciar sesión.
 
 La eliminación física se rechaza si el usuario tiene actividad relacionada; en ese caso se conserva el historial mediante desactivación.
+
+## Pruebas automatizadas
+
+Añadidas el 2026-09-19 por Zaith Manangón como parte de la calidad del Sprint 1. Solo se añade esta sección: el resto del ticket es de Eduardo García.
+
+**Cambios en el código de este ticket**
+
+- La contraseña nueva pasa a 8–16 caracteres con mayúscula, minúscula, número y símbolo (`ActivateInvitationDto` y `apps/web/lib/password-rules.ts`), con los mismos textos en el API y en la pantalla.
+- `CreateUserDto` y `UpdateUserDto` usan reglas compartidas: nombre de 2 a 100 caracteres (letras, espacios, apóstrofos, guiones y puntos), correo normalizado y acotado a 64, rol validado. Todos los mensajes en español.
+- `/activar-cuenta` marca el error junto al campo, limita las contraseñas a 16 y ya no depende de la validación del navegador.
+
+**Pruebas**
+
+| Prueba | Tipo | Archivo |
+| --- | --- | --- |
+| Reglas de contraseña: longitud, mayúscula, minúscula, número, símbolo y confirmación | Web | `apps/web/lib/password-rules.test.ts` |
+| Server action de activación: validación previa, token codificado, motivo del API y fallo de red | Web | `apps/web/app/(auth)/activar-cuenta/actions.test.ts` |
+| Formulario: 5 reglas en vivo, aviso de desajuste y errores del servidor | Web | `apps/web/app/(auth)/activar-cuenta/activation-form.test.tsx` |
+| Página de invitación: sin token, invitación válida y vencida | Web | `apps/web/app/(auth)/activar-cuenta/page.test.tsx` |
+| Invitación enmascarada y activación con las reglas, contra Neon | Integración | `apps/api/test/integracion/users.http.test.cjs` |
+| Activación completa desde el navegador | E2E | `e2e/usuarios.spec.ts` |
+| Servicio de usuarios y mailer (de Eduardo, sin cambios) | Unitaria | `apps/api/test/users.service.test.cjs`, `invitation-mailer.service.test.cjs` |
+
+**Cómo correrlas:** `pnpm test`, `pnpm test:integration` y `pnpm test:e2e`. Paso a paso en [docs/Calidad/Pruebas del Sprint 1.md](../Calidad/Pruebas%20del%20Sprint%201.md).

@@ -65,3 +65,23 @@ Endurecer la sesión y el acceso al sistema para proteger rutas y datos sensible
 **Coordinación con CRM-7:** `auth.service.ts` es un módulo compartido y cambió (refresh refactorizado y nuevo `logout`). Al desactivar un usuario, su sesión termina en como máximo 15 minutos: `userForRefreshToken` exige `active` y la renovación falla.
 
 **Pendiente fuera de este ticket:** el pie de perfil del sidebar sigue mostrando un usuario fijo ("Eduardo García · Administrador"), como el resto de datos de demostración del dashboard.
+
+## Calidad y validaciones (2026-09-19)
+
+### Implementación
+
+- `apps/web/lib/session.ts` — `SESSION_EXPIRED_PATH` (`/login?sesion=expirada`), el código fijo con el que se avisa que la sesión terminó.
+- `apps/web/lib/authenticated-api.ts` — sin sesión o ante un `401` del API redirige a ese destino, en vez de lanzar un error que la interfaz mostraba como fallo de conexión.
+- `apps/web/middleware.ts` — `endSession` centraliza el cierre de una sesión inválida: borra las cookies y redirige con el aviso.
+
+### Decisiones
+
+- **Una sesión que deja de servir se explica.** Antes, una cuenta desactivada a mitad de sesión terminaba en `/login` sin ningún motivo visible.
+- **El aviso es un código en la URL, no un texto**, por la misma razón que en CRM-8.
+
+### Validación
+
+- `pnpm test`: 15 pruebas de sesión, API autenticada y middleware (rutas públicas y privadas, renovación, renovaciones simultáneas con una sola llamada al API, refresh inválido y API caído).
+- `pnpm test:integration`: logout con revocación real, guards con cuenta activa, helmet, CORS y ausencia de `X-Powered-By`.
+- `pnpm test:e2e`: rutas privadas sin sesión y aviso de sesión inválida con las cookies borradas.
+- Detalle completo en [docs/Calidad/Pruebas del Sprint 1.md](../Calidad/Pruebas%20del%20Sprint%201.md).
