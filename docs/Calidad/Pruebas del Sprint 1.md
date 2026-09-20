@@ -1,6 +1,6 @@
 # Pruebas del Sprint 1
 
-Estado al 2026-09-19: **173 pruebas en verde** (43 unitarias del API, 20 de integración del API contra Neon, 96 de la web y 14 de navegador). Cobertura de líneas: **96,63 %** en el API y **97,78 %** en la web. Quality Gate de SonarQube: _pendiente del análisis de cierre_.
+Estado al 2026-09-20: **173 pruebas en verde** (43 unitarias del API, 20 de integración del API contra Neon, 96 de la web y 14 de navegador). Cobertura de líneas: **96,63 %** en el API y **97,78 %** en la web. Quality Gate de SonarQube: **PASSED** (análisis de cierre del 2026-09-20, 120 archivos, proyecto `WaveCRM`).
 
 ## Cómo correrlas (paso a paso)
 

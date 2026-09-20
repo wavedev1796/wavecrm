@@ -1,7 +1,7 @@
 # Reporte del Sprint 1 — Autenticación y Login
 
-**Periodo:** _(confirmar fechas de inicio y cierre; el primer commit del sprint es del 9 de septiembre de 2026 y el último, del 19)_
-**Equipo:** Zaith Manangón y Eduardo García · **Fecha del reporte:** 19 de septiembre de 2026
+**Periodo:** 7 al 20 de septiembre de 2026
+**Equipo:** Zaith Manangón y Eduardo García · **Fecha del reporte:** 19 de septiembre de 2026, un día antes del cierre
 
 ## 1. Resumen ejecutivo
 
@@ -19,7 +19,7 @@ El cierre del sprint incluyó una revisión de calidad completa: el proyecto pas
 | CRM-9 | Gestión de usuarios admin | Eduardo García | Lista con búsqueda y filtros, alta, edición, roles y activación/desactivación. En el cierre dejaron de mostrarse mensajes tomados de la URL |
 | CRM-10 | Seguridad de sesión | Zaith Manangón | Expiración, logout con revocación real, protección de rutas, CORS y helmet. En el cierre se añadió el aviso de sesión terminada |
 
-Commits del periodo: 43 (38 de Zaith, 5 de Eduardo).
+Commits del periodo (7 al 19 de septiembre): 43, de los cuales 38 de Zaith y 5 de Eduardo.
 
 ## 3. Métricas de calidad
 
@@ -33,7 +33,8 @@ Commits del periodo: 43 (38 de Zaith, 5 de Eduardo).
 | Cobertura de líneas del API | 96,63 % |
 | Cobertura de líneas de la web | 97,78 % |
 | Casos de validación compartidos entre web y API | 51 |
-| Quality Gate de SonarQube | _(completar con el resultado del análisis de cierre)_ |
+| Cobertura de ramas (API / web) | 89,17 % / 93,54 % |
+| Quality Gate de SonarQube | **PASSED** (2026-09-20, 120 archivos, proyecto `WaveCRM`) |
 
 Punto de partida del sprint: 32 pruebas, sin pruebas HTTP, de navegador ni de componentes de React.
 

@@ -1,5 +1,7 @@
 # Sprint 1 — Autenticación y Login
 
+**Periodo:** 7 al 20 de septiembre de 2026.
+
 ## Objetivo
 
 Dar acceso seguro al CRM: inicio de sesión con roles, alta de personas por invitación y una sesión protegida de punta a punta, con mensajes claros en cada error.
@@ -35,7 +37,7 @@ Dar acceso seguro al CRM: inicio de sesión con roles, alta de personas por invi
 | **Total** | **173** |
 | Cobertura de líneas del API | 96,63 % |
 | Cobertura de líneas de la web | 97,78 % |
-| Quality Gate de SonarQube | _pendiente del análisis de cierre_ |
+| Quality Gate de SonarQube | **PASSED** (2026-09-20, 120 archivos analizados) |
 
 Detalle, catálogo por ticket y paso a paso: [docs/Calidad/Pruebas del Sprint 1.md](../Calidad/Pruebas%20del%20Sprint%201.md).
 
