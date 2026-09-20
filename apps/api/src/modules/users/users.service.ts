@@ -320,12 +320,13 @@ function toPublicUser(
   user: Prisma.UserGetPayload<{ select: typeof publicUserSelect }>,
 ) {
   const { passwordHash, ...safe } = user;
-  const status = passwordHash
-    ? user.active
-      ? "active"
-      : "inactive"
-    : "pending";
-  return { ...safe, status };
+  return { ...safe, status: userStatus(passwordHash, user.active) };
+}
+
+/** Sin contraseña, la invitación sigue pendiente; con ella, manda el interruptor de activo. */
+function userStatus(passwordHash: string | null, active: boolean) {
+  if (!passwordHash) return "pending";
+  return active ? "active" : "inactive";
 }
 
 function maskEmail(email: string) {

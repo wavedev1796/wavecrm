@@ -6,7 +6,7 @@ import { Input } from './input';
 
 type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>;
 
-export function PasswordInput(props: PasswordInputProps) {
+export function PasswordInput(props: Readonly<PasswordInputProps>) {
   const [visible, setVisible] = useState(false);
   const Icon = visible ? EyeOff : Eye;
 

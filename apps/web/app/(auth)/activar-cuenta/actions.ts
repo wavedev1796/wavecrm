@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { API_URL } from "@/lib/api";
 import { apiError } from "@/lib/authenticated-api";
 import { confirmationError, passwordError } from "@/lib/password-rules";
-import { fieldErrors } from "@/lib/validation";
+import { fieldErrors, formText } from "@/lib/validation";
 
 export type ActivationState = {
   error: string | null;
@@ -15,9 +15,9 @@ export async function activateAccount(
   _state: ActivationState,
   formData: FormData,
 ): Promise<ActivationState> {
-  const token = String(formData.get("token") ?? "");
-  const password = String(formData.get("password") ?? "");
-  const passwordConfirmation = String(formData.get("passwordConfirmation") ?? "");
+  const token = formText(formData, "token");
+  const password = formText(formData, "password");
+  const passwordConfirmation = formText(formData, "passwordConfirmation");
   const invalid = fieldErrors({
     password: passwordError(password),
     passwordConfirmation: confirmationError(password, passwordConfirmation),

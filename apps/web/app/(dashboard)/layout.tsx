@@ -10,9 +10,9 @@ type CurrentUser = {
 
 export default async function DashboardLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   const response = await authenticatedApi("/auth/me");
   const user = response.ok ? ((await response.json()) as CurrentUser) : null;
   return <AppShell user={user}>{children}</AppShell>;

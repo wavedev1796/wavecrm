@@ -42,7 +42,9 @@ const cookieOptions = {
  */
 function secondsUntilExpiry(token: string) {
   const payload = token.split('.')[1] ?? '';
-  const { exp } = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))) as { exp: number };
+  const { exp } = JSON.parse(atob(payload.replaceAll('-', '+').replaceAll('_', '/'))) as {
+    exp: number;
+  };
   return exp - Math.floor(Date.now() / 1000);
 }
 

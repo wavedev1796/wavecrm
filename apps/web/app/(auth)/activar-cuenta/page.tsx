@@ -3,7 +3,7 @@ import Link from "next/link";
 import { API_URL } from "@/lib/api";
 import { ActivationForm } from "./activation-form";
 
-type Props = { searchParams: Promise<{ token?: string }> };
+type Props = Readonly<{ searchParams: Promise<{ token?: string }> }>;
 
 export default async function ActivateAccountPage({ searchParams }: Props) {
   const token = (await searchParams).token ?? "";

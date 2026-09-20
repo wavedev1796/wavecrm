@@ -25,11 +25,11 @@ type User = {
   invitationExpiresAt: string | null;
 };
 
-type PageProps = {
+type PageProps = Readonly<{
   searchParams: Promise<{ search?: string; status?: string }>;
-};
+}>;
 
-const STATUSES = ["active", "inactive", "pending"];
+const STATUSES = new Set(["active", "inactive", "pending"]);
 
 export default async function UsersPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -41,7 +41,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
 
   const query = new URLSearchParams({ page: "1", limit: "100" });
   if (params.search) query.set("search", params.search);
-  if (params.status && STATUSES.includes(params.status)) query.set("status", params.status);
+  if (params.status && STATUSES.has(params.status)) query.set("status", params.status);
   const response = await authenticatedApi(`/users?${query}`);
   const result = response.ok
     ? ((await response.json()) as { data: User[]; meta: { total: number } })
@@ -193,7 +193,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
   );
 }
 
-function StatusBadge({ status }: { status: User["status"] }) {
+function StatusBadge({ status }: Readonly<{ status: User["status"] }>) {
   if (status === "active") return <Badge tone="success">Activo</Badge>;
   if (status === "pending")
     return <Badge tone="warning">Invitación pendiente</Badge>;

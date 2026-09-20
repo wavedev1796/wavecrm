@@ -2,7 +2,10 @@ import { Plus } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 
-export function SectionPlaceholder({ title, description }: { title: string; description: string }) {
+export function SectionPlaceholder({
+  title,
+  description,
+}: Readonly<{ title: string; description: string }>) {
   return (
     <Card className="empty-state">
       <span className="empty-mark">W</span>

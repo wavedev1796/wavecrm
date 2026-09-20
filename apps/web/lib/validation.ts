@@ -10,6 +10,12 @@ const EMAIL_PATTERN =
   /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
 const NAME_PATTERN = /^\p{L}[\p{L}\p{M} '’.-]*$/u;
 
+/** Un campo del formulario como texto. Si llega un archivo o no llega nada, cuenta como vacío. */
+export function formText(formData: FormData, field: string): string {
+  const value = formData.get(field);
+  return typeof value === 'string' ? value : '';
+}
+
 export const normalizeEmail = (value: string) => value.trim().toLowerCase();
 export const normalizeName = (value: string) => value.trim().replace(/\s+/g, ' ');
 

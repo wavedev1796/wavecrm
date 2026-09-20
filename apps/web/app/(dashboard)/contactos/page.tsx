@@ -5,6 +5,12 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table } from '@/components/ui/table';
 
+const TONE_BY_STATUS: Record<string, 'success' | 'warning' | 'neutral'> = {
+  Activo: 'success',
+  Prospecto: 'warning',
+  Nuevo: 'neutral',
+};
+
 const contacts = [
   ['MC', 'María Cordero', 'maria.cordero@andina.ec', 'Comercial Andina', 'Pichincha', 'Cliente'],
   ['JV', 'Jorge Vera', 'jvera@distribsur.com', 'Distribuidora Sur', 'Guayas', 'Activo'],
@@ -26,7 +32,7 @@ export default function ContactsPage() {
           <tr key={email}>
             <td><div className="contact-cell"><span className="avatar">{initials}</span><span><strong>{name}</strong><small>{email}</small></span></div></td>
             <td>{company}</td><td>{province}</td>
-            <td><Badge tone={status === 'Activo' ? 'success' : status === 'Prospecto' ? 'warning' : status === 'Nuevo' ? 'neutral' : 'blue'}>{status}</Badge></td>
+            <td><Badge tone={TONE_BY_STATUS[status] ?? 'blue'}>{status}</Badge></td>
             <td><span className="avatar avatar--small">EG</span></td>
           </tr>
         ))}</tbody>

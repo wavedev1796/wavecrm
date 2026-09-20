@@ -17,7 +17,7 @@ type EditableUser = {
   role: "ADMIN" | "VENDEDOR";
 };
 
-export function EditUserDialog({ user }: { user: EditableUser }) {
+export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const show = useShowFeedback();
   const [state, formAction, pending] = useActionState(
@@ -105,7 +105,7 @@ export function EditUserDialog({ user }: { user: EditableUser }) {
               </div>
               <div className="form-field">
                 <label>
-                  Rol y permisos
+                  Rol y permisos{' '}
                   <select
                     name="role"
                     defaultValue={values.role}

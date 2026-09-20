@@ -2,12 +2,12 @@
 
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useState, type FormEvent } from 'react';
+import { useState, type SyntheticEvent } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { FieldError, invalidProps } from '@/components/ui/field-error';
 import { Input } from '@/components/ui/input';
-import { EMAIL_MAX, emailError, normalizeEmail } from '@/lib/validation';
+import { EMAIL_MAX, emailError, formText, normalizeEmail } from '@/lib/validation';
 
 export function ForgotPasswordForm() {
   const [requestedFor, setRequestedFor] = useState<string | null>(null);
@@ -16,9 +16,9 @@ export function ForgotPasswordForm() {
   // ponytail: la pantalla no llama a ningún endpoint todavía. El envío del correo con token
   // queda para el Sprint 2 (el mailer de CRM-7 ya existe); entonces este handler pasa a ser
   // una server action contra POST /auth/forgot-password.
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    const email = normalizeEmail(String(new FormData(event.currentTarget).get('email') ?? ''));
+    const email = normalizeEmail(formText(new FormData(event.currentTarget), 'email'));
     const problem = emailError(email);
     setError(problem);
     if (!problem) setRequestedFor(email);

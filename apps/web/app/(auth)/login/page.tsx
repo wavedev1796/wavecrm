@@ -6,9 +6,9 @@ export const metadata: Metadata = { title: "Iniciar sesión" };
 
 export default async function LoginPage({
   searchParams,
-}: {
+}: Readonly<{
   searchParams: Promise<{ activated?: string; sesion?: string }>;
-}) {
+}>) {
   // Códigos fijos, nunca texto de la URL: nadie puede hacer que el login muestre un mensaje falso.
   const params = await searchParams;
   return (

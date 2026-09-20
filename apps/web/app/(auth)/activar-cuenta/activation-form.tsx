@@ -11,7 +11,7 @@ import { activateAccount, type ActivationState } from "./actions";
 
 const initialState: ActivationState = { error: null, fieldErrors: {} };
 
-export function ActivationForm({ token }: { token: string }) {
+export function ActivationForm({ token }: Readonly<{ token: string }>) {
   const [state, action, pending] = useActionState(activateAccount, initialState);
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");

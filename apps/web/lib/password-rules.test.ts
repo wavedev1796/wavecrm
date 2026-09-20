@@ -13,10 +13,11 @@ test('Wave2026! cumple las cinco reglas', () => {
 });
 
 test('la longitud va de 8 a 16 caracteres', () => {
-  expect(met('Ab1!xyz').length).toBe(false);
-  expect(met('Ab1!xyzw').length).toBe(true);
-  expect(met('Ab1!xyzwAb1!xyzw').length).toBe(true);
-  expect(met('Ab1!xyzwAb1!xyzwA').length).toBe(false);
+  const lengthOk = (value: string) => met(value).length;
+  expect(lengthOk('Ab1!xyz')).toBe(false);
+  expect(lengthOk('Ab1!xyzw')).toBe(true);
+  expect(lengthOk('Ab1!xyzwAb1!xyzw')).toBe(true);
+  expect(lengthOk('Ab1!xyzwAb1!xyzwA')).toBe(false);
 });
 
 test('la ñ y las tildes no cuentan como mayúscula ni minúscula, igual que en el API', () => {

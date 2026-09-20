@@ -12,9 +12,9 @@ import {
 
 export default function AuthLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <div className="auth-screen">
       <div className="auth-ambient auth-ambient--one" aria-hidden />
@@ -70,10 +70,10 @@ function CrmIllustration() {
 function VisualNode({
   className,
   icon: Icon,
-}: {
+}: Readonly<{
   className: string;
   icon: typeof Mail;
-}) {
+}>) {
   return (
     <span className={`auth-node ${className}`}>
       <Icon />

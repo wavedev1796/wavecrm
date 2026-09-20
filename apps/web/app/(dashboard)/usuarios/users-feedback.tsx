@@ -7,7 +7,7 @@ import type { Feedback } from "./actions";
 const ShowFeedback = createContext<(feedback: Feedback) => void>(() => {});
 
 /** Un único aviso para toda la página de usuarios. Sus textos salen de las acciones, nunca de la URL. */
-export function UsersFeedbackProvider({ children }: { children: ReactNode }) {
+export function UsersFeedbackProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [feedback, setFeedback] = useState<(Feedback & { id: number }) | null>(null);
   // `id` nuevo en cada aviso: el Alert se vuelve a montar y se anuncia aunque el texto se repita.
   const show = useCallback((next: Feedback) => setFeedback({ ...next, id: Date.now() }), []);

@@ -6,6 +6,7 @@ import { apiError, authenticatedApi } from "@/lib/authenticated-api";
 import {
   emailError,
   fieldErrors,
+  formText,
   nameError,
   normalizeEmail,
   normalizeName,
@@ -37,7 +38,7 @@ export async function updateUser(
   _state: UserFormState,
   formData: FormData,
 ): Promise<UserFormState> {
-  const id = String(formData.get("id") ?? "");
+  const id = formText(formData, "id");
   return submitUser(formData, `/users/${encodeURIComponent(id)}`, "PATCH", "Usuario actualizado.");
 }
 
@@ -64,9 +65,9 @@ async function submitUser(
   success: string,
 ): Promise<UserFormState> {
   const values = {
-    name: normalizeName(String(formData.get("name") ?? "")),
-    email: normalizeEmail(String(formData.get("email") ?? "")),
-    role: String(formData.get("role") ?? ""),
+    name: normalizeName(formText(formData, "name")),
+    email: normalizeEmail(formText(formData, "email")),
+    role: formText(formData, "role"),
   };
   const invalid = fieldErrors({
     name: nameError(values.name),
@@ -78,7 +79,7 @@ async function submitUser(
 }
 
 function rowAction(formData: FormData, suffix: string, method: string, success: string) {
-  const id = String(formData.get("id") ?? "");
+  const id = formText(formData, "id");
   return mutate(`/users/${encodeURIComponent(id)}${suffix}`, method, success);
 }
 

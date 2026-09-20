@@ -17,7 +17,7 @@ const REFRESH_TTL = '8h';
 // argon2id de un valor aleatorio descartado. Si el correo no existe o la cuenta aún no tiene
 // contraseña, se verifica contra este hash para que la respuesta tarde lo mismo que con una
 // cuenta real: el tiempo no revela qué correos existen.
-const DUMMY_PASSWORD_HASH =
+const DUMMY_ARGON2_HASH =
   '$argon2id$v=19$m=65536,p=4,t=3$LS+vTggkbwa+WAnJv0RbTg$gs2Tp84w51bTAc9dEbd93pU46sfgMRFWRaRhGGB7nfs';
 
 @Injectable()
@@ -29,7 +29,7 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
-    const passwordMatches = await argon2.verify(user?.passwordHash ?? DUMMY_PASSWORD_HASH, password);
+    const passwordMatches = await argon2.verify(user?.passwordHash ?? DUMMY_ARGON2_HASH, password);
     // Mensaje genérico para no revelar si el correo existe.
     if (!user?.passwordHash || !passwordMatches) throw new UnauthorizedException('Credenciales inválidas.');
     // Solo quien conoce la contraseña llega aquí: avisar de la desactivación no revela nada nuevo.

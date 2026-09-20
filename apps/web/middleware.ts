@@ -2,14 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { API_URL } from "@/lib/api";
 import { clearSession, readSession, SESSION_EXPIRED_PATH, writeSession } from "@/lib/session";
 
-const PUBLIC_PATHS = ["/login", "/recuperar-contrasena", "/activar-cuenta"];
+const PUBLIC_PATHS = new Set(["/login", "/recuperar-contrasena", "/activar-cuenta"]);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const session = await readSession(request.cookies);
 
   if (!session) {
-    return PUBLIC_PATHS.includes(pathname)
+    return PUBLIC_PATHS.has(pathname)
       ? NextResponse.next()
       : redirectTo("/login", request);
   }

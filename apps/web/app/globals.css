@@ -127,7 +127,7 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
 .badge--blue { color: var(--wave-blue-dark); background: var(--wave-blue-soft); }
 .badge--success { color: var(--wave-success); background: var(--wave-success-soft); }
 .badge--warning { color: var(--wave-warning); background: var(--wave-warning-soft); }
-.badge--neutral { color: #77766e; background: #f0efe8; }
+.badge--neutral { color: var(--wave-muted-strong); background: #f0efe8; }
 
 .page-actions { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
 .page-actions > div { display: flex; align-items: center; gap: 10px; }
@@ -442,7 +442,7 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
   color: white;
   background:
     linear-gradient(145deg, rgb(255 255 255 / 10%), transparent 38%),
-    linear-gradient(155deg, #387f9f 0%, #255f7c 45%, #172a33 100%);
+    linear-gradient(155deg, var(--wave-blue) 0%, #255f7c 45%, #172a33 100%);
 }
 .auth-aside::before {
   content: "";

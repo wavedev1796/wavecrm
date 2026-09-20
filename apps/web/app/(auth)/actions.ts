@@ -5,7 +5,13 @@ import { redirect } from 'next/navigation';
 import { API_URL } from '@/lib/api';
 import { apiError } from '@/lib/authenticated-api';
 import { clearSession, readSession, writeSession } from '@/lib/session';
-import { emailError, fieldErrors, loginPasswordError, normalizeEmail } from '@/lib/validation';
+import {
+  emailError,
+  fieldErrors,
+  formText,
+  loginPasswordError,
+  normalizeEmail,
+} from '@/lib/validation';
 
 export type LoginState = {
   error: string | null;
@@ -21,8 +27,8 @@ const ERROR_BY_STATUS: Record<number, string> = {
 };
 
 export async function login(_previous: LoginState, formData: FormData): Promise<LoginState> {
-  const email = normalizeEmail(String(formData.get('email') ?? ''));
-  const password = String(formData.get('password') ?? '');
+  const email = normalizeEmail(formText(formData, 'email'));
+  const password = formText(formData, 'password');
   const invalid = fieldErrors({ email: emailError(email), password: loginPasswordError(password) });
   if (invalid) return { email, error: null, fieldErrors: invalid };
 

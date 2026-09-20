@@ -64,7 +64,7 @@ export function InviteUserForm() {
         </div>
         <div className="form-field">
           <label>
-            Rol
+            Rol{' '}
             <select name="role" defaultValue={values.role} {...invalidProps("invite-role", fieldErrors.role)}>
               <option value="VENDEDOR">Vendedor</option>
               <option value="ADMIN">Administrador</option>

@@ -54,10 +54,10 @@ type ShellUser = {
 export function AppShell({
   children,
   user,
-}: {
+}: Readonly<{
   children: React.ReactNode;
   user: ShellUser;
-}) {
+}>) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const header = titleByPath[pathname] ?? {
