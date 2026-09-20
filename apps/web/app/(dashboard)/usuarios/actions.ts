@@ -1,84 +1,104 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { unstable_rethrow } from "next/navigation";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
+import {
+  emailError,
+  fieldErrors,
+  nameError,
+  normalizeEmail,
+  normalizeName,
+  roleError,
+} from "@/lib/validation";
 
-export async function inviteUser(formData: FormData) {
-  const result = await mutate("/users", "POST", {
-    name: String(formData.get("name") ?? "").trim(),
-    email: String(formData.get("email") ?? "").trim(),
-    role: String(formData.get("role") ?? "VENDEDOR"),
-  });
-  finish(result, "Invitación enviada.");
+export type Feedback = { tone: "success" | "error"; message: string };
+
+export type UserFormValues = { name: string; email: string; role: string };
+
+export type UserFormState = {
+  feedback: Feedback | null;
+  fieldErrors: Partial<Record<keyof UserFormValues, string>>;
+  values: UserFormValues;
+};
+
+export async function inviteUser(
+  _state: UserFormState,
+  formData: FormData,
+): Promise<UserFormState> {
+  const state = await submitUser(formData, "/users", "POST", "Invitación enviada.");
+  // Tras invitar, el formulario queda vacío para la siguiente persona.
+  return state.feedback?.tone === "success"
+    ? { ...state, values: { name: "", email: "", role: "VENDEDOR" } }
+    : state;
 }
 
-export async function updateUser(formData: FormData) {
+export async function updateUser(
+  _state: UserFormState,
+  formData: FormData,
+): Promise<UserFormState> {
   const id = String(formData.get("id") ?? "");
-  const result = await mutate(`/users/${encodeURIComponent(id)}`, "PATCH", {
-    name: String(formData.get("name") ?? "").trim(),
-    email: String(formData.get("email") ?? "").trim(),
-    role: String(formData.get("role") ?? "VENDEDOR"),
-  });
-  finish(result, "Usuario actualizado.");
+  return submitUser(formData, `/users/${encodeURIComponent(id)}`, "PATCH", "Usuario actualizado.");
 }
 
 export async function deactivateUser(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
-  finish(
-    await mutate(`/users/${encodeURIComponent(id)}/deactivate`, "PATCH"),
-    "Usuario desactivado.",
-  );
+  return rowAction(formData, "/deactivate", "PATCH", "Usuario desactivado.");
 }
 
 export async function reactivateUser(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
-  finish(
-    await mutate(`/users/${encodeURIComponent(id)}/reactivate`, "PATCH"),
-    "Usuario reactivado.",
-  );
+  return rowAction(formData, "/reactivate", "PATCH", "Usuario reactivado.");
 }
 
 export async function resendInvitation(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
-  finish(
-    await mutate(`/users/${encodeURIComponent(id)}/resend-invitation`, "POST"),
-    "Invitación reenviada.",
-  );
+  return rowAction(formData, "/resend-invitation", "POST", "Invitación reenviada.");
 }
 
 export async function deleteUser(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
-  finish(
-    await mutate(`/users/${encodeURIComponent(id)}`, "DELETE"),
-    "Usuario eliminado.",
-  );
+  return rowAction(formData, "", "DELETE", "Usuario eliminado.");
 }
 
-async function mutate(path: string, method: string, body?: object) {
+async function submitUser(
+  formData: FormData,
+  path: string,
+  method: string,
+  success: string,
+): Promise<UserFormState> {
+  const values = {
+    name: normalizeName(String(formData.get("name") ?? "")),
+    email: normalizeEmail(String(formData.get("email") ?? "")),
+    role: String(formData.get("role") ?? ""),
+  };
+  const invalid = fieldErrors({
+    name: nameError(values.name),
+    email: emailError(values.email),
+    role: roleError(values.role),
+  });
+  if (invalid) return { feedback: null, fieldErrors: invalid, values };
+  return { feedback: await mutate(path, method, success, values), fieldErrors: {}, values };
+}
+
+function rowAction(formData: FormData, suffix: string, method: string, success: string) {
+  const id = String(formData.get("id") ?? "");
+  return mutate(`/users/${encodeURIComponent(id)}${suffix}`, method, success);
+}
+
+async function mutate(
+  path: string,
+  method: string,
+  success: string,
+  body?: UserFormValues,
+): Promise<Feedback> {
   try {
     const response = await authenticatedApi(path, {
       method,
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
-    return response.ok
-      ? { ok: true as const }
-      : { ok: false as const, message: await apiError(response) };
-  } catch {
-    return {
-      ok: false as const,
-      message: "No pudimos conectar con el servidor.",
-    };
+    if (!response.ok) return { tone: "error", message: await apiError(response) };
+  } catch (error) {
+    // Una sesión vencida redirige al login desde authenticatedApi: no es un error de conexión.
+    unstable_rethrow(error);
+    return { tone: "error", message: "No pudimos conectar con el servidor. Inténtalo de nuevo." };
   }
-}
-
-function finish(
-  result: { ok: boolean; message?: string },
-  success: string,
-): never {
   revalidatePath("/usuarios");
-  const params = new URLSearchParams(
-    result.ok ? { success } : { error: result.message ?? "Operación fallida." },
-  );
-  redirect(`/usuarios?${params.toString()}`);
+  return { tone: "success", message: success };
 }

@@ -1,10 +1,14 @@
 "use client";
 
 import { Check, Pencil, X } from "lucide-react";
-import { useRef } from "react";
+import { useActionState, useRef } from "react";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
-import { updateUser } from "./actions";
+import { EMAIL_MAX, NAME_MAX } from "@/lib/validation";
+import { updateUser, type UserFormState } from "./actions";
+import { useShowFeedback } from "./users-feedback";
 
 type EditableUser = {
   id: string;
@@ -15,7 +19,21 @@ type EditableUser = {
 
 export function EditUserDialog({ user }: { user: EditableUser }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const show = useShowFeedback();
+  const [state, formAction, pending] = useActionState(
+    async (previous: UserFormState, formData: FormData) => {
+      const next = await updateUser(previous, formData);
+      if (next.feedback?.tone === "success") {
+        dialogRef.current?.close();
+        show(next.feedback);
+      }
+      return next;
+    },
+    { feedback: null, fieldErrors: {}, values: { name: user.name, email: user.email, role: user.role } },
+  );
+  const { fieldErrors, values } = state;
   const titleId = `edit-user-title-${user.id}`;
+  const fieldId = (name: string) => `edit-${user.id}-${name}`;
 
   return (
     <>
@@ -54,39 +72,55 @@ export function EditUserDialog({ user }: { user: EditableUser }) {
             </button>
           </header>
 
-          <form action={updateUser} className="edit-user-form">
+          <form action={formAction} className="edit-user-form" noValidate aria-busy={pending || undefined}>
             <input type="hidden" name="id" value={user.id} />
             <div className="edit-user-fields">
-              <label>
-                Nombre completo
-                <Input
-                  name="name"
-                  required
-                  maxLength={100}
-                  defaultValue={user.name}
-                />
-              </label>
-              <label>
-                Correo electrónico
-                <Input
-                  name="email"
-                  type="email"
-                  required
-                  maxLength={254}
-                  defaultValue={user.email}
-                />
-              </label>
-              <label>
-                Rol y permisos
-                <select name="role" defaultValue={user.role}>
-                  <option value="VENDEDOR">Vendedor</option>
-                  <option value="ADMIN">Administrador</option>
-                </select>
-                <small>
-                  Los administradores pueden gestionar usuarios, roles y
-                  accesos.
-                </small>
-              </label>
+              {state.feedback?.tone === "error" && <Alert tone="error">{state.feedback.message}</Alert>}
+              <div className="form-field">
+                <label>
+                  Nombre completo
+                  <Input
+                    name="name"
+                    required
+                    maxLength={NAME_MAX}
+                    defaultValue={values.name}
+                    {...invalidProps(fieldId("name"), fieldErrors.name)}
+                  />
+                </label>
+                <FieldError id={fieldId("name")} message={fieldErrors.name} />
+              </div>
+              <div className="form-field">
+                <label>
+                  Correo electrónico
+                  <Input
+                    name="email"
+                    type="email"
+                    required
+                    maxLength={EMAIL_MAX}
+                    defaultValue={values.email}
+                    {...invalidProps(fieldId("email"), fieldErrors.email)}
+                  />
+                </label>
+                <FieldError id={fieldId("email")} message={fieldErrors.email} />
+              </div>
+              <div className="form-field">
+                <label>
+                  Rol y permisos
+                  <select
+                    name="role"
+                    defaultValue={values.role}
+                    {...invalidProps(fieldId("role"), fieldErrors.role)}
+                  >
+                    <option value="VENDEDOR">Vendedor</option>
+                    <option value="ADMIN">Administrador</option>
+                  </select>
+                  <small>
+                    Los administradores pueden gestionar usuarios, roles y
+                    accesos.
+                  </small>
+                </label>
+                <FieldError id={fieldId("role")} message={fieldErrors.role} />
+              </div>
             </div>
             <footer>
               <Button
@@ -96,7 +130,7 @@ export function EditUserDialog({ user }: { user: EditableUser }) {
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="edit-user-submit">
+              <Button type="submit" className="edit-user-submit" loading={pending}>
                 <Check aria-hidden />
                 Aplicar cambios
               </Button>

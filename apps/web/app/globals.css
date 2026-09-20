@@ -264,10 +264,6 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
 }
 
 .users-page { display: flex; flex-direction: column; gap: 18px; }
-.page-message { display: flex; align-items: center; gap: 9px; padding: 11px 14px; border-radius: 10px; font-size: .78rem; font-weight: 650; }
-.page-message svg { width: 17px; flex: 0 0 auto; }
-.page-message--success { color: var(--wave-success); background: var(--wave-success-soft); }
-.page-message--error { color: var(--wave-danger); background: var(--wave-danger-soft); }
 .user-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .user-summary .card { padding: 15px 18px; }
 .user-summary span { display: block; color: var(--wave-muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
@@ -279,6 +275,7 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
 .invite-panel > p { margin: 10px 0 0; color: var(--wave-muted); font-size: .7rem; }
 .user-form { display: grid; grid-template-columns: 1.2fr 1.4fr .8fr auto; align-items: end; gap: 12px; margin-top: 16px; }
 .user-form label, .edit-form label { display: flex; flex-direction: column; gap: 5px; color: #54534d; font-size: .7rem; font-weight: 650; }
+.form-field { display: flex; min-width: 0; flex-direction: column; gap: 5px; }
 .row-actions { display: flex; align-items: center; gap: 5px; }
 .row-actions > form { display: inline-flex; }
 .row-actions .icon-button { width: 34px; height: 34px; }
