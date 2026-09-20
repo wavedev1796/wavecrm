@@ -11,6 +11,7 @@
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm --filter @wave/api test && pnpm --filter @wave/web test",
     "test:integration": "dotenv -e .env.test.local -- pnpm --filter @wave/api test:integration",
+    "test:e2e": "dotenv -e .env.test.local -- playwright test",
     "test:coverage": "pnpm test:coverage:api && pnpm test:coverage:web",
     "test:coverage:api": "pnpm --filter @wave/api build && c8 --reporter=lcov --reporter=text-summary --reports-dir=coverage/api --include=apps/api/dist/**/*.js --exclude=apps/api/dist/main.js node --test apps/api/test/*.test.cjs",
     "test:coverage:web": "c8 --reporter=lcov --reporter=text-summary --reports-dir=coverage/web --include=apps/web/lib/**/*.ts node --test apps/web/lib/*.test.mjs",
@@ -25,7 +26,9 @@
   },
   "devDependencies": {
     "@neon/config": "^1.4.2",
+    "@playwright/test": "^1.63.0",
     "@sonar/scan": "4.3.5",
+    "@wave/database": "workspace:*",
     "c8": "^12.0.0",
     "dotenv-cli": "^8.0.0",
     "prettier": "^3.6.2",
