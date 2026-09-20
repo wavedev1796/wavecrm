@@ -17,3 +17,4 @@ docker-compose.override.yml
 .scannerwork/
 test-results/
 playwright-report/
+*.tsbuildinfo
