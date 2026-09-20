@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, EduardoGarcia-Dev]
+    branches: [main, develop, ZaithManangon-Dev, EduardoGarcia-Dev]
 
 jobs:
   quality:
