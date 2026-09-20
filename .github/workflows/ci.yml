@@ -19,5 +19,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
-      - run: pnpm test
+      # build va antes que test: @wave/database se consume desde dist/ y en un
+      # runner limpio esa carpeta no existe hasta compilarla.
       - run: pnpm build
+      - run: pnpm test
