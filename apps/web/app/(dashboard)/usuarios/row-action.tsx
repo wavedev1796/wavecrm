@@ -10,12 +10,12 @@ export function RowAction({
   id,
   label,
   children,
-}: {
+}: Readonly<{
   action: (formData: FormData) => Promise<Feedback>;
   id: string;
   label: string;
   children: ReactNode;
-}) {
+}>) {
   const show = useShowFeedback();
 
   return (
