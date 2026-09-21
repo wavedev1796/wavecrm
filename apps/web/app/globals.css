@@ -48,7 +48,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   background: var(--wave-white); border-right: 1px solid var(--wave-line);
 }
 .brand-row { display: flex; align-items: center; gap: 9px; padding: 0 7px; }
-.empty-mark { display: grid; place-items: center; background: var(--wave-blue); color: white; font-weight: 800; box-shadow: 0 3px 10px rgb(47 111 143 / 28%); }
 /* Logotipo Wave: un solo archivo enmascarado que se pinta con el color del contexto. */
 .brand-logo { flex: 0 0 auto; background: currentColor; -webkit-mask: url(/logo-wave.svg) center / contain no-repeat; mask: url(/logo-wave.svg) center / contain no-repeat; }
 .brand-tag { color: var(--wave-faint); font-size: 10px; font-weight: 700; letter-spacing: .2em; }
@@ -171,66 +170,29 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
 .table-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; color: var(--wave-muted); font-size: .75rem; }
 .table-footer > div { display: flex; gap: 8px; }.table-footer .button { min-height: 34px; padding: 6px 11px; font-size: .72rem; }
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 450px; padding: 40px; text-align: center; }
-.empty-mark { width: 48px; height: 48px; margin-bottom: 20px; border-radius: 14px; font-size: 1.3rem; }
+.empty-mark { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 20px; border-radius: 14px; color: white; background: var(--wave-blue); font-size: 1.3rem; font-weight: 800; box-shadow: 0 3px 10px rgb(47 111 143 / 28%); }
 .empty-state h2 { margin: 0; font-size: 1.2rem; }.empty-state p { max-width: 450px; margin: 8px 0 22px; color: var(--wave-muted); font-size: .86rem; }
 .sidebar-backdrop { display: none; }
 
 /* Pantallas de acceso. Movimiento de 200–280 ms: excepción documentada en docs/design/TOKENS.md. */
 @keyframes deal-float { 50% { transform: translateY(-6px); } }
-.auth-screen { position: relative; display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
 .auth-screen ::selection { color: white; background: var(--wave-blue); }
-.auth-aside { position: relative; isolation: isolate; display: flex; flex-direction: column; gap: 36px; padding: 40px 48px 88px; overflow: hidden; color: white; background: linear-gradient(155deg, #2f6f8f 0%, #22536b 48%, #172a33 100%); }
-.auth-waves { position: absolute; inset: auto 0 0; z-index: -1; width: 100%; height: 45%; fill: none; stroke: rgb(255 255 255 / 9%); stroke-width: 1.5; }
-.auth-brand { display: flex; align-items: center; gap: 10px; }
-/* ponytail: el SVG del logo trae ~10 px de aire a cada lado a este tamaño; el margen negativo alinea la tinta con el titular. */
-.auth-brand .brand-logo { width: 92px; height: 43px; margin-inline: -10px; }
 .auth-brand .brand-tag { color: rgb(255 255 255 / 90%); }
-.auth-pitch { max-width: 430px; margin-top: auto; }
-.auth-pitch p { margin: 14px 0 0; color: rgb(255 255 255 / 90%); font-size: 1rem; line-height: 1.55; }
-.auth-pitch .auth-title { margin: 0; color: white; font-size: clamp(2rem, 1.1rem + 1.6vw, 2.6rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.15; text-wrap: balance; }
-.auth-benefits { display: grid; gap: 12px; margin: 28px 0 0; padding: 0; list-style: none; }
-.auth-benefits li { display: flex; align-items: center; gap: 12px; font-size: .9rem; font-weight: 600; }
-.auth-benefits span { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 auto; border-radius: 10px; background: rgb(255 255 255 / 12%); }
-.auth-benefits svg { width: 17px; height: 17px; }
-.auth-footer { position: absolute; bottom: 40px; left: 48px; color: rgb(255 255 255 / 72%); font-size: .75rem; }
-.auth-brand, .auth-pitch p, .auth-benefits li { animation: rise-in .28s cubic-bezier(.16, 1, .3, 1) both; }
-.auth-pitch p { animation-delay: .12s; }
-.auth-pitch .auth-title { animation-delay: .06s; }
-.auth-benefits li:nth-child(1) { animation-delay: .18s; }
-.auth-benefits li:nth-child(2) { animation-delay: .24s; }
-.auth-benefits li:nth-child(3) { animation-delay: .3s; }
-/* La tarjeta termina en el borde derecho de la columna del texto (max-width de .auth-pitch: 430 px). */
-.deal-preview { align-self: flex-start; width: min(300px, 100%); margin: 0 0 auto max(0px, calc(min(430px, 100%) - 300px)); padding: 16px; border-radius: 14px; color: var(--wave-text); background: white; box-shadow: 0 18px 40px rgb(10 25 32 / 28%); animation: rise-in .28s cubic-bezier(.16, 1, .3, 1) .36s both, deal-float 6s ease-in-out .7s infinite; }
 .deal-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .deal-preview-tag { padding: 3px 8px; border: 1px dashed var(--wave-line-strong); border-radius: 999px; color: var(--wave-muted-strong); font-size: .66rem; font-weight: 700; }
 .deal-preview-stage { color: var(--wave-blue-dark); font-size: .7rem; font-weight: 700; }
-.deal-preview > strong { display: block; margin-top: 12px; font-size: .88rem; }
-.deal-preview > b { display: block; margin-top: 2px; color: var(--wave-blue); font-size: 1.35rem; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-.deal-preview ul { display: grid; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
-.deal-preview li { display: flex; align-items: center; gap: 7px; color: var(--wave-muted-strong); font-size: .74rem; font-weight: 600; }
-.deal-preview li svg { width: 14px; height: 14px; color: var(--wave-blue); }
-.deal-preview li:first-child svg { color: var(--wave-success); }
-.deal-preview-stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 14px; }
 .deal-preview-stages i { height: 5px; border-radius: 999px; background: var(--wave-line); }
 .deal-preview-stages i.is-done { background: var(--wave-blue); }
 
-.auth-main { display: flex; align-items: center; justify-content: center; padding: 40px 24px; background: var(--wave-page); }
-.auth-box { width: 100%; max-width: 400px; padding: 36px 32px 32px; border: 1px solid var(--wave-line); border-radius: 18px; background: white; box-shadow: 0 1px 2px rgb(40 40 30 / 4%), 0 16px 40px rgb(40 40 30 / 7%); animation: rise-in .24s cubic-bezier(.16, 1, .3, 1) both; }
-.auth-box h1 { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.2; text-wrap: balance; }
-.auth-lead { margin: 8px 0 24px; color: var(--wave-muted-strong); font-size: .9rem; line-height: 1.55; }
 .auth-lead b { color: var(--wave-text); font-weight: 700; overflow-wrap: anywhere; }
 .auth-form { display: flex; flex-direction: column; }
-.field { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
 .field label { color: #3f3e39; font-size: .8rem; font-weight: 650; }
-.auth-form .input { height: 44px; padding-inline: 14px; font-size: .92rem; caret-color: var(--wave-blue); transition: border-color .2s ease, box-shadow .2s ease; }
 .auth-form .password-field .input { padding-right: 48px; }
 .auth-form .input::placeholder { color: var(--wave-muted-strong); }
 .input[aria-invalid="true"] { border-color: var(--wave-danger); }
 .input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px var(--wave-danger-soft); }
 .field-error { margin: 0; color: var(--wave-danger); font-size: .78rem; font-weight: 600; animation: rise-in .2s cubic-bezier(.16, 1, .3, 1) both; }
-.auth-link { align-self: flex-end; margin: -6px 0 20px; color: var(--wave-blue); font-size: .8rem; font-weight: 650; text-decoration: none; text-underline-offset: 3px; }
 .auth-link:hover { color: var(--wave-blue-dark); text-decoration: underline; }
-.auth-submit { width: 100%; min-height: 44px; font-size: .9rem; }
 .auth-back { display: inline-flex; align-items: center; gap: 6px; margin-top: 20px; color: var(--wave-muted-strong); font-size: .8rem; font-weight: 650; text-decoration: none; transition: color .2s ease; }
 .auth-back svg { width: 15px; height: 15px; }
 .auth-back:hover { color: var(--wave-blue); }
@@ -240,27 +202,8 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
 .password-rules svg { width: 16px; height: 16px; flex: 0 0 auto; }
 .password-rules li[data-met="true"] { color: var(--wave-success-strong); }
 
-@media (max-width: 1024px) {
-  .auth-aside { padding: 32px 32px 72px; }
-  .auth-footer { bottom: 32px; left: 32px; }
-  .deal-preview { width: min(260px, 100%); margin-left: max(0px, calc(min(430px, 100%) - 260px)); }
-}
-
-@media (max-width: 860px) {
-  .auth-screen { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
-  /* El texto de la banda comparte borde izquierdo con la card (400 px centrada, 16 px de margen mínimo). */
-  .auth-aside { gap: 16px; padding: 24px max(16px, calc((100% - 400px) / 2)) 26px; }
-  .auth-pitch { margin-top: 0; }
-  .auth-pitch .auth-title { font-size: 1.4rem; }
-  .auth-pitch p { margin-top: 8px; font-size: .9rem; }
-  .auth-benefits, .deal-preview, .auth-waves { display: none; }
-  .auth-main { align-items: flex-start; padding: 20px 16px 24px; }
-  .auth-box { padding: 28px 20px 24px; }
-  .auth-footer { position: static; padding: 0 16px 28px; color: var(--wave-muted-strong); text-align: center; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .auth-brand, .auth-pitch p, .auth-benefits li, .deal-preview, .auth-box, .alert, .field-error { animation: none; }
+  .auth-brand, .auth-pitch p, .deal-preview, .auth-box, .alert, .field-error { animation: none; }
 }
 
 .users-page { display: flex; flex-direction: column; gap: 18px; }
@@ -376,6 +319,7 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  animation: rise-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .auth-eyebrow {
   display: inline-flex;
@@ -393,14 +337,24 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
 }
 .auth-box h1 {
   max-width: 360px;
+  margin: 0;
   font-size: clamp(1.65rem, 1.35rem + 0.7vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 1.15;
+  text-wrap: balance;
 }
 .auth-lead {
   max-width: 380px;
   margin: 10px 0 30px;
+  color: var(--wave-muted-strong);
+  font-size: 0.9rem;
+  line-height: 1.55;
 }
 .field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
   margin-bottom: 18px;
 }
 .field-heading {
@@ -412,18 +366,30 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
 .auth-link {
   align-self: auto;
   margin: 0;
+  color: var(--wave-blue);
   font-size: 0.74rem;
+  font-weight: 650;
+  text-decoration: none;
+  text-underline-offset: 3px;
 }
 .auth-form .input {
   height: 48px;
+  padding-inline: 14px;
   border-radius: 10px;
   background: #fcfcfa;
+  font-size: 0.92rem;
+  caret-color: var(--wave-blue);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .auth-submit {
+  width: 100%;
   min-height: 48px;
   margin-top: 4px;
   border-radius: 10px;
   box-shadow: 0 9px 20px rgb(47 111 143 / 18%);
+  font-size: 0.9rem;
 }
 .auth-security {
   margin: 18px 0 0;
@@ -458,10 +424,16 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
 .auth-brand {
   position: relative;
   z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: rise-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+/* ponytail: el SVG del logo trae ~10 px de aire a cada lado a este tamaño; el margen negativo alinea la tinta con el titular. */
 .auth-brand .brand-logo {
   width: 94px;
   height: 44px;
+  margin-inline: -10px;
 }
 .auth-visual {
   position: absolute;
@@ -597,12 +569,21 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
   margin: 0;
 }
 .auth-pitch .auth-title {
+  margin: 0;
+  color: white;
   font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 1.2;
+  text-wrap: balance;
+  animation: rise-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
 }
 .auth-pitch p {
-  margin-top: 8px;
+  margin: 8px 0 0;
+  color: rgb(255 255 255 / 90%);
   font-size: 0.78rem;
+  line-height: 1.55;
+  animation: rise-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
 }
 .deal-preview {
   position: absolute;
@@ -612,18 +593,35 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
   width: 225px;
   margin: 0;
   padding: 13px;
+  border-radius: 14px;
+  color: var(--wave-text);
+  background: white;
+  box-shadow: 0 18px 40px rgb(10 25 32 / 28%);
+  animation:
+    rise-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.36s both,
+    deal-float 6s ease-in-out 0.7s infinite;
 }
 .deal-preview ul {
   display: none;
 }
 .deal-preview > strong {
+  display: block;
   margin-top: 9px;
   font-size: 0.76rem;
 }
 .deal-preview > b {
+  display: block;
+  margin-top: 2px;
+  color: var(--wave-blue);
   font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
 }
 .deal-preview-stages {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
   margin-top: 10px;
 }
 .auth-footer {
@@ -631,6 +629,7 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
   bottom: 14px;
   left: 50%;
   color: var(--wave-muted-strong);
+  font-size: 0.75rem;
   transform: translateX(-50%);
 }
 
@@ -754,6 +753,7 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
 
 @media (max-width: 900px) {
   .auth-screen {
+    flex-wrap: wrap;
     align-items: flex-start;
     padding: 18px;
     overflow-y: auto;
@@ -806,11 +806,14 @@ select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--wave-line
   .auth-main {
     padding: 38px 28px 42px;
   }
+  /* Sale del flujo absoluto: sin ancho completo se colocaría al lado de la tarjeta. */
   .auth-footer {
     position: static;
     display: block;
+    width: 100%;
     margin-top: 14px;
     color: var(--wave-muted-strong);
+    text-align: center;
     transform: none;
   }
 }
