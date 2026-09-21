@@ -17,7 +17,7 @@ const contacts = [
   ['AL', 'Ana López', 'ana.lopez@agromanabi.ec', 'Agro Manabí', 'Manabí', 'Prospecto'],
   ['RP', 'Ricardo Paz', 'rpaz@farmaciavida.ec', 'Farmacia Vida', 'Azuay', 'Cliente'],
   ['CS', 'Carla Suárez', 'csuarez@construgye.com', 'Constructora GYE', 'Guayas', 'Nuevo'],
-];
+] as const;
 
 export default function ContactsPage() {
   return (
