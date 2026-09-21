@@ -844,6 +844,10 @@ select {
   padding: 6px 11px;
   font-size: 0.72rem;
 }
+.table-footer .button[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+}
 .empty-state {
   display: flex;
   flex-direction: column;

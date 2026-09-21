@@ -1,4 +1,11 @@
-import { MailPlus, RefreshCw, Search, Trash2, UserCheck, UserX } from "lucide-react";
+import {
+  MailPlus,
+  RefreshCw,
+  Search,
+  Trash2,
+  UserCheck,
+  UserX,
+} from "lucide-react";
 import { redirect } from "next/navigation";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Table } from "@/components/ui/table";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { SEARCH_MAX } from "@/lib/validation";
-import { deactivateUser, deleteUser, reactivateUser, resendInvitation } from "./actions";
+import {
+  deactivateUser,
+  deleteUser,
+  reactivateUser,
+  resendInvitation,
+} from "./actions";
 import { EditUserDialog } from "./edit-user-dialog";
 import { InviteUserForm } from "./invite-user-form";
 import { RowAction } from "./row-action";
@@ -26,10 +38,11 @@ type User = {
 };
 
 type PageProps = Readonly<{
-  searchParams: Promise<{ search?: string; status?: string }>;
+  searchParams: Promise<{ search?: string; status?: string; page?: string }>;
 }>;
 
 const STATUSES = new Set(["active", "inactive", "pending"]);
+const PAGE_SIZE = 10;
 
 export default async function UsersPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -39,14 +52,28 @@ export default async function UsersPage({ searchParams }: PageProps) {
     : null;
   if (me?.role !== "ADMIN") redirect("/pipeline");
 
-  const query = new URLSearchParams({ page: "1", limit: "100" });
+  const requestedPage = positivePage(params.page);
+  const query = new URLSearchParams({
+    page: String(requestedPage),
+    limit: String(PAGE_SIZE),
+  });
   if (params.search) query.set("search", params.search);
-  if (params.status && STATUSES.has(params.status)) query.set("status", params.status);
+  if (params.status && STATUSES.has(params.status))
+    query.set("status", params.status);
   const response = await authenticatedApi(`/users?${query}`);
   const result = response.ok
-    ? ((await response.json()) as { data: User[]; meta: { total: number } })
+    ? ((await response.json()) as {
+        data: User[];
+        meta: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      })
     : null;
   const users = result?.data ?? [];
+  const meta = result?.meta;
 
   const counts = users.reduce(
     (value, user) => {
@@ -60,7 +87,9 @@ export default async function UsersPage({ searchParams }: PageProps) {
     <div className="users-page">
       <UsersFeedbackProvider>
         {!result && (
-          <Alert tone="error">No pudimos cargar los usuarios. Recarga la página.</Alert>
+          <Alert tone="error">
+            No pudimos cargar los usuarios. Recarga la página.
+          </Alert>
         )}
 
         <section className="user-summary" aria-label="Resumen de usuarios">
@@ -69,15 +98,15 @@ export default async function UsersPage({ searchParams }: PageProps) {
             <strong>{result?.meta.total ?? 0}</strong>
           </Card>
           <Card>
-            <span>Activos</span>
+            <span>Activos en página</span>
             <strong>{counts.active}</strong>
           </Card>
           <Card>
-            <span>Pendientes</span>
+            <span>Pendientes en página</span>
             <strong>{counts.pending}</strong>
           </Card>
           <Card>
-            <span>Inactivos</span>
+            <span>Inactivos en página</span>
             <strong>{counts.inactive}</strong>
           </Card>
         </section>
@@ -144,33 +173,53 @@ export default async function UsersPage({ searchParams }: PageProps) {
                       </span>
                     </div>
                   </td>
-                  <td>{user.role === "ADMIN" ? "Administrador" : "Vendedor"}</td>
+                  <td>
+                    {user.role === "ADMIN" ? "Administrador" : "Vendedor"}
+                  </td>
                   <td>
                     <StatusBadge status={user.status} />
                   </td>
                   <td>
-                    {user.invitationSentAt ? formatDate(user.invitationSentAt) : "—"}
+                    {user.invitationSentAt
+                      ? formatDate(user.invitationSentAt)
+                      : "—"}
                   </td>
                   <td>
                     <div className="row-actions">
                       <EditUserDialog user={user} />
                       {user.status === "pending" && (
-                        <RowAction action={resendInvitation} id={user.id} label="Reenviar invitación">
+                        <RowAction
+                          action={resendInvitation}
+                          id={user.id}
+                          label="Reenviar invitación"
+                        >
                           <RefreshCw aria-hidden />
                         </RowAction>
                       )}
                       {user.status === "active" && user.id !== me.id && (
-                        <RowAction action={deactivateUser} id={user.id} label="Desactivar">
+                        <RowAction
+                          action={deactivateUser}
+                          id={user.id}
+                          label="Desactivar"
+                        >
                           <UserX aria-hidden />
                         </RowAction>
                       )}
                       {user.status === "inactive" && (
-                        <RowAction action={reactivateUser} id={user.id} label="Reactivar">
+                        <RowAction
+                          action={reactivateUser}
+                          id={user.id}
+                          label="Reactivar"
+                        >
                           <UserCheck aria-hidden />
                         </RowAction>
                       )}
                       {user.id !== me.id && (
-                        <RowAction action={deleteUser} id={user.id} label="Eliminar">
+                        <RowAction
+                          action={deleteUser}
+                          id={user.id}
+                          label="Eliminar"
+                        >
                           <Trash2 aria-hidden />
                         </RowAction>
                       )}
@@ -187,6 +236,49 @@ export default async function UsersPage({ searchParams }: PageProps) {
               )}
             </tbody>
           </Table>
+          {meta && (
+            <nav className="table-footer" aria-label="Paginación de usuarios">
+              <span>
+                {users.length
+                  ? `Mostrando ${(meta.page - 1) * meta.limit + 1}–${(meta.page - 1) * meta.limit + users.length} de ${meta.total}`
+                  : `Mostrando 0 de ${meta.total}`}
+                {" · "}
+                Página {meta.page} de {Math.max(meta.totalPages, 1)}
+              </span>
+              <div>
+                {meta.page > 1 ? (
+                  <a
+                    className="button button--secondary"
+                    href={usersPageHref(params, meta.page - 1)}
+                  >
+                    Anterior
+                  </a>
+                ) : (
+                  <span
+                    className="button button--secondary"
+                    aria-disabled="true"
+                  >
+                    Anterior
+                  </span>
+                )}
+                {meta.page < meta.totalPages ? (
+                  <a
+                    className="button button--secondary"
+                    href={usersPageHref(params, meta.page + 1)}
+                  >
+                    Siguiente
+                  </a>
+                ) : (
+                  <span
+                    className="button button--secondary"
+                    aria-disabled="true"
+                  >
+                    Siguiente
+                  </span>
+                )}
+              </div>
+            </nav>
+          )}
         </Card>
       </UsersFeedbackProvider>
     </div>
@@ -213,4 +305,22 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat("es-EC", { dateStyle: "medium" }).format(
     new Date(value),
   );
+}
+
+function positivePage(value?: string) {
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+function usersPageHref(
+  params: { search?: string; status?: string },
+  page: number,
+) {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.status && STATUSES.has(params.status)) {
+    query.set("status", params.status);
+  }
+  query.set("page", String(page));
+  return `/usuarios?${query}`;
 }
