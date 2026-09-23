@@ -4,8 +4,8 @@ const nodemailer = require("nodemailer");
 const nodemailerApi = nodemailer.default ?? nodemailer;
 const { ServiceUnavailableException } = require("@nestjs/common");
 const {
-  InvitationMailerService,
-} = require("../dist/modules/users/invitation-mailer.service.js");
+  MailerService,
+} = require("../dist/modules/mailer/mailer.service.js");
 
 function config(values) {
   return { get: (key) => values[key] };
@@ -27,7 +27,7 @@ test("envía la invitación mediante SMTP con texto y HTML", async (t) => {
     nodemailerApi.createTransport = originalCreateTransport;
   });
 
-  const mailer = new InvitationMailerService(
+  const mailer = new MailerService(
     config({
       APP_URL: "http://localhost:3000/",
       SMTP_HOST: "localhost",
@@ -61,7 +61,7 @@ test("acepta autenticación SMTP completa", async (t) => {
   t.after(() => {
     nodemailerApi.createTransport = originalCreateTransport;
   });
-  const mailer = new InvitationMailerService(
+  const mailer = new MailerService(
     config({
       SMTP_HOST: "smtp.example.com",
       SMTP_PORT: "465",
@@ -82,7 +82,7 @@ test("acepta autenticación SMTP completa", async (t) => {
 });
 
 test("rechaza una autenticación SMTP incompleta", async () => {
-  const mailer = new InvitationMailerService(
+  const mailer = new MailerService(
     config({ SMTP_HOST: "smtp.example.com", SMTP_USER: "usuario" }),
   );
   await assert.rejects(
@@ -92,7 +92,7 @@ test("rechaza una autenticación SMTP incompleta", async () => {
 });
 
 test("en producción exige una configuración SMTP", async () => {
-  const mailer = new InvitationMailerService(
+  const mailer = new MailerService(
     config({ NODE_ENV: "production" }),
   );
   await assert.rejects(

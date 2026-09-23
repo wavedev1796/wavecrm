@@ -5,16 +5,19 @@ const { assertTestDatabase } = require("../../../../test/datos-de-prueba.cjs");
 const { AppModule } = require("../../dist/app.module.js");
 const { configureApp } = require("../../dist/app.setup.js");
 const { PrismaService } = require("../../dist/modules/prisma/prisma.service.js");
-const { InvitationMailerService } = require("../../dist/modules/users/invitation-mailer.service.js");
+const { MailerService } = require("../../dist/modules/mailer/mailer.service.js");
 
 async function startApi() {
   assertTestDatabase();
   const inbox = [];
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-    .overrideProvider(InvitationMailerService)
+    .overrideProvider(MailerService)
     .useValue({
       sendInvitation: async (recipient, token) => {
-        inbox.push({ ...recipient, token });
+        inbox.push({ ...recipient, token, kind: "invitation" });
+      },
+      sendPasswordReset: async (recipient, token) => {
+        inbox.push({ ...recipient, token, kind: "password-reset" });
       },
     })
     .compile();

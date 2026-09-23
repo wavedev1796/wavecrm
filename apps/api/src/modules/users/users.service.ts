@@ -7,9 +7,9 @@ import {
 } from "@nestjs/common";
 import { Prisma, UserRole } from "@wave/database";
 import * as argon2 from "argon2";
+import { createToken, hashToken, INVITATION_TTL_MS } from "../../common/tokens";
+import { MailerService } from "../mailer/mailer.service";
 import { PrismaService } from "../prisma/prisma.service";
-import { createInvitationToken, hashInvitationToken } from "./invitation-token";
-import { InvitationMailerService } from "./invitation-mailer.service";
 import {
   ActivateInvitationDto,
   CreateUserDto,
@@ -35,7 +35,7 @@ const publicUserSelect = {
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mailer: InvitationMailerService,
+    private readonly mailer: MailerService,
   ) {}
 
   async list(query: ListUsersDto) {
@@ -86,7 +86,7 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto, actorId: string) {
-    const invitation = createInvitationToken();
+    const invitation = createToken(INVITATION_TTL_MS);
     let user;
     try {
       user = await this.prisma.user.create({
@@ -180,7 +180,7 @@ export class UsersService {
     const user = await this.requireUser(id);
     if (user.passwordHash)
       throw new BadRequestException("Esta cuenta ya fue activada.");
-    const invitation = createInvitationToken();
+    const invitation = createToken(INVITATION_TTL_MS);
     await this.mailer.sendInvitation(
       { email: user.email, name: user.name },
       invitation.token,
@@ -234,7 +234,7 @@ export class UsersService {
     const result = await this.prisma.user.updateMany({
       where: {
         id: user.id,
-        invitationTokenHash: hashInvitationToken(token),
+        invitationTokenHash: hashToken(token),
         passwordHash: null,
       },
       data: {
@@ -255,7 +255,7 @@ export class UsersService {
     if (!token || token.length > 200)
       throw new BadRequestException("Invitación inválida.");
     const user = await this.prisma.user.findUnique({
-      where: { invitationTokenHash: hashInvitationToken(token) },
+      where: { invitationTokenHash: hashToken(token) },
       select: {
         id: true,
         email: true,

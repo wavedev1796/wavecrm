@@ -3,9 +3,9 @@ const assert = require("node:assert/strict");
 const { BadRequestException, ForbiddenException } = require("@nestjs/common");
 const { UsersService } = require("../dist/modules/users/users.service.js");
 const {
-  hashInvitationToken,
+  hashToken,
   INVITATION_TTL_MS,
-} = require("../dist/modules/users/invitation-token.js");
+} = require("../dist/common/tokens.js");
 
 const baseUser = {
   id: "user-2",
@@ -106,7 +106,7 @@ test("crea una cuenta pendiente y envía un token cuyo hash se persiste", async 
   assert.equal(sent.length, 1);
   assert.equal(
     createData.invitationTokenHash,
-    hashInvitationToken(sent[0].token),
+    hashToken(sent[0].token),
   );
   assert.ok(
     createData.invitationExpiresAt.getTime() >= before + INVITATION_TTL_MS,
@@ -120,7 +120,7 @@ test("activa una invitación válida, guarda la contraseña y consume el token",
     user: {
       findUnique: async () => ({
         ...baseUser,
-        invitationTokenHash: hashInvitationToken(rawToken),
+        invitationTokenHash: hashToken(rawToken),
         invitationExpiresAt: new Date(Date.now() + 60_000),
       }),
       updateMany: async ({ data }) => {
