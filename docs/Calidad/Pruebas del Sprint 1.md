@@ -1,6 +1,6 @@
 # Pruebas del Sprint 1
 
-Estado al 2026-09-20: **173 pruebas en verde** (43 unitarias del API, 20 de integración del API contra Neon, 96 de la web y 14 de navegador). Cobertura de líneas: **96,63 %** en el API y **97,78 %** en la web. Quality Gate de SonarQube: **PASSED** (análisis de cierre del 2026-09-20, 120 archivos, proyecto `WaveCRM`).
+Estado al 2026-09-23: **202 pruebas en verde** (53 unitarias del API, 24 de integración del API contra Neon, 110 de la web y 15 de navegador). Cobertura de líneas: **97,29 %** en el API y **98,08 %** en la web. Quality Gate de SonarQube: **PASSED** (análisis del 2026-09-23 tras la recuperación de contraseña, proyecto `WaveCRM`).
 
 ## Cómo correrlas (paso a paso)
 
@@ -10,17 +10,17 @@ Estado al 2026-09-20: **173 pruebas en verde** (43 unitarias del API, 20 de inte
    ```bash
    pnpm test
    ```
-   Esperado: `# fail 0` en el API y `Tests 96 passed` en la web.
+   Esperado: `# fail 0` en el API y `Tests 110 passed` en la web.
 2. **Integración del API contra Neon** (≈ 1 min):
    ```bash
    pnpm test:integration
    ```
-   Esperado: `# tests 20`, `# fail 0`.
+   Esperado: `# tests 24`, `# fail 0`.
 3. **Navegador** (≈ 2 min). Apaga `pnpm dev` antes, porque Playwright levanta sus propios servidores:
    ```bash
    pnpm test:e2e
    ```
-   Esperado: `14 passed`. Si algo falla: `pnpm exec playwright show-report`.
+   Esperado: `15 passed`. Si algo falla: `pnpm exec playwright show-report`.
 4. **Cobertura para SonarQube** (≈ 2 min):
    ```bash
    pnpm test:coverage
@@ -65,7 +65,7 @@ Las e2e no aportan cobertura a SonarQube; su evidencia es el reporte de Playwrig
 | Archivo | Tipo | Pruebas | Qué verifica |
 | --- | --- | --- | --- |
 | `apps/api/test/users.service.test.cjs` | Unitaria | 9 | Listado, creación con token, activación, protecciones del último administrador (de Eduardo) |
-| `apps/api/test/invitation-mailer.service.test.cjs` | Unitaria | 4 | Transporte SMTP, autenticación y escape del HTML (de Eduardo) |
+| `apps/api/test/mailer.service.test.cjs` | Unitaria | 4 | Transporte SMTP, autenticación y escape del HTML (de Eduardo) |
 | `apps/web/lib/password-rules.test.ts` | Web | 7 | Las 5 reglas de contraseña, la ñ, los 32 símbolos y la confirmación |
 | `apps/web/app/(auth)/activar-cuenta/*.test.*` | Web | 11 | Server action, formulario con reglas en vivo, desajuste y página de invitación |
 | `apps/api/test/integracion/users.http.test.cjs` | Integración | 1 de 9 | Invitación enmascarada y activación con las reglas |
@@ -77,10 +77,13 @@ Las e2e no aportan cobertura a SonarQube; su evidencia es el reporte de Playwrig
 | --- | --- | --- | --- |
 | `apps/web/app/(auth)/actions.test.ts` | Web | 7 | Validación previa, normalización del correo, mensajes de 401/403/429/400, sin conexión, logout |
 | `apps/web/app/(auth)/login/login-form.test.tsx` | Web | 4 | Error por campo, alerta del servidor, estado de carga, `noValidate` y longitudes |
-| `apps/web/app/(auth)/login/page.test.tsx` | Web | 3 | Avisos de cuenta activada y sesión terminada; **un texto libre en la URL no se muestra** |
-| `apps/web/app/(auth)/recuperar-contrasena/*.test.tsx` | Web | 5 | Correo obligatorio, dominio sin extensión y confirmación |
+| `apps/web/app/(auth)/login/page.test.tsx` | Web | 4 | Avisos de cuenta activada, sesión terminada y contraseña actualizada; **un texto libre en la URL no se muestra** |
+| `apps/web/app/(auth)/recuperar-contrasena/*.test.*` | Web | 8 | Server action (validación, normalización, 429 y sin conexión) y formulario (confirmación, error por campo y alerta) |
+| `apps/web/app/(auth)/restablecer-contrasena/*.test.*` | Web | 8 | Server action (reglas, redirección a `?contrasena=actualizada`, enlace vencido, contraseña repetida bajo el campo) y página (sin token, enlace válido, enlace caído) |
+| `apps/api/test/auth.service.test.cjs` | Unitaria | 10 de 19 | **Solo se guarda el hash del enlace**, vida de 1 hora, cuentas que no reciben enlace, fallo del correo que no cambia la respuesta, contraseña nueva que **revoca las sesiones**, enlace vencido, enlace usado dos veces y **contraseña repetida de las 5 recordadas, con un único mensaje** |
+| `apps/api/test/integracion/auth.http.test.cjs` | Integración | 4 de 13 | Ciclo completo por HTTP con la sesión anterior revocada, respuesta idéntica para cuenta inexistente/pendiente/desactivada, enlaces vencidos, contraseñas débiles y **una contraseña ya usada (409) que no gasta el enlace** |
 | `apps/web/lib/validation.test.ts` | Web | 7 | Los 51 casos compartidos en la web |
-| `e2e/acceso.spec.ts` | Navegador | 6 | Errores de campo, credenciales incorrectas, login sin distinguir mayúsculas, cookies httpOnly, logout, recuperación y cabeceras |
+| `e2e/acceso.spec.ts` | Navegador | 7 | Errores de campo, credenciales incorrectas, login sin distinguir mayúsculas, cookies httpOnly, logout, cabeceras y **el ciclo completo de recuperación** |
 
 ### CRM-9 · Gestión de usuarios admin
 
@@ -124,7 +127,7 @@ Las mismas reglas se aplican en la web y en el API, y ambas se prueban con `test
 | Correo | recortado y en minúsculas; formato válido; extensión de 2 letras o más; máximo 64 | "Ingresa tu correo." / "Escribe un correo válido, por ejemplo nombre@empresa.ec." / "El correo no puede superar 64 caracteres." |
 | Nombre | recortado, espacios colapsados; 2–100; empieza por letra; letras (con tildes y ñ), espacios, apóstrofo, guion y punto | "Ingresa el nombre." / "El nombre debe tener entre 2 y 100 caracteres." / "El nombre solo puede tener letras, espacios, apóstrofos, guiones y puntos." |
 | Contraseña del login | obligatoria; máximo 16; sin reglas de composición (las cuentas antiguas deben poder entrar) | "Ingresa tu contraseña." / "La contraseña no puede superar 16 caracteres." |
-| Contraseña nueva | 8–16 con mayúscula, minúscula, número y símbolo ASCII; confirmación igual | "La contraseña debe tener entre 8 y 16 caracteres." / "La contraseña debe incluir una mayúscula, una minúscula, un número y un carácter especial." / "Confirma tu contraseña." / "Las contraseñas no coinciden." |
+| Contraseña nueva | 8–16 con mayúscula, minúscula, número y símbolo ASCII; confirmación igual; al recuperarla, distinta de las 5 últimas (mensaje único, sin decir cuál) | "La contraseña debe tener entre 8 y 16 caracteres." / "La contraseña debe incluir una mayúscula, una minúscula, un número y un carácter especial." / "Confirma tu contraseña." / "Las contraseñas no coinciden." / "Elige una contraseña que no hayas usado antes." |
 | Rol, búsqueda y filtros | `ADMIN`/`VENDEDOR`; búsqueda máx. 100; página y límite enteros (1–100) | "Elige un rol válido." / "Elige un estado válido." / "La búsqueda no puede superar 100 caracteres." / "La página debe ser un número entero mayor que 0." / "El límite debe ser un número entero entre 1 y 100." |
 | Peticiones mal formadas | campo no permitido, JSON roto, ruta mal codificada, cuerpo > 100 KB | "El campo «x» no está permitido." / "La solicitud no tiene un formato válido." / "La solicitud es demasiado grande." |
 
@@ -134,7 +137,7 @@ Las mismas reglas se aplican en la web y en el API, y ambas se prueban con `test
 | --- | --- | --- | --- |
 | H1 | Una cuenta desactivada recibía "Correo o contraseña incorrectos." | Con la contraseña correcta, 403 con el motivo; con una incorrecta, el genérico | `auth.service.test.cjs`, `auth.http.test.cjs` ("Flujo reportado"), `e2e/usuarios.spec.ts` |
 | H2 | El login distinguía mayúsculas en el correo | `LoginDto` recorta y pasa a minúsculas | `validation.test.cjs`, `auth.http.test.cjs` |
-| H3 | El límite de 5 intentos era por IP y todo login llega del servidor web: 5 fallos bloqueaban a toda la empresa | El límite cuenta por correo (`loginThrottleKey`) | `auth.guards.test.cjs`, `auth.http.test.cjs`, `e2e/limite.spec.ts` |
+| H3 | El límite de 5 intentos era por IP y todo login llega del servidor web: 5 fallos bloqueaban a toda la empresa | El límite cuenta por correo (`throttleKey`, que desde la recuperación de contraseña también limita por enlace) | `auth.guards.test.cjs`, `auth.http.test.cjs`, `e2e/limite.spec.ts` |
 | H4 | `/usuarios?error=<texto>` mostraba cualquier texto como aviso del sistema | Las acciones devuelven su resultado; la URL ya no se lee | `usuarios/page.test.tsx`, `e2e/usuarios.spec.ts` |
 | H5 | Contraseñas sin máximo y nombre sin reglas | 8–16 con 4 tipos, login máx. 16, nombre acotado | casos compartidos (API y web) |
 | H6 | El front aceptaba correos sin extensión | Misma expresión regular en web y API, con `noValidate` para dar el mensaje propio | `validation.test.ts`, `e2e/acceso.spec.ts` |
@@ -147,6 +150,6 @@ Las mismas reglas se aplican en la web y en el API, y ambas se prueban con `test
 
 ## Límites conocidos
 
-- El límite de intentos es por correo. Frenar pruebas masivas contra muchas cuentas desde un mismo equipo requiere que la web reenvíe la IP real del cliente (Sprint 2).
-- "Olvidé mi contraseña" valida el correo pero todavía no envía nada; el mailer de CRM-7 ya existe (Sprint 2).
-- Las e2e usan un token de invitación fijado en la base: el envío del correo se prueba aparte, en `invitation-mailer.service.test.cjs`.
+- El límite de intentos es por cuenta o por enlace. Frenar pruebas masivas contra muchas cuentas desde un mismo equipo requiere que la web reenvíe la IP real del cliente (Sprint 2).
+- Las e2e usan tokens de invitación y de recuperación fijados en la base: el envío del correo se prueba aparte, en `mailer.service.test.cjs`.
+- Al restablecer la contraseña, la sesión que estaba abierta muere cuando vence su access token, como máximo 15 minutos después. La revocación inmediata del refresh sí se verifica en integración.

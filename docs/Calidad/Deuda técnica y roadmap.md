@@ -13,7 +13,7 @@ Los porcentajes son altos (96,63 % de líneas en el API, 97,78 % en la web), per
 | Borrar un usuario con actividad asociada (`P2003` → 409) | `apps/api/src/modules/users/users.service.ts:210-216` | Es el camino que puede bloquear o perder datos reales |
 | Impedir dejar el sistema sin administrador activo al editar | `apps/api/src/modules/users/users.service.ts:131` | La empresa se queda sin acceso administrativo |
 | Rollback cuando falla el correo de invitación | `apps/api/src/modules/users/users.service.ts:116-120` | Usuarios huérfanos si el rollback se rompe |
-| SMTP mal configurado o envío fallido (`503`) | `apps/api/src/modules/users/invitation-mailer.service.ts:62-94` | Errores que solo aparecen en producción |
+| SMTP mal configurado o envío fallido (`503`) | `apps/api/src/modules/mailer/mailer.service.ts:56-134` | Errores que solo aparecen en producción |
 | Ramas de error de `layout.tsx` (50 %) y `activar-cuenta/actions.ts` (70 %) | `apps/web/app/` | Menor: mensajes de UI |
 
 Las cuatro primeras pertenecen a CRM-7 y CRM-9. Cubrirlas son unas ocho pruebas (≈ 1,5 h) y suben la cobertura de ramas del API de 89,17 % a ~95 %.
@@ -25,7 +25,7 @@ Lo que ninguna cobertura mide y hoy no se prueba: **concurrencia** (dos renovaci
 | Deuda | Dónde | Coste | Cuándo duele |
 | --- | --- | --- | --- |
 | Rollback manual en vez de `prisma.$transaction` | `users.service.ts:116-120` | 1 h | Ya: un fallo de red deja datos a medias |
-| Configuración validada tarde (`SMTP_PORT` inválido responde 503 al enviar, no al arrancar) | `invitation-mailer.service.ts:84-93` | 1 h | En el primer despliegue mal configurado |
+| Configuración validada tarde (`SMTP_PORT` inválido responde 503 al enviar, no al arrancar) | `mailer/mailer.service.ts:121-134` | 1 h | En el primer despliegue mal configurado |
 | Validaciones duplicadas web/API, sincronizadas por un JSON de casos | `apps/web/lib/validation.ts`, `apps/api/src/common/validation.ts` | 3 h | Cuando el tercer campo se desincronice |
 | 10 módulos stub vacíos (`deals`, `quotes`, `notes`, …) | `apps/api/src/modules/` | 10 min | Ruido en cada búsqueda y en el análisis estático |
 | Sin tipos compartidos entre web y API | `apps/web` ↔ `/docs` | 30 min | Un cambio de DTO no rompe la compilación de la web |

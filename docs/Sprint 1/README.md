@@ -12,7 +12,7 @@ Dar acceso seguro al CRM: inicio de sesión con roles, alta de personas por invi
 | --- | --- | --- | --- |
 | CRM-6 | [Autenticación JWT + roles](06%20-%20Autenticaci%C3%B3n%20JWT%20%2B%20roles.md) | Zaith Manangón | Completo (4/4 criterios) |
 | CRM-7 | [Usuarios e invitaciones](07%20-%20Usuarios%20e%20invitaciones.md) | Eduardo García | Completo (alcance entregado según el ticket) |
-| CRM-8 | [Login + recuperar contraseña](08%20-%20Login%20%2B%20recuperar%20contrase%C3%B1a.md) | Zaith Manangón | Completo salvo el envío del correo de "olvidé mi contraseña" (3/4 criterios) |
+| CRM-8 | [Login + recuperar contraseña](08%20-%20Login%20%2B%20recuperar%20contrase%C3%B1a.md) | Zaith Manangón | Completo (4/4 criterios; recuperación cerrada el 2026-09-22) |
 | CRM-9 | [Gestión de usuarios admin](09%20-%20Gesti%C3%B3n%20de%20usuarios%20admin.md) | Eduardo García | Completo (4/4 criterios de su tabla) |
 | CRM-10 | [Seguridad de sesión](10%20-%20Seguridad%20de%20sesi%C3%B3n.md) | Zaith Manangón | Completo (4/4 criterios) |
 
@@ -30,20 +30,19 @@ Dar acceso seguro al CRM: inicio de sesión con roles, alta de personas por invi
 
 | Métrica | Valor |
 | --- | --- |
-| Pruebas unitarias del API | 43 |
-| Pruebas de integración del API (Neon) | 20 |
-| Pruebas de la web (Vitest) | 96 |
-| Pruebas de navegador (Playwright) | 14 |
-| **Total** | **173** |
-| Cobertura de líneas del API | 96,63 % |
-| Cobertura de líneas de la web | 97,78 % |
-| Quality Gate de SonarQube | **PASSED** (2026-09-20, 120 archivos analizados) |
+| Pruebas unitarias del API | 53 |
+| Pruebas de integración del API (Neon) | 24 |
+| Pruebas de la web (Vitest) | 110 |
+| Pruebas de navegador (Playwright) | 15 |
+| **Total** | **202** |
+| Cobertura de líneas del API | 97,29 % |
+| Cobertura de líneas de la web | 98,08 % |
+| Quality Gate de SonarQube | **PASSED** (2026-09-23, tras la recuperación de contraseña) |
 
 Detalle, catálogo por ticket y paso a paso: [docs/Calidad/Pruebas del Sprint 1.md](../Calidad/Pruebas%20del%20Sprint%201.md).
 
 ## Pendientes para el Sprint 2
 
-- Envío real del correo de "olvidé mi contraseña" (el mailer de CRM-7 ya existe; falta el endpoint y convertir el handler en server action).
 - Límite de intentos con la IP real del cliente, reenviada por la web de forma confiable.
 - Migrar la sesión a Redis: hoy la deduplicación de renovaciones vive en la memoria del proceso y vale con una sola instancia.
 - El pie del sidebar y los datos del dashboard siguen siendo de demostración.

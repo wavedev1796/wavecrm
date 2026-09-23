@@ -8,7 +8,7 @@ Crear las pantallas de acceso al sistema con validación y flujo de recuperació
 
 - [x] Formulario de login validado.
 - [x] Errores claros al usuario.
-- [ ] Flujo "olvidé mi contraseña". _(UI completa; el envío del correo depende de CRM-7 — ver Decisiones.)_
+- [x] Flujo "olvidé mi contraseña". _(Completo desde el 2026-09-22: envío del enlace, pantalla de contraseña nueva y revocación de sesiones.)_
 - [x] Redirección post-login.
 
 ## Implementación
@@ -108,7 +108,56 @@ Crear las pantallas de acceso al sistema con validación y flujo de recuperació
 
 - `pnpm test`: 96 pruebas de la web en verde (7 de la server action de login, 4 del formulario, 3 de la página, 5 de recuperar contraseña y 7 de las reglas compartidas).
 - `pnpm test:e2e`: 6 flujos de acceso en navegador (errores de campo, credenciales incorrectas, login sin distinguir mayúsculas, cookies `httpOnly`, logout, recuperación y cabeceras de seguridad).
-- Cobertura de la web: 97,78 % de líneas.
+- Cobertura de la web: 98,08 % de líneas.
 - Detalle completo en [docs/Calidad/Pruebas del Sprint 1.md](../Calidad/Pruebas%20del%20Sprint%201.md).
 
-**Pendiente para el Sprint 2:** el envío del correo de recuperación. El mailer de CRM-7 ya existe, así que solo falta el endpoint y convertir el handler en server action.
+## Flujo completo de "olvidé mi contraseña" (2026-09-22)
+
+### Implementación
+
+**Base de datos**
+
+- `packages/database/prisma/schema.prisma` y `migrations/20260922120000_password_reset/` — columnas propias `passwordResetTokenHash` (única) y `passwordResetExpiresAt` en `User`.
+- `migrations/20260922180000_password_history/` — `previousPasswordHashes` (`TEXT[]`): historial de contraseñas anteriores, siempre como hashes argon2.
+
+**API (`apps/api`)**
+
+- `src/common/tokens.ts` — generación y hash de los tokens que viajan por correo, con el TTL como parámetro: 48 h la invitación, **1 h** la recuperación. Sustituye a `modules/users/invitation-token.ts`.
+- `src/modules/mailer/` — `MailerService` y `MailerModule`. El antiguo `InvitationMailerService` pasa a llamarse `MailerService` y sale del módulo de usuarios.
+- `src/modules/auth/auth.service.ts` — `requestPasswordReset` (genera el enlace, guarda su hash y lo envía), `passwordReset` (datos públicos del enlace) y `resetPassword` (guarda la contraseña, gasta el enlace y revoca las sesiones).
+- `src/modules/auth/auth.controller.ts` — `POST /auth/forgot-password`, `GET /auth/password-resets/:token` y `POST /auth/password-resets/:token`, los tres públicos y los dos `POST` con límite de intentos.
+- `src/modules/auth/auth.guards.ts` — `loginThrottleKey` pasa a ser `throttleKey`: cuenta por correo y, cuando la petición no lleva correo, por enlace (su hash).
+- `src/modules/auth/auth.dto.ts` — `ForgotPasswordDto` y `ResetPasswordDto`, con las reglas de contraseña ya existentes.
+
+**Web (`apps/web`)**
+
+- `components/new-password-form.tsx` — formulario de contraseña nueva con las reglas en vivo, extraído de `activar-cuenta` y compartido por las dos pantallas.
+- `app/(auth)/recuperar-contrasena/actions.ts` y `forgot-password-form.tsx` — la pantalla deja de ser local y llama al API mediante server action.
+- `app/(auth)/restablecer-contrasena/` — ruta nueva: valida el enlace en el servidor, muestra el formulario y al terminar lleva a `/login?contrasena=actualizada`.
+- `app/(auth)/login/page.tsx` — aviso del código fijo `?contrasena=actualizada`.
+- `middleware.ts` — `/restablecer-contrasena` entra en las rutas públicas.
+
+### Decisiones
+
+- **Columnas propias en vez de reutilizar las de invitación.** Los dos flujos se distinguen por `passwordHash`, pero una columna con dos significados es donde se cuela el fallo al cambiar una condición. La migración son dos campos.
+- **Ninguna de las últimas 5 contraseñas se puede repetir, y el mensaje es siempre el mismo:** "Elige una contraseña que no hayas usado antes." No dice cuál se repitió ni cuántas se recuerdan, así que no confirma ninguna contraseña anterior. El rechazo es un `409` y la web lo muestra bajo el campo, no como alerta del sistema. Un intento rechazado **no gasta el enlace**: la persona corrige y sigue.
+- **El historial guarda hashes argon2, nunca contraseñas.** Comprobarlas cuesta un `argon2.verify` por contraseña recordada (~0,3 s en total), aceptable porque solo ocurre al cambiar la contraseña.
+- **El enlace vive 1 hora y solo sirve una vez.** El token se gasta dentro del `updateMany`: si dos peticiones llegan a la vez, solo una encuentra la fila.
+- **Restablecer cierra las sesiones abiertas** (`refreshTokenHash: null`). Quien recupera su contraseña suele sospechar que alguien entró; la sesión del intruso muere al vencer su access token, como máximo en 15 minutos.
+- **La respuesta es idéntica exista o no la cuenta**, incluso si el SMTP falla: el error se registra en el log y la pantalla dice lo mismo. Si el estado dependiera de que el correo existe, el formulario sería un detector de cuentas.
+- **Una cuenta pendiente o desactivada no recibe enlace.** La primera se resuelve con su invitación; la segunda no debe poder volver a entrar por esta puerta.
+- **El límite del endpoint de restablecer cuenta por enlace, no por IP.** Es el mismo hallazgo H3 del login: todas las peticiones llegan desde el servidor web con la misma IP, así que 5 intentos habrían bloqueado a toda la empresa.
+- **`MailerService` en su propio módulo (SRP y DIP).** El servicio solo sabe entregar correo; quién lo pide y por qué vive en cada módulo. Auth y Users dependen del mismo `MailerModule` y no entre sí, así que un correo nuevo no toca el transporte ni la plantilla.
+
+### Validación
+
+- `pnpm test`: 53 pruebas unitarias del API (10 nuevas de recuperación, 3 de ellas del historial) y 110 de la web (14 nuevas).
+- `pnpm test:integration`: 24 pruebas contra la rama `pruebas` de Neon, con 4 nuevas: el ciclo completo con revocación de la sesión abierta, la respuesta idéntica para cuenta inexistente/pendiente/desactivada, los enlaces vencidos o con contraseña débil y el rechazo de contraseñas ya usadas (vigente y anterior, con el mismo mensaje).
+- `pnpm test:e2e`: 15 flujos en navegador; el de recuperación incluye el intento con la contraseña anterior.
+- `pnpm lint` y `pnpm build` sin errores.
+- Prueba manual del flujo completo con Mailpit (`docker compose up -d mailpit`, bandeja en `http://localhost:8025`).
+- `pnpm sonar:scan`: Quality Gate **PASSED** (2026-09-23).
+- Colección de Postman: carpetas `06 - Pedir recuperación de contraseña` y `07 - Restablecer contraseña (requiere resetToken)`.
+- Las dos migraciones están aplicadas en la rama `pruebas` de Neon. **Pendientes de aplicar en `development` y en producción** (`pnpm db:migrate:deploy`).
+
+**Coordinación con CRM-7:** el correo es infraestructura compartida. `InvitationMailerService` se renombró a `MailerService` y se movió a `modules/mailer/`; `invitation-token.ts` se movió a `common/tokens.ts`. Cambian los `import` de `users.service.ts` y sus pruebas; el comportamiento de la invitación no cambia.

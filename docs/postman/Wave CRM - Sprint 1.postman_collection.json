@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "ae75665f-ef66-4b27-9745-d5fd77ec9c07",
     "name": "Wave CRM - Sprint 1",
-    "description": "Pruebas del Sprint 1: salud, autenticación JWT, roles, refresh/logout, CRUD de usuarios, invitaciones, activación y desactivación. Ejecutar las carpetas en orden. Antes de la carpeta 04, copiar desde la consola del API el token de la invitación a la variable inviteToken del environment.",
+    "description": "Pruebas del Sprint 1: salud, autenticación JWT, roles, refresh/logout, CRUD de usuarios, invitaciones, activación, desactivación y recuperación de contraseña. Ejecutar las carpetas en orden. Antes de la carpeta 04, copiar el token de la invitación a la variable inviteToken; antes de la 07, el de recuperación a resetToken. Ambos están en Mailpit (http://localhost:8025) o, sin SMTP_HOST, en la consola del API.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -283,14 +283,14 @@
           "event": [{ "listen": "test", "script": { "exec": ["pm.test('Desactivación inmediata', () => pm.response.to.have.status(401));"] } }]
         },
         {
-          "name": "Login desactivado - 401",
+          "name": "Login desactivado - 403",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{invitedEmail}}\",\n  \"password\": \"{{invitedPassword}}\"\n}" },
             "url": "{{baseUrl}}/auth/login"
           },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Usuario desactivado no inicia sesión', () => pm.response.to.have.status(401));"] } }]
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Usuario desactivado no inicia sesión y recibe el motivo', () => { pm.response.to.have.status(403); pm.expect(pm.response.json().error.message).to.eql('Tu cuenta está desactivada. Pide a un administrador que la reactive.'); });"] } }]
         },
         {
           "name": "Reactivar usuario",
@@ -305,7 +305,99 @@
       ]
     },
     {
-      "name": "06 - Limpieza y logout",
+      "name": "06 - Pedir recuperación de contraseña",
+      "description": "Pide el enlace para la cuenta invitada, ya activa. La respuesta es la misma exista o no la cuenta, para que el formulario no sirva para descubrir correos.",
+      "item": [
+        {
+          "name": "Pedir enlace de recuperación",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{invitedEmail}}\"\n}" },
+            "url": "{{baseUrl}}/auth/forgot-password"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Solicitud registrada', () => { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.have.property('message'); });",
+                  "if (pm.response.code === 200) pm.environment.set('forgotPasswordMessage', pm.response.json().message);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Correo inexistente recibe la misma respuesta",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"nadie.postman@example.com\"\n}" },
+            "url": "{{baseUrl}}/auth/forgot-password"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('No revela si la cuenta existe', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().message).to.eql(pm.environment.get('forgotPasswordMessage')); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "07 - Restablecer contraseña (requiere resetToken)",
+      "description": "Abre el correo \"Recupera tu contraseña de Wave CRM\" en Mailpit (http://localhost:8025) o, si no hay SMTP_HOST, busca la línea en la consola del API. Copia únicamente el valor situado después de ?token= y colócalo en la variable resetToken del environment.",
+      "item": [
+        {
+          "name": "Validar enlace",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/auth/password-resets/{{resetToken}}" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Enlace válido', () => { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.have.property('name'); });"] } }]
+        },
+        {
+          "name": "Contraseña ya usada - 409",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"password\": \"{{invitedPassword}}\",\n  \"passwordConfirmation\": \"{{invitedPassword}}\"\n}" },
+            "url": "{{baseUrl}}/auth/password-resets/{{resetToken}}"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Rechaza la contraseña vigente sin decir cuál era', () => { pm.response.to.have.status(409); pm.expect(pm.response.json().error.message).to.eql('Elige una contraseña que no hayas usado antes.'); });"] } }]
+        },
+        {
+          "name": "Guardar contraseña nueva",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"password\": \"{{newPassword}}\",\n  \"passwordConfirmation\": \"{{newPassword}}\"\n}" },
+            "url": "{{baseUrl}}/auth/password-resets/{{resetToken}}"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Contraseña actualizada', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Enlace no se reutiliza - 400",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/auth/password-resets/{{resetToken}}" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Enlace consumido', () => pm.response.to.have.status(400));"] } }]
+        },
+        {
+          "name": "Contraseña anterior ya no sirve - 401",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{invitedEmail}}\",\n  \"password\": \"{{invitedPassword}}\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('La contraseña anterior se rechaza', () => pm.response.to.have.status(401));"] } }]
+        },
+        {
+          "name": "Login con la contraseña nueva",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{invitedEmail}}\",\n  \"password\": \"{{newPassword}}\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Inicia sesión con la contraseña nueva', () => pm.response.to.have.status(200));"] } }]
+        }
+      ]
+    },
+    {
+      "name": "08 - Limpieza y logout",
       "item": [
         {
           "name": "Eliminar usuario de prueba",

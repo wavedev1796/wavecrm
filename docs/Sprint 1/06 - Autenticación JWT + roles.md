@@ -57,7 +57,7 @@ Implementar autenticación segura con soporte de roles para controlar el acceso 
 ### Implementación
 
 - `apps/api/src/modules/auth/auth.service.ts` — `login` verifica la contraseña antes de mirar `active`: si coincide y la cuenta está desactivada responde `403` con el motivo. Si el correo no existe o la cuenta no tiene contraseña, verifica contra un hash argon2 de relleno para tardar lo mismo.
-- `apps/api/src/modules/auth/auth.guards.ts` — `loginThrottleKey`: clave del límite de intentos por correo normalizado (IP como respaldo).
+- `apps/api/src/modules/auth/auth.guards.ts` — `loginThrottleKey`: clave del límite de intentos por correo normalizado (IP como respaldo). _Desde el 2026-09-22 se llama `throttleKey` y también limita por enlace el endpoint de restablecer contraseña (ver CRM-8)._
 - `apps/api/src/modules/auth/auth.module.ts` — `ThrottlerModule` con `getTracker` y `errorMessage` en español.
 - `apps/api/src/modules/auth/auth.dto.ts` y `apps/api/src/common/validation.ts` — `LoginDto` normaliza el correo (recorte + minúsculas), lo acota a 64 y la contraseña a 16; mensajes en español.
 - `apps/api/src/app.setup.ts` y `src/main.ts` — configuración HTTP compartida con las pruebas de integración.
