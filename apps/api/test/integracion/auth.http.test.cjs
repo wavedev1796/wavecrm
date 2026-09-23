@@ -132,3 +132,114 @@ test("CRM-10: los guards exigen un access token válido de una cuenta activa", a
   await api.prisma.user.update({ where: { id: user.id }, data: { active: false } });
   assert.equal((await api.call("/auth/me", { token: tokens.accessToken })).status, 401);
 });
+
+const forgot = (email) => api.call("/auth/forgot-password", { method: "POST", body: { email } });
+const NEW_PASSWORD = "Recuperada#2026";
+const resetWith = (token, password = NEW_PASSWORD, passwordConfirmation = password) =>
+  api.call(`/auth/password-resets/${encodeURIComponent(token)}`, {
+    method: "POST",
+    body: { password, passwordConfirmation },
+  });
+
+test("CRM-8: el enlace de recuperación cambia la contraseña, cierra las sesiones abiertas y solo sirve una vez", async () => {
+  const user = await createUser(api.prisma, { name: "Ana Prueba" });
+  const { refreshToken } = (await login(user.email)).body;
+
+  const requested = await forgot(user.email.toUpperCase());
+  assert.equal(requested.status, 200);
+  const mail = api.inbox.at(-1);
+  assert.equal(mail.kind, "password-reset");
+  assert.equal(mail.email, user.email);
+
+  // La base guarda el hash del enlace, nunca el enlace que viaja por correo.
+  const stored = await api.prisma.user.findUnique({ where: { id: user.id } });
+  assert.ok(stored.passwordResetTokenHash);
+  assert.notEqual(stored.passwordResetTokenHash, mail.token);
+
+  const preview = await api.call(`/auth/password-resets/${encodeURIComponent(mail.token)}`);
+  assert.equal(preview.status, 200);
+  assert.equal(preview.body.name, "Ana Prueba");
+
+  assert.equal((await resetWith(mail.token)).status, 200);
+  assert.equal((await login(user.email, NEW_PASSWORD)).status, 200);
+  assert.equal((await login(user.email)).status, 401);
+  // La sesión que estaba abierta muere con el cambio de contraseña.
+  const oldSession = await api.call("/auth/refresh", { method: "POST", body: { refreshToken } });
+  assert.equal(oldSession.status, 401);
+
+  const reused = await resetWith(mail.token);
+  assert.equal(reused.status, 400);
+  assert.equal(messageOf(reused), "El enlace no existe, venció o ya fue utilizado.");
+});
+
+test("CRM-8: pedir el enlace responde igual para una cuenta inexistente, pendiente o desactivada", async () => {
+  const pending = await createUser(api.prisma, { pending: true });
+  const disabled = await createUser(api.prisma, { active: false });
+  const before = api.inbox.length;
+
+  const responses = [await forgot(uniqueEmail("nadie")), await forgot(pending.email), await forgot(disabled.email)];
+  for (const response of responses) {
+    assert.equal(response.status, 200);
+    assert.equal(response.body.message, responses[0].body.message);
+  }
+  assert.equal(api.inbox.length, before, "ninguna de las tres debe recibir correo");
+});
+
+test("CRM-8: un enlace vencido, inexistente o con una contraseña débil no cambia nada", async () => {
+  const user = await createUser(api.prisma);
+  await forgot(user.email);
+  const { token } = api.inbox.at(-1);
+  await api.prisma.user.update({
+    where: { id: user.id },
+    data: { passwordResetExpiresAt: new Date(Date.now() - 1000) },
+  });
+
+  const expired = await resetWith(token);
+  assert.equal(expired.status, 400);
+  assert.equal(messageOf(expired), "El enlace no existe, venció o ya fue utilizado.");
+  assert.equal((await api.call("/auth/password-resets/enlace-inventado")).status, 400);
+
+  await api.prisma.user.update({
+    where: { id: user.id },
+    data: { passwordResetExpiresAt: new Date(Date.now() + 60 * 60 * 1000) },
+  });
+  for (const [password, confirmation, expected] of [
+    ["corta1!", "corta1!", "La contraseña debe tener entre 8 y 16 caracteres."],
+    ["sinnumeros!!", "sinnumeros!!", "La contraseña debe incluir una mayúscula, una minúscula, un número y un carácter especial."],
+    [NEW_PASSWORD, "Otra#2026", "Las contraseñas no coinciden."],
+  ]) {
+    const rejected = await resetWith(token, password, confirmation);
+    assert.equal(rejected.status, 400);
+    assert.deepEqual([messageOf(rejected)].flat(), [expected]);
+  }
+  // La contraseña original sigue sirviendo: ningún intento fallido la tocó.
+  assert.equal((await login(user.email)).status, 200);
+});
+
+test("CRM-8: una contraseña ya usada se rechaza con un mensaje que no dice cuál era", async () => {
+  const user = await createUser(api.prisma);
+  const segunda = "Segunda#2026";
+
+  // 1) La vigente no se puede repetir.
+  await forgot(user.email);
+  const primerEnlace = api.inbox.at(-1).token;
+  const repiteVigente = await resetWith(primerEnlace, PASSWORD);
+  assert.equal(repiteVigente.status, 409);
+  assert.equal(messageOf(repiteVigente), "Elige una contraseña que no hayas usado antes.");
+
+  // 2) El enlace sigue sirviendo: el intento fallido no lo gastó.
+  assert.equal((await resetWith(primerEnlace, segunda)).status, 200);
+  assert.equal((await login(user.email, segunda)).status, 200);
+
+  // 3) Ahora tampoco se puede volver a la anterior, con el mismo mensaje exacto.
+  await forgot(user.email);
+  const segundoEnlace = api.inbox.at(-1).token;
+  const repiteAnterior = await resetWith(segundoEnlace, PASSWORD);
+  assert.equal(repiteAnterior.status, 409);
+  assert.equal(messageOf(repiteAnterior), messageOf(repiteVigente));
+
+  // 4) El historial viaja como hashes argon2, nunca como contraseñas.
+  const stored = await api.prisma.user.findUnique({ where: { id: user.id } });
+  assert.equal(stored.previousPasswordHashes.length, 1);
+  assert.ok(stored.previousPasswordHashes[0].startsWith("$argon2id$"));
+});

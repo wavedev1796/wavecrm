@@ -10,6 +10,7 @@ import { JwtService } from "@nestjs/jwt";
 import type { UserRole } from "@wave/database";
 import type { Request } from "express";
 import { IS_PUBLIC_KEY, ROLES_KEY } from "./auth.decorators";
+import { hashToken } from "../../common/tokens";
 import type { JwtPayload } from "./auth.service";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -79,14 +80,21 @@ export class RolesGuard implements CanActivate {
 }
 
 /**
- * Clave del límite de intentos del login: el correo normalizado. Todo login llega desde el
- * servidor web (misma IP), así que limitar por IP bloqueaba a toda la empresa con 5 fallos.
+ * Clave del límite de intentos: la cuenta (login y "olvidé mi contraseña") o el enlace de
+ * recuperación al que apunta la petición. Todo llega desde el servidor web con la misma IP,
+ * así que limitar por IP bloqueaba a toda la empresa con 5 fallos.
  * ponytail: no frena probar muchas cuentas desde un mismo equipo; para eso la web debe
  * reenviar la IP real del cliente de forma confiable (pendiente del Sprint 2).
  */
-export function loginThrottleKey(request: { body?: { email?: unknown }; ip?: string }) {
+export function throttleKey(request: {
+  body?: { email?: unknown };
+  params?: { token?: unknown };
+  ip?: string;
+}) {
   const email = request.body?.email;
-  return typeof email === "string" && email.trim()
-    ? `email:${email.trim().toLowerCase()}`
-    : `ip:${request.ip}`;
+  if (typeof email === "string" && email.trim()) return `email:${email.trim().toLowerCase()}`;
+  // El enlace de recuperación no lleva correo: se limita por enlace, y su hash evita guardarlo entero.
+  const token = request.params?.token;
+  if (typeof token === "string" && token) return `token:${hashToken(token)}`;
+  return `ip:${request.ip}`;
 }

@@ -3,22 +3,24 @@ import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { MailerModule } from '../mailer/mailer.module';
 import { AuthController } from './auth.controller';
-import { JwtAuthGuard, loginThrottleKey, RolesGuard } from './auth.guards';
+import { JwtAuthGuard, throttleKey, RolesGuard } from './auth.guards';
 import { AuthService } from './auth.service';
 
 @Module({
   imports: [
+    MailerModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.getOrThrow<string>('JWT_SECRET'),
       }),
     }),
-    // ponytail: el límite solo aplica al login, único endpoint con ThrottlerGuard.
+    // ponytail: el límite solo aplica a los endpoints con ThrottlerGuard (login y recuperación).
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60_000, limit: 5 }],
-      getTracker: loginThrottleKey,
+      getTracker: throttleKey,
       errorMessage: 'Demasiados intentos. Espera un minuto e inténtalo de nuevo.',
     }),
   ],

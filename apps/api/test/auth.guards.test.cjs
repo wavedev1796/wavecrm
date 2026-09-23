@@ -4,7 +4,7 @@ const { ForbiddenException, UnauthorizedException } = require("@nestjs/common");
 const {
   JwtAuthGuard,
   RolesGuard,
-  loginThrottleKey,
+  throttleKey,
 } = require("../dist/modules/auth/auth.guards.js");
 
 function context(request = { headers: {} }) {
@@ -112,9 +112,14 @@ test("RolesGuard rechaza usuarios sin el rol requerido", () => {
 });
 
 test("el límite de intentos del login cuenta por correo normalizado y, sin correo, por IP", () => {
-  assert.equal(loginThrottleKey({ body: { email: " Ana@Empresa.EC " }, ip: "10.0.0.1" }), "email:ana@empresa.ec");
-  assert.equal(loginThrottleKey({ body: {}, ip: "10.0.0.1" }), "ip:10.0.0.1");
-  assert.equal(loginThrottleKey({ body: { email: 42 }, ip: "10.0.0.1" }), "ip:10.0.0.1");
-  assert.equal(loginThrottleKey({ body: { email: "   " }, ip: "10.0.0.1" }), "ip:10.0.0.1");
-  assert.equal(loginThrottleKey({ ip: "10.0.0.1" }), "ip:10.0.0.1");
+  assert.equal(throttleKey({ body: { email: " Ana@Empresa.EC " }, ip: "10.0.0.1" }), "email:ana@empresa.ec");
+  assert.equal(throttleKey({ body: {}, ip: "10.0.0.1" }), "ip:10.0.0.1");
+  assert.equal(throttleKey({ body: { email: 42 }, ip: "10.0.0.1" }), "ip:10.0.0.1");
+  assert.equal(throttleKey({ body: { email: "   " }, ip: "10.0.0.1" }), "ip:10.0.0.1");
+  assert.equal(throttleKey({ ip: "10.0.0.1" }), "ip:10.0.0.1");
+  // El enlace de recuperación no lleva correo: cuenta por enlace y guarda su hash, no el token.
+  const byLink = throttleKey({ params: { token: "enlace-secreto" }, ip: "10.0.0.1" });
+  assert.match(byLink, /^token:[0-9a-f]{64}$/);
+  assert.doesNotMatch(byLink, /enlace-secreto/);
+  assert.equal(throttleKey({ params: { token: 42 }, ip: "10.0.0.1" }), "ip:10.0.0.1");
 });
