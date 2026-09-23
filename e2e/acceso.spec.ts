@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { cleanup, createUser, login, logout } from './datos';
+import { cleanup, createUser, login, logout, PASSWORD, setPasswordResetToken } from './datos';
 
 test.afterAll(cleanup);
 
@@ -70,4 +70,49 @@ test('CRM-10: la web envía cabeceras de seguridad y oculta X-Powered-By', async
   expect(headers['x-content-type-options']).toBe('nosniff');
   expect(headers['strict-transport-security']).toContain('max-age=');
   expect(headers['x-powered-by']).toBeUndefined();
+});
+
+test('CRM-8: el enlace de recuperación crea la contraseña nueva y la anterior deja de servir', async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  const person = await createUser({ name: 'Rita Prueba' });
+  const nuevaPassword = 'Recuperada#2026';
+  const enlace = `enlace-e2e-${Date.now()}`;
+
+  await page.goto('/recuperar-contrasena');
+  await page.getByLabel('Correo', { exact: true }).fill(person.email);
+  await page.getByRole('button', { name: 'Enviar enlace' }).click();
+  await expect(page.getByRole('heading', { name: 'Revisa tu correo' })).toBeVisible();
+
+  // El correo no se lee en las pruebas: se fija un enlace conocido, como en la invitación.
+  await setPasswordResetToken(person.email, enlace);
+  await page.goto(`/restablecer-contrasena?token=${enlace}`);
+  await expect(page.getByRole('heading', { name: 'Crea tu contraseña nueva' })).toBeVisible();
+  // Repetir la contraseña que ya tenía se rechaza sin decir cuál era, y el enlace sigue sirviendo.
+  await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD);
+  await page.getByLabel('Confirmar contraseña', { exact: true }).fill(PASSWORD);
+  await page.getByRole('button', { name: 'Guardar contraseña' }).click();
+  await expect(page.getByLabel('Contraseña', { exact: true })).toHaveAccessibleDescription(
+    /Elige una contraseña que no hayas usado antes\./,
+  );
+
+  await page.getByLabel('Contraseña', { exact: true }).fill(nuevaPassword);
+  await page.getByLabel('Confirmar contraseña', { exact: true }).fill(nuevaPassword);
+  await page.getByRole('button', { name: 'Guardar contraseña' }).click();
+
+  await expect(page).toHaveURL(/\/login\?contrasena=actualizada$/);
+  await expect(page.getByText('Tu contraseña fue actualizada. Inicia sesión con tu nueva contraseña.')).toBeVisible();
+
+  // El enlace se gasta al usarlo.
+  await page.goto(`/restablecer-contrasena?token=${enlace}`);
+  await expect(page.getByRole('heading', { name: 'Enlace no disponible' })).toBeVisible();
+
+  const otro = await browser.newPage({ baseURL });
+  await login(otro, person.email);
+  await expect(otro.getByText('Correo o contraseña incorrectos.')).toBeVisible();
+  await login(otro, person.email, nuevaPassword);
+  await expect(otro).toHaveURL(/\/pipeline$/);
+  await otro.close();
 });

@@ -2,7 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { API_URL } from "@/lib/api";
 import { clearSession, readSession, SESSION_EXPIRED_PATH, writeSession } from "@/lib/session";
 
-const PUBLIC_PATHS = new Set(["/login", "/recuperar-contrasena", "/activar-cuenta"]);
+const PUBLIC_PATHS = new Set([
+  "/login",
+  "/recuperar-contrasena",
+  "/restablecer-contrasena",
+  "/activar-cuenta",
+]);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

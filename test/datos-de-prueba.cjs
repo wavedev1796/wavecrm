@@ -56,6 +56,17 @@ async function setInvitationToken(prisma, email, token) {
   });
 }
 
+/** Fija un enlace de recuperación conocido: las pruebas de navegador no leen el correo. */
+async function setPasswordResetToken(prisma, email, token) {
+  await prisma.user.update({
+    where: { email },
+    data: {
+      passwordResetTokenHash: createHash("sha256").update(token).digest("hex"),
+      passwordResetExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    },
+  });
+}
+
 /** Borra los usuarios de prueba y su auditoría. Nunca toca otros usuarios. */
 async function cleanup(prisma) {
   const users = await prisma.user.findMany({ where: { email: { endsWith: DOMAIN } }, select: { id: true } });
@@ -65,4 +76,12 @@ async function cleanup(prisma) {
   await prisma.user.deleteMany({ where: { id: { in: ids } } });
 }
 
-module.exports = { PASSWORD, uniqueEmail, createUser, setInvitationToken, cleanup, assertTestDatabase };
+module.exports = {
+  PASSWORD,
+  uniqueEmail,
+  createUser,
+  setInvitationToken,
+  setPasswordResetToken,
+  cleanup,
+  assertTestDatabase,
+};

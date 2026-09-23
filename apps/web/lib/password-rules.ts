@@ -20,6 +20,12 @@ const RULES = [
 
 export type PasswordCheck = { id: (typeof RULES)[number]['id']; label: string; met: boolean };
 
+/** Estado de las dos pantallas que crean una contraseña: activar la cuenta y recuperarla. */
+export type NewPasswordState = {
+  error: string | null;
+  fieldErrors: { password?: string; passwordConfirmation?: string };
+};
+
 export function passwordChecks(value: string): PasswordCheck[] {
   return RULES.map((rule) => ({ id: rule.id, label: rule.label, met: rule.test(value) }));
 }

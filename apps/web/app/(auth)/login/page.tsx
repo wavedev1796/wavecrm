@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Iniciar sesión" };
 export default async function LoginPage({
   searchParams,
 }: Readonly<{
-  searchParams: Promise<{ activated?: string; sesion?: string }>;
+  searchParams: Promise<{ activated?: string; sesion?: string; contrasena?: string }>;
 }>) {
   // Códigos fijos, nunca texto de la URL: nadie puede hacer que el login muestre un mensaje falso.
   const params = await searchParams;
@@ -21,6 +21,11 @@ export default async function LoginPage({
       {params.activated === "1" && (
         <Alert tone="success">
           Tu cuenta fue activada. Ya puedes iniciar sesión.
+        </Alert>
+      )}
+      {params.contrasena === "actualizada" && (
+        <Alert tone="success">
+          Tu contraseña fue actualizada. Inicia sesión con tu nueva contraseña.
         </Alert>
       )}
       {params.sesion === "expirada" && (

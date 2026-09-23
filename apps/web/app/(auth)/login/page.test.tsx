@@ -16,6 +16,11 @@ test('avisa cuando la sesión terminó', async () => {
   expect(screen.getByRole('status')).toHaveTextContent('Tu sesión terminó. Vuelve a iniciar sesión.');
 });
 
+test('avisa cuando la contraseña se acaba de restablecer', async () => {
+  await open({ contrasena: 'actualizada' });
+  expect(screen.getByRole('status')).toHaveTextContent('Tu contraseña fue actualizada. Inicia sesión con tu nueva contraseña.');
+});
+
 test('un texto libre en la URL nunca se muestra como aviso', async () => {
   await open({ sesion: 'Tu cuenta fue bloqueada, llama al 0999999999' });
   expect(screen.queryByRole('status')).toBeNull();

@@ -7,6 +7,8 @@ type UserOptions = { role?: 'ADMIN' | 'VENDEDOR'; active?: boolean; name?: strin
 export const { PASSWORD, uniqueEmail } = datos;
 export const createUser = (options?: UserOptions) => datos.createUser(prisma, options);
 export const setInvitationToken = (email: string, token: string) => datos.setInvitationToken(prisma, email, token);
+export const setPasswordResetToken = (email: string, token: string) =>
+  datos.setPasswordResetToken(prisma, email, token);
 export const cleanup = () => datos.cleanup(prisma);
 
 export async function login(page: Page, email: string, password: string = PASSWORD) {
