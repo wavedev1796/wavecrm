@@ -12,8 +12,8 @@ Registrar contactos y empresas de Ecuador con su identificación validada, consu
 | --- | --- | --- | --- |
 | CRM-11 | [Modelo Contacto/Empresa (EC)](11%20-%20Modelo%20Contacto-Empresa%20(EC).md) | Zaith Manangón | Completo (3/3 criterios; migración aplicada en `pruebas` y `development`) |
 | CRM-12 | [Validación RUC/Cédula Ecuador](12%20-%20Validaci%C3%B3n%20RUC-C%C3%A9dula%20Ecuador.md) | Zaith Manangón | Completo (4/4 criterios) |
-| CRM-13 | API Contactos/Empresas | Eduardo García | Backlog |
-| CRM-14 | Listado + ficha de Contacto | Eduardo García | Backlog |
+| CRM-13 | [API Contactos/Empresas](13%20-%20API%20Contactos-Empresas.md) | Eduardo García | Completo (4/4 criterios) |
+| CRM-14 | [Listado + ficha de Contacto](14%20-%20Listado-ficha%20Contacto.md) | Eduardo García | Completo (4/4 criterios) |
 | CRM-15 | Listado + ficha de Empresa | Eduardo García | Backlog |
 | CRM-16 | [Importar contactos (CSV)](16%20-%20Importar%20contactos%20(CSV).md) | Zaith Manangón | Completo (4/4 criterios) |
 
@@ -38,11 +38,11 @@ Registrar contactos y empresas de Ecuador con su identificación validada, consu
 
 | Métrica | Valor |
 | --- | --- |
-| Pruebas unitarias del API | 77 (+24) |
-| Pruebas de integración del API (Neon) | 28 (+4) |
-| Pruebas de la web (Vitest) | 129 (+19) |
+| Pruebas unitarias del API | 82 (+29) |
+| Pruebas de integración del API (Neon) | 35 (+11) |
+| Pruebas de la web (Vitest) | 136 (+26) |
 | Pruebas de navegador (Playwright) | 16 (+1) |
-| **Total** | **250** |
+| **Total** | **269** |
 | Cobertura de líneas del API | 97,86 % |
 | Cobertura de líneas de la web | 98,08 % |
 

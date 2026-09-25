@@ -64,10 +64,17 @@ export function AppShell({
 }>) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const header = titleByPath[pathname] ?? {
-    title: "Pipeline de ventas",
-    subtitle: "Quito, Ecuador · Septiembre 2026",
-  };
+  const header =
+    titleByPath[pathname] ??
+    (pathname.startsWith("/contactos/")
+      ? {
+          title: "Ficha de contacto",
+          subtitle: "Datos, negocios y actividades",
+        }
+      : {
+          title: "Pipeline de ventas",
+          subtitle: "Quito, Ecuador · Septiembre 2026",
+        });
 
   return (
     <div className="app-shell">
