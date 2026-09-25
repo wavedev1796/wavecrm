@@ -21,7 +21,7 @@ test('envía el correo escrito a la server action y confirma la solicitud', asyn
   await user.type(screen.getByLabelText('Correo'), 'Ana@Empresa.EC');
   await send(user);
 
-  expect(requestMock.mock.calls[0][1].get('email')).toBe('Ana@Empresa.EC');
+  expect(requestMock.mock.calls[0]?.[1].get('email')).toBe('Ana@Empresa.EC');
   expect(await screen.findByRole('heading', { name: 'Revisa tu correo' })).toBeInTheDocument();
   expect(screen.getByText('ana@empresa.ec')).toBeInTheDocument();
   // El envío ya no está pendiente: el aviso del sprint anterior desapareció.
