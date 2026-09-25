@@ -36,6 +36,17 @@ test('un vendedor no ve Usuarios', () => {
   expect(screen.getByText('Vendedor')).toBeInTheDocument();
 });
 
+test('una subruta marca su sección en el menú', () => {
+  pathname.mockReturnValue('/contactos/importar');
+  render(
+    <AppShell user={null}>
+      <p>Contenido</p>
+    </AppShell>,
+  );
+  expect(screen.getByRole('link', { name: 'Contactos' })).toHaveAttribute('aria-current', 'page');
+  expect(screen.getByRole('heading', { level: 1, name: 'Importar contactos' })).toBeInTheDocument();
+});
+
 test('sin datos de la persona y en una ruta desconocida usa valores seguros', () => {
   pathname.mockReturnValue('/desconocida');
   render(

@@ -31,7 +31,13 @@ const chosen = (mapping: Mapping, columns: string[]): Mapping =>
 
 export function ImportForm() {
   const [state, formAction, pending] = useActionState<ImportState, FormData>(
-    importContacts,
+    async (previous, formData) => {
+      const next = await importContacts(previous, formData);
+      // React vacía el formulario al terminar la acción: se vuelve a elegir el archivo (el corregido,
+      // si hubo errores) y el mapeo hecho a mano se conserva para él.
+      setColumns([]);
+      return next;
+    },
     null,
   );
   const [columns, setColumns] = useState<string[]>([]);
@@ -130,7 +136,7 @@ export function ImportForm() {
       )}
       {state?.errors.length ? (
         <>
-          <Table aria-label="Errores por fila">
+          <Table className="import-errors" aria-label="Errores por fila">
             <thead>
               <tr>
                 <th scope="col">Fila</th>

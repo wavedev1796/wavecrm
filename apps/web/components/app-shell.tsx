@@ -35,7 +35,10 @@ const titleByPath: Record<string, { title: string; subtitle: string }> = {
     subtitle: "Quito, Ecuador · Septiembre 2026",
   },
   "/contactos": { title: "Contactos", subtitle: "248 contactos · 62 empresas" },
-  "/contactos/importar": { title: "Importar contactos", subtitle: "Carga masiva desde CSV" },
+  "/contactos/importar": {
+    title: "Importar contactos",
+    subtitle: "Carga masiva desde CSV",
+  },
   "/empresas": { title: "Empresas", subtitle: "Directorio comercial" },
   "/cotizaciones": {
     title: "Cotizaciones",
@@ -91,7 +94,8 @@ export function AppShell({
               ? [{ href: "/usuarios", label: "Usuarios", icon: UserCog }]
               : []),
           ].map(({ href, label, icon: Icon }) => {
-            const active = pathname === href;
+            // Las subrutas (/contactos/importar, fichas…) marcan su sección.
+            const active = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link
                 key={href}

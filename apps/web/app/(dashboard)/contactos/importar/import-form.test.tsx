@@ -48,6 +48,17 @@ test("al elegir el archivo propone una columna por campo y envía el mapeo elegi
     documentId: "Cédula",
     position: "Notas",
   });
+
+  // React vacía el formulario al terminar: se vuelve a elegir archivo y el mapeo manual se conserva.
+  expect(screen.queryByLabelText("Nombre *")).toBeNull();
+  expect(
+    screen.getByRole("button", { name: "Importar contactos" }),
+  ).toBeDisabled();
+  await user.upload(
+    screen.getByLabelText("Archivo CSV"),
+    csv("Nombres;APELLIDOS;Cédula;Notas\nEva;Ruiz;;"),
+  );
+  expect(await screen.findByLabelText("Cargo")).toHaveValue("Notas");
 });
 
 test("un archivo de más de 1 MB o sin cabecera se explica antes de enviarlo", async () => {
