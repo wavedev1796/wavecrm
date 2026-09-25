@@ -2,6 +2,8 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // El CSV de contactos llega por server action: 1 MB de archivo más la envoltura multipart.
+  experimental: { serverActions: { bodySizeLimit: '2mb' } },
   async headers() {
     return [
       {

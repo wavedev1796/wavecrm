@@ -12,7 +12,8 @@ export async function authenticatedApi(path: string, init: RequestInit = {}) {
     headers: {
       ...init.headers,
       Authorization: `Bearer ${session.accessToken}`,
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      // Solo los cuerpos de texto son JSON; un FormData necesita que fetch ponga su propio multipart.
+      ...(typeof init.body === "string" ? { "Content-Type": "application/json" } : {}),
     },
     cache: "no-store",
   });

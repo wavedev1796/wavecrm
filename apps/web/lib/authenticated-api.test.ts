@@ -41,6 +41,16 @@ test('envía el access token y, si hay cuerpo, el tipo de contenido', async () =
   );
 });
 
+test('un FormData viaja sin Content-Type JSON para que fetch arme el multipart', async () => {
+  fetchMock.mockResolvedValue(new Response('{}', { status: 201 }));
+  const body = new FormData();
+  await authenticatedApi('/contacts/import', { method: 'POST', body });
+  expect(fetchMock).toHaveBeenCalledWith(
+    'http://localhost:4000/api/v1/contacts/import',
+    expect.objectContaining({ body, headers: { Authorization: 'Bearer access' } }),
+  );
+});
+
 test('si el API responde 401 la sesión terminó', async () => {
   fetchMock.mockResolvedValue(new Response(null, { status: 401 }));
   await expect(authenticatedApi('/auth/me')).rejects.toThrow('NEXT_REDIRECT /login?sesion=expirada');
