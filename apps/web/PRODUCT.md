@@ -67,7 +67,7 @@ Decisiones de producto abiertas (no inventar una respuesta):
 
 - `docs/design/crm-wave-styleguide.html` — guía visual original del equipo, incluye la pantalla de inicio de sesión ya diseñada.
 - `docs/design/TOKENS.md` — tokens de color, tipografía, forma, espacio, movimiento y estados.
-- `docs/Sprint 1/` — tickets del sprint activo con criterios de aceptación.
+- `docs/Sprint 2/` — tickets del sprint activo con criterios de aceptación (`docs/Sprint 1/`, sprint cerrado).
 - `packages/database/prisma/seed.mjs` — datos de desarrollo.
 
 Ausencias que el trabajo futuro **no debe rellenar inventando**:

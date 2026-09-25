@@ -57,7 +57,7 @@ Para eliminar también los datos se deben borrar explícitamente los tres volúm
 | Navegador               | E2E con Playwright           | login, invitación, activación, administración y el flujo de la cuenta desactivada                                               |
 | SonarQube               | Análisis estático            | bugs, vulnerabilidades, hotspots, duplicación, mantenibilidad y cobertura importada                                             |
 
-El detalle prueba por prueba, con el paso a paso para ejecutarlas, está en [Pruebas del Sprint 1](Pruebas%20del%20Sprint%201.md).
+El detalle prueba por prueba, con el paso a paso para ejecutarlas, está en [Pruebas del Sprint 1](Pruebas%20del%20Sprint%201.md) y [Pruebas del Sprint 2](Pruebas%20del%20Sprint%202.md).
 
 Los dominios que aún no existen (empresas, contactos, negocios, cotizaciones, actividades, etc.) no tienen módulo en el API: se crean con sus pruebas cuando se implementan.
 
