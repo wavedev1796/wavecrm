@@ -4,7 +4,7 @@ import * as datos from '../test/datos-de-prueba.cjs';
 
 type UserOptions = { role?: 'ADMIN' | 'VENDEDOR'; active?: boolean; name?: string; pending?: boolean };
 
-export const { PASSWORD, uniqueEmail } = datos;
+export const { PASSWORD, uniqueEmail, cedulaDePrueba } = datos;
 export const createUser = (options?: UserOptions) => datos.createUser(prisma, options);
 export const setInvitationToken = (email: string, token: string) => datos.setInvitationToken(prisma, email, token);
 export const setPasswordResetToken = (email: string, token: string) =>
