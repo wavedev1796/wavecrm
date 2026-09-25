@@ -59,7 +59,7 @@ Para eliminar también los datos se deben borrar explícitamente los tres volúm
 
 El detalle prueba por prueba, con el paso a paso para ejecutarlas, está en [Pruebas del Sprint 1](Pruebas%20del%20Sprint%201.md).
 
-Los módulos activities, attachments, audit-logs, companies, contacts, deals, notes, pipelines, quotes y stages son actualmente módulos vacíos de tres líneas. Se añadirán pruebas cuando incorporen controladores o servicios; un test unitario de un módulo vacío no aportaría protección real.
+Los dominios que aún no existen (empresas, contactos, negocios, cotizaciones, actividades, etc.) no tienen módulo en el API: se crean con sus pruebas cuando se implementan.
 
 ## Orden recomendado
 

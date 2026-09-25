@@ -22,13 +22,3 @@ export class PaginationDto {
   limit = 20;
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-

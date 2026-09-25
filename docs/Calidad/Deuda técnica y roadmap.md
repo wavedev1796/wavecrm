@@ -27,7 +27,6 @@ Lo que ninguna cobertura mide y hoy no se prueba: **concurrencia** (dos renovaci
 | Rollback manual en vez de `prisma.$transaction` | `users.service.ts:116-120` | 1 h | Ya: un fallo de red deja datos a medias |
 | Configuración validada tarde (`SMTP_PORT` inválido responde 503 al enviar, no al arrancar) | `mailer/mailer.service.ts:121-134` | 1 h | En el primer despliegue mal configurado |
 | Validaciones duplicadas web/API, sincronizadas por un JSON de casos | `apps/web/lib/validation.ts`, `apps/api/src/common/validation.ts` | 3 h | Cuando el tercer campo se desincronice |
-| 10 módulos stub vacíos (`deals`, `quotes`, `notes`, …) | `apps/api/src/modules/` | 10 min | Ruido en cada búsqueda y en el análisis estático |
 | Sin tipos compartidos entre web y API | `apps/web` ↔ `/docs` | 30 min | Un cambio de DTO no rompe la compilación de la web |
 | Sin observabilidad (logs estructurados, errores, métricas) | todo el API | 4 h | En el primer incidente de producción |
 | Datos mock en el dashboard y en el pie del sidebar | `apps/web/app/(dashboard)/` | Sprint 2 | En el primer demo con cliente |
