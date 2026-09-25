@@ -76,5 +76,5 @@ Validar la identificación ecuatoriana antes de guardarla: cédula de 10 dígito
   - Las 24 provincias.
 - `apps/api/test/validation.test.cjs` (8 pruebas nuevas): el DTO de fila contra los casos compartidos de nombre, cédula, RUC, teléfono y provincia; normalización completa de una fila; mensajes de apellido, correo, ciudad y cargo; reglas de etiquetas.
 - `apps/web/lib/ecuador.test.ts` (5) y `lib/validation.test.ts` (+1): la web cumple los mismos casos.
-- `pnpm test`: 77 pruebas del API y 127 de la web en verde. `pnpm lint` y `tsc --noEmit` sin errores.
+- `pnpm test`: 77 pruebas del API y 128 de la web en verde. `pnpm lint` y `tsc --noEmit` sin errores.
 - La unicidad contra la base real la prueba `contact-import.http.test.cjs` (CRM-16): reimportar el mismo archivo responde `Ya existe un contacto con esa cédula.` sin crear nada.

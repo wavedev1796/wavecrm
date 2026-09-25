@@ -40,9 +40,9 @@ Registrar contactos y empresas de Ecuador con su identificación validada, consu
 | --- | --- |
 | Pruebas unitarias del API | 77 (+24) |
 | Pruebas de integración del API (Neon) | 28 (+4) |
-| Pruebas de la web (Vitest) | 127 (+17) |
+| Pruebas de la web (Vitest) | 128 (+18) |
 | Pruebas de navegador (Playwright) | 16 (+1) |
-| **Total** | **248** |
+| **Total** | **249** |
 | Cobertura de líneas del API | 97,86 % |
 | Cobertura de líneas de la web | 98,08 % |
 

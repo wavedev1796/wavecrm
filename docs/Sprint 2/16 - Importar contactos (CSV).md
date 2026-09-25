@@ -76,6 +76,7 @@ Cargar muchos contactos de una vez desde un archivo CSV (el que exporta Excel), 
 - **Módulo propio (`contact-import/`)** con la misma ruta base `contacts`. Así el CRUD de CRM-13 no comparte archivos con esta tarea.
 - **`authenticatedApi` con `FormData`.** Añadía `Content-Type: application/json` a cualquier cuerpo, así que un multipart llegaba sin su separador. Se corrigió en la función, que es donde pasan todas las llamadas.
 - **El resultado se muestra fuera del `<form>`.** React resetea el formulario al terminar la acción, y el reset de `<output>` (el `Alert` de éxito) reescribe su texto: borraba el icono y el enlace "Ver contactos". Lo detectó la prueba del formulario.
+- **Tamaño y cabecera se revisan al elegir el archivo.** Next rechaza por su cuenta una server action de más de 2 MB, y esa respuesta rompía la página en vez de mostrar un aviso. La pantalla avisa de un archivo de más de 1 MB (el límite del API) o sin fila de cabecera, y no deja enviarlo. Se encontró en la revisión de código final.
 - **Errores técnicos de multer en español.** "Unexpected field" (campo de archivo con otro nombre) y un multipart cortado responden `La solicitud no tiene un formato válido.` El archivo de más de 1 MB responde el `413` que ya existía.
 
 ### Fuera de alcance
@@ -95,7 +96,7 @@ Cargar muchos contactos de una vez desde un archivo CSV (el que exporta Excel), 
   - Una fila inválida no deja nada guardado.
   - `400`, `401` y `413` responden con su mensaje.
 - Web (Vitest):
-  - `csv-header.test.ts` (3), `actions.test.ts` (4), `import-form.test.tsx` (2) y `page.test.tsx` (1).
+  - `csv-header.test.ts` (3), `actions.test.ts` (4), `import-form.test.tsx` (3) y `page.test.tsx` (1).
   - `authenticated-api.test.ts` (+1): el `FormData` viaja sin `Content-Type` JSON.
   - `paginas.test.tsx`: el enlace "Importar CSV".
 - `e2e/contactos.spec.ts` (1): en el navegador, un CSV con una cédula inválida muestra la tabla de errores, y el archivo corregido importa 2 contactos.
