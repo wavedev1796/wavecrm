@@ -1,10 +1,10 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-// Nest convierte el SyntaxError del body parser (JSON roto) y el URIError de una ruta mal
-// codificada en un 400 con el texto técnico de V8/Express, en inglés.
-// ponytail: se reconocen por esas palabras; si Nest o V8 cambian el texto, la prueba de JSON roto lo detecta.
-const MALFORMED_REQUEST = /\bJSON\b|decode param/;
+// Nest convierte el SyntaxError del body parser (JSON roto), el URIError de una ruta mal codificada y los
+// errores de multer/busboy (campo de archivo inesperado, multipart cortado) en un 400 con texto técnico en inglés.
+// ponytail: se reconocen por esas palabras; si Nest, V8 o busboy cambian el texto, las pruebas de app.setup lo detectan.
+const MALFORMED_REQUEST = /\bJSON\b|decode param|Unexpected field|Unexpected end of form|Multipart:/;
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -14,9 +14,21 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const request = context.getRequest<Request>();
     const status = statusOf(exception);
     response.status(status).json({
-      error: { status, message: messageOf(exception, status), path: request.url, timestamp: new Date().toISOString() },
+      error: {
+        status,
+        message: messageOf(exception, status),
+        ...errorsOf(exception),
+        path: request.url,
+        timestamp: new Date().toISOString(),
+      },
     });
   }
+}
+
+/** Detalle por fila de la importación de contactos (422): viaja junto al mensaje. */
+function errorsOf(exception: unknown) {
+  const payload = exception instanceof HttpException ? exception.getResponse() : null;
+  return typeof payload === 'object' && payload !== null && 'errors' in payload ? { errors: payload.errors } : {};
 }
 
 function statusOf(exception: unknown) {

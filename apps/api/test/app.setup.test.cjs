@@ -1,6 +1,11 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { BadRequestException, HttpException, NotFoundException } = require("@nestjs/common");
+const {
+  BadRequestException,
+  HttpException,
+  NotFoundException,
+  UnprocessableEntityException,
+} = require("@nestjs/common");
 const { validationException } = require("../dist/app.setup.js");
 const { GlobalExceptionFilter } = require("../dist/common/filters/global-exception.filter.js");
 
@@ -39,6 +44,9 @@ test("JSON roto y rutas mal codificadas responden 400 con un mensaje claro", () 
     "Unexpected end of JSON input",
     "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
     "Failed to decode param '%E0%A4%A'",
+    "Unexpected field",
+    "Unexpected end of form",
+    "Multipart: Boundary not found",
   ]) {
     const { status, body } = respond(new BadRequestException(technical));
     assert.equal(status, 400);
@@ -52,6 +60,17 @@ test("un cuerpo demasiado grande responde 413, no 500", () => {
   const { status, body } = respond(tooLarge);
   assert.equal(status, 413);
   assert.equal(body.error.message, "La solicitud es demasiado grande.");
+});
+
+test("el detalle por fila de la importación viaja junto al mensaje", () => {
+  const errors = [{ row: 3, column: "Cédula", message: "La cédula no es válida." }];
+  const { status, body } = respond(
+    new UnprocessableEntityException({ message: "No se importó ningún contacto: 1 fila tiene errores.", errors }),
+  );
+  assert.equal(status, 422);
+  assert.equal(body.error.message, "No se importó ningún contacto: 1 fila tiene errores.");
+  assert.deepEqual(body.error.errors, errors);
+  assert.equal(respond(new BadRequestException("x")).body.error.errors, undefined);
 });
 
 test("conserva los mensajes propios y oculta los errores internos", () => {
