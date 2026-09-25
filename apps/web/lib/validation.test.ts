@@ -35,6 +35,12 @@ test('normaliza correo y nombre igual que el API', () => {
   expect(normalizeName('  María   José ')).toBe('María José');
 });
 
+test('nameError nombra el campo que valida', () => {
+  expect(nameError('', 'apellido')).toBe('Ingresa el apellido.');
+  expect(nameError('L', 'apellido')).toBe('El apellido debe tener entre 2 y 100 caracteres.');
+  expect(nameError('L0pez', 'apellido')).toBe('El apellido solo puede tener letras, espacios, apóstrofos, guiones y puntos.');
+});
+
 test('fieldErrors deja solo los campos con error', () => {
   expect(fieldErrors({ email: null, password: 'Ingresa tu contraseña.' })).toEqual({
     password: 'Ingresa tu contraseña.',

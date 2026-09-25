@@ -26,11 +26,11 @@ export function emailError(email: string): string | null {
   return EMAIL_PATTERN.test(email) ? null : 'Escribe un correo válido, por ejemplo nombre@empresa.ec.';
 }
 
-/** Espera el nombre ya normalizado. */
-export function nameError(name: string): string | null {
-  if (!name) return 'Ingresa el nombre.';
-  if (name.length < 2 || name.length > NAME_MAX) return 'El nombre debe tener entre 2 y 100 caracteres.';
-  return NAME_PATTERN.test(name) ? null : 'El nombre solo puede tener letras, espacios, apóstrofos, guiones y puntos.';
+/** Espera el nombre ya normalizado. `label` nombra el campo del mensaje: "apellido", por ejemplo. */
+export function nameError(name: string, label = 'nombre'): string | null {
+  if (!name) return `Ingresa el ${label}.`;
+  if (name.length < 2 || name.length > NAME_MAX) return `El ${label} debe tener entre 2 y 100 caracteres.`;
+  return NAME_PATTERN.test(name) ? null : `El ${label} solo puede tener letras, espacios, apóstrofos, guiones y puntos.`;
 }
 
 /** Sin reglas de composición: las cuentas creadas antes deben poder entrar. */
