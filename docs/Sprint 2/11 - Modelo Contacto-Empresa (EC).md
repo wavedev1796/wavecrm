@@ -46,4 +46,4 @@ Modelo resultante:
 - Migración aplicada en la rama `pruebas` de Neon (`pnpm db:migrate:deploy` con `.env.test.local`). `prisma migrate diff --from-schema-datasource` no muestra diferencias en `Contact` ni en `Company`.
   - Aparte, el diff encontró un desajuste anterior a este ticket: `User.previousPasswordHashes` tiene `DEFAULT` en la base y no en el schema (migración de CRM-8). Queda como tarea separada.
 - `pnpm test` en verde tras el cambio de schema. Las pruebas de integración y de navegador de CRM-16 escriben y leen los campos nuevos en la base real.
-- **Pendiente:** aplicar la migración en `development` y en producción (`pnpm db:migrate:deploy`). Render la aplica sola en el próximo despliegue.
+- Migración aplicada también en `development` (2026-09-24, con OK del usuario) y seed ejecutado en las dos ramas: la empresa y el contacto de ejemplo tienen RUC y cédula válidos y etiquetas en minúsculas. Producción la recibe en el próximo despliegue de Render.

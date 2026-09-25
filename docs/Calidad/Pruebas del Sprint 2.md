@@ -1,12 +1,12 @@
 # Pruebas del Sprint 2
 
-Estado al 2026-09-24: **249 pruebas en verde**:
+Estado al 2026-09-24: **250 pruebas en verde**:
 
 | Capa | Pruebas |
 | --- | --- |
 | Unitarias del API | 77 |
 | Integración del API contra Neon | 28 |
-| Web | 128 |
+| Web | 129 |
 | Navegador | 16 |
 
 Cobertura de líneas: **97,86 %** en el API y **98,08 %** en la web. El código nuevo del sprint (`common/ecuador.ts`, los decoradores, el lector de CSV, el controlador, `lib/ecuador.ts`, la server action y el formulario de importación) está cubierto al 100 %, salvo 4 líneas defensivas.
@@ -21,7 +21,7 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 
 | Comando | Resultado esperado |
 | --- | --- |
-| `pnpm test` | `# tests 77` en el API y `Tests 128 passed` en la web |
+| `pnpm test` | `# tests 77` en el API y `Tests 129 passed` en la web |
 | `pnpm test:integration` | `# tests 28`, `# fail 0` |
 | `pnpm test:e2e` (con `pnpm dev` apagado) | `16 passed` |
 | `pnpm test:coverage` | `coverage/api/lcov.info` y `coverage/web/lcov.info` |
@@ -67,10 +67,12 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | `apps/api/test/integracion/contact-import.http.test.cjs` | Integración | 4 | CSV de Excel real, reimportación, fila inválida sin escritura, 400/401/413 |
 | `apps/web/app/(dashboard)/contactos/importar/csv-header.test.ts` | Web | 3 | Cabecera con `,`/`;`, comillas, BOM y Windows-1252; alias de columnas |
 | `apps/web/app/(dashboard)/contactos/importar/actions.test.ts` | Web | 4 | Sin archivo, reenvío de solo archivo y mapeo, singular/plural, reporte 422, 400, red y sesión vencida |
-| `apps/web/app/(dashboard)/contactos/importar/import-form.test.tsx` | Web | 3 | Columnas propuestas, mapeo enviado, éxito con enlace, tabla de errores, **archivo de más de 1 MB o sin cabecera avisado antes de enviar** |
+| `apps/web/app/(dashboard)/contactos/importar/import-form.test.tsx` | Web | 3 | Columnas propuestas, mapeo enviado, éxito con enlace, tabla de errores, **archivo de más de 1 MB o sin cabecera avisado antes de enviar**, vuelta a "elige el archivo" tras enviar conservando el mapeo manual |
 | `apps/web/app/(dashboard)/contactos/importar/page.test.tsx` | Web | 1 | Instrucciones y `accept` del archivo |
 | `apps/web/lib/authenticated-api.test.ts` | Web | 1 de 5 | Un `FormData` viaja sin `Content-Type` JSON |
 | `apps/web/app/(dashboard)/paginas.test.tsx` | Web | (aserción) | Enlace "Importar CSV" en `/contactos` |
+| `apps/web/components/app-shell.test.tsx` | Web | 1 de 5 | Una subruta (`/contactos/importar`) marca su sección en el menú y muestra su título |
+| Revisión visual (navegador, rama `pruebas`) | Manual | — | 1280 y 375 px: sin scroll horizontal, mapeo en una columna en móvil, reporte de errores legible, éxito con enlace |
 | `e2e/contactos.spec.ts` | Navegador | 1 | Error por fila y luego importación correcta |
 
 ## Validaciones de entrada nuevas
@@ -90,6 +92,9 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | --- | --- | --- |
 | `authenticatedApi` ponía `Content-Type: application/json` a cualquier cuerpo, incluido un `FormData` | Solo a los cuerpos de texto | `authenticated-api.test.ts` |
 | Un CSV de más de 2 MB lo rechazaba Next antes de la server action y la página se rompía | La pantalla revisa tamaño (1 MB) y cabecera al elegir el archivo | `import-form.test.tsx` |
+| Tras enviar, React vaciaba el formulario y los `<select>` mostraban "No importar" con el mapeo aún en memoria | La pantalla vuelve a "elige el archivo" y aplica el mapeo manual al siguiente archivo | `import-form.test.tsx` |
+| La tabla de errores se desbordaba en horizontal (`.table td` no parte líneas) | El motivo se parte en líneas y palabras largas; relleno compacto | revisión visual |
+| "Contactos" no se marcaba en el menú dentro de `/contactos/importar` | Las subrutas marcan su sección | `app-shell.test.tsx` |
 | El reset del formulario tras la acción borraba el contenido del `<output>` de éxito (icono y enlace) | El resultado se muestra fuera del `<form>` | `import-form.test.tsx` |
 | La cédula y el RUC del seed no pasaban el dígito verificador | Valores válidos y corrección de las bases ya sembradas | casos compartidos |
 | Errores de multer en inglés ("Unexpected field") | Traducidos por el filtro global | `app.setup.test.cjs`, `contact-import.http.test.cjs` |

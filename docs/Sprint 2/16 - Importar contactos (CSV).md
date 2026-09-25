@@ -77,6 +77,7 @@ Cargar muchos contactos de una vez desde un archivo CSV (el que exporta Excel), 
 - **`authenticatedApi` con `FormData`.** Añadía `Content-Type: application/json` a cualquier cuerpo, así que un multipart llegaba sin su separador. Se corrigió en la función, que es donde pasan todas las llamadas.
 - **El resultado se muestra fuera del `<form>`.** React resetea el formulario al terminar la acción, y el reset de `<output>` (el `Alert` de éxito) reescribe su texto: borraba el icono y el enlace "Ver contactos". Lo detectó la prueba del formulario.
 - **Tamaño y cabecera se revisan al elegir el archivo.** Next rechaza por su cuenta una server action de más de 2 MB, y esa respuesta rompía la página en vez de mostrar un aviso. La pantalla avisa de un archivo de más de 1 MB (el límite del API) o sin fila de cabecera, y no deja enviarlo. Se encontró en la revisión de código final.
+- **Tras enviar, la pantalla vuelve a "elige el archivo".** React vacía el formulario al terminar la acción (el archivo y el valor visible de cada `<select>`), así que mostrar el mapeo anterior engañaba: se veía "No importar" con el mapeo aún en memoria. Se muestra el resultado, se pide el archivo corregido y el mapeo hecho a mano se aplica a él.
 - **Errores técnicos de multer en español.** "Unexpected field" (campo de archivo con otro nombre) y un multipart cortado responden `La solicitud no tiene un formato válido.` El archivo de más de 1 MB responde el `413` que ya existía.
 
 ### Fuera de alcance
@@ -102,6 +103,7 @@ Cargar muchos contactos de una vez desde un archivo CSV (el que exporta Excel), 
 - `e2e/contactos.spec.ts` (1): en el navegador, un CSV con una cédula inválida muestra la tabla de errores, y el archivo corregido importa 2 contactos.
 - Swagger (`/docs`, sección **contacts**): `POST /api/v1/contacts/import` con selector de archivo, `mapping` con ejemplo y respuestas 201/400/401/409/413/422. Se comprobó generando el documento OpenAPI con el `AppModule` real.
 - `pnpm lint`, `tsc --noEmit` y los builds del API y de la web sin errores.
+- Revisión visual en el navegador contra la rama `pruebas` (2026-09-25), a 1280 y 375 px: sin scroll horizontal; el selector de archivo con el estilo de `button--secondary`; el mapeo en una columna en móvil; el reporte de errores parte los motivos en líneas; "Contactos" activo en el menú. Se probaron el error por fila, el éxito (3 contactos del archivo de ejemplo) y la reimportación ("Ya existe un contacto con esa cédula.").
 
 ### Cómo probarlo a mano
 
