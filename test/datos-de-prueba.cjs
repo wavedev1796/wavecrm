@@ -67,11 +67,26 @@ async function setPasswordResetToken(prisma, email, token) {
   });
 }
 
-/** Borra los usuarios de prueba y su auditoría. Nunca toca otros usuarios. */
+/** Cédula válida al azar (provincia 17): la rama `pruebas` es compartida y la columna es única. */
+function cedulaDePrueba() {
+  const base = `17${Math.floor(Math.random() * 6)}${String(Math.floor(Math.random() * 1e6)).padStart(6, "0")}`;
+  const sum = [...base].reduce((total, digit, index) => {
+    const product = Number(digit) * (index % 2 === 0 ? 2 : 1);
+    return total + (product > 9 ? product - 9 : product);
+  }, 0);
+  return `${base}${(10 - (sum % 10)) % 10}`;
+}
+
+/** RUC de persona natural válido al azar. */
+const rucDePrueba = () => `${cedulaDePrueba()}001`;
+
+/** Borra los usuarios de prueba, sus contactos, sus empresas y su auditoría. Nunca toca otros datos. */
 async function cleanup(prisma) {
   const users = await prisma.user.findMany({ where: { email: { endsWith: DOMAIN } }, select: { id: true } });
   const ids = users.map((user) => user.id);
   if (!ids.length) return;
+  await prisma.contact.deleteMany({ where: { ownerId: { in: ids } } });
+  await prisma.company.deleteMany({ where: { ownerId: { in: ids } } });
   await prisma.auditLog.deleteMany({ where: { OR: [{ userId: { in: ids } }, { entityId: { in: ids } }] } });
   await prisma.user.deleteMany({ where: { id: { in: ids } } });
 }
@@ -82,6 +97,8 @@ module.exports = {
   createUser,
   setInvitationToken,
   setPasswordResetToken,
+  cedulaDePrueba,
+  rucDePrueba,
   cleanup,
   assertTestDatabase,
 };

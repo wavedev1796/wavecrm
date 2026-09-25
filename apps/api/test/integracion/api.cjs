@@ -26,16 +26,17 @@ async function startApi() {
   await app.listen(0, "127.0.0.1");
   const base = `http://127.0.0.1:${app.getHttpServer().address().port}/api/v1`;
 
-  /** Llama al API y devuelve estado, cabeceras y cuerpo JSON (o null si no hay cuerpo). */
+  /** Llama al API y devuelve estado, cabeceras y cuerpo JSON (o null si no hay cuerpo). Un FormData viaja como multipart. */
   async function call(path, { method = "GET", body, token, headers = {} } = {}) {
+    const multipart = body instanceof FormData;
     const response = await fetch(`${base}${path}`, {
       method,
       headers: {
-        ...(body !== undefined && { "Content-Type": "application/json" }),
+        ...(body !== undefined && !multipart && { "Content-Type": "application/json" }),
         ...(token && { Authorization: `Bearer ${token}` }),
         ...headers,
       },
-      body: body === undefined || typeof body === "string" ? body : JSON.stringify(body),
+      body: body === undefined || typeof body === "string" || multipart ? body : JSON.stringify(body),
     });
     const text = await response.text();
     return { status: response.status, headers: response.headers, body: text ? JSON.parse(text) : null };
