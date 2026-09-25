@@ -5,6 +5,7 @@ const { validate } = require("class-validator");
 const casos = require("../../../test/casos-de-validacion.json");
 const { LoginDto, RefreshTokenDto } = require("../dist/modules/auth/auth.dto.js");
 const { ActivateInvitationDto, CreateUserDto, ListUsersDto } = require("../dist/modules/users/users.dto.js");
+const { ContactImportRowDto } = require("../dist/modules/contact-import/contact-import.dto.js");
 
 /** Primer mensaje del campo, con las mismas opciones que el ValidationPipe global. */
 async function firstError(Dto, body, property) {
@@ -18,6 +19,7 @@ async function firstError(Dto, body, property) {
 }
 
 const validUser = { name: "Ana López", email: "ana@empresa.ec", role: "VENDEDOR" };
+const validRow = { firstName: "Ana", lastName: "López" };
 
 for (const [caso, Dto, property, base] of [
   ["email", LoginDto, "email", { password: "x" }],
@@ -26,6 +28,11 @@ for (const [caso, Dto, property, base] of [
   ["nombre", CreateUserDto, "name", validUser],
   ["rol", CreateUserDto, "role", validUser],
   ["contrasenaNueva", ActivateInvitationDto, "password", { passwordConfirmation: "x" }],
+  ["nombre", ContactImportRowDto, "firstName", validRow],
+  ["cedula", ContactImportRowDto, "documentId", validRow],
+  ["ruc", ContactImportRowDto, "companyTaxId", validRow],
+  ["telefono", ContactImportRowDto, "phone", validRow],
+  ["provincia", ContactImportRowDto, "province", validRow],
 ]) {
   test(`${Dto.name}.${property} cumple los casos compartidos de "${caso}"`, async () => {
     for (const { valor, error } of casos[caso]) {
@@ -68,4 +75,70 @@ test("confirmación de contraseña y refresh token son obligatorios y acotados",
     await firstError(RefreshTokenDto, { refreshToken: "x".repeat(2049) }, "refreshToken"),
     "El refresh token no es válido.",
   );
+});
+
+test("una fila de contacto normaliza identificación, teléfono, provincia, ciudad y etiquetas", () => {
+  const row = plainToInstance(ContactImportRowDto, {
+    firstName: "  María   José ",
+    lastName: "Cordero",
+    documentId: "171234567-5",
+    email: " Maria@Andina.EC ",
+    phone: "099 123 4567",
+    province: "pichincha",
+    city: "  San   Rafael ",
+    position: "",
+    tags: "Cliente; mayorista, CLIENTE",
+    companyTaxId: "   ",
+  });
+  assert.deepEqual(
+    { ...row },
+    {
+      firstName: "María José",
+      lastName: "Cordero",
+      documentId: "1712345675",
+      email: "maria@andina.ec",
+      phone: "+593991234567",
+      province: "Pichincha",
+      city: "San Rafael",
+      position: null,
+      tags: ["cliente", "mayorista"],
+      companyTaxId: null,
+    },
+  );
+});
+
+test("apellido, correo, ciudad y cargo de un contacto explican su error", async () => {
+  for (const [property, value, message] of [
+    ["lastName", "", "Ingresa el apellido."],
+    ["lastName", "L", "El apellido debe tener entre 2 y 100 caracteres."],
+    ["lastName", "L0pez", "El apellido solo puede tener letras, espacios, apóstrofos, guiones y puntos."],
+    ["email", "", null],
+    ["email", "ana@empresa", "Escribe un correo válido, por ejemplo nombre@empresa.ec."],
+    ["email", `${"a".repeat(55)}@empresa.ec`, "El correo no puede superar 64 caracteres."],
+    ["city", "Q", "La ciudad debe tener entre 2 y 60 caracteres."],
+    ["city", "Quito 2", "La ciudad solo puede tener letras, espacios, apóstrofos, guiones y puntos."],
+    ["position", "x".repeat(101), "El cargo no puede superar 100 caracteres."],
+    ["position", "Gerente de TI", null],
+  ]) {
+    assert.equal(
+      await firstError(ContactImportRowDto, { ...validRow, [property]: value }, property),
+      message,
+      `${property}=${value}`,
+    );
+  }
+});
+
+test("etiquetas: hasta 10, de 2 a 30 caracteres, con letras, números, espacios y guiones", async () => {
+  for (const [tags, message] of [
+    [Array.from({ length: 11 }, (_, index) => `tag ${index}`), "Puedes asignar hasta 10 etiquetas."],
+    ["a", "Cada etiqueta debe tener entre 2 y 30 caracteres."],
+    ["x".repeat(31), "Cada etiqueta debe tener entre 2 y 30 caracteres."],
+    ["vip!", "Las etiquetas solo pueden tener letras, números, espacios y guiones."],
+    [5, "Escribe las etiquetas separadas por comas."],
+    ["vip, zona-norte, 2026", null],
+    ["", null],
+  ]) {
+    assert.equal(await firstError(ContactImportRowDto, { ...validRow, tags }, "tags"), message, JSON.stringify(tags));
+  }
+  assert.deepEqual(plainToInstance(ContactImportRowDto, { ...validRow, tags: "" }).tags, []);
 });

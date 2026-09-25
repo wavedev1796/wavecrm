@@ -59,5 +59,53 @@
     {"valor":"ROOT","error":"Elige un rol válido."},
     {"valor":"","error":"Elige un rol válido."},
     {"valor":"admin","error":"Elige un rol válido."}
+  ],
+  "cedula": [
+    {"valor":"","error":null},
+    {"valor":"1712345675","error":null},
+    {"valor":" 171234567-5 ","error":null},
+    {"valor":"0102030400","error":null},
+    {"valor":"3012345678","error":null},
+    {"valor":"171234567","error":"La cédula debe tener 10 dígitos."},
+    {"valor":"17123456755","error":"La cédula debe tener 10 dígitos."},
+    {"valor":"17123456a5","error":"La cédula debe tener 10 dígitos."},
+    {"valor":"1712345678","error":"La cédula no es válida."},
+    {"valor":"2512345675","error":"La cédula no es válida."},
+    {"valor":"0012345674","error":"La cédula no es válida."},
+    {"valor":"1762345674","error":"La cédula no es válida."}
+  ],
+  "ruc": [
+    {"valor":"","error":null},
+    {"valor":"1712345675001","error":null},
+    {"valor":"1791234561001","error":null},
+    {"valor":"1791000080001","error":null},
+    {"valor":"1760000070001","error":null},
+    {"valor":"179123456-1001","error":null},
+    {"valor":"179123456100","error":"El RUC debe tener 13 dígitos."},
+    {"valor":"1712345675000","error":"El RUC no es válido."},
+    {"valor":"1712345678001","error":"El RUC no es válido."},
+    {"valor":"1791234562001","error":"El RUC no es válido."},
+    {"valor":"1791000030001","error":"El RUC no es válido."},
+    {"valor":"1760000070000","error":"El RUC no es válido."},
+    {"valor":"1771234567001","error":"El RUC no es válido."},
+    {"valor":"2591234563001","error":"El RUC no es válido."}
+  ],
+  "telefono": [
+    {"valor":"","error":null},
+    {"valor":"0991234567","error":null},
+    {"valor":"+593 99 123 4567","error":null},
+    {"valor":"(02) 234-5678","error":null},
+    {"valor":"099123456","error":"Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678."},
+    {"valor":"+59312345678","error":"Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678."},
+    {"valor":"+1 555 123 4567","error":"Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678."},
+    {"valor":"telefono","error":"Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678."}
+  ],
+  "provincia": [
+    {"valor":"","error":null},
+    {"valor":"Pichincha","error":null},
+    {"valor":"manabi","error":null},
+    {"valor":"SANTO DOMINGO DE LOS TSACHILAS","error":null},
+    {"valor":"Quito","error":"Elige una provincia de Ecuador."},
+    {"valor":"Pichincha2","error":"Elige una provincia de Ecuador."}
   ]
 }
