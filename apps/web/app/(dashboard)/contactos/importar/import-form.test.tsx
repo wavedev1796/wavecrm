@@ -50,6 +50,33 @@ test("al elegir el archivo propone una columna por campo y envía el mapeo elegi
   });
 });
 
+test("un archivo de más de 1 MB o sin cabecera se explica antes de enviarlo", async () => {
+  const user = userEvent.setup();
+  render(<ImportForm />);
+  const input = screen.getByLabelText("Archivo CSV");
+
+  await user.upload(input, csv(`Nombre\n${"x".repeat(1024 * 1024)}`));
+  expect(
+    await screen.findByText(
+      "El archivo supera 1 MB. Divídelo en partes más pequeñas.",
+    ),
+  ).toBeInTheDocument();
+  expect(input).toHaveAttribute("aria-invalid", "true");
+  expect(
+    screen.getByRole("button", { name: "Importar contactos" }),
+  ).toBeDisabled();
+
+  await user.upload(input, csv("\n\n"));
+  expect(
+    await screen.findByText("El archivo no tiene una fila de cabecera."),
+  ).toBeInTheDocument();
+
+  await user.upload(input, csv("Nombre;Apellido\nAna;López"));
+  expect(await screen.findByLabelText("Nombre *")).toHaveValue("Nombre");
+  expect(input).not.toHaveAttribute("aria-invalid");
+  expect(importMock).not.toHaveBeenCalled();
+});
+
 test("muestra el reporte de errores por fila", async () => {
   importMock.mockResolvedValue({
     tone: "error",

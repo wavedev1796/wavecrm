@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Table } from "@/components/ui/table";
 import { importContacts, type ImportState } from "./actions";
 import {
@@ -15,6 +16,10 @@ import {
 } from "./csv-header";
 
 type Mapping = Partial<Record<ImportField, string>>;
+
+// Mismo límite que el API. Se revisa al elegir el archivo porque Next rechaza por su cuenta
+// una server action de más de 2 MB y esa respuesta rompe la página en vez de mostrar un aviso.
+const MAX_FILE_BYTES = 1024 * 1024;
 
 /** Solo los campos con una columna que exista en el archivo. */
 const chosen = (mapping: Mapping, columns: string[]): Mapping =>
@@ -31,10 +36,17 @@ export function ImportForm() {
   );
   const [columns, setColumns] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Mapping>({});
+  const [fileError, setFileError] = useState<string | null>(null);
 
   async function chooseFile(file: File | undefined) {
-    const header = file ? await readCsvHeader(file) : [];
+    const tooLarge = file && file.size > MAX_FILE_BYTES;
+    const header = file && !tooLarge ? await readCsvHeader(file) : [];
     setColumns(header);
+    if (tooLarge)
+      setFileError("El archivo supera 1 MB. Divídelo en partes más pequeñas.");
+    else if (file && !header.length)
+      setFileError("El archivo no tiene una fila de cabecera.");
+    else setFileError(null);
     // Lo elegido a mano se conserva si el archivo corregido trae la misma columna.
     setMapping((current) => ({
       ...guessMapping(header),
@@ -50,15 +62,19 @@ export function ImportForm() {
         noValidate
         aria-busy={pending || undefined}
       >
-        <label className="form-field">
-          Archivo CSV
-          <input
-            name="file"
-            type="file"
-            accept=".csv,text/csv"
-            onChange={(event) => chooseFile(event.currentTarget.files?.[0])}
-          />
-        </label>
+        <div className="form-field">
+          <label>
+            Archivo CSV
+            <input
+              name="file"
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(event) => chooseFile(event.currentTarget.files?.[0])}
+              {...invalidProps("import-file", fileError)}
+            />
+          </label>
+          <FieldError id="import-file" message={fileError} />
+        </div>
 
         {columns.length > 0 && (
           <fieldset className="import-mapping">
