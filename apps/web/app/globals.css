@@ -1145,6 +1145,59 @@ select {
   color: var(--wave-muted);
   text-align: center;
 }
+.import-card {
+  display: flex;
+  max-width: 880px;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 24px;
+}
+.import-card h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.import-card > p,
+.import-rules,
+.import-hint {
+  margin: 0;
+  color: var(--wave-muted-strong);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+.import-rules {
+  padding-left: 18px;
+}
+.import-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+.import-form label {
+  color: #54534d;
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+.import-mapping {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--wave-line);
+  border-radius: 12px;
+}
+.import-mapping legend {
+  padding: 0 6px;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+.import-mapping select {
+  width: 100%;
+}
 
 @media (max-width: 1024px) {
   :root {

@@ -35,6 +35,7 @@ const titleByPath: Record<string, { title: string; subtitle: string }> = {
     subtitle: "Quito, Ecuador · Septiembre 2026",
   },
   "/contactos": { title: "Contactos", subtitle: "248 contactos · 62 empresas" },
+  "/contactos/importar": { title: "Importar contactos", subtitle: "Carga masiva desde CSV" },
   "/empresas": { title: "Empresas", subtitle: "Directorio comercial" },
   "/cotizaciones": {
     title: "Cotizaciones",

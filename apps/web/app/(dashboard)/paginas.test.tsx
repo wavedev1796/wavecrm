@@ -16,6 +16,7 @@ test('pipeline y contactos muestran sus datos de demostración', () => {
   render(<ContactsPage />);
   expect(screen.getByRole('table')).toHaveTextContent('María Cordero');
   expect(screen.getByRole('textbox', { name: 'Buscar contacto' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Importar CSV' })).toHaveAttribute('href', '/contactos/importar');
 });
 
 test('las secciones del próximo sprint lo anuncian', () => {

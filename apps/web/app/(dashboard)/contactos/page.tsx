@@ -1,4 +1,5 @@
-import { Filter, Plus, Search } from 'lucide-react';
+import { Filter, Plus, Search, Upload } from 'lucide-react';
+import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -24,7 +25,7 @@ export default function ContactsPage() {
     <Card className="data-card">
       <div className="table-toolbar">
         <label className="table-search"><Search /><span className="sr-only">Buscar contacto</span><Input placeholder="Nombre, empresa o correo…" /></label>
-        <div><Button variant="secondary"><Filter />Filtrar</Button><Button><Plus />Nuevo contacto</Button></div>
+        <div><Button variant="secondary"><Filter />Filtrar</Button><Link className="button button--secondary" href="/contactos/importar"><Upload aria-hidden />Importar CSV</Link><Button><Plus />Nuevo contacto</Button></div>
       </div>
       <Table>
         <thead><tr><th>Contacto</th><th>Empresa</th><th>Provincia</th><th>Estado</th><th>Responsable</th></tr></thead>
