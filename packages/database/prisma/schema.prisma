@@ -76,9 +76,11 @@ model Company {
   taxId      String?      @unique
   website    String?
   phone      String?
+  email      String?
   province   String?
   city       String?
   address    String?
+  tags       String[]     @default([])
   ownerId    String?
   owner      User?        @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   contacts   Contact[]
@@ -90,6 +92,7 @@ model Company {
   @@index([name])
   @@index([ownerId])
   @@index([province, city])
+  @@index([tags], type: Gin)
 }
 
 model Contact {
@@ -100,6 +103,7 @@ model Contact {
   phone       String?
   documentId  String?      @unique
   province    String?
+  city        String?
   position    String?
   tags        String[]     @default([])
   companyId   String?
@@ -117,6 +121,8 @@ model Contact {
   @@index([companyId])
   @@index([ownerId])
   @@index([email])
+  @@index([province, city])
+  @@index([tags], type: Gin)
 }
 
 model Pipeline {

@@ -50,29 +50,38 @@ async function main() {
     include: { stages: true },
   });
 
+  // ponytail: la cédula y el RUC de ejemplo anteriores no pasaban el dígito verificador (Sprint 2 / Ticket 12).
+  // Se corrigen en las bases ya sembradas; borrar cuando todas se hayan vuelto a sembrar.
+  await prisma.company.updateMany({ where: { taxId: '1791234567001' }, data: { taxId: '1791234561001' } });
+  await prisma.contact.updateMany({ where: { documentId: '1712345678' }, data: { documentId: '1712345675' } });
+
   const company = await prisma.company.upsert({
-    where: { taxId: '1791234567001' },
+    where: { taxId: '1791234561001' },
     update: {},
     create: {
       name: 'Comercial Andina',
       legalName: 'Comercial Andina S.A.',
-      taxId: '1791234567001',
+      taxId: '1791234561001',
+      email: 'ventas@andina.ec',
       province: 'Pichincha',
       city: 'Quito',
+      tags: ['mayorista'],
       ownerId: owner.id,
     },
   });
 
   const contact = await prisma.contact.upsert({
-    where: { documentId: '1712345678' },
+    where: { documentId: '1712345675' },
     update: {},
     create: {
       firstName: 'María',
       lastName: 'Cordero',
       email: 'maria.cordero@andina.ec',
-      documentId: '1712345678',
+      phone: '+593991234567',
+      documentId: '1712345675',
       province: 'Pichincha',
-      tags: ['Cliente', 'Mayorista'],
+      city: 'Quito',
+      tags: ['cliente', 'mayorista'],
       companyId: company.id,
       ownerId: owner.id,
     },
