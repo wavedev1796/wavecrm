@@ -55,35 +55,36 @@ async function main() {
   await prisma.company.updateMany({ where: { taxId: '1791234567001' }, data: { taxId: '1791234561001' } });
   await prisma.contact.updateMany({ where: { documentId: '1712345678' }, data: { documentId: '1712345675' } });
 
+  // Campos del Sprint 2 (Ticket 11) también en las filas ya sembradas: etiquetas en minúsculas para el filtro `has`.
+  const companyEc = { email: 'ventas@andina.ec', tags: ['mayorista'] };
+  const contactEc = { phone: '+593991234567', city: 'Quito', tags: ['cliente', 'mayorista'] };
+
   const company = await prisma.company.upsert({
     where: { taxId: '1791234561001' },
-    update: {},
+    update: companyEc,
     create: {
       name: 'Comercial Andina',
       legalName: 'Comercial Andina S.A.',
       taxId: '1791234561001',
-      email: 'ventas@andina.ec',
       province: 'Pichincha',
       city: 'Quito',
-      tags: ['mayorista'],
       ownerId: owner.id,
+      ...companyEc,
     },
   });
 
   const contact = await prisma.contact.upsert({
     where: { documentId: '1712345675' },
-    update: {},
+    update: contactEc,
     create: {
       firstName: 'María',
       lastName: 'Cordero',
       email: 'maria.cordero@andina.ec',
-      phone: '+593991234567',
       documentId: '1712345675',
       province: 'Pichincha',
-      city: 'Quito',
-      tags: ['cliente', 'mayorista'],
       companyId: company.id,
       ownerId: owner.id,
+      ...contactEc,
     },
   });
 
