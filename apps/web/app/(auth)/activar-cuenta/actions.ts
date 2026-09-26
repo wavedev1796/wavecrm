@@ -15,11 +15,18 @@ export async function activateAccount(
   const token = formText(formData, "token");
   const password = formText(formData, "password");
   const passwordConfirmation = formText(formData, "passwordConfirmation");
+  const termsAccepted = formText(formData, "termsAccepted") === "true";
   const invalid = fieldErrors({
     password: passwordError(password),
     passwordConfirmation: confirmationError(password, passwordConfirmation),
   });
   if (invalid) return { error: null, fieldErrors: invalid };
+  if (!termsAccepted) {
+    return {
+      error: "Debes leer y aceptar los términos y condiciones para activar tu cuenta.",
+      fieldErrors: {},
+    };
+  }
 
   let response: Response;
   try {
@@ -28,7 +35,7 @@ export async function activateAccount(
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password, passwordConfirmation }),
+        body: JSON.stringify({ password, passwordConfirmation, termsAccepted }),
         cache: "no-store",
       },
     );

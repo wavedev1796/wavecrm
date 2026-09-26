@@ -1,7 +1,7 @@
 "use client";
 
 import { Circle, CircleCheck } from "lucide-react";
-import { useActionState, useState } from "react";
+import { type ReactNode, useActionState, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
@@ -20,10 +20,19 @@ type Props = Readonly<{
   action: (state: NewPasswordState, formData: FormData) => Promise<NewPasswordState>;
   submitLabel: string;
   pendingLabel: string;
+  children?: ReactNode;
+  submitDisabled?: boolean;
 }>;
 
 /** Crear una contraseña con las reglas en vivo: lo usan activar la cuenta y recuperar la contraseña. */
-export function NewPasswordForm({ token, action, submitLabel, pendingLabel }: Props) {
+export function NewPasswordForm({
+  token,
+  action,
+  submitLabel,
+  pendingLabel,
+  children,
+  submitDisabled = false,
+}: Props) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -101,7 +110,14 @@ export function NewPasswordForm({ token, action, submitLabel, pendingLabel }: Pr
         <FieldError id="passwordConfirmation" message={confirmationMessage} />
       </div>
 
-      <Button className="auth-submit" type="submit" loading={pending}>
+      {children}
+
+      <Button
+        className="auth-submit"
+        type="submit"
+        loading={pending}
+        disabled={submitDisabled}
+      >
         {pending ? pendingLabel : submitLabel}
       </Button>
     </form>

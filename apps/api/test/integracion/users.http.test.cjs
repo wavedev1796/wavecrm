@@ -85,10 +85,10 @@ test("CRM-7: la invitación enmascara el correo y la activación exige las regla
   assert.equal(preview.body.name, "Ana Invitada");
   assert.match(preview.body.email, /^in\*+@pruebas\.example\.com$/);
 
-  const activate = (password, passwordConfirmation = password) =>
+  const activate = (password, passwordConfirmation = password, termsAccepted = true) =>
     api.call(`/users/invitations/${invited.token}/activate`, {
       method: "POST",
-      body: { password, passwordConfirmation },
+      body: { password, passwordConfirmation, termsAccepted },
     });
 
   const weak = await activate("abcdefg1!");
@@ -100,10 +100,16 @@ test("CRM-7: la invitación enmascara el correo y la activación exige las regla
     "La contraseña debe tener entre 8 y 16 caracteres.",
   ]);
   assert.equal(messageOf(await activate(PASSWORD, "Otra#2026a")), "Las contraseñas no coinciden.");
+  assert.deepEqual(messageOf(await activate(PASSWORD, PASSWORD, false)), [
+    "Debes aceptar los términos y condiciones.",
+  ]);
 
   const ok = await activate(PASSWORD);
   assert.equal(ok.status, 200);
   assert.equal(ok.body.message, "Cuenta activada correctamente.");
+  const accepted = await api.prisma.user.findUnique({ where: { id: invited.id } });
+  assert.ok(accepted.termsAcceptedAt instanceof Date);
+  assert.equal(accepted.termsVersion, "1.0");
   const reused = await activate(PASSWORD);
   assert.equal(reused.status, 400);
   assert.equal(messageOf(reused), "La invitación no existe, venció o ya fue utilizada.");

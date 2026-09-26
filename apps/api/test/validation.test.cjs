@@ -27,7 +27,7 @@ for (const [caso, Dto, property, base] of [
   ["email", CreateUserDto, "email", validUser],
   ["nombre", CreateUserDto, "name", validUser],
   ["rol", CreateUserDto, "role", validUser],
-  ["contrasenaNueva", ActivateInvitationDto, "password", { passwordConfirmation: "x" }],
+  ["contrasenaNueva", ActivateInvitationDto, "password", { passwordConfirmation: "x", termsAccepted: true }],
   ["nombre", ContactImportRowDto, "firstName", validRow],
   ["cedula", ContactImportRowDto, "documentId", validRow],
   ["ruc", ContactImportRowDto, "companyTaxId", validRow],
@@ -74,6 +74,17 @@ test("confirmación de contraseña y refresh token son obligatorios y acotados",
   assert.equal(
     await firstError(RefreshTokenDto, { refreshToken: "x".repeat(2049) }, "refreshToken"),
     "El refresh token no es válido.",
+  );
+});
+
+test("la activación exige aceptar los términos", async () => {
+  assert.equal(
+    await firstError(
+      ActivateInvitationDto,
+      { password: "Wave2026!", passwordConfirmation: "Wave2026!", termsAccepted: false },
+      "termsAccepted",
+    ),
+    "Debes aceptar los términos y condiciones.",
   );
 });
 

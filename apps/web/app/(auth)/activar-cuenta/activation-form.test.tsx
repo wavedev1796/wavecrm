@@ -1,15 +1,37 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { expect, test, vi } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 import { activateAccount } from './actions';
 import { ActivationForm } from './activation-form';
 
 vi.mock('./actions', () => ({ activateAccount: vi.fn() }));
 const activateMock = vi.mocked(activateAccount);
 
+beforeEach(() => {
+  activateMock.mockReset();
+  HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
+    this.setAttribute('open', '');
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  });
+});
+
 function setup() {
   render(<ActivationForm token="t" />);
   return userEvent.setup();
+}
+
+async function acceptTerms(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('checkbox'));
+  const scroller = screen.getByRole('dialog').querySelector('.terms-scroll') as HTMLDivElement;
+  Object.defineProperties(scroller, {
+    scrollHeight: { configurable: true, value: 1000 },
+    clientHeight: { configurable: true, value: 400 },
+    scrollTop: { configurable: true, value: 600 },
+  });
+  fireEvent.scroll(scroller);
+  await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
 }
 
 test('muestra las 5 reglas y las marca mientras se escribe', async () => {
@@ -37,10 +59,34 @@ test('muestra los errores del servidor en la alerta y junto al campo', async () 
     fieldErrors: { password: 'La contraseña debe tener entre 8 y 16 caracteres.' },
   });
   const user = setup();
+  await acceptTerms(user);
   await user.click(screen.getByRole('button', { name: 'Activar mi cuenta' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('La invitación no existe, venció o ya fue utilizada.');
   expect(screen.getByLabelText('Contraseña')).toHaveAttribute('aria-invalid', 'true');
   expect(screen.getByText('La contraseña debe tener entre 8 y 16 caracteres.')).toBeInTheDocument();
+});
+
+test('obliga a leer hasta el final antes de aceptar los términos', async () => {
+  const user = setup();
+  const submit = screen.getByRole('button', { name: 'Activar mi cuenta' });
+  expect(submit).toBeDisabled();
+
+  await user.click(screen.getByRole('checkbox'));
+  const accept = screen.getByRole('button', { name: 'Aceptar y continuar' });
+  expect(accept).toBeDisabled();
+
+  const scroller = screen.getByRole('dialog').querySelector('.terms-scroll') as HTMLDivElement;
+  Object.defineProperties(scroller, {
+    scrollHeight: { configurable: true, value: 1000 },
+    clientHeight: { configurable: true, value: 400 },
+    scrollTop: { configurable: true, value: 600 },
+  });
+  fireEvent.scroll(scroller);
+  expect(accept).toBeEnabled();
+  await user.click(accept);
+
+  expect(screen.getByRole('checkbox')).toBeChecked();
+  expect(submit).toBeEnabled();
 });
 
 test('no usa la validación del navegador y limita las contraseñas a 16 caracteres', () => {

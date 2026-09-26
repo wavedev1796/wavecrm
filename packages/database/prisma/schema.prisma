@@ -51,6 +51,8 @@ model User {
   invitationExpiresAt DateTime?
   invitationSentAt   DateTime?
   activatedAt        DateTime?
+  termsAcceptedAt    DateTime?
+  termsVersion       String?
   passwordResetTokenHash String? @unique
   passwordResetExpiresAt DateTime?
   previousPasswordHashes String[]

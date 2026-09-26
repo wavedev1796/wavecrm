@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { UserRole } from "@wave/database";
 import { Transform } from "class-transformer";
-import { IsEnum, IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
+import { Equals, IsEnum, IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { IsAccountEmail, IsNewPassword, IsPersonName } from "../../common/validation";
 
@@ -52,4 +52,11 @@ export class ActivateInvitationDto {
   @IsNotEmpty(CONFIRMATION_REQUIRED)
   @IsString(CONFIRMATION_REQUIRED)
   passwordConfirmation!: string;
+
+  @ApiProperty({
+    example: true,
+    description: "Confirma la aceptación de los términos y la política de privacidad vigentes.",
+  })
+  @Equals(true, { message: "Debes aceptar los términos y condiciones." })
+  termsAccepted!: boolean;
 }

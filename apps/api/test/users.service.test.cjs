@@ -132,9 +132,12 @@ test("activa una invitación válida, guarda la contraseña y consume el token",
   await users.activate(rawToken, {
     password: "Wave2026!",
     passwordConfirmation: "Wave2026!",
+    termsAccepted: true,
   });
   assert.equal(updateData.active, true);
   assert.equal(updateData.invitationTokenHash, null);
+  assert.ok(updateData.termsAcceptedAt instanceof Date);
+  assert.equal(updateData.termsVersion, "1.0");
   assert.match(updateData.passwordHash, /^\$argon2/);
 });
 
@@ -144,6 +147,7 @@ test("rechaza contraseñas de activación que no coinciden", async () => {
     users.activate("token", {
       password: "Wave2026!",
       passwordConfirmation: "Otra2026!",
+      termsAccepted: true,
     }),
     BadRequestException,
   );

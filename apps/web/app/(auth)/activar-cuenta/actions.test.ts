@@ -14,11 +14,12 @@ const fetchMock = vi.fn();
 beforeEach(() => vi.stubGlobal('fetch', fetchMock));
 
 const initial: ActivationState = { error: null, fieldErrors: {} };
-const form = (password: string, passwordConfirmation: string, token = 't') => {
+const form = (password: string, passwordConfirmation: string, token = 't', termsAccepted = true) => {
   const data = new FormData();
   data.set('token', token);
   data.set('password', password);
   data.set('passwordConfirmation', passwordConfirmation);
+  data.set('termsAccepted', String(termsAccepted));
   return data;
 };
 
@@ -38,6 +39,14 @@ test('valida la contraseña y la confirmación antes de llamar al API', async ()
   expect(fetchMock).not.toHaveBeenCalled();
 });
 
+test('exige la aceptación antes de llamar al API', async () => {
+  expect(await activateAccount(initial, form('Wave2026!', 'Wave2026!', 't', false))).toEqual({
+    error: 'Debes leer y aceptar los términos y condiciones para activar tu cuenta.',
+    fieldErrors: {},
+  });
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
 test('activa con el token codificado y lleva al login con aviso', async () => {
   fetchMock.mockResolvedValue(Response.json({ message: 'Cuenta activada correctamente.' }));
   await expect(activateAccount(initial, form('Wave2026!', 'Wave2026!', 'token/raro'))).rejects.toThrow(
@@ -47,7 +56,11 @@ test('activa con el token codificado y lleva al login con aviso', async () => {
     'http://localhost:4000/api/v1/users/invitations/token%2Fraro/activate',
     expect.objectContaining({
       method: 'POST',
-      body: JSON.stringify({ password: 'Wave2026!', passwordConfirmation: 'Wave2026!' }),
+      body: JSON.stringify({
+        password: 'Wave2026!',
+        passwordConfirmation: 'Wave2026!',
+        termsAccepted: true,
+      }),
     }),
   );
 });

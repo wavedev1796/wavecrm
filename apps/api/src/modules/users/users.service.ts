@@ -241,6 +241,8 @@ export class UsersService {
         passwordHash: await argon2.hash(dto.password),
         active: true,
         activatedAt: new Date(),
+        termsAcceptedAt: new Date(),
+        termsVersion: "1.0",
         invitationTokenHash: null,
         invitationExpiresAt: null,
         refreshTokenHash: null,
