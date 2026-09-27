@@ -2,20 +2,14 @@
 
 import { Check, IdCard } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect } from "react";
+import { Field } from "@/components/form-field";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { FieldError, invalidProps } from "@/components/ui/field-error";
+import { invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
-import {
-  cedulaError,
-  normalizeDigits,
-  phoneError,
-  PROVINCES,
-  provinceError,
-  rucError,
-} from "@/lib/ecuador";
-import { nameError, normalizeName } from "@/lib/validation";
+import { useFieldErrors } from "@/components/use-field-errors";
+import { PROVINCES } from "@/lib/ecuador";
 import { saveContact } from "./actions";
 import {
   emptyContactValues,
@@ -43,39 +37,25 @@ export function ContactForm({
     values: initialValues,
   };
   const [state, action, pending] = useActionState(saveContact, initial);
-  const [visual, setVisual] = useState<
-    Partial<Record<keyof ContactFormValues, string>>
-  >({});
+  const { formRef, error, onChange } = useFieldErrors(state.fieldErrors);
 
   useEffect(() => {
     if (!id && state.contactId) router.push(`/contactos/${state.contactId}`);
   }, [id, router, state.contactId]);
 
-  const error = (field: keyof ContactFormValues) =>
-    visual[field] ?? state.fieldErrors[field];
-  const validate = (field: keyof ContactFormValues, value: string) => {
-    let message: string | null = null;
-    if (field === "firstName") message = nameError(normalizeName(value));
-    if (field === "lastName")
-      message = nameError(normalizeName(value), "apellido");
-    if (field === "documentId") message = cedulaError(normalizeDigits(value));
-    if (field === "companyTaxId") message = rucError(normalizeDigits(value));
-    if (field === "phone") message = phoneError(value);
-    if (field === "province") message = provinceError(value);
-    setVisual((current) => {
-      const next = { ...current };
-      if (message) next[field] = message;
-      else delete next[field];
-      return next;
-    });
-  };
-
   const input = (field: keyof ContactFormValues) =>
     invalidProps(`contact-${field}`, error(field));
+  const field = (name: keyof ContactFormValues, label: string) => ({
+    id: `contact-${name}`,
+    label,
+    error: error(name),
+  });
 
   return (
     <form
+      ref={formRef}
       action={action}
+      onChange={onChange}
       className={`contact-form ${embedded ? "contact-form--modal" : "card"}`}
       noValidate
       aria-busy={pending || undefined}
@@ -87,58 +67,50 @@ export function ContactForm({
         </span>
         <div>
           <h2>{id ? "Editar contacto" : "Nuevo contacto"}</h2>
-          <p>Los datos de Ecuador se validan antes de guardar.</p>
+          <p>Los datos se validan al guardar.</p>
         </div>
       </header>
       {state.feedback && (
         <Alert tone={state.feedback.tone}>{state.feedback.message}</Alert>
       )}
       <div className="contact-form-grid">
-        <Field label="Nombre" field="firstName" error={error("firstName")}>
+        <Field {...field("firstName", "Nombre")}>
           <Input
             name="firstName"
             required
             maxLength={100}
             defaultValue={state.values.firstName}
-            onBlur={(e) => validate("firstName", e.currentTarget.value)}
             {...input("firstName")}
           />
         </Field>
-        <Field label="Apellido" field="lastName" error={error("lastName")}>
+        <Field {...field("lastName", "Apellido")}>
           <Input
             name="lastName"
             required
             maxLength={100}
             defaultValue={state.values.lastName}
-            onBlur={(e) => validate("lastName", e.currentTarget.value)}
             {...input("lastName")}
           />
         </Field>
-        <Field label="Cédula" field="documentId" error={error("documentId")}>
+        <Field {...field("documentId", "Cédula")}>
           <Input
             name="documentId"
             inputMode="numeric"
             placeholder="1712345675"
             defaultValue={state.values.documentId}
-            onBlur={(e) => validate("documentId", e.currentTarget.value)}
             {...input("documentId")}
           />
         </Field>
-        <Field
-          label="RUC de la empresa"
-          field="companyTaxId"
-          error={error("companyTaxId")}
-        >
+        <Field {...field("companyTaxId", "RUC de la empresa")}>
           <Input
             name="companyTaxId"
             inputMode="numeric"
             placeholder="1791234561001"
             defaultValue={state.values.companyTaxId}
-            onBlur={(e) => validate("companyTaxId", e.currentTarget.value)}
             {...input("companyTaxId")}
           />
         </Field>
-        <Field label="Correo" field="email" error={error("email")}>
+        <Field {...field("email", "Correo")}>
           <Input
             name="email"
             type="email"
@@ -148,20 +120,18 @@ export function ContactForm({
             {...input("email")}
           />
         </Field>
-        <Field label="Teléfono" field="phone" error={error("phone")}>
+        <Field {...field("phone", "Teléfono")}>
           <Input
             name="phone"
             placeholder="0991234567"
             defaultValue={state.values.phone}
-            onBlur={(e) => validate("phone", e.currentTarget.value)}
             {...input("phone")}
           />
         </Field>
-        <Field label="Provincia" field="province" error={error("province")}>
+        <Field {...field("province", "Provincia")}>
           <select
             name="province"
             defaultValue={state.values.province}
-            onBlur={(e) => validate("province", e.currentTarget.value)}
             {...input("province")}
           >
             <option value="">Sin provincia</option>
@@ -170,7 +140,7 @@ export function ContactForm({
             ))}
           </select>
         </Field>
-        <Field label="Ciudad" field="city" error={error("city")}>
+        <Field {...field("city", "Ciudad")}>
           <Input
             name="city"
             maxLength={60}
@@ -178,7 +148,7 @@ export function ContactForm({
             {...input("city")}
           />
         </Field>
-        <Field label="Cargo" field="position" error={error("position")}>
+        <Field {...field("position", "Cargo")}>
           <Input
             name="position"
             maxLength={100}
@@ -186,7 +156,7 @@ export function ContactForm({
             {...input("position")}
           />
         </Field>
-        <Field label="Etiquetas" field="tags" error={error("tags")}>
+        <Field {...field("tags", "Etiquetas")}>
           <Input
             name="tags"
             placeholder="cliente, vip"
@@ -207,27 +177,5 @@ export function ContactForm({
         </Button>
       </footer>
     </form>
-  );
-}
-
-function Field({
-  label,
-  field,
-  error,
-  children,
-}: Readonly<{
-  label: string;
-  field: keyof ContactFormValues;
-  error?: string;
-  children: React.ReactNode;
-}>) {
-  return (
-    <div className="form-field">
-      <label>
-        {label}
-        {children}
-      </label>
-      <FieldError id={`contact-${field}`} message={error} />
-    </div>
   );
 }
