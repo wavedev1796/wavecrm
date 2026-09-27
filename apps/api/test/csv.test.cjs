@@ -1,6 +1,6 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { decodeCsv, detectDelimiter, parseCsv } = require("../dist/modules/contact-import/csv.js");
+const { decodeCsv, detectDelimiter, parseCsv } = require("../dist/common/csv.js");
 
 const BOM = String.fromCharCode(0xfeff);
 

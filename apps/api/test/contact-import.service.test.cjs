@@ -2,7 +2,8 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { BadRequestException, ConflictException, UnprocessableEntityException } = require("@nestjs/common");
 const { Prisma } = require("@wave/database");
-const { ContactImportService, MAX_IMPORT_ROWS } = require("../dist/modules/contact-import/contact-import.service.js");
+const { ContactImportService } = require("../dist/modules/contact-import/contact-import.service.js");
+const { MAX_IMPORT_ROWS } = require("../dist/common/csv-import.js");
 
 const HEADER = "Nombre;Apellido;Cédula;Teléfono;Provincia;Etiquetas;RUC empresa";
 const MAPPING = JSON.stringify({

@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 
-// Lector de CSV (RFC 4180) para la importación de contactos: comillas, "" escapado y saltos de línea
+// Lector de CSV (RFC 4180) para importar contactos y empresas: comillas, "" escapado y saltos de línea
 // dentro de comillas. La web lee la cabecera con las mismas reglas (contactos/importar/csv-header.ts).
 
 /** UTF-8 y, si el archivo no lo es, Windows-1252 (el "CSV" de Excel en español). TextDecoder quita el BOM. */
