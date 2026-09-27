@@ -3,13 +3,18 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
 import { passwordError } from './password-rules';
 import {
+  companyNameError,
   emailError,
   fieldErrors,
   loginPasswordError,
   nameError,
   normalizeEmail,
   normalizeName,
+  optionalEmailError,
+  optionalLengthError,
+  parseTags,
   roleError,
+  tagsError,
 } from './validation';
 
 type Caso = { valor: string; error: string | null };
@@ -46,4 +51,24 @@ test('fieldErrors deja solo los campos con error', () => {
     password: 'Ingresa tu contraseña.',
   });
   expect(fieldErrors({ email: null, password: null })).toBeNull();
+});
+
+test('nombre comercial y razón social siguen las reglas del API', () => {
+  expect(companyNameError('', { required: true })).toBe('Ingresa el nombre.');
+  expect(companyNameError('A', { required: true })).toBe('El nombre debe tener entre 2 y 120 caracteres.');
+  expect(companyNameError('Wave & Co. (EC)', { required: true })).toBeNull();
+  expect(companyNameError('Wave <script>', { required: true })).toBe(
+    'El nombre solo puede tener letras, números y signos comerciales comunes.',
+  );
+  expect(companyNameError('', { required: false })).toBeNull();
+  expect(companyNameError('x'.repeat(161), { required: false })).toBe('La razón social no puede superar 160 caracteres.');
+});
+
+test('correo opcional, etiquetas y longitud opcional compartidos por contactos y empresas', () => {
+  expect(optionalEmailError('')).toBeNull();
+  expect(optionalEmailError('ana@empresa')).toBe('Escribe un correo válido, por ejemplo nombre@empresa.ec.');
+  expect(parseTags(' Cliente; VIP, cliente ')).toEqual(['cliente', 'vip']);
+  expect(tagsError('vip!')).toBe('Las etiquetas solo pueden tener letras, números, espacios y guiones.');
+  expect(optionalLengthError('Q', 'La ciudad', 2, 60)).toBe('La ciudad debe tener entre 2 y 60 caracteres.');
+  expect(optionalLengthError('', 'La ciudad', 2, 60)).toBeNull();
 });

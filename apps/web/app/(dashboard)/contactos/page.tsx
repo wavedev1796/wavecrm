@@ -1,9 +1,10 @@
-import { Upload, UsersRound } from "lucide-react";
+import { UsersRound } from "lucide-react";
 import Link from "next/link";
 import { ListFilters } from "@/components/list-filters";
+import { ListHeader } from "@/components/list-header";
 import { Pagination } from "@/components/pagination";
+import { TagList } from "@/components/tag-list";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Table } from "@/components/ui/table";
 import { authenticatedApi } from "@/lib/authenticated-api";
@@ -37,32 +38,18 @@ export default async function ContactsPage({ searchParams }: PageProps) {
         </Alert>
       )}
       <Card className="data-card">
-        <header className="contact-list-header">
-          <div className="contact-list-title">
-            <span className="contact-list-mark">
-              <UsersRound aria-hidden />
-            </span>
-            <div>
-              <span>Directorio comercial</span>
-              <h2>Todos los contactos</h2>
-              <p>
-                {result
-                  ? contactCount(result.meta.total)
-                  : "Consulta y organiza tu cartera"}
-              </p>
-            </div>
-          </div>
-          <div className="contact-list-actions">
-            <Link
-              className="button button--secondary"
-              href="/contactos/importar"
-            >
-              <Upload aria-hidden />
-              Importar CSV
-            </Link>
-            <NewContactDialog />
-          </div>
-        </header>
+        <ListHeader
+          icon={<UsersRound aria-hidden />}
+          title="Todos los contactos"
+          summary={
+            result
+              ? contactCount(result.meta.total)
+              : "Consulta y organiza tu cartera"
+          }
+          importHref="/contactos/importar"
+        >
+          <NewContactDialog />
+        </ListHeader>
         <ListFilters
           basePath="/contactos"
           params={params}
@@ -125,15 +112,7 @@ function ContactRow({ contact }: Readonly<{ contact: Contact }>) {
       <td>{contact.company?.name ?? "—"}</td>
       <td>{contact.province ?? "—"}</td>
       <td>
-        <div className="contact-tags">
-          {contact.tags.length
-            ? contact.tags.map((tag) => (
-                <Badge key={tag} tone="neutral">
-                  {tag}
-                </Badge>
-              ))
-            : "—"}
-        </div>
+        <TagList tags={contact.tags} />
       </td>
       <td>{contact.owner?.name ?? "Sin asignar"}</td>
     </tr>

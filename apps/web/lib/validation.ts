@@ -50,3 +50,48 @@ export function fieldErrors<Field extends string>(
   const errors = Object.fromEntries(Object.entries(checks).filter(([, message]) => message));
   return Object.keys(errors).length ? (errors as Partial<Record<Field, string>>) : null;
 }
+
+// Contactos y empresas (ajustes del Sprint 2): mismas reglas que los decoradores del API.
+
+/** Correo de un contacto o empresa: opcional. Espera el correo ya normalizado. */
+export function optionalEmailError(value: string): string | null {
+  if (!value) return null;
+  if (value.length > EMAIL_MAX) return 'El correo no puede superar 64 caracteres.';
+  return EMAIL_PATTERN.test(value) ? null : 'Escribe un correo válido, por ejemplo nombre@empresa.ec.';
+}
+
+/** Texto separado por comas o punto y coma → etiquetas en minúsculas y sin repetir. */
+export function parseTags(value: string) {
+  return [
+    ...new Set(
+      value
+        .split(/[,;]/)
+        .map((tag) => normalizeName(tag).toLowerCase())
+        .filter(Boolean),
+    ),
+  ];
+}
+
+export function tagsError(value: string): string | null {
+  const list = parseTags(value);
+  if (list.length > 10) return 'Puedes asignar hasta 10 etiquetas.';
+  if (list.some((tag) => tag.length < 2 || tag.length > 30)) return 'Cada etiqueta debe tener entre 2 y 30 caracteres.';
+  return list.some((tag) => !/^[\p{L}\p{N}][\p{L}\p{N} -]*$/u.test(tag))
+    ? 'Las etiquetas solo pueden tener letras, números, espacios y guiones.'
+    : null;
+}
+
+/** Campo opcional con longitud acotada: `optionalLengthError(ciudad, 'La ciudad', 2, 60)`. */
+export function optionalLengthError(value: string, label: string, min: number, max: number): string | null {
+  return !value || (value.length >= min && value.length <= max) ? null : `${label} debe tener entre ${min} y ${max} caracteres.`;
+}
+
+const COMPANY_NAME_PATTERN = /^[\p{L}\p{N}][\p{L}\p{M}\p{N} &'’.,()/-]*$/u;
+
+/** Nombre comercial (obligatorio, 2–120) o razón social (opcional, hasta 160), con las reglas de CreateCompanyDto. */
+export function companyNameError(value: string, { required }: { required: boolean }): string | null {
+  if (!value) return required ? 'Ingresa el nombre.' : null;
+  if (required && (value.length < 2 || value.length > 120)) return 'El nombre debe tener entre 2 y 120 caracteres.';
+  if (!required && value.length > 160) return 'La razón social no puede superar 160 caracteres.';
+  return COMPANY_NAME_PATTERN.test(value) ? null : 'El nombre solo puede tener letras, números y signos comerciales comunes.';
+}

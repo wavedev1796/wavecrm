@@ -11,6 +11,10 @@ import {
   nameError,
   normalizeEmail,
   normalizeName,
+  optionalEmailError,
+  optionalLengthError,
+  parseTags,
+  tagsError,
 } from "@/lib/validation";
 import {
   companyLabel,
@@ -34,7 +38,7 @@ export async function saveContact(
       values.company && !values.companyId
         ? "Elige una empresa de la lista."
         : null,
-    email: contactEmailError(values.email),
+    email: optionalEmailError(values.email),
     phone: phoneError(values.phone, country),
     province: provinceError(values.province),
     city: optionalLengthError(values.city, "La ciudad", 2, 60),
@@ -58,7 +62,7 @@ export async function saveContact(
       province: values.province,
       city: values.city,
       position: values.position,
-      tags: tags(values.tags),
+      tags: parseTags(values.tags),
       companyId: values.companyId || null,
     };
     const response = await authenticatedApi(
@@ -148,47 +152,4 @@ function readValues(formData: FormData): ContactFormValues {
     position: normalizeName(formText(formData, "position")),
     tags: formText(formData, "tags").trim(),
   };
-}
-
-function tags(value: string) {
-  return [
-    ...new Set(
-      value
-        .split(/[,;]/)
-        .map((tag) => normalizeName(tag).toLowerCase())
-        .filter(Boolean),
-    ),
-  ];
-}
-
-function tagsError(value: string) {
-  const list = tags(value);
-  if (list.length > 10) return "Puedes asignar hasta 10 etiquetas.";
-  if (list.some((tag) => tag.length < 2 || tag.length > 30)) {
-    return "Cada etiqueta debe tener entre 2 y 30 caracteres.";
-  }
-  return list.some((tag) => !/^[\p{L}\p{N}][\p{L}\p{N} -]*$/u.test(tag))
-    ? "Las etiquetas solo pueden tener letras, números, espacios y guiones."
-    : null;
-}
-
-function contactEmailError(value: string) {
-  if (!value) return null;
-  if (value.length > 64) return "El correo no puede superar 64 caracteres.";
-  return /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/.test(
-    value,
-  )
-    ? null
-    : "Escribe un correo válido, por ejemplo nombre@empresa.ec.";
-}
-
-function optionalLengthError(
-  value: string,
-  label: string,
-  min: number,
-  max: number,
-) {
-  return !value || (value.length >= min && value.length <= max)
-    ? null
-    : `${label} debe tener entre ${min} y ${max} caracteres.`;
 }

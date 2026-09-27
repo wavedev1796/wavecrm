@@ -1,0 +1,95 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
+import { apiError, authenticatedApi } from "@/lib/authenticated-api";
+import { normalizeDigits, provinceError, rucError } from "@/lib/ecuador";
+import { countryOrEcuador, normalizePhone, phoneError } from "@/lib/phone";
+import {
+  companyNameError,
+  fieldErrors,
+  formText,
+  normalizeEmail,
+  normalizeName,
+  optionalEmailError,
+  optionalLengthError,
+  parseTags,
+  tagsError,
+} from "@/lib/validation";
+import type { CompanyFormState, CompanyFormValues } from "./company-form-state";
+
+export async function saveCompany(
+  _state: CompanyFormState,
+  formData: FormData,
+): Promise<CompanyFormState> {
+  const values = readValues(formData);
+  const country = countryOrEcuador(values.phoneCountry);
+  const invalid = fieldErrors({
+    name: companyNameError(values.name, { required: true }),
+    legalName: companyNameError(values.legalName, { required: false }),
+    taxId: values.taxId ? rucError(values.taxId) : "Ingresa el RUC.",
+    email: optionalEmailError(values.email),
+    phone: phoneError(values.phone, country),
+    province: provinceError(values.province),
+    city: optionalLengthError(values.city, "La ciudad", 2, 60),
+    tags: tagsError(values.tags),
+  });
+  if (invalid) return { feedback: null, fieldErrors: invalid, values };
+
+  try {
+    const response = await authenticatedApi("/companies", {
+      method: "POST",
+      body: JSON.stringify({
+        name: values.name,
+        legalName: values.legalName || null,
+        taxId: values.taxId,
+        email: values.email || null,
+        phone: normalizePhone(values.phone, country),
+        province: values.province || null,
+        city: values.city || null,
+        tags: parseTags(values.tags),
+      }),
+    });
+    if (response.status === 409) {
+      // El único conflicto de una empresa es su RUC: se muestra junto al campo.
+      return {
+        feedback: null,
+        fieldErrors: { taxId: await apiError(response) },
+        values,
+      };
+    }
+    if (!response.ok) {
+      return {
+        feedback: { tone: "error", message: await apiError(response) },
+        fieldErrors: {},
+        values,
+      };
+    }
+    revalidatePath("/empresas");
+    return { feedback: null, fieldErrors: {}, values, saved: true };
+  } catch (error) {
+    unstable_rethrow(error);
+    return {
+      feedback: {
+        tone: "error",
+        message: "No pudimos conectar con el servidor. Inténtalo de nuevo.",
+      },
+      fieldErrors: {},
+      values,
+    };
+  }
+}
+
+function readValues(formData: FormData): CompanyFormValues {
+  return {
+    name: normalizeName(formText(formData, "name")),
+    legalName: normalizeName(formText(formData, "legalName")),
+    taxId: normalizeDigits(formText(formData, "taxId")),
+    email: normalizeEmail(formText(formData, "email")),
+    phone: formText(formData, "phone").trim(),
+    phoneCountry: countryOrEcuador(formText(formData, "phoneCountry")),
+    province: formText(formData, "province").trim(),
+    city: normalizeName(formText(formData, "city")),
+    tags: formText(formData, "tags").trim(),
+  };
+}
