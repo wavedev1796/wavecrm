@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { cedulaDePrueba, cleanup, createUser, login } from './datos';
+import { prisma } from '@wave/database';
+import { cedulaDePrueba, cleanup, createUser, login, pasaporteDePrueba } from './datos';
 
 test.afterAll(async () => {
   await cleanup();
@@ -32,4 +33,50 @@ test('CRM-16: la importación muestra los errores por fila y luego importa el ar
   await page.getByRole('button', { name: 'Importar contactos' }).click();
   await expect(page.getByText('Se importaron 2 contactos.')).toBeVisible();
   await expect(page.getByRole('table', { name: 'Errores por fila' })).toHaveCount(0);
+});
+
+test('Ajustes: el buscador filtra mientras se escribe', async ({ page }) => {
+  const seller = await createUser({ name: 'Vendedora Busca' });
+  const stamp = Date.now().toString(36);
+  await prisma.contact.createMany({
+    data: [
+      { firstName: 'Zoila', lastName: `Buscada${stamp}`, ownerId: seller.id },
+      { firstName: 'Otro', lastName: `Distinto${stamp}`, ownerId: seller.id },
+    ],
+  });
+  await login(page, seller.email);
+  await expect(page).toHaveURL(/\/pipeline$/);
+
+  await page.goto('/contactos');
+  await page.getByLabel('Buscar contacto').pressSequentially(`Buscada${stamp}`);
+  await expect(page).toHaveURL(new RegExp(`search=Buscada${stamp}`));
+  await expect(page.getByRole('row', { name: /Zoila/ })).toBeVisible();
+  await expect(page.getByRole('row', { name: /Otro/ })).toHaveCount(0);
+});
+
+test('Ajustes: crea un contacto con pasaporte y teléfono de Colombia', async ({ page }) => {
+  const seller = await createUser({ name: 'Vendedora Extranjeros' });
+  const passport = pasaporteDePrueba();
+  await login(page, seller.email);
+  await expect(page).toHaveURL(/\/pipeline$/);
+
+  await page.goto('/contactos');
+  await page.getByRole('button', { name: 'Nuevo contacto' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Crear nuevo contacto' });
+  // Sin tocar nada, guardar marca los errores en sus campos.
+  await dialog.getByRole('button', { name: 'Crear contacto' }).click();
+  await expect(dialog.getByText('Ingresa el nombre.')).toBeVisible();
+
+  // exact: getByLabel busca por subcadena sin mayúsculas, y "País del teléfono" contiene "teléfono".
+  await dialog.getByLabel('Nombre', { exact: true }).fill('John');
+  await dialog.getByLabel('Apellido', { exact: true }).fill('Smith');
+  await dialog.getByLabel('Tipo de documento').selectOption('PASAPORTE');
+  await dialog.getByLabel('Pasaporte', { exact: true }).fill(passport);
+  await dialog.getByLabel('País del teléfono').selectOption('CO');
+  await dialog.getByLabel('Teléfono', { exact: true }).fill('601 234 5678');
+  await dialog.getByRole('button', { name: 'Crear contacto' }).click();
+
+  await expect(page).toHaveURL(/\/contactos\/c/);
+  await expect(page.getByText(`Pasaporte ${passport}`)).toBeVisible();
+  await expect(page.getByText('+57 601 2345678')).toBeVisible();
 });
