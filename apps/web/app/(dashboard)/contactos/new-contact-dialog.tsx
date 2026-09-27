@@ -17,9 +17,7 @@ export function NewContactDialog() {
         ref={dialog}
         className="contact-dialog"
         aria-label="Crear nuevo contacto"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) event.currentTarget.close();
-        }}
+        closedby="any"
       >
         <div className="contact-dialog-panel">
           <button

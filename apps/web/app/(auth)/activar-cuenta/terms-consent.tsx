@@ -63,7 +63,7 @@ export function TermsConsent({ accepted, onAcceptedChange }: Props) {
 
         <div
           className="terms-scroll"
-          tabIndex={0}
+          tabIndex={0} // NOSONAR: sin foco, con teclado no se puede desplazar hasta "Aceptar y continuar".
           onScroll={(event) => {
             const element = event.currentTarget;
             if (element.scrollHeight - element.scrollTop - element.clientHeight <= 12) {

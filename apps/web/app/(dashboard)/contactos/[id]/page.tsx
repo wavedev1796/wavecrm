@@ -100,12 +100,7 @@ export default async function ContactDetailPage({
                   <div>
                     <strong>{deal.title}</strong>
                     <span>
-                      {deal.stage.name} ·{" "}
-                      {deal.status === "OPEN"
-                        ? "Abierto"
-                        : deal.status === "WON"
-                          ? "Ganado"
-                          : "Perdido"}
+                      {deal.stage.name} · {dealStatus(deal.status)}
                     </span>
                   </div>
                   <b>{money(deal.value, deal.currency)}</b>
@@ -173,6 +168,8 @@ const date = (value: string) =>
   new Intl.DateTimeFormat("es-EC", { dateStyle: "medium" }).format(
     new Date(value),
   );
+const dealStatus = (status: ContactDetail["deals"][number]["status"]) =>
+  ({ OPEN: "Abierto", WON: "Ganado", LOST: "Perdido" })[status];
 const activityType = (type: ContactDetail["activities"][number]["type"]) =>
   ({ CALL: "Llamada", EMAIL: "Correo", MEETING: "Reunión", TASK: "Tarea" })[
     type

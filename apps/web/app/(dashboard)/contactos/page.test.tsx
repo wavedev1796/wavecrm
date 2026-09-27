@@ -61,5 +61,6 @@ test("CRM-14: lista contactos reales, conserva Importar CSV y envía filtros", a
   expect(
     screen.getByRole("button", { name: "Nuevo contacto" }),
   ).toBeInTheDocument();
+  expect(screen.getByText("12 contactos registrados")).toBeInTheDocument();
   expect(screen.getByText(/Mostrando 11–11 de 12/)).toBeInTheDocument();
 });

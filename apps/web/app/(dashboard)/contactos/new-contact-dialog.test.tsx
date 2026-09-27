@@ -24,6 +24,8 @@ test("abre y cierra el alta de contacto como diálogo modal", () => {
   render(<NewContactDialog />);
   const dialog = screen.getByRole("dialog", { hidden: true });
   expect(dialog).not.toHaveAttribute("open");
+  // El navegador lo cierra con Esc o con un clic en el fondo.
+  expect(dialog).toHaveAttribute("closedby", "any");
   fireEvent.click(screen.getByRole("button", { name: "Nuevo contacto" }));
   expect(dialog).toHaveAttribute("open");
   expect(

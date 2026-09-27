@@ -58,7 +58,7 @@ export default async function ContactsPage({ searchParams }: PageProps) {
               <h2>Todos los contactos</h2>
               <p>
                 {result
-                  ? `${result.meta.total} contacto${result.meta.total === 1 ? "" : "s"} registrado${result.meta.total === 1 ? "" : "s"}`
+                  ? contactCount(result.meta.total)
                   : "Consulta y organiza tu cartera"}
               </p>
             </div>
@@ -234,6 +234,11 @@ function pageHref(
   if (params.tag) query.set("tag", params.tag);
   query.set("page", String(page));
   return `/contactos?${query}`;
+}
+function contactCount(total: number) {
+  return total === 1
+    ? "1 contacto registrado"
+    : `${total} contactos registrados`;
 }
 function positivePage(value?: string) {
   const page = Number(value);
