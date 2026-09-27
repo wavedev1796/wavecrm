@@ -53,7 +53,7 @@ function mod11(value: string, coefficients: number[]) {
 
 export function isCedula(value: string) {
   if (!/^\d{10}$/.test(value) || !validProvinceCode(value) || Number(value[2]) > 5) return false;
-  const sum = [...value.slice(0, 9)].reduce((total, digit, index) => {
+  const sum = [...value].slice(0, 9).reduce((total, digit, index) => {
     const product = Number(digit) * (index % 2 === 0 ? 2 : 1);
     return total + (product > 9 ? product - 9 : product);
   }, 0);

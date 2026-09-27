@@ -70,7 +70,7 @@ export function ImportForm() {
       >
         <div className="form-field">
           <label>
-            Archivo CSV
+            Archivo CSV{" "}
             <input
               name="file"
               type="file"
