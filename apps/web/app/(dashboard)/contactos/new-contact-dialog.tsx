@@ -17,7 +17,7 @@ export function NewContactDialog() {
         ref={dialog}
         className="contact-dialog"
         aria-label="Crear nuevo contacto"
-        closedby="any"
+        closedby="any" // NOSONAR: atributo HTML válido (tipado en @types/react) que la regla aún no conoce.
       >
         <div className="contact-dialog-panel">
           <button
