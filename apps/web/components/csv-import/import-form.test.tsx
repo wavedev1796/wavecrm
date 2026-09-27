@@ -1,11 +1,20 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import { importContacts } from "./actions";
+import { CONTACT_IMPORT_FIELDS } from "@/app/(dashboard)/contactos/importar/fields";
+import type { ImportState } from "@/lib/csv-import";
 import { ImportForm } from "./import-form";
 
-vi.mock("./actions", () => ({ importContacts: vi.fn() }));
-const importMock = vi.mocked(importContacts);
+const importMock =
+  vi.fn<(state: ImportState, formData: FormData) => Promise<ImportState>>();
+const Form = () => (
+  <ImportForm
+    fields={CONTACT_IMPORT_FIELDS}
+    action={importMock}
+    noun="contactos"
+    listHref="/contactos"
+  />
+);
 
 const csv = (text: string) =>
   new File([text], "contactos.csv", { type: "text/csv" });
@@ -17,7 +26,7 @@ test("al elegir el archivo propone una columna por campo y envía el mapeo elegi
     errors: [],
   });
   const user = userEvent.setup();
-  render(<ImportForm />);
+  render(<Form />);
   expect(
     screen.getByRole("button", { name: "Importar contactos" }),
   ).toBeDisabled();
@@ -63,7 +72,7 @@ test("al elegir el archivo propone una columna por campo y envía el mapeo elegi
 
 test("un archivo de más de 1 MB o sin cabecera se explica antes de enviarlo", async () => {
   const user = userEvent.setup();
-  render(<ImportForm />);
+  render(<Form />);
   const input = screen.getByLabelText("Archivo CSV");
 
   await user.upload(input, csv(`Nombre\n${"x".repeat(1024 * 1024)}`));
@@ -95,7 +104,7 @@ test("muestra el reporte de errores por fila", async () => {
     errors: [{ row: 3, column: "Cédula", message: "La cédula no es válida." }],
   });
   const user = userEvent.setup();
-  render(<ImportForm />);
+  render(<Form />);
   await user.upload(
     screen.getByLabelText("Archivo CSV"),
     csv("Nombre,Apellido,Cédula\nAna,López,1712345678"),

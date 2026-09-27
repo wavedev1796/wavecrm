@@ -40,6 +40,10 @@ const titleByPath: Record<string, { title: string; subtitle: string }> = {
     subtitle: "Carga masiva desde CSV",
   },
   "/empresas": { title: "Empresas", subtitle: "Directorio comercial" },
+  "/empresas/importar": {
+    title: "Importar empresas",
+    subtitle: "Carga masiva desde CSV",
+  },
   "/cotizaciones": {
     title: "Cotizaciones",
     subtitle: "Propuestas y seguimiento",

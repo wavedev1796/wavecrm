@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { expect, test } from "vitest";
+import { CONTACT_IMPORT_FIELDS } from "@/app/(dashboard)/contactos/importar/fields";
+import { COMPANY_IMPORT_FIELDS } from "@/app/(dashboard)/empresas/importar/fields";
 import { guessMapping, readCsvHeader } from "./csv-header";
 
 const BOM = String.fromCharCode(0xfeff);
@@ -27,15 +29,18 @@ test("lee Windows-1252 cuando el archivo no es UTF-8 (CSV de Excel en español)"
 
 test("propone la columna de cada campo sin importar tildes ni mayúsculas", () => {
   expect(
-    guessMapping([
-      "NOMBRES",
-      "Apellido",
-      "Cedula",
-      "Correo electrónico",
-      "Celular",
-      "RUC empresa",
-      "Notas",
-    ]),
+    guessMapping(
+      [
+        "NOMBRES",
+        "Apellido",
+        "Cedula",
+        "Correo electrónico",
+        "Celular",
+        "RUC empresa",
+        "Notas",
+      ],
+      CONTACT_IMPORT_FIELDS,
+    ),
   ).toEqual({
     firstName: "NOMBRES",
     lastName: "Apellido",
@@ -43,5 +48,19 @@ test("propone la columna de cada campo sin importar tildes ni mayúsculas", () =
     email: "Correo electrónico",
     phone: "Celular",
     companyTaxId: "RUC empresa",
+  });
+});
+
+test("propone las columnas de una empresa", () => {
+  expect(
+    guessMapping(
+      ["Empresa", "Razón Social", "RUC", "Celular"],
+      COMPANY_IMPORT_FIELDS,
+    ),
+  ).toEqual({
+    name: "Empresa",
+    legalName: "Razón Social",
+    taxId: "RUC",
+    phone: "Celular",
   });
 });

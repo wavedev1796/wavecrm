@@ -7,15 +7,14 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Table } from "@/components/ui/table";
-import { importContacts, type ImportState } from "./actions";
+import type { ImportState } from "@/lib/csv-import";
 import {
   guessMapping,
-  IMPORT_FIELDS,
   readCsvHeader,
-  type ImportField,
+  type ImportFieldSpec,
 } from "./csv-header";
 
-type Mapping = Partial<Record<ImportField, string>>;
+type Mapping = Record<string, string>;
 
 // Mismo límite que el API. Se revisa al elegir el archivo porque Next rechaza por su cuenta
 // una server action de más de 2 MB y esa respuesta rompe la página en vez de mostrar un aviso.
@@ -29,10 +28,18 @@ const chosen = (mapping: Mapping, columns: string[]): Mapping =>
     ),
   );
 
-export function ImportForm() {
+type Props = Readonly<{
+  fields: readonly ImportFieldSpec[];
+  action: (state: ImportState, formData: FormData) => Promise<ImportState>;
+  /** "contactos", "empresas": botón "Importar …" y enlace "Ver …". */
+  noun: string;
+  listHref: string;
+}>;
+
+export function ImportForm({ fields, action, noun, listHref }: Props) {
   const [state, formAction, pending] = useActionState<ImportState, FormData>(
     async (previous, formData) => {
-      const next = await importContacts(previous, formData);
+      const next = await action(previous, formData);
       // React vacía el formulario al terminar la acción: se vuelve a elegir el archivo (el corregido,
       // si hubo errores) y el mapeo hecho a mano se conserva para él.
       setColumns([]);
@@ -55,7 +62,7 @@ export function ImportForm() {
     else setFileError(null);
     // Lo elegido a mano se conserva si el archivo corregido trae la misma columna.
     setMapping((current) => ({
-      ...guessMapping(header),
+      ...guessMapping(header, fields),
       ...chosen(current, header),
     }));
   }
@@ -85,29 +92,26 @@ export function ImportForm() {
         {columns.length > 0 && (
           <fieldset className="import-mapping">
             <legend>¿Qué columna del archivo corresponde a cada dato?</legend>
-            {IMPORT_FIELDS.map(({ field, label, ...rules }) => {
-              const required = "required" in rules;
-              return (
-                <label key={field} className="form-field">
-                  {required ? `${label} *` : label}
-                  <select
-                    value={mapping[field] ?? ""}
-                    onChange={(event) =>
-                      setMapping({ ...mapping, [field]: event.target.value })
-                    }
-                  >
-                    <option value="">
-                      {required ? "Elige una columna" : "No importar"}
+            {fields.map(({ field, label, required }) => (
+              <label key={field} className="form-field">
+                {required ? `${label} *` : label}
+                <select
+                  value={mapping[field] ?? ""}
+                  onChange={(event) =>
+                    setMapping({ ...mapping, [field]: event.target.value })
+                  }
+                >
+                  <option value="">
+                    {required ? "Elige una columna" : "No importar"}
+                  </option>
+                  {columns.map((column) => (
+                    <option key={column} value={column}>
+                      {column}
                     </option>
-                    {columns.map((column) => (
-                      <option key={column} value={column}>
-                        {column}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              );
-            })}
+                  ))}
+                </select>
+              </label>
+            ))}
           </fieldset>
         )}
 
@@ -118,7 +122,7 @@ export function ImportForm() {
         />
         <Button type="submit" loading={pending} disabled={!columns.length}>
           <FileUp aria-hidden />
-          Importar contactos
+          {`Importar ${noun}`}
         </Button>
       </form>
 
@@ -129,7 +133,7 @@ export function ImportForm() {
           {state.tone === "success" && (
             <>
               {" "}
-              <Link href="/contactos">Ver contactos</Link>
+              <Link href={listHref}>{`Ver ${noun}`}</Link>
             </>
           )}
         </Alert>

@@ -1,50 +1,13 @@
 // Solo la cabecera del CSV, para armar el mapeo antes de subirlo. El archivo completo lo lee y valida el API
-// (apps/api/src/modules/contact-import/csv.ts) con la misma decodificación, delimitador y comillas.
+// (apps/api/src/common/csv.ts) con la misma decodificación, delimitador y comillas.
 
-export const IMPORT_FIELDS = [
-  {
-    field: "firstName",
-    label: "Nombre",
-    required: true,
-    aliases: ["nombre", "nombres", "primer nombre"],
-  },
-  {
-    field: "lastName",
-    label: "Apellido",
-    required: true,
-    aliases: ["apellido", "apellidos"],
-  },
-  {
-    field: "documentId",
-    label: "Cédula",
-    aliases: ["cedula", "identificacion", "numero de cedula"],
-  },
-  {
-    field: "email",
-    label: "Correo",
-    aliases: ["correo", "email", "e-mail", "correo electronico"],
-  },
-  {
-    field: "phone",
-    label: "Teléfono",
-    aliases: ["telefono", "celular", "movil"],
-  },
-  { field: "province", label: "Provincia", aliases: ["provincia"] },
-  { field: "city", label: "Ciudad", aliases: ["ciudad", "canton"] },
-  { field: "position", label: "Cargo", aliases: ["cargo", "puesto"] },
-  {
-    field: "tags",
-    label: "Etiquetas",
-    aliases: ["etiquetas", "etiqueta", "segmento"],
-  },
-  {
-    field: "companyTaxId",
-    label: "RUC de la empresa",
-    aliases: ["ruc empresa", "ruc de la empresa", "ruc"],
-  },
-] as const;
-
-export type ImportField = (typeof IMPORT_FIELDS)[number]["field"];
+/** Un campo importable: etiqueta en pantalla y nombres de cabecera que se le proponen (sin tildes ni mayúsculas). */
+export type ImportFieldSpec = {
+  field: string;
+  label: string;
+  required?: boolean;
+  aliases: readonly string[];
+};
 
 const key = (text: string) =>
   text.normalize("NFD").replace(/\p{M}/gu, "").trim().toLowerCase();
@@ -72,10 +35,11 @@ export async function readCsvHeader(file: Blob): Promise<string[]> {
 /** Columna sugerida para cada campo según el nombre de la cabecera. */
 export function guessMapping(
   columns: string[],
-): Partial<Record<ImportField, string>> {
+  fields: readonly ImportFieldSpec[],
+): Record<string, string> {
   const byKey = new Map(columns.map((column) => [key(column), column]));
   return Object.fromEntries(
-    IMPORT_FIELDS.flatMap(({ field, aliases }) => {
+    fields.flatMap(({ field, aliases }) => {
       const column = aliases.map((alias) => byKey.get(alias)).find(Boolean);
       return column ? [[field, column]] : [];
     }),

@@ -2,14 +2,14 @@
 
 import { sendImport, type ImportState } from "@/lib/csv-import";
 
-export async function importContacts(
+export async function importCompanies(
   _state: ImportState,
   formData: FormData,
 ): Promise<ImportState> {
   return sendImport(
-    "/contacts/import",
+    "/companies/import",
     formData,
-    { one: "contacto", many: "contactos" },
-    "/contactos",
+    { one: "empresa", many: "empresas" },
+    "/empresas",
   );
 }
