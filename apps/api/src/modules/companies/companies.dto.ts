@@ -12,7 +12,7 @@ import { PaginationDto } from "../../common/dto/pagination.dto";
 import {
   IsCity,
   IsContactEmail,
-  IsEcuadorPhone,
+  IsPhone,
   IsProvince,
   IsRuc,
   IsTags,
@@ -73,8 +73,12 @@ export class CreateCompanyDto {
   @MaxLength(200, { message: "El sitio web no puede superar 200 caracteres." })
   website?: string | null;
 
-  @ApiPropertyOptional({ example: "+59322345678", nullable: true })
-  @IsEcuadorPhone()
+  @ApiPropertyOptional({
+    description: "Se guarda en E.164; sin + se entiende que es de Ecuador.",
+    example: "+59322345678",
+    nullable: true,
+  })
+  @IsPhone()
   phone?: string | null;
 
   @ApiPropertyOptional({ example: "ventas@wave.ec", nullable: true })

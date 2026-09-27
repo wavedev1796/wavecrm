@@ -2,8 +2,8 @@ import {
   IsCedula,
   IsCity,
   IsContactEmail,
-  IsEcuadorPhone,
   IsPersonName,
+  IsPhone,
   IsPosition,
   IsProvince,
   IsRuc,
@@ -40,7 +40,7 @@ export class ContactImportRowDto {
   @IsContactEmail()
   email?: string | null;
 
-  @IsEcuadorPhone()
+  @IsPhone()
   phone?: string | null;
 
   @IsProvince()

@@ -12,7 +12,8 @@ import {
   MaxLength,
   ValidateBy,
 } from 'class-validator';
-import { isCedula, isRuc, normalizeDigits, normalizePhone, officialProvince, PROVINCES } from './ecuador';
+import { isCedula, isRuc, normalizeDigits, officialProvince, PROVINCES } from './ecuador';
+import { normalizePhone, PHONE_INVALID } from './phone';
 
 // Mismas reglas y mensajes que apps/web/lib/validation.ts, apps/web/lib/password-rules.ts y apps/web/lib/ecuador.ts.
 // Ambos lados se prueban con test/casos-de-validacion.json para que no se separen.
@@ -72,7 +73,6 @@ export const IsNewPassword = () =>
 // Contactos y empresas (Sprint 2 / Ticket 12). Todos opcionales: los usa la importación (CRM-16) y los usará CRM-13.
 
 const TAG_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} -]*$/u;
-const PHONE_INVALID = 'Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678.';
 const CITY_LENGTH = 'La ciudad debe tener entre 2 y 60 caracteres.';
 
 /** Un texto vacío llega como `null`: IsOptional lo deja pasar, un alta guarda NULL y un PATCH puede borrar el valor. */
@@ -112,11 +112,11 @@ export const IsContactEmail = () =>
     Matches(EMAIL_PATTERN, { message: EMAIL_INVALID }),
   );
 
-/** Se guarda en E.164 (`+593…`); lo que no es un teléfono de Ecuador queda como llegó y no pasa. */
-export const IsEcuadorPhone = () =>
+/** Se guarda en E.164; sin `+` se entiende que es de Ecuador. Lo que no es un teléfono queda como llegó y no pasa. */
+export const IsPhone = () =>
   applyDecorators(
     optional((value) => normalizePhone(value) ?? value),
-    passes('isEcuadorPhone', (value) => normalizePhone(value) === value, PHONE_INVALID),
+    passes('isPhone', (value) => normalizePhone(value) === value, PHONE_INVALID),
   );
 
 export const IsProvince = () =>

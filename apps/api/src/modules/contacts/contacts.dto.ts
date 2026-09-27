@@ -6,8 +6,8 @@ import {
   IsCedula,
   IsCity,
   IsContactEmail,
-  IsEcuadorPhone,
   IsPersonName,
+  IsPhone,
   IsPosition,
   IsProvince,
   IsTags,
@@ -36,8 +36,12 @@ export class CreateContactDto {
   @IsContactEmail()
   email?: string | null;
 
-  @ApiPropertyOptional({ example: "+593991234567", nullable: true })
-  @IsEcuadorPhone()
+  @ApiPropertyOptional({
+    description: "Se guarda en E.164; sin + se entiende que es de Ecuador.",
+    example: "+593991234567",
+    nullable: true,
+  })
+  @IsPhone()
   phone?: string | null;
 
   @ApiPropertyOptional({

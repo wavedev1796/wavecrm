@@ -48,7 +48,7 @@ test("CRM-14: usa los validadores EC antes de llamar al API", async () => {
       documentId: "La cédula debe tener 10 dígitos.",
       companyTaxId: "El RUC debe tener 13 dígitos.",
       phone:
-        "Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678.",
+        "Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678.",
       province: "Elige una provincia de Ecuador.",
     }),
   );

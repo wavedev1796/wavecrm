@@ -88,7 +88,7 @@ test("con filas inválidas no guarda ninguna y reporta fila, columna y motivo en
       { row: 2, column: "Provincia", message: "Elige una provincia de Ecuador." },
       { row: 4, column: "Nombre", message: "El nombre debe tener entre 2 y 100 caracteres." },
       { row: 4, column: "Apellido", message: "Ingresa el apellido." },
-      { row: 4, column: "Teléfono", message: "Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678." },
+      { row: 4, column: "Teléfono", message: "Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678." },
     ],
   });
   assert.equal(created.length, 0);

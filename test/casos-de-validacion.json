@@ -95,10 +95,16 @@
     {"valor":"0991234567","error":null},
     {"valor":"+593 99 123 4567","error":null},
     {"valor":"(02) 234-5678","error":null},
-    {"valor":"099123456","error":"Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678."},
-    {"valor":"+59312345678","error":"Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678."},
-    {"valor":"+1 555 123 4567","error":"Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678."},
-    {"valor":"telefono","error":"Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678."}
+    {"valor":"+57 601 234 5678","error":null},
+    {"valor":"+34 612 34 56 78","error":null},
+    {"valor":"+1 201 555 0123","error":null},
+    {"valor":"601 234 5678","pais":"CO","error":null},
+    {"valor":"099123456","error":"Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678."},
+    {"valor":"+59312345678","error":"Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678."},
+    {"valor":"+57 123","error":"Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678."},
+    {"valor":"+999 123 456 789","error":"Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678."},
+    {"valor":"0991234567","pais":"CO","error":"Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678."},
+    {"valor":"telefono","error":"Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678."}
   ],
   "provincia": [
     {"valor":"","error":null},

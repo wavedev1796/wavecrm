@@ -5,7 +5,6 @@ const {
   isCedula,
   isRuc,
   normalizeDigits,
-  normalizePhone,
   officialProvince,
 } = require("../dist/common/ecuador.js");
 
@@ -36,17 +35,6 @@ test("RUC: persona natural, sociedad privada y entidad pública", () => {
   ]) {
     assert.equal(isRuc(invalid), false, invalid);
   }
-});
-
-test("teléfono: móviles y fijos de Ecuador en E.164", () => {
-  assert.equal(normalizePhone("0991234567"), "+593991234567");
-  assert.equal(normalizePhone("+593 99 123 4567"), "+593991234567");
-  assert.equal(normalizePhone("593991234567"), "+593991234567");
-  assert.equal(normalizePhone("(02) 234-5678"), "+59322345678");
-  assert.equal(normalizePhone("+593991234567"), "+593991234567");
-  assert.equal(normalizePhone("099123456"), null);
-  assert.equal(normalizePhone("0123456789"), null);
-  assert.equal(normalizePhone("+1 555 123 4567"), null);
 });
 
 test("provincias: 24 nombres oficiales sin importar tildes ni mayúsculas", () => {

@@ -6,10 +6,10 @@ import { apiError, authenticatedApi } from "@/lib/authenticated-api";
 import {
   cedulaError,
   normalizeDigits,
-  phoneError,
   provinceError,
   rucError,
 } from "@/lib/ecuador";
+import { phoneError } from "@/lib/phone";
 import {
   fieldErrors,
   formText,

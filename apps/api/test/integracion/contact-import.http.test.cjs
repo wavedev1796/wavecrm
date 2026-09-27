@@ -79,7 +79,7 @@ test("CRM-16: con una fila inválida no se guarda ninguna y el reporte indica fi
   assert.equal(response.status, 422);
   assert.deepEqual(response.body.error.errors, [
     { row: 3, column: "Cédula", message: "La cédula no es válida." },
-    { row: 3, column: "Teléfono", message: "Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678." },
+    { row: 3, column: "Teléfono", message: "Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678." },
     { row: 3, column: "Provincia", message: "Elige una provincia de Ecuador." },
     { row: 4, column: "RUC empresa", message: "No existe una empresa con ese RUC." },
   ]);

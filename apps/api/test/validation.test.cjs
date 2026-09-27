@@ -35,7 +35,8 @@ for (const [caso, Dto, property, base] of [
   ["provincia", ContactImportRowDto, "province", validRow],
 ]) {
   test(`${Dto.name}.${property} cumple los casos compartidos de "${caso}"`, async () => {
-    for (const { valor, error } of casos[caso]) {
+    // El DTO siempre asume Ecuador: los casos con otro país los prueba phone.test.cjs.
+    for (const { valor, error } of casos[caso].filter((item) => !item.pais)) {
       assert.equal(await firstError(Dto, { ...base, [property]: valor }, property), error, JSON.stringify(valor));
     }
   });

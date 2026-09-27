@@ -1,4 +1,5 @@
 // Mismas reglas y mensajes que apps/api/src/common/ecuador.ts y los decoradores de apps/api/src/common/validation.ts.
+// El teléfono vive en phone.ts.
 // Ambos lados se prueban con test/casos-de-validacion.json. Las usan las pantallas de contactos y empresas (CRM-14, CRM-15).
 
 export const PROVINCES = [
@@ -71,17 +72,6 @@ export function isRuc(value: string) {
   return false;
 }
 
-// Tras el prefijo (+593, 593 o 0): fijos de 8 dígitos (área 2–7) o móviles de 9 (empiezan por 9).
-const PHONE_PATTERN = /^(?:\+?593|0)([2-7]\d{7}|9\d{8})$/;
-
-/** Teléfono de Ecuador en E.164 (`+593…`), o `null` si no lo es. */
-export function normalizePhone(value: string) {
-  const match = PHONE_PATTERN.exec(value.replace(/[\s().-]/g, ''));
-  return match ? `+593${match[1]}` : null;
-}
-
-const PHONE_INVALID = 'Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678.';
-
 /** Espera la cédula normalizada con `normalizeDigits`. Vacía es válida: el campo es opcional. */
 export function cedulaError(value: string): string | null {
   if (!value) return null;
@@ -94,10 +84,6 @@ export function rucError(value: string): string | null {
   if (!value) return null;
   if (!/^\d{13}$/.test(value)) return 'El RUC debe tener 13 dígitos.';
   return isRuc(value) ? null : 'El RUC no es válido.';
-}
-
-export function phoneError(value: string): string | null {
-  return !value.trim() || normalizePhone(value) ? null : PHONE_INVALID;
 }
 
 export function provinceError(value: string): string | null {

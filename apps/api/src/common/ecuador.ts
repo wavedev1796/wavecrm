@@ -1,4 +1,4 @@
-// Reglas de identificación, teléfono y provincia de Ecuador (Sprint 2 / Ticket 12).
+// Reglas de identificación y provincia de Ecuador (Sprint 2 / Ticket 12). El teléfono vive en phone.ts.
 // Copia exacta en apps/web/lib/ecuador.ts; ambos lados se prueban con test/casos-de-validacion.json.
 
 export const PROVINCES = [
@@ -70,13 +70,4 @@ export function isRuc(value: string) {
   if (third === 9) return mod11(value, [4, 3, 2, 7, 6, 5, 4, 3, 2]) === Number(value[9]) && value.slice(10) !== '000';
   if (third === 6) return mod11(value, [3, 2, 7, 6, 5, 4, 3, 2]) === Number(value[8]) && value.slice(9) !== '0000';
   return false;
-}
-
-// Tras el prefijo (+593, 593 o 0): fijos de 8 dígitos (área 2–7) o móviles de 9 (empiezan por 9).
-const PHONE_PATTERN = /^(?:\+?593|0)([2-7]\d{7}|9\d{8})$/;
-
-/** Teléfono de Ecuador en E.164 (`+593…`), o `null` si no lo es. */
-export function normalizePhone(value: string) {
-  const match = PHONE_PATTERN.exec(value.replace(/[\s().-]/g, ''));
-  return match ? `+593${match[1]}` : null;
 }
