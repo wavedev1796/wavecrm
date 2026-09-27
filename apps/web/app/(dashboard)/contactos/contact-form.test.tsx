@@ -22,6 +22,22 @@ test("no valida mientras se escribe ni al salir del campo", () => {
   expect(screen.getByLabelText("Nombre")).not.toHaveAttribute("aria-invalid");
 });
 
+test("el número de documento aparece al elegir su tipo, con su etiqueta", async () => {
+  const user = userEvent.setup();
+  render(<ContactForm />);
+  expect(screen.queryByLabelText("Pasaporte")).toBeNull();
+  await user.selectOptions(
+    screen.getByLabelText("Tipo de documento"),
+    "PASAPORTE",
+  );
+  expect(screen.getByLabelText("Pasaporte")).toHaveAttribute(
+    "placeholder",
+    "AB123456",
+  );
+  await user.selectOptions(screen.getByLabelText("Tipo de documento"), "");
+  expect(screen.queryByLabelText("Pasaporte")).toBeNull();
+});
+
 test("al guardar marca cada error en su campo, enfoca el primero y lo borra al editarlo", async () => {
   save.mockResolvedValue({
     feedback: null,

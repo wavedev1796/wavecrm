@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { beforeEach, expect, test, vi } from "vitest";
 import { authenticatedApi } from "@/lib/authenticated-api";
-import { saveContact } from "./actions";
+import { saveContact, searchCompanies } from "./actions";
 import {
   emptyContactValues,
   type ContactFormState,
@@ -31,14 +31,15 @@ function form(fields: Record<string, string>) {
 
 beforeEach(() => vi.clearAllMocks());
 
-test("CRM-14: usa los validadores EC antes de llamar al API", async () => {
+test("CRM-14: usa los validadores antes de llamar al API", async () => {
   const result = await saveContact(
     empty,
     form({
       firstName: "A1",
       lastName: "X",
+      documentType: "CEDULA",
       documentId: "171",
-      companyTaxId: "179",
+      company: "Andina",
       phone: "123",
       province: "Atlantis",
     }),
@@ -46,7 +47,7 @@ test("CRM-14: usa los validadores EC antes de llamar al API", async () => {
   expect(result.fieldErrors).toEqual(
     expect.objectContaining({
       documentId: "La cédula debe tener 10 dígitos.",
-      companyTaxId: "El RUC debe tener 13 dígitos.",
+      company: "Elige una empresa de la lista.",
       phone:
         "Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678.",
       province: "Elige una provincia de Ecuador.",
@@ -55,10 +56,7 @@ test("CRM-14: usa los validadores EC antes de llamar al API", async () => {
   expect(api).not.toHaveBeenCalled();
 });
 
-test("CRM-14: resuelve la empresa por RUC, normaliza y actualiza el contacto", async () => {
-  api.mockResolvedValueOnce(
-    Response.json({ data: [{ id: "company-1", taxId: "1791234561001" }] }),
-  );
+test("CRM-14: normaliza y actualiza el contacto con su documento y su empresa", async () => {
   api.mockResolvedValueOnce(Response.json({ id: "contact-1" }));
   const result = await saveContact(
     empty,
@@ -66,23 +64,27 @@ test("CRM-14: resuelve la empresa por RUC, normaliza y actualiza el contacto", a
       id: "contact-1",
       firstName: " Ana ",
       lastName: " López ",
+      documentType: "CEDULA",
       documentId: "171234567-5",
-      companyTaxId: "1791234561001",
+      company: "Comercial Andina · 1791234561001",
+      companyId: "company-1",
       phone: "099 123 4567",
       province: "Pichincha",
       tags: "Cliente, VIP, cliente",
     }),
   );
-  expect(api).toHaveBeenNthCalledWith(
-    1,
-    "/companies?search=1791234561001&limit=2",
-  );
-  expect(api).toHaveBeenNthCalledWith(
-    2,
-    "/contacts/contact-1",
+  expect(api).toHaveBeenCalledTimes(1);
+  const [path, init] = api.mock.calls[0] ?? [];
+  expect(path).toBe("/contacts/contact-1");
+  expect(init?.method).toBe("PATCH");
+  expect(JSON.parse(init?.body as string)).toEqual(
     expect.objectContaining({
-      method: "PATCH",
-      body: expect.stringContaining('"companyId":"company-1"'),
+      firstName: "Ana",
+      documentType: "CEDULA",
+      documentId: "1712345675",
+      companyId: "company-1",
+      phone: "+593991234567",
+      tags: ["cliente", "vip"],
     }),
   );
   expect(result.feedback).toEqual({
@@ -112,17 +114,52 @@ test("envía el teléfono en E.164 según el país elegido", async () => {
   );
 });
 
-test("CRM-14: un RUC válido sin empresa muestra el error junto al campo", async () => {
-  api.mockResolvedValue(Response.json({ data: [] }));
+test("un pasaporte se normaliza y un 409 se muestra junto al documento", async () => {
+  api.mockResolvedValueOnce(
+    Response.json(
+      { error: { message: "Ya existe un contacto con ese documento." } },
+      { status: 409 },
+    ),
+  );
   const result = await saveContact(
     empty,
     form({
       firstName: "Ana",
       lastName: "López",
-      companyTaxId: "1791234561001",
+      documentType: "PASAPORTE",
+      documentId: "ab 123456",
     }),
   );
-  expect(result.fieldErrors.companyTaxId).toBe(
-    "No existe una empresa con ese RUC.",
+  expect(JSON.parse(api.mock.calls[0]?.[1]?.body as string)).toEqual(
+    expect.objectContaining({
+      documentType: "PASAPORTE",
+      documentId: "AB123456",
+      companyId: null,
+    }),
   );
+  expect(result.fieldErrors.documentId).toBe(
+    "Ya existe un contacto con ese documento.",
+  );
+  expect(result.feedback).toBeNull();
+});
+
+test("searchCompanies sugiere empresas por nombre o RUC", async () => {
+  api.mockResolvedValueOnce(
+    Response.json({
+      data: [
+        { id: "e1", name: "Comercial Andina", taxId: "1791234561001" },
+        { id: "e2", name: "Sin RUC", taxId: null },
+      ],
+    }),
+  );
+  expect(await searchCompanies(" andina ")).toEqual([
+    {
+      id: "e1",
+      label: "Comercial Andina · 1791234561001",
+      taxId: "1791234561001",
+    },
+    { id: "e2", label: "Sin RUC", taxId: null },
+  ]);
+  expect(api).toHaveBeenCalledWith("/companies?search=andina&limit=8");
+  expect(await searchCompanies("  ")).toEqual([]);
 });

@@ -11,8 +11,10 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { authenticatedApi } from "@/lib/authenticated-api";
+import { DOCUMENT_TYPES } from "@/lib/ecuador";
 import { formatPhone, splitPhone } from "@/lib/phone";
 import { ContactForm } from "../contact-form";
+import { companyLabel } from "../contact-form-state";
 import type { ContactDetail } from "../types";
 
 export default async function ContactDetailPage({
@@ -32,13 +34,18 @@ export default async function ContactDetailPage({
     email: contact.email ?? "",
     phone: phone.national,
     phoneCountry: phone.country,
+    documentType: contact.documentType ?? "",
     documentId: contact.documentId ?? "",
+    company: contact.company ? companyLabel(contact.company) : "",
+    companyId: contact.company?.id ?? "",
     province: contact.province ?? "",
     city: contact.city ?? "",
     position: contact.position ?? "",
     tags: contact.tags.join(", "),
-    companyTaxId: contact.company?.taxId ?? "",
   };
+  const documentLabel = DOCUMENT_TYPES.find(
+    ({ value }) => value === contact.documentType,
+  )?.label;
   return (
     <div className="contact-detail-page">
       <Link className="back-link" href="/contactos">
@@ -79,8 +86,11 @@ export default async function ContactDetailPage({
               />
               <Info
                 icon={<UserRound />}
-                label="Cédula"
-                value={contact.documentId}
+                label="Documento"
+                value={
+                  contact.documentId &&
+                  `${documentLabel ?? ""} ${contact.documentId}`.trim()
+                }
               />
               <Info
                 icon={<MapPin />}

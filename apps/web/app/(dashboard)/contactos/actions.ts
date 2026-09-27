@@ -3,12 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
-import {
-  cedulaError,
-  normalizeDigits,
-  provinceError,
-  rucError,
-} from "@/lib/ecuador";
+import { documentError, normalizeDocument, provinceError } from "@/lib/ecuador";
 import { countryOrEcuador, normalizePhone, phoneError } from "@/lib/phone";
 import {
   fieldErrors,
@@ -17,7 +12,12 @@ import {
   normalizeEmail,
   normalizeName,
 } from "@/lib/validation";
-import type { ContactFormState, ContactFormValues } from "./contact-form-state";
+import {
+  companyLabel,
+  type CompanyOption,
+  type ContactFormState,
+  type ContactFormValues,
+} from "./contact-form-state";
 
 export async function saveContact(
   _state: ContactFormState,
@@ -29,9 +29,13 @@ export async function saveContact(
   const invalid = fieldErrors({
     firstName: nameError(values.firstName),
     lastName: nameError(values.lastName, "apellido"),
+    documentId: documentError(values.documentType, values.documentId),
+    company:
+      values.company && !values.companyId
+        ? "Elige una empresa de la lista."
+        : null,
     email: contactEmailError(values.email),
     phone: phoneError(values.phone, country),
-    documentId: cedulaError(values.documentId),
     province: provinceError(values.province),
     city: optionalLengthError(values.city, "La ciudad", 2, 60),
     position:
@@ -39,37 +43,36 @@ export async function saveContact(
         ? "El cargo no puede superar 100 caracteres."
         : null,
     tags: tagsError(values.tags),
-    companyTaxId: rucError(values.companyTaxId),
   });
   if (invalid) return { feedback: null, fieldErrors: invalid, values };
 
   try {
-    const company = await companyForRuc(values.companyTaxId);
-    if (values.companyTaxId && !company) {
-      return {
-        feedback: null,
-        fieldErrors: { companyTaxId: "No existe una empresa con ese RUC." },
-        values,
-      };
-    }
     const body = {
       firstName: values.firstName,
       lastName: values.lastName,
+      documentType: values.documentType || null,
+      documentId: values.documentId || null,
       email: values.email,
       // Ya validado: el API recibe E.164 porque sin "+" asumiría Ecuador. Vacío borra el teléfono.
       phone: normalizePhone(values.phone, country) ?? "",
-      documentType: values.documentId ? "CEDULA" : null,
-      documentId: values.documentId,
       province: values.province,
       city: values.city,
       position: values.position,
       tags: tags(values.tags),
-      companyId: company?.id ?? null,
+      companyId: values.companyId || null,
     };
     const response = await authenticatedApi(
       id ? `/contacts/${encodeURIComponent(id)}` : "/contacts",
       { method: id ? "PATCH" : "POST", body: JSON.stringify(body) },
     );
+    if (response.status === 409) {
+      // El único conflicto de un contacto es su documento: se muestra junto al campo.
+      return {
+        feedback: null,
+        fieldErrors: { documentId: await apiError(response) },
+        values,
+      };
+    }
     if (!response.ok) {
       return {
         feedback: { tone: "error", message: await apiError(response) },
@@ -102,32 +105,49 @@ export async function saveContact(
   }
 }
 
+/** Empresas registradas por nombre o RUC para el campo "Empresa donde trabaja". */
+export async function searchCompanies(term: string): Promise<CompanyOption[]> {
+  const search = term.trim().slice(0, 100);
+  if (!search) return [];
+  try {
+    const response = await authenticatedApi(
+      `/companies?search=${encodeURIComponent(search)}&limit=8`,
+    );
+    if (!response.ok) return [];
+    const { data } = (await response.json()) as {
+      data: Array<{ id: string; name: string; taxId: string | null }>;
+    };
+    return data.map((company) => ({
+      id: company.id,
+      label: companyLabel(company),
+      taxId: company.taxId,
+    }));
+  } catch (error) {
+    unstable_rethrow(error);
+    return [];
+  }
+}
+
 function readValues(formData: FormData): ContactFormValues {
+  const documentType = formText(formData, "documentType").trim();
   return {
     firstName: normalizeName(formText(formData, "firstName")),
     lastName: normalizeName(formText(formData, "lastName")),
+    documentType,
+    documentId: normalizeDocument(
+      documentType,
+      formText(formData, "documentId"),
+    ),
+    company: normalizeName(formText(formData, "company")),
+    companyId: formText(formData, "companyId").trim(),
     email: normalizeEmail(formText(formData, "email")),
     phone: formText(formData, "phone").trim(),
     phoneCountry: countryOrEcuador(formText(formData, "phoneCountry")),
-    documentId: normalizeDigits(formText(formData, "documentId")),
     province: formText(formData, "province").trim(),
     city: normalizeName(formText(formData, "city")),
     position: normalizeName(formText(formData, "position")),
     tags: formText(formData, "tags").trim(),
-    companyTaxId: normalizeDigits(formText(formData, "companyTaxId")),
   };
-}
-
-async function companyForRuc(taxId: string) {
-  if (!taxId) return null;
-  const response = await authenticatedApi(
-    `/companies?search=${encodeURIComponent(taxId)}&limit=2`,
-  );
-  if (!response.ok) return null;
-  const result = (await response.json()) as {
-    data: Array<{ id: string; taxId: string | null }>;
-  };
-  return result.data.find((company) => company.taxId === taxId) ?? null;
 }
 
 function tags(value: string) {

@@ -18,6 +18,7 @@ test("CRM-14: la ficha muestra datos, negocios, actividades y edición", async (
       lastName: "López",
       email: "ana@wave.ec",
       phone: "+593991234567",
+      documentType: "CEDULA",
       documentId: "1712345675",
       province: "Pichincha",
       city: "Quito",
@@ -66,4 +67,5 @@ test("CRM-14: la ficha muestra datos, negocios, actividades y edición", async (
   expect(screen.getByText("Reunión comercial")).toBeInTheDocument();
   expect(screen.getByText("Editando c1")).toBeInTheDocument();
   expect(screen.getByText("+593 99 123 4567")).toBeInTheDocument();
+  expect(screen.getByText("Cédula 1712345675")).toBeInTheDocument();
 });

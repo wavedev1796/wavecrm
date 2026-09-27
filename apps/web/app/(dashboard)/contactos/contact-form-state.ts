@@ -1,15 +1,18 @@
 export type ContactFormValues = {
   firstName: string;
   lastName: string;
+  documentType: string;
+  documentId: string;
+  /** Texto del campo "Empresa donde trabaja"; `companyId` es la empresa elegida. */
+  company: string;
+  companyId: string;
   email: string;
   phone: string;
   phoneCountry: string;
-  documentId: string;
   province: string;
   city: string;
   position: string;
   tags: string;
-  companyTaxId: string;
 };
 
 export type ContactFormState = {
@@ -22,13 +25,23 @@ export type ContactFormState = {
 export const emptyContactValues: ContactFormValues = {
   firstName: "",
   lastName: "",
+  documentType: "",
+  documentId: "",
+  company: "",
+  companyId: "",
   email: "",
   phone: "",
   phoneCountry: "EC",
-  documentId: "",
   province: "",
   city: "",
   position: "",
   tags: "",
-  companyTaxId: "",
 };
+
+export type CompanyOption = { id: string; label: string; taxId: string | null };
+
+/** `Comercial Andina · 1791234561001`, o solo el nombre si la empresa no tiene RUC. */
+export const companyLabel = (company: {
+  name: string;
+  taxId: string | null;
+}) => (company.taxId ? `${company.name} · ${company.taxId}` : company.name);

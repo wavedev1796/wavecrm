@@ -2,7 +2,7 @@
 
 import { Check, IdCard } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Field } from "@/components/form-field";
 import { PhoneField } from "@/components/phone-field";
 import { Alert } from "@/components/ui/alert";
@@ -10,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { useFieldErrors } from "@/components/use-field-errors";
-import { PROVINCES } from "@/lib/ecuador";
+import { DOCUMENT_TYPES, PROVINCES } from "@/lib/ecuador";
 import { saveContact } from "./actions";
+import { CompanyField } from "./company-field";
 import {
   emptyContactValues,
   type ContactFormState,
@@ -40,7 +41,11 @@ export function ContactForm({
   const [state, action, pending] = useActionState(saveContact, initial);
   const { formRef, error, onChange } = useFieldErrors(state.fieldErrors, {
     phoneCountry: "phone",
+    documentType: "documentId",
+    companyId: "company",
   });
+  const [documentType, setDocumentType] = useState(state.values.documentType);
+  const type = DOCUMENT_TYPES.find(({ value }) => value === documentType);
 
   useEffect(() => {
     if (!id && state.contactId) router.push(`/contactos/${state.contactId}`);
@@ -95,24 +100,36 @@ export function ContactForm({
             {...input("lastName")}
           />
         </Field>
-        <Field {...field("documentId", "Cédula")}>
-          <Input
-            name="documentId"
-            inputMode="numeric"
-            placeholder="1712345675"
-            defaultValue={state.values.documentId}
-            {...input("documentId")}
-          />
+        <Field id="contact-documentType" label="Tipo de documento">
+          <select
+            name="documentType"
+            value={documentType}
+            onChange={(event) => setDocumentType(event.target.value)}
+          >
+            <option value="">Sin documento</option>
+            {DOCUMENT_TYPES.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
         </Field>
-        <Field {...field("companyTaxId", "RUC de la empresa")}>
-          <Input
-            name="companyTaxId"
-            inputMode="numeric"
-            placeholder="1791234561001"
-            defaultValue={state.values.companyTaxId}
-            {...input("companyTaxId")}
-          />
-        </Field>
+        {type && (
+          <Field {...field("documentId", type.label)}>
+            <Input
+              name="documentId"
+              inputMode={type.value === "PASAPORTE" ? "text" : "numeric"}
+              placeholder={type.placeholder}
+              defaultValue={state.values.documentId}
+              {...input("documentId")}
+            />
+          </Field>
+        )}
+        <CompanyField
+          defaultLabel={state.values.company}
+          defaultId={state.values.companyId}
+          error={error("company")}
+        />
         <Field {...field("email", "Correo")}>
           <Input
             name="email"

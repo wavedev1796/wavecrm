@@ -1,7 +1,15 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
-import { cedulaError, normalizeDigits, officialProvince, provinceError, rucError } from './ecuador';
+import {
+  cedulaError,
+  documentError,
+  normalizeDigits,
+  normalizeDocument,
+  officialProvince,
+  provinceError,
+  rucError,
+} from './ecuador';
 
 type Caso = { valor: string; error: string | null };
 
@@ -21,4 +29,11 @@ test.each(Object.keys(reglas) as (keyof typeof reglas)[])('la web cumple los cas
 
 test('normaliza la provincia igual que el API', () => {
   expect(officialProvince('santo domingo de los tsachilas')).toBe('Santo Domingo de los Tsáchilas');
+});
+
+test('la web cumple los casos compartidos de "documento"', () => {
+  const { documento } = casos as unknown as { documento: { tipo: string; valor: string; error: string | null }[] };
+  for (const { tipo, valor, error } of documento) {
+    expect(documentError(tipo, normalizeDocument(tipo, valor)), `${tipo} ${valor}`).toBe(error);
+  }
 });

@@ -89,3 +89,31 @@ export function rucError(value: string): string | null {
 export function provinceError(value: string): string | null {
   return !value.trim() || officialProvince(value) ? null : 'Elige una provincia de Ecuador.';
 }
+
+// Documento de un contacto (ajustes del Sprint 2): mismas reglas y mensajes que el decorador IsDocument del API.
+
+export const DOCUMENT_TYPES = [
+  { value: 'CEDULA', label: 'Cédula', placeholder: '1712345675' },
+  { value: 'RUC', label: 'RUC', placeholder: '1712345675001' },
+  { value: 'PASAPORTE', label: 'Pasaporte', placeholder: 'AB123456' },
+] as const;
+export type DocumentType = (typeof DOCUMENT_TYPES)[number]['value'];
+
+export const isDocumentType = (value: string): value is DocumentType => DOCUMENT_TYPES.some((type) => type.value === value);
+
+/** Cédula y RUC solo con dígitos; el pasaporte en mayúsculas, sin espacios ni guiones. */
+export const normalizeDocument = (type: string, value: string) =>
+  type === 'PASAPORTE' ? value.replace(/[\s-]/g, '').toUpperCase() : normalizeDigits(value);
+
+/** Espera el número normalizado. Tipo y número van juntos; los dos vacíos es "sin documento". */
+export function documentError(type: string, value: string): string | null {
+  if (!type && !value) return null;
+  if (!type) return 'Elige el tipo de documento.';
+  if (!isDocumentType(type)) return 'Elige un tipo de documento válido.';
+  if (!value) return 'Ingresa el número de documento.';
+  if (type === 'CEDULA') return cedulaError(value);
+  if (type === 'RUC') {
+    return rucError(value) ?? (Number(value[2]) <= 5 ? null : 'El RUC de una persona natural es su cédula seguida de 001.');
+  }
+  return /^[A-Z0-9]{6,20}$/.test(value) ? null : 'El pasaporte debe tener entre 6 y 20 letras o números.';
+}
