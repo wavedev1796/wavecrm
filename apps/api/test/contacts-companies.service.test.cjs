@@ -1,6 +1,10 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { ConflictException, NotFoundException } = require("@nestjs/common");
+const {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} = require("@nestjs/common");
 const { Prisma } = require("@wave/database");
 const {
   ContactsService,
@@ -112,7 +116,7 @@ test("CRM-13: traduce cédula y RUC duplicados a 409", async () => {
     ),
     (error) =>
       error instanceof ConflictException &&
-      error.message === "Ya existe un contacto con esa cédula.",
+      error.message === "Ya existe un contacto con ese documento.",
   );
   await assert.rejects(
     new CompaniesService(companyPrisma).create(
@@ -137,4 +141,44 @@ test("CRM-13: consultar, editar o borrar un recurso inexistente responde 404", a
     NotFoundException,
   );
   await assert.rejects(companies.remove("missing"), NotFoundException);
+});
+
+test("tipo y número de documento se borran juntos", async () => {
+  const prisma = prismaFor("contact", contact);
+  let data;
+  prisma.contact.update = async (args) => {
+    data = args.data;
+    return contact;
+  };
+  await new ContactsService(prisma).update("contact-1", { documentId: null });
+  assert.deepEqual(data, { documentId: null, documentType: null });
+});
+
+test("un PATCH con tipo de documento y sin número se rechaza", async () => {
+  await assert.rejects(
+    new ContactsService(prismaFor("contact", contact)).update("contact-1", {
+      documentType: "RUC",
+    }),
+    (error) =>
+      error instanceof BadRequestException &&
+      error.message === "Ingresa el número de documento.",
+  );
+});
+
+test("la búsqueda por documento ignora mayúsculas (pasaportes)", async () => {
+  const prisma = prismaFor("contact", contact);
+  let args;
+  prisma.contact.findMany = async (received) => {
+    args = received;
+    return [contact];
+  };
+  await new ContactsService(prisma).list({
+    page: 1,
+    limit: 10,
+    search: "ab123",
+  });
+  assert.deepEqual(args.where.AND[0].OR[2].documentId, {
+    contains: "ab123",
+    mode: "insensitive",
+  });
 });

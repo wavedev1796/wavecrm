@@ -80,6 +80,9 @@ function cedulaDePrueba() {
 /** RUC de persona natural válido al azar. */
 const rucDePrueba = () => `${cedulaDePrueba()}001`;
 
+/** Pasaporte válido al azar: la columna documentId es única y la rama `pruebas` es compartida. */
+const pasaporteDePrueba = () => `PP${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+
 /** Borra los usuarios de prueba, sus contactos, sus empresas y su auditoría. Nunca toca otros datos. */
 async function cleanup(prisma) {
   const users = await prisma.user.findMany({ where: { email: { endsWith: DOMAIN } }, select: { id: true } });
@@ -99,6 +102,7 @@ module.exports = {
   setPasswordResetToken,
   cedulaDePrueba,
   rucDePrueba,
+  pasaporteDePrueba,
   cleanup,
   assertTestDatabase,
 };

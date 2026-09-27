@@ -12,7 +12,17 @@ import {
   MaxLength,
   ValidateBy,
 } from 'class-validator';
-import { isCedula, isRuc, normalizeDigits, officialProvince, PROVINCES } from './ecuador';
+import {
+  DOCUMENT_TYPES,
+  documentError,
+  isCedula,
+  isDocumentType,
+  isRuc,
+  normalizeDigits,
+  normalizeDocument,
+  officialProvince,
+  PROVINCES,
+} from './ecuador';
 import { normalizePhone, PHONE_INVALID } from './phone';
 
 // Mismas reglas y mensajes que apps/web/lib/validation.ts, apps/web/lib/password-rules.ts y apps/web/lib/ecuador.ts.
@@ -101,6 +111,39 @@ export const IsRuc = () =>
     optional(normalizeDigits),
     Matches(/^\d{13}$/, { message: 'El RUC debe tener 13 dígitos.' }),
     passes('isRuc', isRuc, 'El RUC no es válido.'),
+  );
+
+export const IsDocumentType = () =>
+  applyDecorators(
+    optional((value) => value.trim()),
+    IsIn(DOCUMENT_TYPES, { message: 'Elige un tipo de documento válido.' }),
+  );
+
+/** Mensaje del par tipo/número: van juntos y el número se valida con las reglas de su tipo. */
+function documentPairError(dto: { documentType?: unknown }, value: unknown): string | null {
+  const type = dto.documentType ?? null;
+  const number = value ?? null;
+  if (type === null && number === null) return null; // sin documento, o un PATCH que lo borra
+  if (type === null) return 'Elige el tipo de documento.';
+  if (number === null || typeof number !== 'string') return 'Ingresa el número de documento.';
+  return isDocumentType(type) ? documentError(type, number) : null; // un tipo inválido lo reporta su campo
+}
+
+/** Número de documento según `documentType` (cédula, RUC de persona natural o pasaporte). */
+export const IsDocument = () =>
+  applyDecorators(
+    Transform(({ value, obj }: { value: unknown; obj: { documentType?: unknown } }) => {
+      if (typeof value !== 'string') return value;
+      const type = typeof obj.documentType === 'string' ? obj.documentType.trim() : obj.documentType;
+      return value.trim() ? normalizeDocument(type, value) : null;
+    }),
+    ValidateBy({
+      name: 'isDocument',
+      validator: {
+        validate: (value: unknown, args) => documentPairError((args?.object ?? {}) as object, value) === null,
+        defaultMessage: (args) => documentPairError((args?.object ?? {}) as object, args?.value) ?? '',
+      },
+    }),
   );
 
 /** Correo de un contacto o empresa: opcional y sin el "tu" del correo de la cuenta. */

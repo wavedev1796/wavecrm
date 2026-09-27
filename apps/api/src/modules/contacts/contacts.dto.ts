@@ -2,10 +2,12 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import { IsOptional, IsString, MaxLength } from "class-validator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
+import { DOCUMENT_TYPES, type DocumentType } from "../../common/ecuador";
 import {
-  IsCedula,
   IsCity,
   IsContactEmail,
+  IsDocument,
+  IsDocumentType,
   IsPersonName,
   IsPhone,
   IsPosition,
@@ -45,11 +47,21 @@ export class CreateContactDto {
   phone?: string | null;
 
   @ApiPropertyOptional({
-    description: "Cédula ecuatoriana única.",
+    enum: DOCUMENT_TYPES,
+    nullable: true,
+    description: "Tipo del documento; va siempre junto con documentId.",
+    example: "CEDULA",
+  })
+  @IsDocumentType()
+  documentType?: DocumentType | null;
+
+  @ApiPropertyOptional({
+    description:
+      "Cédula (10 dígitos), RUC de persona natural (13) o pasaporte (6 a 20 letras o números). Único; vacío lo borra junto con el tipo.",
     example: "1712345675",
     nullable: true,
   })
-  @IsCedula()
+  @IsDocument()
   documentId?: string | null;
 
   @ApiPropertyOptional({ example: "Pichincha", nullable: true })

@@ -6,6 +6,7 @@ const casos = require("../../../test/casos-de-validacion.json");
 const { LoginDto, RefreshTokenDto } = require("../dist/modules/auth/auth.dto.js");
 const { ActivateInvitationDto, CreateUserDto, ListUsersDto } = require("../dist/modules/users/users.dto.js");
 const { ContactImportRowDto } = require("../dist/modules/contact-import/contact-import.dto.js");
+const { CreateContactDto } = require("../dist/modules/contacts/contacts.dto.js");
 
 /** Primer mensaje del campo, con las mismas opciones que el ValidationPipe global. */
 async function firstError(Dto, body, property) {
@@ -153,4 +154,24 @@ test("etiquetas: hasta 10, de 2 a 30 caracteres, con letras, números, espacios 
     assert.equal(await firstError(ContactImportRowDto, { ...validRow, tags }, "tags"), message, JSON.stringify(tags));
   }
   assert.deepEqual(plainToInstance(ContactImportRowDto, { ...validRow, tags: "" }).tags, []);
+});
+
+test('CreateContactDto cumple los casos compartidos de "documento"', async () => {
+  for (const { tipo, valor, error } of casos.documento) {
+    const body = { ...validRow, documentType: tipo, documentId: valor };
+    const message =
+      (await firstError(CreateContactDto, body, "documentType")) ?? (await firstError(CreateContactDto, body, "documentId"));
+    assert.equal(message, error, `${tipo} ${valor}`);
+  }
+});
+
+test("el documento se normaliza según su tipo", () => {
+  const passport = plainToInstance(CreateContactDto, { ...validRow, documentType: " PASAPORTE ", documentId: " ab-123 456 " });
+  assert.equal(passport.documentType, "PASAPORTE");
+  assert.equal(passport.documentId, "AB123456");
+  const ruc = plainToInstance(CreateContactDto, { ...validRow, documentType: "RUC", documentId: "171234567-5001" });
+  assert.equal(ruc.documentId, "1712345675001");
+  const none = plainToInstance(CreateContactDto, { ...validRow, documentType: "", documentId: "  " });
+  assert.equal(none.documentType, null);
+  assert.equal(none.documentId, null);
 });

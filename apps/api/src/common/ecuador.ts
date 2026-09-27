@@ -71,3 +71,29 @@ export function isRuc(value: string) {
   if (third === 6) return mod11(value, [3, 2, 7, 6, 5, 4, 3, 2]) === Number(value[8]) && value.slice(9) !== '0000';
   return false;
 }
+
+// Documento de un contacto (ajustes del Sprint 2): cédula, RUC de persona natural o pasaporte.
+
+export const DOCUMENT_TYPES = ['CEDULA', 'RUC', 'PASAPORTE'] as const;
+export type DocumentType = (typeof DOCUMENT_TYPES)[number];
+
+export const isDocumentType = (value: unknown): value is DocumentType =>
+  (DOCUMENT_TYPES as readonly unknown[]).includes(value);
+
+/** Cédula y RUC solo con dígitos; el pasaporte en mayúsculas, sin espacios ni guiones. */
+export const normalizeDocument = (type: unknown, value: string) =>
+  type === 'PASAPORTE' ? value.replace(/[\s-]/g, '').toUpperCase() : normalizeDigits(value);
+
+/** Mensaje del número (ya normalizado y no vacío) según su tipo, o `null` si es válido. */
+export function documentError(type: DocumentType, value: string): string | null {
+  if (type === 'PASAPORTE') {
+    return /^[A-Z0-9]{6,20}$/.test(value) ? null : 'El pasaporte debe tener entre 6 y 20 letras o números.';
+  }
+  if (type === 'CEDULA') {
+    if (!/^\d{10}$/.test(value)) return 'La cédula debe tener 10 dígitos.';
+    return isCedula(value) ? null : 'La cédula no es válida.';
+  }
+  if (!/^\d{13}$/.test(value)) return 'El RUC debe tener 13 dígitos.';
+  if (!isRuc(value)) return 'El RUC no es válido.';
+  return Number(value[2]) <= 5 ? null : 'El RUC de una persona natural es su cédula seguida de 001.';
+}

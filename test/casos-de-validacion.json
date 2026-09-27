@@ -106,6 +106,22 @@
     {"valor":"0991234567","pais":"CO","error":"Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678."},
     {"valor":"telefono","error":"Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678."}
   ],
+  "documento": [
+    {"tipo":"","valor":"","error":null},
+    {"tipo":"CEDULA","valor":" 171234567-5 ","error":null},
+    {"tipo":"CEDULA","valor":"171234567","error":"La cédula debe tener 10 dígitos."},
+    {"tipo":"CEDULA","valor":"1712345678","error":"La cédula no es válida."},
+    {"tipo":"RUC","valor":"1712345675001","error":null},
+    {"tipo":"RUC","valor":"171234567500","error":"El RUC debe tener 13 dígitos."},
+    {"tipo":"RUC","valor":"1712345675000","error":"El RUC no es válido."},
+    {"tipo":"RUC","valor":"1791234561001","error":"El RUC de una persona natural es su cédula seguida de 001."},
+    {"tipo":"PASAPORTE","valor":" ab-123 456 ","error":null},
+    {"tipo":"PASAPORTE","valor":"AB12","error":"El pasaporte debe tener entre 6 y 20 letras o números."},
+    {"tipo":"PASAPORTE","valor":"AB12345#","error":"El pasaporte debe tener entre 6 y 20 letras o números."},
+    {"tipo":"CEDULA","valor":"","error":"Ingresa el número de documento."},
+    {"tipo":"","valor":"1712345675","error":"Elige el tipo de documento."},
+    {"tipo":"DNI","valor":"1712345675","error":"Elige un tipo de documento válido."}
+  ],
   "provincia": [
     {"valor":"","error":null},
     {"valor":"Pichincha","error":null},

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -45,6 +46,22 @@ const contactDetailInclude = {
   },
 } satisfies Prisma.ContactInclude;
 
+/**
+ * Tipo y número van juntos (restricción Contact_document_pair): borrar uno borra el otro. En un PATCH, el
+ * PartialType salta la validación del número si no llega, así que un tipo sin número se rechaza aquí.
+ */
+function withDocumentPair<
+  T extends { documentId?: string | null; documentType?: unknown },
+>(dto: T) {
+  if (dto.documentId === null || dto.documentType === null) {
+    return { ...dto, documentId: null, documentType: null };
+  }
+  if (dto.documentType !== undefined && dto.documentId === undefined) {
+    throw new BadRequestException("Ingresa el número de documento.");
+  }
+  return dto;
+}
+
 @Injectable()
 export class ContactsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -57,7 +74,7 @@ export class ContactsService {
           OR: [
             { firstName: { contains: term, mode: "insensitive" } },
             { lastName: { contains: term, mode: "insensitive" } },
-            { documentId: { contains: term } },
+            { documentId: { contains: term, mode: "insensitive" } },
             {
               company: {
                 is: { name: { contains: term, mode: "insensitive" } },
@@ -111,7 +128,7 @@ export class ContactsService {
     try {
       return await this.prisma.contact.create({
         data: {
-          ...dto,
+          ...withDocumentPair(dto),
           ownerId: dto.ownerId === undefined ? actorId : dto.ownerId,
         },
         include: contactInclude,
@@ -126,7 +143,7 @@ export class ContactsService {
     try {
       return await this.prisma.contact.update({
         where: { id },
-        data: dto,
+        data: withDocumentPair(dto),
         include: contactInclude,
       });
     } catch (error) {
@@ -153,7 +170,7 @@ export class ContactsService {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      throw new ConflictException("Ya existe un contacto con esa cédula.");
+      throw new ConflictException("Ya existe un contacto con ese documento.");
     }
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&

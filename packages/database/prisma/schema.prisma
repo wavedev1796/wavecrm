@@ -97,12 +97,19 @@ model Company {
   @@index([tags], type: Gin)
 }
 
+enum DocumentType {
+  CEDULA
+  RUC
+  PASAPORTE
+}
+
 model Contact {
   id          String       @id @default(cuid())
   firstName   String
   lastName    String
   email       String?
   phone       String?
+  documentType DocumentType?
   documentId  String?      @unique
   province    String?
   city        String?

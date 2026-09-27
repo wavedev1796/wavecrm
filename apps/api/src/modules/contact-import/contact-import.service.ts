@@ -56,6 +56,7 @@ export class ContactImportService {
       const { count } = await this.prisma.contact.createMany({
         data: rows.map(({ contact: { companyTaxId, ...fields } }) => ({
           ...fields,
+          documentType: fields.documentId ? 'CEDULA' : null,
           companyId: companyTaxId ? companyIds.get(companyTaxId) : null,
           ownerId,
         })),

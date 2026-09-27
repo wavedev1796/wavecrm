@@ -78,6 +78,7 @@ test("CRM-13: crea un contacto relacionado y rechaza la cédula repetida", async
     body: {
       firstName: "  Ana  ",
       lastName: "  López  ",
+      documentType: "CEDULA",
       documentId,
       email: " ANA@WAVE.EC ",
       phone: "099 123 4567",
@@ -98,10 +99,18 @@ test("CRM-13: crea un contacto relacionado y rechaza la cédula repetida", async
 
   const duplicate = await call("/contacts", {
     method: "POST",
-    body: { firstName: "Otra", lastName: "Persona", documentId },
+    body: {
+      firstName: "Otra",
+      lastName: "Persona",
+      documentType: "CEDULA",
+      documentId,
+    },
   });
   assert.equal(duplicate.status, 409);
-  assert.equal(messageOf(duplicate), "Ya existe un contacto con esa cédula.");
+  assert.equal(
+    messageOf(duplicate),
+    "Ya existe un contacto con ese documento.",
+  );
 });
 
 test("CRM-13: busca, filtra y pagina contactos y empresas", async () => {

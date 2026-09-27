@@ -58,6 +58,7 @@ export async function saveContact(
       email: values.email,
       // Ya validado: el API recibe E.164 porque sin "+" asumiría Ecuador. Vacío borra el teléfono.
       phone: normalizePhone(values.phone, country) ?? "",
+      documentType: values.documentId ? "CEDULA" : null,
       documentId: values.documentId,
       province: values.province,
       city: values.city,
