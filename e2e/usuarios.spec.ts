@@ -49,11 +49,23 @@ test('CRM-9: invitar crea una cuenta pendiente y rechaza un correo repetido', as
   await expect(page.getByText('Ya existe una cuenta con ese correo.')).toBeVisible();
 });
 
-test('CRM-7: activar la cuenta exige las 5 reglas de contraseña', async ({ browser }) => {
+test('CRM-7: activar la cuenta exige leer y aceptar los términos y las 5 reglas de contraseña', async ({ browser }) => {
   await setInvitationToken(seller.email, invitationToken);
   const guest = await browser.newPage({ baseURL });
   await guest.goto(`/activar-cuenta?token=${invitationToken}`);
   await expect(guest.getByRole('heading', { name: 'Activa tu cuenta' })).toBeVisible();
+
+  // Sin aceptar los términos no se puede activar; aceptar exige leer el documento hasta el final.
+  await expect(guest.getByRole('button', { name: 'Activar mi cuenta' })).toBeDisabled();
+  await guest.getByLabel('Acepto los términos y condiciones y la política de privacidad').click();
+  const terms = guest.getByRole('dialog', { name: 'Términos y política de privacidad' });
+  const accept = terms.getByRole('button', { name: 'Aceptar y continuar' });
+  await expect(accept).toBeDisabled();
+  await terms.getByRole('heading', { name: '1. Responsable y alcance' }).hover();
+  await guest.mouse.wheel(0, 10_000);
+  await accept.click();
+  await expect(terms).toBeHidden();
+  await expect(guest.getByLabel('Términos aceptados')).toBeVisible();
 
   await guest.getByLabel('Contraseña', { exact: true }).fill('abcdefg1!');
   await guest.getByLabel('Confirmar contraseña', { exact: true }).fill('abcdefg1!');
