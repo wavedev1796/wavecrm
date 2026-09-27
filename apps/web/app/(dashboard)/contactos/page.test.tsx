@@ -4,7 +4,9 @@ import { authenticatedApi } from "@/lib/authenticated-api";
 import ContactsPage from "./page";
 
 vi.mock("@/lib/authenticated-api", () => ({ authenticatedApi: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}));
 const api = vi.mocked(authenticatedApi);
 
 test("CRM-14: lista contactos reales, conserva Importar CSV y envía filtros", async () => {

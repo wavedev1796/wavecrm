@@ -1,6 +1,6 @@
-import type { InputHTMLAttributes } from 'react';
+import type { ComponentProps } from 'react';
 
-export function Input({ className = '', ...props }: Readonly<InputHTMLAttributes<HTMLInputElement>>) {
+export function Input({ className = '', ...props }: Readonly<ComponentProps<'input'>>) {
   return <input className={`input ${className}`} {...props} />;
 }
 
