@@ -14,7 +14,7 @@ import {
   IsContactEmail,
   IsPhone,
   IsProvince,
-  IsRuc,
+  IsRequiredRuc,
   IsTags,
 } from "../../common/validation";
 
@@ -55,13 +55,12 @@ export class CreateCompanyDto {
   @Matches(COMPANY_NAME_PATTERN, companyNameDecorators)
   legalName?: string | null;
 
-  @ApiPropertyOptional({
-    description: "RUC ecuatoriano único.",
+  @ApiProperty({
+    description: "RUC ecuatoriano único y obligatorio.",
     example: "1791234561001",
-    nullable: true,
   })
-  @IsRuc()
-  taxId?: string | null;
+  @IsRequiredRuc()
+  taxId!: string;
 
   @ApiPropertyOptional({ example: "https://wave.ec", nullable: true })
   @IsOptional()

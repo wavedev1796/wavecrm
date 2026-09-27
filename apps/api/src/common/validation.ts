@@ -106,11 +106,22 @@ export const IsCedula = () =>
     passes('isCedula', isCedula, 'La cédula no es válida.'),
   );
 
-export const IsRuc = () =>
+const rucRules = () => [
+  Matches(/^\d{13}$/, { message: 'El RUC debe tener 13 dígitos.' }),
+  passes('isRuc', isRuc, 'El RUC no es válido.'),
+];
+
+export const IsRuc = () => applyDecorators(optional(normalizeDigits), ...rucRules());
+
+/** RUC obligatorio (empresa). `null` o vacío dicen "Ingresa el RUC.", también en un PATCH. */
+export const IsRequiredRuc = () =>
   applyDecorators(
-    optional(normalizeDigits),
-    Matches(/^\d{13}$/, { message: 'El RUC debe tener 13 dígitos.' }),
-    passes('isRuc', isRuc, 'El RUC no es válido.'),
+    Transform(({ value }: { value: unknown }) => {
+      if (value === null) return '';
+      return typeof value === 'string' ? normalizeDigits(value) : value;
+    }),
+    IsNotEmpty({ message: 'Ingresa el RUC.' }),
+    ...rucRules(),
   );
 
 export const IsDocumentType = () =>

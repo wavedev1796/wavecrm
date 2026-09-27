@@ -70,6 +70,13 @@ test("CRM-13: crea una empresa normalizada y rechaza el RUC repetido", async () 
   });
   assert.equal(duplicate.status, 409);
   assert.equal(messageOf(duplicate), "Ya existe una empresa con ese RUC.");
+
+  const withoutRuc = await call("/companies", {
+    method: "POST",
+    body: { name: "Sin RUC" },
+  });
+  assert.equal(withoutRuc.status, 400);
+  assert.deepEqual(messageOf(withoutRuc), ["Ingresa el RUC."]);
 });
 
 test("CRM-13: crea un contacto relacionado y rechaza la cédula repetida", async () => {

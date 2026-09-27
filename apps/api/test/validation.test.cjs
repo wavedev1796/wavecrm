@@ -7,6 +7,7 @@ const { LoginDto, RefreshTokenDto } = require("../dist/modules/auth/auth.dto.js"
 const { ActivateInvitationDto, CreateUserDto, ListUsersDto } = require("../dist/modules/users/users.dto.js");
 const { ContactImportRowDto } = require("../dist/modules/contact-import/contact-import.dto.js");
 const { CreateContactDto } = require("../dist/modules/contacts/contacts.dto.js");
+const { CreateCompanyDto, UpdateCompanyDto } = require("../dist/modules/companies/companies.dto.js");
 
 /** Primer mensaje del campo, con las mismas opciones que el ValidationPipe global. */
 async function firstError(Dto, body, property) {
@@ -174,4 +175,15 @@ test("el documento se normaliza según su tipo", () => {
   const none = plainToInstance(CreateContactDto, { ...validRow, documentType: "", documentId: "  " });
   assert.equal(none.documentType, null);
   assert.equal(none.documentId, null);
+});
+
+test("el RUC de una empresa es obligatorio al crearla y no se puede vaciar", async () => {
+  const company = { name: "Wave Comercial" };
+  assert.equal(await firstError(CreateCompanyDto, company, "taxId"), "Ingresa el RUC.");
+  assert.equal(await firstError(CreateCompanyDto, { ...company, taxId: " " }, "taxId"), "Ingresa el RUC.");
+  assert.equal(await firstError(CreateCompanyDto, { ...company, taxId: "1791234562001" }, "taxId"), "El RUC no es válido.");
+  assert.equal(await firstError(CreateCompanyDto, { ...company, taxId: "179 1234561 001" }, "taxId"), null);
+  assert.equal(await firstError(UpdateCompanyDto, { taxId: "" }, "taxId"), "Ingresa el RUC.");
+  assert.equal(await firstError(UpdateCompanyDto, { taxId: null }, "taxId"), "Ingresa el RUC.");
+  assert.equal(await firstError(UpdateCompanyDto, { city: "Quito" }, "taxId"), null);
 });
