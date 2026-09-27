@@ -65,4 +65,5 @@ test("CRM-14: la ficha muestra datos, negocios, actividades y edición", async (
   expect(screen.getByText("Renovación anual")).toBeInTheDocument();
   expect(screen.getByText("Reunión comercial")).toBeInTheDocument();
   expect(screen.getByText("Editando c1")).toBeInTheDocument();
+  expect(screen.getByText("+593 99 123 4567")).toBeInTheDocument();
 });

@@ -11,6 +11,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { authenticatedApi } from "@/lib/authenticated-api";
+import { formatPhone, splitPhone } from "@/lib/phone";
 import { ContactForm } from "../contact-form";
 import type { ContactDetail } from "../types";
 
@@ -24,11 +25,13 @@ export default async function ContactDetailPage({
   if (response.status === 404) notFound();
   if (!response.ok) return <p role="alert">No pudimos cargar el contacto.</p>;
   const contact = (await response.json()) as ContactDetail;
+  const phone = splitPhone(contact.phone);
   const values = {
     firstName: contact.firstName,
     lastName: contact.lastName,
     email: contact.email ?? "",
-    phone: contact.phone ?? "",
+    phone: phone.national,
+    phoneCountry: phone.country,
     documentId: contact.documentId ?? "",
     province: contact.province ?? "",
     city: contact.city ?? "",
@@ -69,7 +72,11 @@ export default async function ContactDetailPage({
             <h3>Datos del contacto</h3>
             <dl>
               <Info icon={<Mail />} label="Correo" value={contact.email} />
-              <Info icon={<Phone />} label="Teléfono" value={contact.phone} />
+              <Info
+                icon={<Phone />}
+                label="Teléfono"
+                value={contact.phone && formatPhone(contact.phone)}
+              />
               <Info
                 icon={<UserRound />}
                 label="Cédula"

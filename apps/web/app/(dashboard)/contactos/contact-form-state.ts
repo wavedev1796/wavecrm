@@ -3,6 +3,7 @@ export type ContactFormValues = {
   lastName: string;
   email: string;
   phone: string;
+  phoneCountry: string;
   documentId: string;
   province: string;
   city: string;
@@ -23,6 +24,7 @@ export const emptyContactValues: ContactFormValues = {
   lastName: "",
   email: "",
   phone: "",
+  phoneCountry: "EC",
   documentId: "",
   province: "",
   city: "",

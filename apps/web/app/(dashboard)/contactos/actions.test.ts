@@ -92,6 +92,26 @@ test("CRM-14: resuelve la empresa por RUC, normaliza y actualiza el contacto", a
   expect(revalidatePath).toHaveBeenCalledWith("/contactos/contact-1");
 });
 
+test("envía el teléfono en E.164 según el país elegido", async () => {
+  api.mockResolvedValueOnce(Response.json({ id: "contact-1" }));
+  await saveContact(
+    empty,
+    form({
+      firstName: "Ana",
+      lastName: "López",
+      phone: "601 234 5678",
+      phoneCountry: "CO",
+    }),
+  );
+  expect(api).toHaveBeenCalledWith(
+    "/contacts",
+    expect.objectContaining({
+      method: "POST",
+      body: expect.stringContaining('"phone":"+576012345678"'),
+    }),
+  );
+});
+
 test("CRM-14: un RUC válido sin empresa muestra el error junto al campo", async () => {
   api.mockResolvedValue(Response.json({ data: [] }));
   const result = await saveContact(

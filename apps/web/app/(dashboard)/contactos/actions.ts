@@ -9,7 +9,7 @@ import {
   provinceError,
   rucError,
 } from "@/lib/ecuador";
-import { phoneError } from "@/lib/phone";
+import { countryOrEcuador, normalizePhone, phoneError } from "@/lib/phone";
 import {
   fieldErrors,
   formText,
@@ -25,11 +25,12 @@ export async function saveContact(
 ): Promise<ContactFormState> {
   const id = formText(formData, "id");
   const values = readValues(formData);
+  const country = countryOrEcuador(values.phoneCountry);
   const invalid = fieldErrors({
     firstName: nameError(values.firstName),
     lastName: nameError(values.lastName, "apellido"),
     email: contactEmailError(values.email),
-    phone: phoneError(values.phone),
+    phone: phoneError(values.phone, country),
     documentId: cedulaError(values.documentId),
     province: provinceError(values.province),
     city: optionalLengthError(values.city, "La ciudad", 2, 60),
@@ -55,7 +56,8 @@ export async function saveContact(
       firstName: values.firstName,
       lastName: values.lastName,
       email: values.email,
-      phone: values.phone,
+      // Ya validado: el API recibe E.164 porque sin "+" asumiría Ecuador. Vacío borra el teléfono.
+      phone: normalizePhone(values.phone, country) ?? "",
       documentId: values.documentId,
       province: values.province,
       city: values.city,
@@ -105,6 +107,7 @@ function readValues(formData: FormData): ContactFormValues {
     lastName: normalizeName(formText(formData, "lastName")),
     email: normalizeEmail(formText(formData, "email")),
     phone: formText(formData, "phone").trim(),
+    phoneCountry: countryOrEcuador(formText(formData, "phoneCountry")),
     documentId: normalizeDigits(formText(formData, "documentId")),
     province: formText(formData, "province").trim(),
     city: normalizeName(formText(formData, "city")),

@@ -1627,6 +1627,11 @@ select {
 .contact-form select {
   width: 100%;
 }
+.phone-field {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+  gap: 8px;
+}
 .contact-form footer {
   display: flex;
   justify-content: flex-end;

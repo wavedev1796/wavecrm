@@ -9,7 +9,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
  */
 export function useFieldErrors<Field extends string>(
   fieldErrors: Partial<Record<Field, string>>,
-  aliases: Partial<Record<string, Field>> = {},
+  aliases: Partial<Record<string, NoInfer<Field>>> = {},
 ) {
   const formRef = useRef<HTMLFormElement>(null);
   const [edited, setEdited] = useState<ReadonlySet<string>>(new Set());

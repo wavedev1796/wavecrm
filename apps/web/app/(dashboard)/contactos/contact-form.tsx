@@ -4,6 +4,7 @@ import { Check, IdCard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 import { Field } from "@/components/form-field";
+import { PhoneField } from "@/components/phone-field";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { invalidProps } from "@/components/ui/field-error";
@@ -37,7 +38,9 @@ export function ContactForm({
     values: initialValues,
   };
   const [state, action, pending] = useActionState(saveContact, initial);
-  const { formRef, error, onChange } = useFieldErrors(state.fieldErrors);
+  const { formRef, error, onChange } = useFieldErrors(state.fieldErrors, {
+    phoneCountry: "phone",
+  });
 
   useEffect(() => {
     if (!id && state.contactId) router.push(`/contactos/${state.contactId}`);
@@ -120,14 +123,12 @@ export function ContactForm({
             {...input("email")}
           />
         </Field>
-        <Field {...field("phone", "Teléfono")}>
-          <Input
-            name="phone"
-            placeholder="0991234567"
-            defaultValue={state.values.phone}
-            {...input("phone")}
-          />
-        </Field>
+        <PhoneField
+          id="contact-phone"
+          country={state.values.phoneCountry}
+          number={state.values.phone}
+          error={error("phone")}
+        />
         <Field {...field("province", "Provincia")}>
           <select
             name="province"
