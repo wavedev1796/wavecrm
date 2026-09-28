@@ -131,9 +131,8 @@ export const IsDocumentType = () =>
   );
 
 /** Mensaje del par tipo/número: van juntos y el número se valida con las reglas de su tipo. */
-function documentPairError(dto: { documentType?: unknown }, value: unknown): string | null {
+function documentPairError(dto: { documentType?: unknown }, number: unknown = null): string | null {
   const type = dto.documentType ?? null;
-  const number = value ?? null;
   if (type === null && number === null) return null; // sin documento, o un PATCH que lo borra
   if (type === null) return 'Elige el tipo de documento.';
   if (number === null || typeof number !== 'string') return 'Ingresa el número de documento.';

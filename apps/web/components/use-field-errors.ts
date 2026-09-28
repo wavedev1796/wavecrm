@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useLayoutEffect, useRef, useState, type SyntheticEvent } from "react";
 
 /**
  * Errores del último envío: no se valida mientras se escribe. El error de un campo se oculta al modificarlo
@@ -20,7 +20,8 @@ export function useFieldErrors<Field extends string>(
     setEdited(new Set());
   }
 
-  useEffect(() => {
+  // Antes de pintar: el error y el foco llegan juntos (con useEffect se veía el error con el foco aún en Guardar).
+  useLayoutEffect(() => {
     formRef.current
       ?.querySelector<HTMLElement>('[aria-invalid="true"]')
       ?.focus();
@@ -30,7 +31,8 @@ export function useFieldErrors<Field extends string>(
     formRef,
     error: (field: Field) =>
       edited.has(field) ? undefined : fieldErrors[field],
-    onChange: (event: FormEvent<HTMLFormElement>) => {
+    // El change del <form> llega desde el control que cambió: `target` es ese control, no el formulario.
+    onChange: (event: SyntheticEvent<HTMLFormElement>) => {
       const name = (event.target as HTMLInputElement).name;
       const field = aliases[name] ?? name;
       if (field && !edited.has(field)) setEdited(new Set(edited).add(field));
