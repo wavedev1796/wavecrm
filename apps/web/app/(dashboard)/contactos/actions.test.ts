@@ -163,3 +163,26 @@ test("searchCompanies sugiere empresas por nombre o RUC", async () => {
   expect(api).toHaveBeenCalledWith("/companies?search=andina&limit=8");
   expect(await searchCompanies("  ")).toEqual([]);
 });
+
+test("otros fallos del API o de conexión van a la alerta; la búsqueda de empresa sin conexión no sugiere nada", async () => {
+  api.mockResolvedValueOnce(
+    Response.json({ error: { message: "Sin permiso." } }, { status: 403 }),
+  );
+  const denied = await saveContact(
+    empty,
+    form({ firstName: "Ana", lastName: "Vera" }),
+  );
+  expect(denied.feedback).toEqual({ tone: "error", message: "Sin permiso." });
+
+  api.mockRejectedValueOnce(new Error("red"));
+  const offline = await saveContact(
+    empty,
+    form({ firstName: "Ana", lastName: "Vera" }),
+  );
+  expect(offline.feedback?.message).toBe(
+    "No pudimos conectar con el servidor. Inténtalo de nuevo.",
+  );
+
+  api.mockRejectedValueOnce(new Error("red"));
+  expect(await searchCompanies("andina")).toEqual([]);
+});

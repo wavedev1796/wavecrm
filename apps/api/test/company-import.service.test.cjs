@@ -96,7 +96,7 @@ test("el mapeo exige nombre y RUC", async () => {
   }
 });
 
-test("si otra persona registra un RUC a la vez responde 409", async () => {
+test("si otra persona registra un RUC a la vez responde 409; otro fallo de la base no se disfraza", async () => {
   const { importer } = service({
     createMany: async () => {
       throw new Prisma.PrismaClientKnownRequestError("duplicado", { code: "P2002", clientVersion: "6" });
@@ -105,4 +105,12 @@ test("si otra persona registra un RUC a la vez responde 409", async () => {
   const error = await rejection(importer.importCsv(csv("Uno;;1791234561001;;;"), MAPPING, "user-1"));
   assert.ok(error instanceof ConflictException);
   assert.equal(error.message, "Otra persona registró uno de estos RUC mientras importabas. Vuelve a subir el archivo.");
+
+  const down = new Error("sin conexión");
+  const { importer: offline } = service({
+    createMany: async () => {
+      throw down;
+    },
+  });
+  assert.equal(await rejection(offline.importCsv(csv("Uno;;1791234561001;;;"), MAPPING, "user-1")), down);
 });
