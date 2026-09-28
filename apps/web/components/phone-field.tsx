@@ -1,6 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
-import { COUNTRIES } from "@/lib/phone";
+import { callingCodeLabel, COUNTRIES, countryOrEcuador } from "@/lib/phone";
 
 type Props = Readonly<{
   id: string;
@@ -11,16 +14,24 @@ type Props = Readonly<{
 
 /** Prefijo del país (Ecuador por defecto) y número. Un número escrito con `+` manda sobre el selector. */
 export function PhoneField({ id, country, number, error }: Props) {
+  // Los nombres de país salen de Intl y Node no trae los mismos datos de idioma que el navegador: si el
+  // servidor pintara la lista, la hidratación fallaría. Hasta montar se ve solo el país actual con su prefijo.
+  const selected = countryOrEcuador(country);
+  const [countries, setCountries] = useState<
+    readonly { code: string; label: string }[]
+  >([{ code: selected, label: callingCodeLabel(selected) }]);
+  useEffect(() => setCountries(COUNTRIES), []);
+
   return (
     <div className="form-field">
       <label htmlFor={id}>Teléfono</label>
       <div className="phone-field">
         <select
           name="phoneCountry"
-          defaultValue={country}
+          defaultValue={selected}
           aria-label="País del teléfono"
         >
-          {COUNTRIES.map(({ code, label }) => (
+          {countries.map(({ code, label }) => (
             <option key={code} value={code}>
               {label}
             </option>

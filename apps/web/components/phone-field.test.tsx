@@ -1,6 +1,18 @@
 import { render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { expect, test } from "vitest";
 import { PhoneField } from "./phone-field";
+
+test("el servidor no pinta nombres de país: dependen de los datos de idioma de cada entorno", () => {
+  // Node y el navegador traen datos de Intl distintos; si el HTML del servidor llevara la lista, la
+  // hidratación fallaría ("Hong Kong" en uno, "RAE de Hong Kong (China)" en otro).
+  const html = renderToString(
+    <PhoneField id="contact-phone" country="CO" number="" />,
+  );
+  expect(html).toContain("+57");
+  expect(html).not.toContain("Colombia");
+  expect(html.match(/<option/g)).toHaveLength(1);
+});
 
 test("Ecuador por defecto; el país y el número se editan por separado", () => {
   render(<PhoneField id="contact-phone" country="EC" number="" />);

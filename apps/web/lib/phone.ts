@@ -25,6 +25,9 @@ export function phoneError(value: string, country: CountryCode = 'EC'): string |
 /** El país que llega del formulario; si no es uno conocido, Ecuador. */
 export const countryOrEcuador = (value: string): CountryCode => (isSupportedCountry(value) ? value : 'EC');
 
+/** Solo el prefijo (`+593`): no depende de los datos de idioma, así que coincide en el servidor y el navegador. */
+export const callingCodeLabel = (country: CountryCode) => `+${getCountryCallingCode(country)}`;
+
 const regionNames = new Intl.DisplayNames(['es'], { type: 'region' });
 
 /** Países con su prefijo, ordenados por su nombre en español: `{ code: 'CO', label: 'Colombia (+57)' }`. */
