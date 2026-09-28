@@ -80,6 +80,7 @@ async function main() {
       firstName: 'María',
       lastName: 'Cordero',
       email: 'maria.cordero@andina.ec',
+      documentType: 'CEDULA', // tipo y número van juntos (restricción Contact_document_pair)
       documentId: '1712345675',
       province: 'Pichincha',
       companyId: company.id,
