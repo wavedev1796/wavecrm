@@ -40,6 +40,17 @@ test("sugiere empresas y guarda el id al elegir una o al pegar su RUC", async ()
   expect(hidden()).toHaveValue("");
 });
 
+test("si la sesión vence mientras busca, no se cae: la acción redirige al login y no devuelve nada", async () => {
+  search.mockResolvedValue(undefined as never);
+  render(<CompanyField defaultLabel="" defaultId="" />);
+  fireEvent.change(screen.getByLabelText("Empresa donde trabaja"), {
+    target: { value: "andina" },
+  });
+  await act(async () => vi.advanceTimersByTime(300));
+  expect(document.querySelector("datalist option")).toBeNull();
+  expect(hidden()).toHaveValue("");
+});
+
 test("al editar conserva la empresa vinculada", () => {
   render(
     <CompanyField

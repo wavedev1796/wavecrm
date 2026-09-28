@@ -48,7 +48,8 @@ export function CompanyField({ defaultLabel, defaultId, error }: Props) {
             clearTimeout(timer.current);
             if (match || !text) return;
             timer.current = setTimeout(async () => {
-              const found = await searchCompanies(text);
+              // Si la sesión venció, la acción redirige al login y aquí llega undefined.
+              const found = (await searchCompanies(text)) ?? [];
               setOptions(found);
               const exact = matchOf(found, text);
               if (exact) setCompanyId(exact.id);
