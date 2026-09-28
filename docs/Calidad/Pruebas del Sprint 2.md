@@ -1,19 +1,19 @@
 # Pruebas del Sprint 2
 
-Estado al 2026-09-24: **250 pruebas en verde**:
+Estado al 2026-09-28: **322 pruebas en verde**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md):
 
 | Capa | Pruebas |
 | --- | --- |
-| Unitarias del API | 77 |
-| Integración del API contra Neon | 28 |
-| Web | 129 |
-| Navegador | 16 |
+| Unitarias del API | 94 |
+| Integración del API contra Neon | 40 |
+| Web | 168 |
+| Navegador | 20 |
 
-Cobertura de líneas: **97,86 %** en el API y **98,08 %** en la web. El código nuevo del sprint (`common/ecuador.ts`, los decoradores, el lector de CSV, el controlador, `lib/ecuador.ts`, la server action y el formulario de importación) está cubierto al 100 %, salvo 4 líneas defensivas.
+Cobertura de líneas: **98,07 %** en el API y **98,45 %** en la web (el 2026-09-24 eran 97,86 % y 98,08 %). Quality Gate de SonarQube aprobado: código nuevo con 95,2 % de cobertura, 1,75 % de duplicación y 0 incidencias.
 
 ## Cómo correrlas (paso a paso)
 
-Igual que en el [Sprint 1](Pruebas%20del%20Sprint%201.md#cómo-correrlas-paso-a-paso). Además, **la rama `pruebas` de Neon necesita la migración del sprint**:
+Igual que en el [Sprint 1](Pruebas%20del%20Sprint%201.md#cómo-correrlas-paso-a-paso). Además, **la rama `pruebas` de Neon necesita las migraciones del sprint**:
 
 ```bash
 pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:deploy
@@ -21,9 +21,9 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 
 | Comando | Resultado esperado |
 | --- | --- |
-| `pnpm test` | `# tests 77` en el API y `Tests 129 passed` en la web |
-| `pnpm test:integration` | `# tests 28`, `# fail 0` |
-| `pnpm test:e2e` (con `pnpm dev` apagado) | `16 passed` |
+| `pnpm test` | `# tests 94` en el API y `Tests 168 passed` en la web |
+| `pnpm test:integration` | `# tests 40`, `# fail 0` |
+| `pnpm test:e2e` (con `pnpm dev` apagado) | `20 passed` |
 | `pnpm test:coverage` | `coverage/api/lcov.info` y `coverage/web/lcov.info` |
 
 > Las pruebas de integración y e2e crean contactos y empresas en la rama `pruebas`, siempre con un usuario de prueba como responsable. `cleanup()` los borra al terminar. Las cédulas y los RUC se generan válidos y al azar (`cedulaDePrueba`, `rucDePrueba`), porque las columnas son únicas y la rama es compartida.
@@ -33,10 +33,10 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | Capa | Qué se prueba en este sprint |
 | --- | --- |
 | Unitarias API (`node:test`) | Algoritmos de Ecuador, decoradores y DTO de fila, lector de CSV, servicio de importación (con Prisma simulado) y el `errors` del filtro global |
-| Integración API + Neon | `POST /contacts/import` por HTTP con multipart real: Windows-1252, unicidad contra la base, todo o nada, 400/401/413 |
-| Web (Vitest) | Las mismas reglas con los casos compartidos, lectura de cabecera, server action, formulario con mapeo y reporte, página y enlace |
-| Navegador (Playwright) | Subir un CSV con errores, ver el reporte, subir el corregido y ver el éxito |
-| Reglas compartidas | `test/casos-de-validacion.json`: 91 casos (40 nuevos: cédula, RUC, teléfono y provincia) |
+| Integración API + Neon | `POST /contacts/import` y `POST /companies/import` por HTTP con multipart real (Windows-1252, unicidad contra la base, todo o nada, 400/401/413); documentos por tipo y la restricción `Contact_document_pair` |
+| Web (Vitest) | Las mismas reglas con los casos compartidos, lectura de cabecera, server actions, formularios con errores al guardar, buscador en vivo, teléfono con país, listado de empresas e importación |
+| Navegador (Playwright) | Importar contactos y empresas (error y corrección), buscador en vivo, contacto con pasaporte y teléfono extranjero, añadir empresa |
+| Reglas compartidas | `test/casos-de-validacion.json`: 111 casos (60 del sprint: cédula, RUC, teléfono de cualquier país, documento por tipo y provincia) |
 
 ## Catálogo por ticket
 
@@ -65,9 +65,9 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | `apps/api/test/contact-import.service.test.cjs` | Unitaria | 6 | Importación normalizada con empresa y responsable, **todo o nada**, reporte ordenado, cédula repetida o registrada, empresa inexistente, singular, 13 rechazos de archivo/mapeo, `P2002` → 409 |
 | `apps/api/test/app.setup.test.cjs` | Unitaria | 1 de 5 (+3 textos) | `errors` en el cuerpo de error; textos de multer en español |
 | `apps/api/test/integracion/contact-import.http.test.cjs` | Integración | 4 | CSV de Excel real, reimportación, fila inválida sin escritura, 400/401/413 |
-| `apps/web/app/(dashboard)/contactos/importar/csv-header.test.ts` | Web | 3 | Cabecera con `,`/`;`, comillas, BOM y Windows-1252; alias de columnas |
+| `apps/web/components/csv-import/csv-header.test.ts` (antes en `contactos/importar/`) | Web | 4 | Cabecera con `,`/`;`, comillas, BOM y Windows-1252; alias de columnas de contactos y de empresas |
 | `apps/web/app/(dashboard)/contactos/importar/actions.test.ts` | Web | 4 | Sin archivo, reenvío de solo archivo y mapeo, singular/plural, reporte 422, 400, red y sesión vencida |
-| `apps/web/app/(dashboard)/contactos/importar/import-form.test.tsx` | Web | 3 | Columnas propuestas, mapeo enviado, éxito con enlace, tabla de errores, **archivo de más de 1 MB o sin cabecera avisado antes de enviar**, vuelta a "elige el archivo" tras enviar conservando el mapeo manual |
+| `apps/web/components/csv-import/import-form.test.tsx` (antes en `contactos/importar/`) | Web | 3 | Columnas propuestas, mapeo enviado, éxito con enlace, tabla de errores, **archivo de más de 1 MB o sin cabecera avisado antes de enviar**, vuelta a "elige el archivo" tras enviar conservando el mapeo manual |
 | `apps/web/app/(dashboard)/contactos/importar/page.test.tsx` | Web | 1 | Instrucciones y `accept` del archivo |
 | `apps/web/lib/authenticated-api.test.ts` | Web | 1 de 5 | Un `FormData` viaja sin `Content-Type` JSON |
 | `apps/web/app/(dashboard)/paginas.test.tsx` | Web | (aserción) | Enlace "Importar CSV" en `/contactos` |
@@ -75,13 +75,45 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | Revisión visual (navegador, rama `pruebas`) | Manual | — | 1280 y 375 px: sin scroll horizontal, mapeo en una columna en móvil, reporte de errores legible, éxito con enlace |
 | `e2e/contactos.spec.ts` | Navegador | 1 | Error por fila y luego importación correcta |
 
+### Ajustes de contactos y Empresas (CRM-11 a CRM-16, 2026-09-26 a 2026-09-28)
+
+| Archivo | Tipo | Pruebas | Qué verifica |
+| --- | --- | --- | --- |
+| `apps/api/test/phone.test.cjs` | Unitaria | 2 | Casos compartidos de teléfono; E.164, y sin `+` el número es de Ecuador |
+| `apps/api/test/validation.test.cjs` | Unitaria | +3 | `CreateContactDto` contra los casos de "documento"; normalización según el tipo; RUC de empresa obligatorio al crear y sin poder vaciarlo |
+| `apps/api/test/contacts-companies.service.test.cjs` | Unitaria | +3 | Tipo y número se borran juntos; `PATCH` con tipo y sin número → `400`; búsqueda por documento sin mayúsculas |
+| `apps/api/test/company-import.service.test.cjs` | Unitaria | 4 | Empresas normalizadas con quien importa como responsable; RUC vacío, inválido, repetido o registrado sin guardar nada; mapeo con nombre y RUC; `P2002` → `409` y otros fallos sin disfrazar |
+| `apps/api/test/integracion/documentos.http.test.cjs` | Integración | 3 | Pasaporte con teléfono extranjero y búsqueda sin mayúsculas; documento repetido → `409`; RUC de persona natural sí y de sociedad no; la base rechaza un documento sin tipo |
+| `apps/api/test/integracion/company-import.http.test.cjs` | Integración | 2 | CSV de Excel (Windows-1252 y `;`) crea empresas normalizadas; reimportar da `422`; mapeo sin RUC `400`, archivo grande `413`, sin sesión `401` |
+| `apps/web/lib/phone.test.ts`, `lib/ecuador.test.ts` | Web | 2, +1 | La web cumple los casos de teléfono y de "documento"; países, edición y formato |
+| `apps/web/lib/list-params.test.ts`, `lib/validation.test.ts` | Web | 2, +2 | URL y consulta del listado; reglas de empresa y campos opcionales compartidos |
+| `apps/web/components/live-search.test.tsx` | Web | 2 | Espera 300 ms tras la última tecla, conserva los filtros y vuelve a la página 1; se sincroniza si la URL cambia por fuera |
+| `apps/web/components/phone-field.test.tsx` | Web | 3 | Ecuador por defecto; país guardado al editar; **el HTML del servidor no trae nombres de país** (hidratación) |
+| `apps/web/app/(dashboard)/contactos/contact-form.test.tsx` | Web | +2 | Sin errores al escribir ni al salir del campo; el número aparece al elegir el tipo; al guardar, error en su campo, foco en el primero y se borra al editar |
+| `apps/web/app/(dashboard)/contactos/company-field.test.tsx` | Web | 3 | Sugerencias por nombre o RUC y `companyId`; empresa conservada al editar; **sesión vencida durante la búsqueda** |
+| `apps/web/app/(dashboard)/contactos/actions.test.ts` | Web | +3 | Teléfono en E.164 según el país; pasaporte normalizado y `409` junto al documento; fallos del API y de conexión |
+| `apps/web/app/(dashboard)/empresas/*.test.ts(x)` | Web | 10 | Listado, vacío y error; Añadir empresa (errores al guardar, `409` al RUC, cierre y aviso); importación |
+| `e2e/contactos.spec.ts` | Navegador | +2 | La tabla se filtra al escribir; contacto con pasaporte y teléfono de Colombia |
+| `e2e/empresas.spec.ts` | Navegador | 2 | Añadir empresa y encontrarla con el buscador; importar con errores y luego corregido |
+| Revisión visual (navegador, rama `development`) | Manual | — | Unos 500 y 1280 px: errores al guardar, empresa sugerida, buscador en vivo, RUC repetido, importación con error, consola limpia |
+
+**Archivos CSV para probar a mano:**
+
+- `docs/Sprint 2/empresas-ejemplo.csv`: 3 empresas (privada, pública y persona natural).
+- `docs/Sprint 2/contactos-ejemplo.csv`: 3 contactos.
+
+Otros juegos, con 8 empresas, 10 contactos y archivos con un error por fila, se generan fuera del repo.
+
 ## Validaciones de entrada nuevas
 
 | Campo | Regla | Mensaje |
 | --- | --- | --- |
 | Cédula | 10 dígitos; provincia 01–24 o 30; tercer dígito 0–5; módulo 10 | "La cédula debe tener 10 dígitos." / "La cédula no es válida." |
 | RUC | 13 dígitos; natural, privada (módulo 11) o pública (módulo 11); establecimiento distinto de cero | "El RUC debe tener 13 dígitos." / "El RUC no es válido." |
-| Teléfono | Ecuador, fijo o móvil; se guarda `+593…` | "Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678." |
+| Teléfono | cualquier país (`libphonenumber-js`); sin `+`, del país elegido (Ecuador por defecto); se guarda en E.164 | "Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678." |
+| Documento del contacto | cédula, RUC de persona natural o pasaporte (6–20 letras o números); tipo y número juntos | "El RUC de una persona natural es su cédula seguida de 001." / "El pasaporte debe tener entre 6 y 20 letras o números." / "Elige el tipo de documento." / "Ingresa el número de documento." |
+| RUC de la empresa | obligatorio | "Ingresa el RUC." |
+| Empresa donde trabaja | una de las sugeridas | "Elige una empresa de la lista." |
 | Provincia | una de las 24, sin importar tildes | "Elige una provincia de Ecuador." |
 | Ciudad, cargo, etiquetas, apellido, correo del contacto | ver [CRM-12](../Sprint%202/12%20-%20Validaci%C3%B3n%20RUC-C%C3%A9dula%20Ecuador.md#mensajes) | — |
 | Archivo e importación | ver [CRM-16](../Sprint%202/16%20-%20Importar%20contactos%20(CSV).md#contrato) | — |
@@ -98,10 +130,16 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | El reset del formulario tras la acción borraba el contenido del `<output>` de éxito (icono y enlace) | El resultado se muestra fuera del `<form>` | `import-form.test.tsx` |
 | La cédula y el RUC del seed no pasaban el dígito verificador | Valores válidos y corrección de las bases ya sembradas | casos compartidos |
 | Errores de multer en inglés ("Unexpected field") | Traducidos por el filtro global | `app.setup.test.cjs`, `contact-import.http.test.cjs` |
+| Next marcaba *hydration mismatch* en el teléfono: Node y el navegador nombran distinto algunos países | El servidor pinta solo el país elegido; la lista se arma en el navegador | `phone-field.test.tsx` |
+| Si la sesión vencía mientras se buscaba una empresa, el campo se rompía (la action redirige y el cliente recibe `undefined`) | Una respuesta vacía es "sin sugerencias" | `company-field.test.tsx` |
+| Las pruebas de los formularios fallaban a veces bajo carga: el error se veía con el foco aún en **Guardar** (`useEffect` corre después de pintar) | `useFieldErrors` mueve el foco en `useLayoutEffect` | `contact-form.test.tsx`, `company-form.test.tsx` (0/10 fallos bajo carga) |
+| El seed creaba el contacto de ejemplo sin tipo de documento: fallaría en una base nueva | `documentType: 'CEDULA'` en el seed | `documentos.http.test.cjs` (la base rechaza un documento sin tipo) |
+| `PartialType` dejaba pasar un `PATCH` con tipo de documento y sin número | El servicio lo rechaza con `Ingresa el número de documento.`; la base lo impide con `Contact_document_pair` | `contacts-companies.service.test.cjs`, `documentos.http.test.cjs` |
 
 ## Límites conocidos
 
-- Solo teléfonos de Ecuador y solo cédula para contactos (sin pasaporte).
+- Los pasaportes no se validan por país: se aceptan de 6 a 20 letras o números.
+- La importación de contactos acepta solo cédula; pasaporte y RUC se registran desde el formulario.
 - Codificaciones distintas de UTF-8 y Windows-1252 no se reconocen.
 - Los RUC de sociedades recientes podrían no cumplir el módulo 11. Está sin confirmar, y relajarlo es una línea de `isRuc`.
-- La importación no crea empresas ni actualiza contactos existentes.
+- Ninguna importación actualiza registros existentes, y la de contactos no crea empresas (se importan antes, en `/empresas/importar`).

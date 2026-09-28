@@ -13,6 +13,14 @@ Cargar muchos contactos de una vez desde un archivo CSV (el que exporta Excel), 
 
 ## Implementación
 
+> **Actualizado el 2026-09-28** con los [ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md). El contrato y los mensajes de `POST /contacts/import` no cambian.
+>
+> - **API:** el lector pasa a `src/common/csv.ts`. Lo que no depende de la entidad (leer el archivo, validar el mapeo y las filas, límite de 1000 filas, reporte de errores) vive en `src/common/csv-import.ts`, y el Swagger común en `csv-import.swagger.ts`. `POST /companies/import` (CRM-15) usa el mismo núcleo.
+> - **Filas:** se guardan con `documentType: 'CEDULA'`, y el teléfono acepta cualquier país.
+> - **Web:** el formulario y la lectura de cabecera pasan a `components/csv-import/` (`import-form.tsx`, `csv-header.ts`, `import-page.tsx`) y `lib/csv-import.ts`. `contactos/importar/` solo define sus campos (`fields.ts`) y su action.
+>
+> Las rutas de abajo son las de la entrega original.
+
 **API (`apps/api`)**, en un módulo propio para no tocar `contacts/`, que es de CRM-13:
 
 - `src/modules/contact-import/csv.ts`: lector de CSV (RFC 4180).

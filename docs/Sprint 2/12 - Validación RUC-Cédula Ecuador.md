@@ -13,6 +13,8 @@ Validar la identificación ecuatoriana antes de guardarla: cédula de 10 dígito
 
 ## Implementación
 
+> **Actualizado el 2026-09-28** con los [ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md). Teléfonos de cualquier país, en `common/phone.ts` y `lib/phone.ts`, y documento del contacto por tipo (cédula, RUC de persona natural o pasaporte). Las tablas de mensajes y de decisiones ya incluyen esas reglas.
+
 **API (`apps/api`)**
 
 - `src/common/ecuador.ts`: algoritmos puros.
@@ -44,7 +46,10 @@ Validar la identificación ecuatoriana antes de guardarla: cédula de 10 dígito
 | --- | --- | --- |
 | Cédula | 10 dígitos (se aceptan espacios y guiones) | `La cédula debe tener 10 dígitos.` / `La cédula no es válida.` |
 | RUC | 13 dígitos, según su tipo | `El RUC debe tener 13 dígitos.` / `El RUC no es válido.` |
-| Teléfono | fijo `0[2-7]` + 7 dígitos o móvil `09` + 8, también con `+593` | `Escribe un teléfono de Ecuador, por ejemplo 0991234567 o 022345678.` |
+| RUC del contacto | persona natural: tercer dígito 0–5 | `El RUC de una persona natural es su cédula seguida de 001.` |
+| Pasaporte | 6–20 letras o números; se guarda en mayúsculas sin espacios ni guiones | `El pasaporte debe tener entre 6 y 20 letras o números.` |
+| Tipo y número de documento | van juntos | `Elige el tipo de documento.` / `Ingresa el número de documento.` / `Elige un tipo de documento válido.` |
+| Teléfono | cualquier país (`libphonenumber-js`); sin `+`, del país elegido (Ecuador por defecto); se guarda en E.164 | `Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678.` |
 | Provincia | una de las 24 | `Elige una provincia de Ecuador.` |
 | Ciudad | 2–60; letras, espacios, apóstrofo, guion y punto | `La ciudad debe tener entre 2 y 60 caracteres.` / `La ciudad solo puede tener letras, espacios, apóstrofos, guiones y puntos.` |
 | Correo | opcional; misma regla que el de la cuenta | `Escribe un correo válido, por ejemplo nombre@empresa.ec.` / `El correo no puede superar 64 caracteres.` |
@@ -55,17 +60,17 @@ Validar la identificación ecuatoriana antes de guardarla: cédula de 10 dígito
 ## Decisiones
 
 - **Módulo 11 estricto también para sociedades privadas**, como pide el ticket (decisión del usuario, 2026-09-24). Hay reportes de RUC de sociedades recientes que no cumplen el dígito verificador; no se pudo confirmar. Si aparece un RUC real rechazado, basta con relajar una línea de `isRuc`, marcada con `ponytail:`.
-- **Contacto con cédula, empresa con RUC.** Sin pasaporte: ningún ticket del sprint lo pide.
+- **Documento del contacto por tipo** (cambio pedido por el usuario el 2026-09-26). Al principio el contacto solo aceptaba cédula, porque ningún ticket pedía pasaporte. Ahora elige cédula, RUC de persona natural o pasaporte. La empresa sigue con RUC, ahora obligatorio.
 - **Mismo algoritmo en web y API, probado con un solo archivo de casos.** Es la convención del Sprint 1. La copia de la web existe para que CRM-14 muestre el error en pantalla antes de llamar al API.
 - **Normalizar antes de validar.** Los decoradores recortan, quitan espacios y guiones de la identificación, pasan el teléfono a E.164, guardan el nombre oficial de la provincia y ponen las etiquetas en minúsculas y sin repetir. Así el filtro `has` de CRM-13 no depende de mayúsculas y la base guarda un solo formato.
 - **Un campo opcional vacío llega como `null`.** `IsOptional` lo deja pasar, un alta guarda `NULL` (compatible con la columna única) y un `PATCH` de CRM-13 puede borrar el valor. Las etiquetas vacías son `[]`, porque la columna no admite `NULL`.
 - **Unicidad en dos capas.** La garantía está en la base (`@unique` en `Contact.documentId` y `Company.taxId`). Para dar un mensaje claro antes de escribir, la importación comprueba además las cédulas repetidas dentro del archivo y las ya registradas (CRM-16). La carrera entre ambas (`P2002`) se traduce a `409`.
-- **Teléfonos solo de Ecuador.** Es un CRM ecuatoriano. Un número extranjero no pasa; si hace falta, se añade el prefijo al patrón.
+- **Teléfonos de cualquier país** (cambio pedido por el usuario el 2026-09-26). Al principio solo se aceptaban números de Ecuador. Ahora se valida con `libphonenumber-js` y metadatos `min`, igual en web y API, y los números de Ecuador de antes siguen valiendo.
 
 ### Para CRM-13 y CRM-14 (Eduardo García)
 
-- **DTOs de contacto y empresa (CRM-13):** usar `IsPersonName()` / `IsPersonName('apellido')`, `IsCedula`, `IsRuc`, `IsContactEmail`, `IsEcuadorPhone`, `IsProvince`, `IsCity`, `IsPosition` e `IsTags` de `common/validation.ts`, y traducir el `P2002` de `documentId`/`taxId` a un `409` como hace `users.service.ts`.
-- **Validación visual (CRM-14):** `cedulaError(normalizeDigits(valor))`, `rucError(normalizeDigits(valor))`, `phoneError(valor)` y `provinceError(valor)` de `apps/web/lib/ecuador.ts`. `PROVINCES` sirve para el `<select>`.
+- **DTOs de contacto y empresa (CRM-13):** usar `IsPersonName()` / `IsPersonName('apellido')`, `IsDocumentType` + `IsDocument` (contacto), `IsRequiredRuc` (empresa), `IsContactEmail`, `IsPhone`, `IsProvince`, `IsCity`, `IsPosition` e `IsTags` de `common/validation.ts`, y traducir el `P2002` de `documentId`/`taxId` a un `409` como hace `users.service.ts`.
+- **Validación en pantalla (CRM-14):** `documentError(tipo, valor)` de `apps/web/lib/ecuador.ts`, `phoneError(valor, país)` de `apps/web/lib/phone.ts` y `provinceError(valor)`. `PROVINCES` sirve para el `<select>`.
 
 ## Validación
 

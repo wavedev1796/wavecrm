@@ -14,8 +14,10 @@ Registrar contactos y empresas de Ecuador con su identificación validada, consu
 | CRM-12 | [Validación RUC/Cédula Ecuador](12%20-%20Validaci%C3%B3n%20RUC-C%C3%A9dula%20Ecuador.md) | Zaith Manangón | Completo (4/4 criterios) |
 | CRM-13 | [API Contactos/Empresas](13%20-%20API%20Contactos-Empresas.md) | Eduardo García | Completo (4/4 criterios) |
 | CRM-14 | [Listado + ficha de Contacto](14%20-%20Listado-ficha%20Contacto.md) | Eduardo García | Completo (4/4 criterios) |
-| CRM-15 | Listado + ficha de Empresa | Eduardo García | Backlog |
+| CRM-15 | [Listado + ficha de Empresa](15%20-%20Listado-ficha%20Empresa.md) | Eduardo García | Parcial (3/5 criterios: listado, alta e importación; falta la ficha y la edición) |
 | CRM-16 | [Importar contactos (CSV)](16%20-%20Importar%20contactos%20(CSV).md) | Zaith Manangón | Completo (4/4 criterios) |
+
+Tras probar CRM-14, el usuario pidió cambios en Contactos y la pantalla Empresas (2026-09-26). Los hizo Zaith Manangón, también en los tickets de Eduardo, con autorización del usuario: [Ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md).
 
 ## Decisiones transversales
 
@@ -28,8 +30,9 @@ Registrar contactos y empresas de Ecuador con su identificación validada, consu
   | Funciones de `apps/web/lib/ecuador.ts` (CRM-12) | Validación visual de CRM-14 |
   | Importación en `modules/contact-import/` (CRM-16) | Ruta `contacts` compartida con el CRUD de CRM-13 |
 
-- **Reglas iguales en web y API**, como en el Sprint 1: un solo archivo de casos (`test/casos-de-validacion.json`, ahora con 91) prueba los dos lados.
-- **Los datos se guardan normalizados:** cédula y RUC solo con dígitos, teléfono en E.164 (`+593…`), provincia con su nombre oficial y etiquetas en minúsculas.
+- **Reglas iguales en web y API**, como en el Sprint 1: un solo archivo de casos (`test/casos-de-validacion.json`, ahora con 111) prueba los dos lados.
+- **Los datos se guardan normalizados:** cédula y RUC solo con dígitos, pasaporte en mayúsculas, teléfono en E.164 de cualquier país (`+593…`, `+57…`), provincia con su nombre oficial y etiquetas en minúsculas.
+- **Contactos son personas naturales** con documento por tipo (cédula, RUC propio o pasaporte). Las empresas viven en `Company`, con RUC obligatorio.
 - **Visibilidad:** ADMIN y VENDEDOR ven y editan todos los contactos y empresas; el responsable (`ownerId`) es informativo y filtrable.
 - **Importación todo o nada:** si una fila falla, no se guarda ninguna y el reporte dice fila, columna y motivo.
 - **RUC de sociedad privada con módulo 11 estricto**, como pide el ticket. Si aparece un RUC real que no lo cumple, se relaja una línea de `isRuc`.
@@ -38,18 +41,19 @@ Registrar contactos y empresas de Ecuador con su identificación validada, consu
 
 | Métrica | Valor |
 | --- | --- |
-| Pruebas unitarias del API | 82 (+29) |
-| Pruebas de integración del API (Neon) | 35 (+11) |
-| Pruebas de la web (Vitest) | 136 (+26) |
-| Pruebas de navegador (Playwright) | 16 (+1) |
-| **Total** | **269** |
-| Cobertura de líneas del API | 97,86 % |
-| Cobertura de líneas de la web | 98,08 % |
+| Pruebas unitarias del API | 94 (+41) |
+| Pruebas de integración del API (Neon) | 40 (+16) |
+| Pruebas de la web (Vitest) | 168 (+58) |
+| Pruebas de navegador (Playwright) | 20 (+5) |
+| **Total** | **322** |
+| Cobertura de líneas del API | 98,07 % |
+| Cobertura de líneas de la web | 98,45 % |
 
 Detalle por ticket y paso a paso: [docs/Calidad/Pruebas del Sprint 2.md](../Calidad/Pruebas%20del%20Sprint%202.md).
 
 ## Pendientes
 
-- Producción recibe la migración `20260924120000_contact_company_ec` en el próximo despliegue de Render (`development` y `pruebas` ya la tienen, sembradas el 2026-09-24).
+- Producción recibe las migraciones `20260924120000_contact_company_ec` y `20260927120000_contact_document_type` en el próximo despliegue de Render. `development` y `pruebas` ya tienen las dos.
+- Ficha y edición de empresa (resto de CRM-15).
 - `User.previousPasswordHashes` tiene `DEFAULT` en la base y no en el schema (migración de CRM-8). Se detectó al verificar la migración de este sprint.
 - Confirmar con un RUC real de sociedad reciente que el módulo 11 no rechaza empresas válidas.
