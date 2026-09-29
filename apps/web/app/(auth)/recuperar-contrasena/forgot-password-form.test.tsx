@@ -36,6 +36,7 @@ test('muestra junto al campo el error que devuelve el servidor', async () => {
   });
   const user = setup();
   await send(user);
+  await screen.findByText('Escribe un correo válido, por ejemplo nombre@empresa.ec.');
   const email = screen.getByLabelText('Correo');
   expect(email).toHaveAttribute('aria-invalid', 'true');
   expect(email).toHaveAccessibleDescription('Escribe un correo válido, por ejemplo nombre@empresa.ec.');
@@ -49,8 +50,10 @@ test('muestra en una alerta el fallo del API y deja reintentar', async () => {
   });
   const user = setup();
   await send(user);
-  expect(screen.getByRole('alert')).toHaveTextContent('Demasiados intentos. Espera un minuto e inténtalo de nuevo.');
-  expect(screen.getByRole('button', { name: 'Enviar enlace' })).toBeInTheDocument();
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Demasiados intentos. Espera un minuto e inténtalo de nuevo.',
+  );
+  expect(await screen.findByRole('button', { name: 'Enviar enlace' })).toBeInTheDocument();
 });
 
 test('no usa la validación del navegador, limita el correo y permite volver al login', () => {

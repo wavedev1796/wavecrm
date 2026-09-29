@@ -23,7 +23,8 @@ export default function AuthLayout({
         <main className="auth-main">{children}</main>
         <aside className="auth-aside">
           <div className="auth-brand">
-            <span className="brand-logo" role="img" aria-label="Wave" />
+            <span className="brand-logo" aria-hidden="true" />
+            <span className="sr-only">Wave</span>
             <span className="brand-tag">CRM</span>
           </div>
           <CrmIllustration />
@@ -83,9 +84,8 @@ function VisualNode({
 
 function DealPreview() {
   return (
-    <div
+    <section
       className="deal-preview"
-      role="img"
       aria-label="Ejemplo de un negocio en Wave CRM"
     >
       <div className="deal-preview-head">
@@ -110,6 +110,6 @@ function DealPreview() {
         <i />
         <i />
       </div>
-    </div>
+    </section>
   );
 }
