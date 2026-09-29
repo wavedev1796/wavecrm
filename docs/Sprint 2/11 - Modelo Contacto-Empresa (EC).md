@@ -1,4 +1,6 @@
-# Modelo Contacto/Empresa (EC)
+# CRM-11 — Modelo Contacto/Empresa (EC)
+
+**Responsable:** Zaith Manangón · **Estado:** Completo (3/3 criterios)
 
 ## Objetivo
 

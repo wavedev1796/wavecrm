@@ -1,35 +1,34 @@
 # CRM-14 — Listado y ficha de Contacto
 
-**Estado:** Completo (4/4 criterios).
+**Responsable:** Eduardo García · **Estado:** Completo (4/4 criterios)
 
-## Alcance entregado
+## Objetivo
 
-- Tabla conectada al API con búsqueda, provincia, etiqueta y paginación.
-- Acceso a la ficha desde cada fila y conservación del botón **Importar CSV**.
-- Ficha con datos personales, empresa, responsable, negocios y actividades.
-- Alta en un diálogo modal desde el listado y edición desde `/contactos/:id`.
-- Validación con las reglas compartidas de Ecuador.
+Consultar, crear y editar contactos desde `/contactos`: un listado conectado al API y una ficha por contacto.
 
-## Ajustes del 2026-09-26
+## Criterios de aceptación
 
-A pedido del usuario, Zaith Manangón cambió el formulario y el listado. El detalle está en [Ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md).
+El ticket no trae criterios escritos en este archivo; salen de su título ("Listado + ficha") y del alcance entregado.
 
-- **Buscador en vivo:** filtra 300 ms después de la última tecla. Provincia y etiqueta siguen con **Aplicar filtros**.
-- **Tipo de documento:** Sin documento, Cédula, RUC (de la persona) o Pasaporte. El número aparece al elegir el tipo.
-- **Empresa donde trabaja:** sustituye a "RUC de la empresa". Sugiere empresas registradas por nombre o RUC y envía su `companyId`; un texto que no es de la lista responde `Elige una empresa de la lista.`.
-- **Teléfono con selector de país**, validado con `libphonenumber-js`.
-- **Errores solo al guardar,** cada uno en su campo y con el foco en el primero. Ya no se valida al salir de cada campo.
-- **Ficha:** el documento con su tipo (`Pasaporte AB123456`) y el teléfono en formato internacional.
+- [x] Tabla conectada al API con búsqueda, provincia, etiqueta y paginación, conservando el botón **Importar CSV**.
+- [x] Ficha con datos personales, empresa, responsable, negocios y actividades, accesible desde cada fila.
+- [x] Alta en un diálogo modal desde el listado y edición desde `/contactos/:id`.
+- [x] Validación con las reglas compartidas de Ecuador.
 
-## Validación compartida
+## Implementación
 
-El formulario reutiliza las reglas de CRM-12:
+- Listado: `apps/web/app/(dashboard)/contactos/page.tsx`.
+- Ficha y edición: `apps/web/app/(dashboard)/contactos/[id]/page.tsx`.
+- Alta: `new-contact-dialog.tsx`, `contact-form.tsx`, `contact-form-state.ts`, `actions.ts` y `types.ts` en la misma carpeta.
 
-- `documentError(tipo, valor)` de `apps/web/lib/ecuador.ts` para el documento.
-- `phoneError(valor, país)` de `apps/web/lib/phone.ts` para el teléfono.
-- `provinceError(valor)` y `PROVINCES` para la provincia.
+## Decisiones
 
-## Pruebas
+- **Reglas compartidas con CRM-12.** El formulario reutiliza las mismas funciones que el API:
+  - `documentError(tipo, valor)` de `apps/web/lib/ecuador.ts` para el documento.
+  - `phoneError(valor, país)` de `apps/web/lib/phone.ts` para el teléfono.
+  - `provinceError(valor)` y `PROVINCES` para la provincia.
+
+## Validación
 
 - Listado, filtros, enlaces y paginación; buscador en vivo (`components/live-search.test.tsx`).
 - Sin errores antes de guardar; errores al guardar, que se borran al editar el campo (`contact-form.test.tsx`).
@@ -39,3 +38,16 @@ El formulario reutiliza las reglas de CRM-12:
 - Navegador (`e2e/contactos.spec.ts`): la tabla se filtra al escribir; contacto con pasaporte y teléfono de Colombia.
 - Ficha con datos, negocios, actividades y formulario de edición.
 - Apertura y cierre accesible del diálogo modal de creación.
+
+## Ajustes de contactos y empresas (2026-09-26)
+
+A pedido del usuario, Zaith Manangón cambió el formulario y el listado. El detalle está en [Ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md).
+
+### Implementación
+
+- **Buscador en vivo:** filtra 300 ms después de la última tecla. Provincia y etiqueta siguen con **Aplicar filtros**.
+- **Tipo de documento:** Sin documento, Cédula, RUC (de la persona) o Pasaporte. El número aparece al elegir el tipo.
+- **Empresa donde trabaja:** sustituye a "RUC de la empresa". Sugiere empresas registradas por nombre o RUC y envía su `companyId`; un texto que no es de la lista responde `Elige una empresa de la lista.`.
+- **Teléfono con selector de país**, validado con `libphonenumber-js`.
+- **Errores solo al guardar,** cada uno en su campo y con el foco en el primero. Ya no se valida al salir de cada campo.
+- **Ficha:** el documento con su tipo (`Pasaporte AB123456`) y el teléfono en formato internacional.

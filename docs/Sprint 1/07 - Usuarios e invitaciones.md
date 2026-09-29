@@ -1,17 +1,31 @@
-# Ticket 07 — Usuarios e invitaciones
+# CRM-7 — Usuarios e invitaciones
 
-## Alcance entregado
+**Responsable:** Eduardo García · **Estado:** Completo (8/8 criterios)
 
-- CRUD administrativo de usuarios: listar, consultar, invitar/crear, editar y eliminar.
-- Estados de cuenta `pending`, `active` e `inactive` derivados del estado real de activación.
-- Invitaciones por correo con token aleatorio de 256 bits, almacenado únicamente como SHA-256 y válido durante 48 horas.
-- Activación pública de cuenta con creación de contraseña Argon2 y consumo de un solo uso del token.
-- Reenvío de invitación, que invalida el enlace anterior.
-- Desactivación y reactivación; al desactivar se revoca el refresh token y el guard bloquea inmediatamente cualquier access token vigente.
-- Protección contra desactivar/eliminar la propia cuenta y contra dejar al sistema sin administradores activos.
-- Registro de las operaciones administrativas en `AuditLog`.
+## Objetivo
 
-## Endpoints
+Dar de alta a las personas del CRM por invitación y administrar sus cuentas desde el rol `ADMIN`.
+
+## Criterios de aceptación
+
+El ticket no trae criterios escritos; salen del alcance entregado.
+
+- [x] CRUD administrativo de usuarios: listar, consultar, invitar/crear, editar y eliminar.
+- [x] Estados de cuenta `pending`, `active` e `inactive` derivados del estado real de activación.
+- [x] Invitaciones por correo con token aleatorio de 256 bits, almacenado únicamente como SHA-256 y válido durante 48 horas.
+- [x] Activación pública de cuenta con creación de contraseña Argon2 y consumo de un solo uso del token.
+- [x] Reenvío de invitación, que invalida el enlace anterior.
+- [x] Desactivación y reactivación; al desactivar se revoca el refresh token y el guard bloquea inmediatamente cualquier access token vigente.
+- [x] Protección contra desactivar/eliminar la propia cuenta y contra dejar al sistema sin administradores activos.
+- [x] Registro de las operaciones administrativas en `AuditLog`.
+
+## Implementación
+
+- API: `apps/api/src/modules/users/`.
+- Pantalla de administración: `apps/web/app/(dashboard)/usuarios/`.
+- Activación de cuenta: `apps/web/app/(auth)/activar-cuenta/`.
+
+### Endpoints
 
 Todos los endpoints `/users` requieren Bearer token y rol `ADMIN`, salvo los dos de invitación marcados como públicos.
 
@@ -28,9 +42,9 @@ Todos los endpoints `/users` requieren Bearer token y rol `ADMIN`, salvo los dos
 | GET    | `/api/v1/users/invitations/:token`          | Valida el enlace y devuelve datos enmascarados     |
 | POST   | `/api/v1/users/invitations/:token/activate` | Establece contraseña y activa la cuenta            |
 
-## Correo
+### Correo
 
-La integración usa SMTP mediante Nodemailer y no depende de un proveedor concreto. Variables:
+Variables:
 
 - `APP_URL`: origen público de la web que se incluye en el enlace.
 - `SMTP_HOST`: servidor SMTP.
@@ -39,9 +53,15 @@ La integración usa SMTP mediante Nodemailer y no depende de un proveedor concre
 - `SMTP_USER` y `SMTP_PASS`: credenciales; pueden quedar vacías en Mailpit local.
 - `EMAIL_FROM`: remitente verificado.
 
-Docker levanta Mailpit en `localhost:1025` y su bandeja web en `http://localhost:8025`. En desarrollo, si no hay `SMTP_HOST`, el API imprime el enlace en su consola. En producción la ausencia de configuración falla explícitamente y no deja una cuenta huérfana. El enlace no se devuelve en la respuesta HTTP.
+Docker levanta Mailpit en `localhost:1025` y su bandeja web en `http://localhost:8025`. En desarrollo, si no hay `SMTP_HOST`, el API imprime el enlace en su consola.
 
-## Puesta en marcha y validación
+## Decisiones
+
+- **SMTP sin proveedor fijo.** La integración usa SMTP mediante Nodemailer y no depende de un proveedor concreto.
+- **El enlace nunca viaja en la respuesta HTTP.** En producción la ausencia de configuración SMTP falla explícitamente y no deja una cuenta huérfana.
+- **Eliminar solo sin historial.** La eliminación física se rechaza si el usuario tiene actividad relacionada; en ese caso se conserva el historial mediante desactivación.
+
+## Validación
 
 ```powershell
 pnpm install
@@ -61,19 +81,17 @@ Prueba manual recomendada:
 5. Como administrador, editarla, desactivarla y comprobar que una petición con su token anterior recibe `401`.
 6. Reactivarla y comprobar que vuelve a poder iniciar sesión.
 
-La eliminación física se rechaza si el usuario tiene actividad relacionada; en ese caso se conserva el historial mediante desactivación.
+## Calidad y validaciones (2026-09-19)
 
-## Pruebas automatizadas
+Añadido por Zaith Manangón como parte de la calidad del Sprint 1. Solo se añade este bloque: el resto del ticket es de Eduardo García.
 
-Añadidas el 2026-09-19 por Zaith Manangón como parte de la calidad del Sprint 1. Solo se añade esta sección: el resto del ticket es de Eduardo García.
-
-**Cambios en el código de este ticket**
+### Implementación
 
 - La contraseña nueva pasa a 8–16 caracteres con mayúscula, minúscula, número y símbolo (`ActivateInvitationDto` y `apps/web/lib/password-rules.ts`), con los mismos textos en el API y en la pantalla.
 - `CreateUserDto` y `UpdateUserDto` usan reglas compartidas: nombre de 2 a 100 caracteres (letras, espacios, apóstrofos, guiones y puntos), correo normalizado y acotado a 64, rol validado. Todos los mensajes en español.
 - `/activar-cuenta` marca el error junto al campo, limita las contraseñas a 16 y ya no depende de la validación del navegador.
 
-**Pruebas**
+### Validación
 
 | Prueba | Tipo | Archivo |
 | --- | --- | --- |

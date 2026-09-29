@@ -1,4 +1,6 @@
-# Validación RUC/Cédula Ecuador
+# CRM-12 — Validación RUC/Cédula Ecuador
+
+**Responsable:** Zaith Manangón · **Estado:** Completo (4/4 criterios)
 
 ## Objetivo
 

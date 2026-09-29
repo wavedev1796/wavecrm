@@ -11,9 +11,9 @@ Dar acceso seguro al CRM: inicio de sesión con roles, alta de personas por invi
 | CRM | Ticket | Responsable | Estado |
 | --- | --- | --- | --- |
 | CRM-6 | [Autenticación JWT + roles](06%20-%20Autenticaci%C3%B3n%20JWT%20%2B%20roles.md) | Zaith Manangón | Completo (4/4 criterios) |
-| CRM-7 | [Usuarios e invitaciones](07%20-%20Usuarios%20e%20invitaciones.md) | Eduardo García | Completo (alcance entregado según el ticket) |
+| CRM-7 | [Usuarios e invitaciones](07%20-%20Usuarios%20e%20invitaciones.md) | Eduardo García | Completo (8/8 criterios) |
 | CRM-8 | [Login + recuperar contraseña](08%20-%20Login%20%2B%20recuperar%20contrase%C3%B1a.md) | Zaith Manangón | Completo (4/4 criterios; recuperación cerrada el 2026-09-22) |
-| CRM-9 | [Gestión de usuarios admin](09%20-%20Gesti%C3%B3n%20de%20usuarios%20admin.md) | Eduardo García | Completo (4/4 criterios de su tabla) |
+| CRM-9 | [Gestión de usuarios admin](09%20-%20Gesti%C3%B3n%20de%20usuarios%20admin.md) | Eduardo García | Completo (4/4 criterios) |
 | CRM-10 | [Seguridad de sesión](10%20-%20Seguridad%20de%20sesi%C3%B3n.md) | Zaith Manangón | Completo (4/4 criterios) |
 
 ## Decisiones transversales

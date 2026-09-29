@@ -1,6 +1,6 @@
 # CRM-15 — Listado y ficha de Empresa
 
-**Estado:** Parcial (3/5 criterios). Responsable: Eduardo García. El listado, el alta y la importación los entregó Zaith Manangón con los [ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md), con autorización del usuario (2026-09-26).
+**Responsable:** Eduardo García · **Estado:** Parcial (3/5 criterios). El listado, el alta y la importación los entregó Zaith Manangón con los [ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md), con autorización del usuario (2026-09-26).
 
 ## Objetivo
 
@@ -44,6 +44,6 @@ El ticket no trae criterios escritos. Estos salen de su título ("Listado + fich
 - `e2e/empresas.spec.ts` (2): añadir una empresa y encontrarla con el buscador; importar con errores y luego el archivo corregido.
 - Revisión visual contra `development` (2026-09-28), a unos 500 px y a 1280 px.
 
-## Pendiente
+## Pendientes
 
 - Ficha (`/empresas/:id`) con datos, contactos, negocios y actividades, y edición. El API ya ofrece `GET` y `PATCH /companies/:id` (CRM-13).

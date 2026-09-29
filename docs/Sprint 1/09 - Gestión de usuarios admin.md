@@ -1,23 +1,35 @@
-# Ticket 09 — Gestión de usuarios (admin)
+# CRM-9 — Gestión de usuarios (admin)
+
+**Responsable:** Eduardo García · **Estado:** Completo (4/4 criterios)
+
+## Objetivo
+
+Que un administrador gestione las cuentas del CRM desde `/usuarios`: buscarlas, crearlas, editarlas, activarlas o desactivarlas y asignarles rol.
 
 ## Criterios de aceptación
 
-| Criterio           | Implementación                                                                                         | Prueba unitaria                                  |
-| ------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| Lista con búsqueda | `GET /api/v1/users?search=` busca por nombre o correo; `/usuarios` incluye buscador y filtro de estado | Verifica filtros, estado y paginación            |
-| Crear/editar       | Alta como invitación y edición de nombre/correo desde la tabla                                         | Verifica creación pendiente y actualización      |
-| Activar/desactivar | Acciones de desactivar/reactivar; revocación de refresh token                                          | Verifica ambos cambios y protege al último admin |
-| Asignar rol        | Selector `ADMIN` / `VENDEDOR` al crear y editar                                                        | Verifica persistencia del nuevo rol              |
+- [x] Lista con búsqueda.
+- [x] Crear/editar.
+- [x] Activar/desactivar.
+- [x] Asignar rol.
 
-La edición se presenta en un modal nativo `<dialog>`, centrado y responsive. Puede cerrarse con el botón, con `Escape` o pulsando el fondo, y mantiene la actualización mediante la Server Action existente.
+## Implementación
 
-## Acceso y reglas
+- Lista con búsqueda: `GET /api/v1/users?search=` busca por nombre o correo; `/usuarios` incluye buscador y filtro de estado.
+- Crear/editar: alta como invitación y edición de nombre/correo desde la tabla.
+- Activar/desactivar: acciones de desactivar/reactivar; revocación de refresh token.
+- Asignar rol: selector `ADMIN` / `VENDEDOR` al crear y editar.
+- Código: `apps/api/src/modules/users/` y `apps/web/app/(dashboard)/usuarios/`.
 
-- Solo un usuario con rol `ADMIN` puede abrir `/usuarios` o consumir el CRUD.
-- Un administrador no puede desactivarse ni eliminarse a sí mismo.
-- Siempre debe quedar al menos un administrador activo.
-- Una cuenta pendiente se activa únicamente mediante su enlace de invitación.
-- Si el usuario tiene historial relacionado, se conserva mediante desactivación en vez de borrarlo.
+## Decisiones
+
+- **Edición en un `<dialog>` nativo**, centrado y responsive. Puede cerrarse con el botón, con `Escape` o pulsando el fondo, y mantiene la actualización mediante la Server Action existente.
+- **Acceso y reglas:**
+  - Solo un usuario con rol `ADMIN` puede abrir `/usuarios` o consumir el CRUD.
+  - Un administrador no puede desactivarse ni eliminarse a sí mismo.
+  - Siempre debe quedar al menos un administrador activo.
+  - Una cuenta pendiente se activa únicamente mediante su enlace de invitación.
+  - Si el usuario tiene historial relacionado, se conserva mediante desactivación en vez de borrarlo.
 
 ## Validación
 
@@ -26,6 +38,13 @@ pnpm.cmd --filter @wave/api test
 pnpm.cmd lint
 pnpm.cmd build
 ```
+
+Pruebas unitarias por criterio:
+
+- Lista con búsqueda: verifica filtros, estado y paginación.
+- Crear/editar: verifica creación pendiente y actualización.
+- Activar/desactivar: verifica ambos cambios y protege al último admin.
+- Asignar rol: verifica persistencia del nuevo rol.
 
 Prueba manual:
 
@@ -37,11 +56,11 @@ Prueba manual:
 6. Desactivar la cuenta y comprobar que no puede iniciar sesión.
 7. Reactivarla y comprobar que vuelve a ingresar.
 
-## Pruebas automatizadas
+## Calidad y validaciones (2026-09-19)
 
-Añadidas el 2026-09-19 por Zaith Manangón como parte de la calidad del Sprint 1. Solo se añade esta sección: el resto del ticket es de Eduardo García.
+Añadido por Zaith Manangón como parte de la calidad del Sprint 1. Solo se añade este bloque: el resto del ticket es de Eduardo García.
 
-**Cambios en el código de este ticket**
+### Implementación
 
 - Los mensajes de las acciones dejan de viajar en la URL (`?success=` / `?error=`). Cada acción devuelve su resultado y la página lo muestra una vez. Antes, un enlace como `/usuarios?error=<texto>` mostraba cualquier texto como aviso del sistema.
 - Invitar y editar usan `useActionState`: conservan lo escrito y señalan el campo con error (`aria-invalid` + mensaje debajo).
@@ -49,7 +68,7 @@ Añadidas el 2026-09-19 por Zaith Manangón como parte de la calidad del Sprint 
 - Una sesión vencida lleva a `/login?sesion=expirada` en vez de reportarse como error de conexión.
 - La búsqueda se limita a 100 caracteres y los filtros de estado se validan en el API con mensajes en español.
 
-**Pruebas**
+### Validación
 
 | Prueba | Tipo | Archivo |
 | --- | --- | --- |

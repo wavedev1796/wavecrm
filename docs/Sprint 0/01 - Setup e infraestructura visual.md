@@ -1,4 +1,6 @@
-# Setup e infraestructura visual
+# CRM-1 — Setup e infraestructura visual
+
+**Responsable:** Eduardo García · **Estado:** Completo (8/8 criterios)
 
 ## Objetivo
 

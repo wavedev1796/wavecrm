@@ -1,4 +1,6 @@
-# Seguridad de sesión
+# CRM-10 — Seguridad de sesión
+
+**Responsable:** Zaith Manangón · **Estado:** Completo (4/4 criterios)
 
 ## Objetivo
 
@@ -43,6 +45,7 @@ Endurecer la sesión y el acceso al sistema para proteger rutas y datos sensible
 - **CORS sin credentials.** El API autentica con `Authorization: Bearer` y la web lo llama desde el servidor, así que ningún navegador necesita enviarle cookies desde otro origen. Se recortan espacios en `CORS_ORIGIN` para admitir `a, b`.
 - **Headers en API y web.** Decisión del equipo (2026-09-10). En el API, `helmet()` con su configuración por defecto (Swagger en `/docs` funciona con su CSP sin ajustes). En la web solo las cabeceras de alto valor y sin riesgo de rotura: `X-Frame-Options: DENY` evita que otro sitio incruste el login en un iframe (clickjacking). No se añadió CSP en la web: Next usa scripts inline y exigiría nonces.
 - **El punto del matcher va como `[.]`.** Next elimina las barras invertidas del `matcher`: `\.` se convertía en "cualquier carácter" y el middleware dejaba de ejecutarse en todas las rutas salvo `/`. Detectado en las pruebas y confirmado compilando el matcher con la función interna de Next.
+- **Coordinación con CRM-7.** `auth.service.ts` es un módulo compartido y cambió (refresh refactorizado y nuevo `logout`). Al desactivar un usuario, su sesión termina en como máximo 15 minutos: `userForRefreshToken` exige `active` y la renovación falla.
 
 ## Validación
 
@@ -61,10 +64,7 @@ Endurecer la sesión y el acceso al sistema para proteger rutas y datos sensible
   - Botón "Cerrar sesión": lleva a `/login`, volver a `/pipeline` redirige a `/login`, y en la base de datos `refreshTokenHash` del usuario pasó de presente a `null`.
   - Swagger `/docs` renderiza con la CSP de helmet, sin errores en consola, e incluye `POST /auth/logout`.
 - Detector de Impeccable sobre `app-shell.tsx` y `globals.css`: sin hallazgos nuevos (solo la advertencia conocida sobre Plus Jakarta Sans, que es compromiso de marca).
-
-**Coordinación con CRM-7:** `auth.service.ts` es un módulo compartido y cambió (refresh refactorizado y nuevo `logout`). Al desactivar un usuario, su sesión termina en como máximo 15 minutos: `userForRefreshToken` exige `active` y la renovación falla.
-
-**Pendiente fuera de este ticket:** el pie de perfil del sidebar sigue mostrando un usuario fijo ("Eduardo García · Administrador"), como el resto de datos de demostración del dashboard.
+- Fuera de este ticket, el pie de perfil del sidebar mostraba un usuario fijo ("Eduardo García · Administrador"). _Ya resuelto: muestra el nombre y el rol de la sesión._
 
 ## Calidad y validaciones (2026-09-19)
 

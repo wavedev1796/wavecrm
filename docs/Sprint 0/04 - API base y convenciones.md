@@ -1,4 +1,6 @@
-# API base y convenciones
+# CRM-4 — API base y convenciones
+
+**Responsable:** Eduardo García · **Estado:** Completo (8/8 criterios)
 
 ## Objetivo
 
@@ -15,7 +17,14 @@ Definir la estructura modular y el contrato HTTP inicial de la API NestJS.
 - [x] Healthcheck de disponibilidad.
 - [x] Prefijo versionado `/api/v1`.
 
-## Contratos base
+## Implementación
+
+- Módulos por dominio: `apps/api/src/modules/`.
+- Paginación: `apps/api/src/common/dto/pagination.dto.ts`.
+- Errores: `apps/api/src/common/filters/global-exception.filter.ts`.
+- Healthcheck: `apps/api/src/modules/health/`.
+
+### Contratos base
 
 Paginación:
 
@@ -39,10 +48,14 @@ Error:
 }
 ```
 
-## Endpoints iniciales
+### Endpoints iniciales
 
 - `GET /api/v1/health`
 - Swagger UI en `/docs`
+
+## Decisiones
+
+El ticket no registró decisiones técnicas.
 
 ## Validación
 

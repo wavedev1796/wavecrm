@@ -1,4 +1,6 @@
-# Shell de la app y layout
+# CRM-5 — Shell de la app y layout
+
+**Responsable:** Eduardo García · **Estado:** Completo (9/9 criterios)
 
 ## Objetivo
 
@@ -16,7 +18,13 @@ Crear el esqueleto navegable de Wave CRM con el sistema visual aplicado.
 - [x] Tabla representativa de contactos.
 - [x] Estados vacíos para secciones de próximos sprints.
 
-## Rutas
+## Implementación
+
+- Layout compartido: `apps/web/app/(dashboard)/layout.tsx`.
+- Sidebar y topbar: `apps/web/components/app-shell.tsx`.
+- Una carpeta por sección en `apps/web/app/(dashboard)/`.
+
+### Rutas
 
 - `/pipeline`
 - `/contactos`
@@ -25,9 +33,9 @@ Crear el esqueleto navegable de Wave CRM con el sistema visual aplicado.
 - `/actividades`
 - `/reportes`
 
-## Comportamiento responsivo
+## Decisiones
 
-En escritorio el sidebar permanece fijo. En pantallas menores a 760 px se convierte en un panel lateral con fondo de bloqueo, botones accesibles para abrir/cerrar y cierre automático al navegar.
+- **Comportamiento responsivo.** En escritorio el sidebar permanece fijo. En pantallas menores a 760 px se convierte en un panel lateral con fondo de bloqueo, botones accesibles para abrir/cerrar y cierre automático al navegar.
 
 ## Validación
 

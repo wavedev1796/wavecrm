@@ -1,4 +1,6 @@
-# Infraestructura del proyecto
+# CRM-2 — Infraestructura del proyecto
+
+**Responsable:** Eduardo García · **Estado:** Completo (8/8 criterios)
 
 ## Objetivo
 
@@ -15,7 +17,16 @@ Montar el monorepo y los servicios base para desarrollo local, integración cont
 - [x] CI con lint y build en GitHub Actions.
 - [x] Repositorio y rama de trabajo en Git.
 
-## Estructura
+## Implementación
+
+- Workspaces: `pnpm-workspace.yaml`.
+- Render: `render.yaml`.
+- PostgreSQL local: `docker-compose.yml`.
+- Variables de entorno: `.env.example`.
+- CI: `.github/workflows/ci.yml`.
+- Prisma y migración inicial: ver CRM-3.
+
+### Estructura
 
 ```text
 apps/web          Next.js
@@ -23,7 +34,7 @@ apps/api          NestJS
 packages/database Prisma
 ```
 
-## Desarrollo local
+### Desarrollo local
 
 Desde la raíz del repositorio:
 
@@ -37,11 +48,14 @@ pnpm db:seed
 pnpm dev
 ```
 
-## Producción
+### Producción
 
 `render.yaml` declara `wavecrm-web` y `wavecrm-api`. La API ejecuta `prisma migrate deploy` antes del despliegue. En Render se deben completar `DATABASE_URL`, `DIRECT_URL`, `CORS_ORIGIN` y `NEXT_PUBLIC_API_URL`; las dos URLs de base de datos provienen de Neon.
 
-## Validación pendiente del entorno
+## Decisiones
+
+El ticket no registró decisiones técnicas.
+
+## Validación
 
 Docker Desktop no estaba instalado al crear este ticket. La definición Compose y la migración están listas, pero deben ejecutarse localmente después de instalar Docker.
-

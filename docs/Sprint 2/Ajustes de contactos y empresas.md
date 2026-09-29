@@ -1,6 +1,6 @@
 # Ajustes de contactos y pantalla de Empresas
 
-**Estado:** Completo (6/6 criterios). Toca CRM-11, 12, 13, 14, 15 (parcial) y 16. CRM-13, 14 y 15 son de Eduardo García; el usuario autorizó cambiarlos para este pedido (2026-09-26).
+**Responsable:** Zaith Manangón · **Estado:** Completo (6/6 criterios). Toca CRM-11, 12, 13, 14, 15 (parcial) y 16. CRM-13, 14 y 15 son de Eduardo García; el usuario autorizó cambiarlos para este pedido (2026-09-26).
 
 ## Objetivo
 

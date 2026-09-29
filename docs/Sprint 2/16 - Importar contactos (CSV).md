@@ -1,4 +1,6 @@
-# Importar contactos (CSV)
+# CRM-16 — Importar contactos (CSV)
+
+**Responsable:** Zaith Manangón · **Estado:** Completo (4/4 criterios)
 
 ## Objetivo
 

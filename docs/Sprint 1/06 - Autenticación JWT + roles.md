@@ -1,4 +1,6 @@
-# Autenticación JWT + roles
+# CRM-6 — Autenticación JWT + roles
+
+**Responsable:** Zaith Manangón · **Estado:** Completo (4/4 criterios)
 
 ## Objetivo
 

@@ -1,4 +1,6 @@
-# Esquema de datos base
+# CRM-3 — Esquema de datos base
+
+**Responsable:** Eduardo García · **Estado:** Completo (7/7 criterios)
 
 ## Objetivo
 
@@ -14,14 +16,14 @@ Modelar el núcleo comercial del CRM en PostgreSQL mediante Prisma.
 - [x] Migración SQL inicial.
 - [x] Seed mínimo con usuario, pipeline, etapas, empresa, contacto y negocio.
 
-## Archivos
+## Implementación
 
 - Esquema: `packages/database/prisma/schema.prisma`.
 - Migración: `packages/database/prisma/migrations/20260909000100_initial/migration.sql`.
 - Seed: `packages/database/prisma/seed.mjs`.
 - Configuración CLI: `packages/database/prisma.config.ts`.
 
-## Convenciones
+## Decisiones
 
 - Identificadores CUID para evitar coordinación entre servicios.
 - Montos como `Decimal(14,2)` y moneda predeterminada `USD`.

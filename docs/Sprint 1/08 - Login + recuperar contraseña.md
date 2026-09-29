@@ -1,4 +1,6 @@
-# Login + recuperar contraseña
+# CRM-8 — Login + recuperar contraseña
+
+**Responsable:** Zaith Manangón · **Estado:** Completo (4/4 criterios)
 
 ## Objetivo
 
@@ -80,11 +82,16 @@ Crear las pantallas de acceso al sistema con validación y flujo de recuperació
 
 ## Ajuste visual Wave (2026-09-16)
 
+### Implementación
+
 - El acceso usa una tarjeta editorial centrada: formulario a la izquierda y una ilustración de conexiones comerciales a la derecha, siguiendo la referencia aprobada sin incorporar imágenes ni librerías externas.
 - La ilustración está construida con SVG, iconos del sistema y CSS; conserva Plus Jakarta Sans, la paleta Wave y el logo existente.
 - En móvil el panel visual se convierte en una cabecera compacta y el formulario ocupa el ancho disponible.
 - Se mantiene el toggle de contraseña, alertas, estado de carga y soporte para `prefers-reduced-motion`.
-- Validación: `/login` respondió HTTP 200; lint, pruebas y build de producción finalizaron sin errores.
+
+### Validación
+
+- `/login` respondió HTTP 200; lint, pruebas y build de producción finalizaron sin errores.
 
 ## Calidad y validaciones (2026-09-19)
 
@@ -148,6 +155,7 @@ Crear las pantallas de acceso al sistema con validación y flujo de recuperació
 - **Una cuenta pendiente o desactivada no recibe enlace.** La primera se resuelve con su invitación; la segunda no debe poder volver a entrar por esta puerta.
 - **El límite del endpoint de restablecer cuenta por enlace, no por IP.** Es el mismo hallazgo H3 del login: todas las peticiones llegan desde el servidor web con la misma IP, así que 5 intentos habrían bloqueado a toda la empresa.
 - **`MailerService` en su propio módulo (SRP y DIP).** El servicio solo sabe entregar correo; quién lo pide y por qué vive en cada módulo. Auth y Users dependen del mismo `MailerModule` y no entre sí, así que un correo nuevo no toca el transporte ni la plantilla.
+- **Coordinación con CRM-7.** El correo es infraestructura compartida. `InvitationMailerService` se renombró a `MailerService` y se movió a `modules/mailer/`; `invitation-token.ts` se movió a `common/tokens.ts`. Cambian los `import` de `users.service.ts` y sus pruebas; el comportamiento de la invitación no cambia.
 
 ### Validación
 
@@ -159,5 +167,3 @@ Crear las pantallas de acceso al sistema con validación y flujo de recuperació
 - `pnpm sonar:scan`: Quality Gate **PASSED** (2026-09-23).
 - Colección de Postman: carpetas `06 - Pedir recuperación de contraseña` y `07 - Restablecer contraseña (requiere resetToken)`.
 - Las dos migraciones están aplicadas en la rama `pruebas` de Neon. **Pendientes de aplicar en `development` y en producción** (`pnpm db:migrate:deploy`).
-
-**Coordinación con CRM-7:** el correo es infraestructura compartida. `InvitationMailerService` se renombró a `MailerService` y se movió a `modules/mailer/`; `invitation-token.ts` se movió a `common/tokens.ts`. Cambian los `import` de `users.service.ts` y sus pruebas; el comportamiento de la invitación no cambia.
