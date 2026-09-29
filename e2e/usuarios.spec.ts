@@ -21,6 +21,27 @@ test.afterAll(async () => {
   await cleanup();
 });
 
+test('la pagina de usuarios se adapta a una pantalla movil', async () => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.goto('/usuarios');
+
+  const table = page.locator('table.users-table');
+  await expect(table).toBeVisible();
+  const firstUser = table.locator('tbody tr').first();
+  await expect(firstUser.locator('td[data-label="Rol"]')).toBeVisible();
+  await expect(firstUser.locator('td[data-label="Acciones"]')).toBeVisible();
+
+  await firstUser.getByRole('button', { name: /Editar/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'Editar usuario' });
+  const box = await dialog.boundingBox();
+  expect(box?.width).toBeLessThanOrEqual(375);
+  await expect(dialog.getByRole('button', { name: 'Cancelar' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Aplicar cambios' })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+});
+
 test('CRM-9: invitar valida los campos y conserva lo escrito', async () => {
   await page.goto('/usuarios');
   await page.getByText('Invitar usuario').click();

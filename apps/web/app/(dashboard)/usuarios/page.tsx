@@ -123,8 +123,8 @@ export default async function UsersPage({ searchParams }: PageProps) {
           </p>
         </details>
 
-        <Card className="data-card">
-          <form className="table-toolbar" method="get">
+        <Card className="data-card users-data-card">
+          <form className="table-toolbar users-toolbar" method="get">
             <label className="table-search">
               <Search />
               <span className="sr-only">Buscar usuario</span>
@@ -151,7 +151,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
               </Button>
             </div>
           </form>
-          <Table>
+          <Table className="users-table">
             <thead>
               <tr>
                 <th>Usuario</th>
@@ -164,7 +164,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td>
+                  <td data-label="Usuario">
                     <div className="contact-cell">
                       <span className="avatar">{initials(user.name)}</span>
                       <span>
@@ -173,18 +173,18 @@ export default async function UsersPage({ searchParams }: PageProps) {
                       </span>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Rol">
                     {user.role === "ADMIN" ? "Administrador" : "Vendedor"}
                   </td>
-                  <td>
+                  <td data-label="Estado">
                     <StatusBadge status={user.status} />
                   </td>
-                  <td>
+                  <td data-label="Invitación">
                     {user.invitationSentAt
                       ? formatDate(user.invitationSentAt)
                       : "—"}
                   </td>
-                  <td>
+                  <td data-label="Acciones">
                     <div className="row-actions">
                       <EditUserDialog user={user} />
                       {user.status === "pending" && (

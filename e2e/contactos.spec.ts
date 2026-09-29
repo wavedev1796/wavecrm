@@ -80,3 +80,25 @@ test('Ajustes: crea un contacto con pasaporte y teléfono de Colombia', async ({
   await expect(page.getByText(`Pasaporte ${passport}`)).toBeVisible();
   await expect(page.getByText('+57 601 2345678')).toBeVisible();
 });
+
+test('el formulario movil muestra cantones y mantiene las acciones visibles', async ({ page }) => {
+  const seller = await createUser({ name: 'Vendedora Movil' });
+  await page.setViewportSize({ width: 375, height: 667 });
+  await login(page, seller.email);
+  await expect(page).toHaveURL(/\/pipeline$/);
+
+  await page.goto('/contactos');
+  await page.getByRole('button', { name: 'Nuevo contacto' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Crear nuevo contacto' });
+  await expect(dialog).toBeVisible();
+
+  const box = await dialog.boundingBox();
+  expect(box?.width).toBeLessThanOrEqual(375);
+  const province = dialog.locator('select[name="province"]');
+  const canton = dialog.locator('select[name="city"]');
+  await province.selectOption('Pichincha');
+  await canton.selectOption('Quito');
+  await expect(canton).toHaveValue('Quito');
+  await expect(dialog.getByRole('button', { name: 'Cancelar' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Crear contacto' })).toBeVisible();
+});

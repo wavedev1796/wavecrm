@@ -4,13 +4,14 @@ import { Check, IdCard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { Field } from "@/components/form-field";
+import { LocationFields } from "@/components/location-fields";
 import { PhoneField } from "@/components/phone-field";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { useFieldErrors } from "@/components/use-field-errors";
-import { DOCUMENT_TYPES, PROVINCES } from "@/lib/ecuador";
+import { DOCUMENT_TYPES } from "@/lib/ecuador";
 import { saveContact } from "./actions";
 import { CompanyField } from "./company-field";
 import {
@@ -146,26 +147,13 @@ export function ContactForm({
           number={state.values.phone}
           error={error("phone")}
         />
-        <Field {...field("province", "Provincia")}>
-          <select
-            name="province"
-            defaultValue={state.values.province}
-            {...input("province")}
-          >
-            <option value="">Sin provincia</option>
-            {PROVINCES.map((province) => (
-              <option key={province}>{province}</option>
-            ))}
-          </select>
-        </Field>
-        <Field {...field("city", "Ciudad")}>
-          <Input
-            name="city"
-            maxLength={60}
-            defaultValue={state.values.city}
-            {...input("city")}
-          />
-        </Field>
+        <LocationFields
+          idPrefix="contact"
+          initialProvince={state.values.province}
+          initialCanton={state.values.city}
+          provinceError={error("province")}
+          cantonError={error("city")}
+        />
         <Field {...field("position", "Cargo")}>
           <Input
             name="position"

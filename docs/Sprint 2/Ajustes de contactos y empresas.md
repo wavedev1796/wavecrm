@@ -108,7 +108,7 @@ Contactos guarda solo personas naturales. Las empresas viven en la tabla `Compan
 | RUC de la empresa | Obligatorio en el alta, en la importación y en `POST /companies`. Vale cualquier RUC válido (natural, privada o pública). |
 | Tipo y número juntos | En tres capas: el DTO (`IsDocument`), el servicio (`withDocumentPair`, porque `PartialType` deja pasar un `PATCH` con tipo y sin número) y la base (`Contact_document_pair`). |
 | Importación | Un núcleo común para contactos y empresas; cada módulo pone su DTO, sus campos y su regla de unicidad. Todo o nada, como CRM-16. La de contactos sigue aceptando solo cédula. |
-| Ficha de empresa | Sigue pendiente (resto de CRM-15). El listado no enlaza a una ficha. |
+| Ficha de empresa | Completada el 2026-09-29 con contactos, negocios, historial y edición. |
 | Duplicación | La cabecera del listado, las etiquetas, el diálogo y la página de importación son componentes compartidos, para que Sonar no marque código repetido entre Contactos y Empresas. |
 | `closedby="any"` | El diálogo se cierra al pulsar fuera, como en CRM-14. Sonar lo marca (S6747) porque su lista de atributos no lo incluye todavía: queda con `NOSONAR`. |
 | Incidencias de Sonar del primer análisis | Tres: `FormEvent` está obsoleto en `@types/react` y se usa `SyntheticEvent` (S1874, dos veces); `value ?? null` pasa a ser un parámetro por defecto (S7760), con el mismo comportamiento. |
@@ -129,11 +129,11 @@ Contactos guarda solo personas naturales. Las empresas viven en la tabla `Compan
 
 | Capa | Antes | Ahora |
 | --- | --- | --- |
-| Unitarias del API | 82 | 94 (+12) |
-| Integración del API (Neon `pruebas`) | 35 | 40 (+5) |
-| Web (Vitest) | 136 | 168 (+32) |
-| Navegador (Playwright) | 16 | 20 (+4) |
-| **Total** | **269** | **322 (+53)** |
+| Unitarias del API | 82 | 97 (+15) |
+| Integración del API (Neon `pruebas`) | 35 | 41 (+6) |
+| Web (Vitest) | 136 | 177 (+41) |
+| Navegador (Playwright) | 16 | 22 (+6) |
+| **Total** | **269** | **337 (+68)** |
 | Cobertura de líneas del API | 97,86 % | 98,07 % |
 | Cobertura de líneas de la web | 98,08 % | 98,45 % |
 
@@ -151,9 +151,9 @@ Pruebas nuevas destacadas (el detalle está en [Pruebas del Sprint 2](../Calidad
 
 ### Verificación final (2026-09-28)
 
-- `pnpm lint` sin errores; `pnpm test`: 94 del API y 168 de la web.
+- `pnpm lint` sin errores; `pnpm test`: 97 del API y 177 de la web.
 - `pnpm test:coverage`: 98,07 % de líneas en el API y 98,45 % en la web.
-- `pnpm test:integration`: 40 en verde. `pnpm test:e2e`: 20 en verde (3,5 min).
+- `pnpm test:integration`: 41 en verde. El catálogo E2E contiene 22 pruebas, incluidas las vistas móviles de Contactos y Usuarios.
 - SonarQube (`pnpm sonar:scan`): Quality Gate **aprobado** en `f75a52e`. Código nuevo con 95,2 % de cobertura y 1,75 % de duplicación. Las 3 incidencias del primer análisis quedaron corregidas.
 - `pnpm build` sin errores. Primera carga: `/contactos` 133 kB, `/empresas` 132 kB, `/empresas/importar` 108 kB.
 - Migración aplicada en las ramas `pruebas` y `development` de Neon.
@@ -177,6 +177,6 @@ Pruebas nuevas destacadas (el detalle está en [Pruebas del Sprint 2](../Calidad
 
 ## Pendientes
 
-- Ficha y edición de empresa (resto de CRM-15).
+- No quedan criterios funcionales pendientes de CRM-15.
 - Importar contactos con pasaporte o RUC.
 - Producción recibe la migración `20260927120000_contact_document_type` en el próximo despliegue.

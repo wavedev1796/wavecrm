@@ -3,13 +3,13 @@
 import { Building2, Check } from "lucide-react";
 import { useActionState, useEffect } from "react";
 import { Field } from "@/components/form-field";
+import { LocationFields } from "@/components/location-fields";
 import { PhoneField } from "@/components/phone-field";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { useFieldErrors } from "@/components/use-field-errors";
-import { PROVINCES } from "@/lib/ecuador";
 import { saveCompany } from "./actions";
 import {
   emptyCompanyValues,
@@ -23,10 +23,25 @@ const initial: CompanyFormState = {
   values: emptyCompanyValues,
 };
 
-type Props = Readonly<{ onSaved?: () => void; onCancel?: () => void }>;
+type Props = Readonly<{
+  id?: string;
+  initialValues?: CompanyFormValues;
+  embedded?: boolean;
+  onSaved?: () => void;
+  onCancel?: () => void;
+}>;
 
-export function CompanyForm({ onSaved, onCancel }: Props) {
-  const [state, action, pending] = useActionState(saveCompany, initial);
+export function CompanyForm({
+  id,
+  initialValues = emptyCompanyValues,
+  embedded = true,
+  onSaved,
+  onCancel,
+}: Props) {
+  const [state, action, pending] = useActionState(saveCompany, {
+    ...initial,
+    values: initialValues,
+  });
   const { formRef, error, onChange } = useFieldErrors(state.fieldErrors, {
     phoneCountry: "phone",
   });
@@ -56,26 +71,34 @@ export function CompanyForm({ onSaved, onCancel }: Props) {
       ref={formRef}
       action={action}
       onChange={onChange}
-      className="contact-form contact-form--modal"
+      className={`contact-form ${embedded ? "contact-form--modal" : "card"}`}
       noValidate
       aria-busy={pending || undefined}
     >
+      {id && <input type="hidden" name="id" value={id} />}
       <header>
         <span className="contact-form-icon">
           <Building2 aria-hidden />
         </span>
         <div>
-          <h2>Añadir empresa</h2>
+          <h2>{id ? "Editar empresa" : "Añadir empresa"}</h2>
           <p>Los datos se validan al guardar.</p>
         </div>
       </header>
-      {state.feedback && <Alert tone="error">{state.feedback.message}</Alert>}
+      {state.feedback && (
+        <Alert tone={state.feedback.tone}>{state.feedback.message}</Alert>
+      )}
       <div className="contact-form-grid">
         {text("name", "Nombre comercial", { maxLength: 120 })}
         {text("legalName", "Razón social", { maxLength: 160 })}
         {text("taxId", "RUC", {
           inputMode: "numeric",
           placeholder: "1791234561001",
+        })}
+        {text("website", "Sitio web", {
+          type: "url",
+          maxLength: 200,
+          placeholder: "https://empresa.ec",
         })}
         {text("email", "Correo", {
           type: "email",
@@ -88,23 +111,14 @@ export function CompanyForm({ onSaved, onCancel }: Props) {
           number={state.values.phone}
           error={error("phone")}
         />
-        <Field
-          id="company-province"
-          label="Provincia"
-          error={error("province")}
-        >
-          <select
-            name="province"
-            defaultValue={state.values.province}
-            {...input("province")}
-          >
-            <option value="">Sin provincia</option>
-            {PROVINCES.map((province) => (
-              <option key={province}>{province}</option>
-            ))}
-          </select>
-        </Field>
-        {text("city", "Ciudad", { maxLength: 60 })}
+        <LocationFields
+          idPrefix="company"
+          initialProvince={state.values.province}
+          initialCanton={state.values.city}
+          provinceError={error("province")}
+          cantonError={error("city")}
+        />
+        {text("address", "Dirección", { maxLength: 200 })}
         {text("tags", "Etiquetas", { placeholder: "cliente, distribuidor" })}
       </div>
       <footer>
@@ -115,7 +129,7 @@ export function CompanyForm({ onSaved, onCancel }: Props) {
         )}
         <Button type="submit" loading={pending}>
           <Check aria-hidden />
-          Crear empresa
+          {id ? "Guardar cambios" : "Crear empresa"}
         </Button>
       </footer>
     </form>

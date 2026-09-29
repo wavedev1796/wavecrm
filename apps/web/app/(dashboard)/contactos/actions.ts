@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
+import { cantonError } from "@/lib/cantons";
 import { documentError, normalizeDocument, provinceError } from "@/lib/ecuador";
 import { countryOrEcuador, normalizePhone, phoneError } from "@/lib/phone";
 import {
@@ -12,7 +13,6 @@ import {
   normalizeEmail,
   normalizeName,
   optionalEmailError,
-  optionalLengthError,
   parseTags,
   tagsError,
 } from "@/lib/validation";
@@ -41,7 +41,7 @@ export async function saveContact(
     email: optionalEmailError(values.email),
     phone: phoneError(values.phone, country),
     province: provinceError(values.province),
-    city: optionalLengthError(values.city, "La ciudad", 2, 60),
+    city: cantonError(values.province, values.city),
     position:
       values.position.length > 100
         ? "El cargo no puede superar 100 caracteres."

@@ -11,6 +11,14 @@
 
 La edición se presenta en un modal nativo `<dialog>`, centrado y responsive. Puede cerrarse con el botón, con `Escape` o pulsando el fondo, y mantiene la actualización mediante la Server Action existente.
 
+## Ajuste responsive del 2026-09-28
+
+- En pantallas de hasta 760 px, la tabla deja de depender del desplazamiento horizontal: cada usuario se presenta como una tarjeta con las etiquetas **Rol**, **Estado**, **Invitación** y **Acciones**.
+- El buscador, el filtro de estado, la invitación y la paginación se reorganizan en una o dos columnas según el ancho disponible.
+- Los correos largos pueden partirse sin ensanchar la página y las acciones se acomodan en varias líneas.
+- En teléfonos de hasta 560 px, el diálogo de edición ocupa la pantalla completa y mantiene visibles sus acciones. Por debajo de 390 px, los botones se apilan.
+- Se añadieron atributos `data-label` a las celdas para conservar el contexto al transformar la tabla en tarjetas.
+
 ## Acceso y reglas
 
 - Solo un usuario con rol `ADMIN` puede abrir `/usuarios` o consumir el CRUD.
@@ -58,7 +66,9 @@ Añadidas el 2026-09-19 por Zaith Manangón como parte de la calidad del Sprint 
 | Diálogo de editar: datos actuales, error que no lo cierra y éxito que sí | Web | `apps/web/app/(dashboard)/usuarios/edit-user-dialog.test.tsx` |
 | Acción de fila: envía el id y anuncia el resultado | Web | `apps/web/app/(dashboard)/usuarios/row-action.test.tsx` |
 | Página: acceso solo de administrador, acciones por estado, filtros, error de carga y mensajes de la URL ignorados | Web | `apps/web/app/(dashboard)/usuarios/page.test.tsx` |
+| Estructura responsive: tabla marcada, tarjeta contenedora y etiquetas móviles de rol y acciones | Web | `apps/web/app/(dashboard)/usuarios/page.test.tsx` |
 | Roles, invitación y duplicados, filtros, edición, desactivar/reactivar, reenviar y eliminar, contra Neon | Integración | `apps/api/test/integracion/users.http.test.cjs` |
 | Invitar, duplicado, cuenta desactivada, reactivar, editar y mensajes falsos por URL | E2E | `e2e/usuarios.spec.ts` |
+| Vista móvil a 375 px: tarjetas visibles y diálogo de edición dentro del viewport | E2E | `e2e/usuarios.spec.ts` |
 
 **Cómo correrlas:** `pnpm test`, `pnpm test:integration` y `pnpm test:e2e`. Paso a paso en [docs/Calidad/Pruebas del Sprint 1.md](../Calidad/Pruebas%20del%20Sprint%201.md).

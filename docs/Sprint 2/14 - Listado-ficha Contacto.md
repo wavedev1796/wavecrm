@@ -21,6 +21,14 @@ A pedido del usuario, Zaith Manangón cambió el formulario y el listado. El det
 - **Errores solo al guardar,** cada uno en su campo y con el foco en el primero. Ya no se valida al salir de cada campo.
 - **Ficha:** el documento con su tipo (`Pasaporte AB123456`) y el teléfono en formato internacional.
 
+## Correcciones del 2026-09-28
+
+- **Provincia y cantón dependientes:** al elegir una provincia se habilita el selector de cantón y se muestran únicamente sus cantones oficiales. Cambiar la provincia limpia el cantón anterior.
+- El campo sigue enviándose como `city` para no romper el API ni la base, pero la interfaz lo presenta como **Cantón**.
+- **Responsive:** cabecera, acciones, filtros y ficha pasan a una columna en tablet; en teléfonos los filtros ocupan todo el ancho y las acciones se apilan cuando es necesario.
+- El diálogo de alta ocupa la pantalla completa por debajo de 560 px, conserva el pie de acciones visible y adapta el selector de teléfono a una columna.
+- Se añadieron pruebas de componente para el selector dependiente, pruebas del catálogo oficial y un flujo Playwright a 375 × 667 px. Los nombres nuevos de prueba no usan tildes ni prefijos de ticket.
+
 ## Validación compartida
 
 El formulario reutiliza las reglas de CRM-12:
@@ -28,6 +36,7 @@ El formulario reutiliza las reglas de CRM-12:
 - `documentError(tipo, valor)` de `apps/web/lib/ecuador.ts` para el documento.
 - `phoneError(valor, país)` de `apps/web/lib/phone.ts` para el teléfono.
 - `provinceError(valor)` y `PROVINCES` para la provincia.
+- `cantonError(provincia, canton)` y `CANTONS_BY_PROVINCE` para comprobar la relación provincia-cantón.
 
 ## Pruebas
 
@@ -39,3 +48,6 @@ El formulario reutiliza las reglas de CRM-12:
 - Navegador (`e2e/contactos.spec.ts`): la tabla se filtra al escribir; contacto con pasaporte y teléfono de Colombia.
 - Ficha con datos, negocios, actividades y formulario de edición.
 - Apertura y cierre accesible del diálogo modal de creación.
+- Selector deshabilitado hasta elegir provincia, opciones correctas y limpieza al cambiarla (`location-fields.test.tsx`).
+- Catálogo de 24 provincias y 222 cantones, incluida Sevilla Don Bosco (`cantons.test.ts`).
+- Vista móvil real, con modal y acciones dentro del viewport (`e2e/contactos.spec.ts`).

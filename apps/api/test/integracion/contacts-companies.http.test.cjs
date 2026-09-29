@@ -147,7 +147,7 @@ test("CRM-13: obtiene y actualiza fichas; vacío borra un campo opcional", async
 
   const updatedContact = await call(`/contacts/${contactId}`, {
     method: "PATCH",
-    body: { email: "", city: "Guayaquil", tags: [] },
+    body: { email: "", province: "Guayas", city: "Guayaquil", tags: [] },
   });
   assert.equal(updatedContact.status, 200);
   assert.equal(updatedContact.body.email, null);
@@ -161,6 +161,30 @@ test("CRM-13: obtiene y actualiza fichas; vacío borra un campo opcional", async
   assert.equal(updatedCompany.status, 200);
   assert.equal(updatedCompany.body.address, "Av. República 123");
   assert.deepEqual(updatedCompany.body.tags, ["prospecto"]);
+
+  const company = await call(`/companies/${companyId}`);
+  assert.equal(company.status, 200);
+  assert.equal(company.body.contacts[0].id, contactId);
+  assert.deepEqual(company.body.deals, []);
+  assert.equal(company.body.history[0].action, "UPDATE");
+  assert.equal(company.body.history[0].user.id, user.id);
+  assert.deepEqual(company.body.history[0].changes.fields, ["address", "tags"]);
+});
+
+test("rechaza un canton que no pertenece a la provincia", async () => {
+  const response = await call("/contacts", {
+    method: "POST",
+    body: {
+      firstName: "Ana",
+      lastName: "Cordero",
+      province: "Pichincha",
+      city: "Cuenca",
+    },
+  });
+  assert.equal(response.status, 400);
+  assert.deepEqual(messageOf(response), [
+    "Elige un cantón de la provincia seleccionada.",
+  ]);
 });
 
 test("CRM-13: valida datos y devuelve 404 para fichas inexistentes", async () => {

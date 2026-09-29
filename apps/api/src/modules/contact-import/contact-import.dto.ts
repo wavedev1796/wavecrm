@@ -1,6 +1,6 @@
 import {
   IsCedula,
-  IsCity,
+  IsCanton,
   IsContactEmail,
   IsPersonName,
   IsPhone,
@@ -46,7 +46,7 @@ export class ContactImportRowDto {
   @IsProvince()
   province?: string | null;
 
-  @IsCity()
+  @IsCanton()
   city?: string | null;
 
   @IsPosition()

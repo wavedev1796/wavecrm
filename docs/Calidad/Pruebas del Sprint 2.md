@@ -1,15 +1,15 @@
 # Pruebas del Sprint 2
 
-Estado al 2026-09-28: **322 pruebas en verde**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md):
+Estado al 2026-09-29: **337 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
 
 | Capa | Pruebas |
 | --- | --- |
-| Unitarias del API | 94 |
-| Integración del API contra Neon | 40 |
-| Web | 168 |
-| Navegador | 20 |
+| Unitarias del API | 97 |
+| Integración del API contra Neon | 41 |
+| Web | 177 |
+| Navegador | 22 |
 
-Cobertura de líneas: **98,07 %** en el API y **98,45 %** en la web (el 2026-09-24 eran 97,86 % y 98,08 %). Quality Gate de SonarQube aprobado: código nuevo con 95,2 % de cobertura, 1,75 % de duplicación y 0 incidencias.
+La última medición del 2026-09-28 dio **98,07 %** de líneas en el API y **98,45 %** en la web. Tras extraer `@wave/shared` y completar la ficha de Empresa hay que volver a ejecutar `pnpm sonar:scan` para registrar la cobertura y duplicación nuevas.
 
 ## Cómo correrlas (paso a paso)
 
@@ -21,9 +21,9 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 
 | Comando | Resultado esperado |
 | --- | --- |
-| `pnpm test` | `# tests 94` en el API y `Tests 168 passed` en la web |
-| `pnpm test:integration` | `# tests 40`, `# fail 0` |
-| `pnpm test:e2e` (con `pnpm dev` apagado) | `20 passed` |
+| `pnpm test` | `# tests 97` en el API y `Tests 177 passed` en la web |
+| `pnpm test:integration` | `# tests 41`, `# fail 0` |
+| `pnpm test:e2e` (con `pnpm dev` apagado) | `22 passed` |
 | `pnpm test:coverage` | `coverage/api/lcov.info` y `coverage/web/lcov.info` |
 
 > Las pruebas de integración y e2e crean contactos y empresas en la rama `pruebas`, siempre con un usuario de prueba como responsable. `cleanup()` los borra al terminar. Las cédulas y los RUC se generan válidos y al azar (`cedulaDePrueba`, `rucDePrueba`), porque las columnas son únicas y la rama es compartida.
@@ -32,9 +32,9 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 
 | Capa | Qué se prueba en este sprint |
 | --- | --- |
-| Unitarias API (`node:test`) | Algoritmos de Ecuador, decoradores y DTO de fila, lector de CSV, servicio de importación (con Prisma simulado) y el `errors` del filtro global |
-| Integración API + Neon | `POST /contacts/import` y `POST /companies/import` por HTTP con multipart real (Windows-1252, unicidad contra la base, todo o nada, 400/401/413); documentos por tipo y la restricción `Contact_document_pair` |
-| Web (Vitest) | Las mismas reglas con los casos compartidos, lectura de cabecera, server actions, formularios con errores al guardar, buscador en vivo, teléfono con país, listado de empresas e importación |
+| Unitarias API (`node:test`) | Algoritmos de Ecuador, decoradores y DTO, lector de CSV, servicios de importación, ficha relacionada de Empresa, auditoría y el `errors` del filtro global |
+| Integración API + Neon | CRUD y fichas de contactos/empresas, historial de Empresa, importación por HTTP con multipart real, documentos por tipo y la restricción `Contact_document_pair` |
+| Web (Vitest) | Reglas compartidas, server actions, formularios, buscador en vivo, ficha y edición de Empresa, importación y vistas responsive |
 | Navegador (Playwright) | Importar contactos y empresas (error y corrección), buscador en vivo, contacto con pasaporte y teléfono extranjero, añadir empresa |
 | Reglas compartidas | `test/casos-de-validacion.json`: 111 casos (60 del sprint: cédula, RUC, teléfono de cualquier país, documento por tipo y provincia) |
 
@@ -95,6 +95,10 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | `apps/web/app/(dashboard)/empresas/*.test.ts(x)` | Web | 10 | Listado, vacío y error; Añadir empresa (errores al guardar, `409` al RUC, cierre y aviso); importación |
 | `e2e/contactos.spec.ts` | Navegador | +2 | La tabla se filtra al escribir; contacto con pasaporte y teléfono de Colombia |
 | `e2e/empresas.spec.ts` | Navegador | 2 | Añadir empresa y encontrarla con el buscador; importar con errores y luego corregido |
+| `apps/web/components/location-fields.test.tsx`, `apps/web/lib/cantons.test.ts` | Web | 5 | Selector provincia-cantón, limpieza al cambiar provincia y catálogo oficial vigente |
+| `e2e/contactos.spec.ts` | Navegador | +1 | Modal de contacto y acciones visibles a 375 × 667 px; selector dependiente operativo |
+| `apps/web/app/(dashboard)/usuarios/page.test.tsx` | Web | +1 | Estructura de tabla adaptable y etiquetas de las tarjetas móviles |
+| `e2e/usuarios.spec.ts` | Navegador | +1 | Tarjetas de usuarios y diálogo de edición dentro del viewport móvil |
 | Revisión visual (navegador, rama `development`) | Manual | — | Unos 500 y 1280 px: errores al guardar, empresa sugerida, buscador en vivo, RUC repetido, importación con error, consola limpia |
 
 **Archivos CSV para probar a mano:**

@@ -99,3 +99,48 @@ test("CRM-15: otros fallos del API o de conexión van a la alerta general", asyn
     "No pudimos conectar con el servidor. Inténtalo de nuevo.",
   );
 });
+
+test("la edicion valida sitio y direccion antes de llamar al API", async () => {
+  const result = await saveCompany(
+    empty,
+    form({
+      id: "e1",
+      name: "Wave",
+      taxId: "1791234561001",
+      website: "wave.ec",
+      address: "x".repeat(201),
+    }),
+  );
+
+  expect(result.fieldErrors).toEqual({
+    website: "Escribe un sitio web válido con http:// o https://.",
+    address: "La dirección debe tener entre 1 y 200 caracteres.",
+  });
+  expect(api).not.toHaveBeenCalled();
+});
+
+test("la edicion usa PATCH y revalida listado y ficha", async () => {
+  api.mockResolvedValueOnce(Response.json({ id: "e1" }));
+
+  const result = await saveCompany(
+    empty,
+    form({
+      id: "e1",
+      name: "Wave Ecuador",
+      taxId: "1791234561001",
+      website: "https://wave.ec",
+      address: "Av. Republica 123",
+    }),
+  );
+
+  expect(api).toHaveBeenCalledWith(
+    "/companies/e1",
+    expect.objectContaining({ method: "PATCH" }),
+  );
+  expect(result.feedback).toEqual({
+    tone: "success",
+    message: "Empresa actualizada.",
+  });
+  expect(revalidatePath).toHaveBeenCalledWith("/empresas");
+  expect(revalidatePath).toHaveBeenCalledWith("/empresas/e1");
+});

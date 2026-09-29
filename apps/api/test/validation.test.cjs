@@ -91,7 +91,7 @@ test("la activación exige aceptar los términos", async () => {
   );
 });
 
-test("una fila de contacto normaliza identificación, teléfono, provincia, ciudad y etiquetas", () => {
+test("una fila de contacto normaliza identificacion telefono provincia canton y etiquetas", () => {
   const row = plainToInstance(ContactImportRowDto, {
     firstName: "  María   José ",
     lastName: "Cordero",
@@ -99,7 +99,7 @@ test("una fila de contacto normaliza identificación, teléfono, provincia, ciud
     email: " Maria@Andina.EC ",
     phone: "099 123 4567",
     province: "pichincha",
-    city: "  San   Rafael ",
+    city: "  quito ",
     position: "",
     tags: "Cliente; mayorista, CLIENTE",
     companyTaxId: "   ",
@@ -113,7 +113,7 @@ test("una fila de contacto normaliza identificación, teléfono, provincia, ciud
       email: "maria@andina.ec",
       phone: "+593991234567",
       province: "Pichincha",
-      city: "San Rafael",
+      city: "Quito",
       position: null,
       tags: ["cliente", "mayorista"],
       companyTaxId: null,
@@ -121,7 +121,7 @@ test("una fila de contacto normaliza identificación, teléfono, provincia, ciud
   );
 });
 
-test("apellido, correo, ciudad y cargo de un contacto explican su error", async () => {
+test("apellido correo canton y cargo de un contacto explican su error", async () => {
   for (const [property, value, message] of [
     ["lastName", "", "Ingresa el apellido."],
     ["lastName", "L", "El apellido debe tener entre 2 y 100 caracteres."],
@@ -129,8 +129,8 @@ test("apellido, correo, ciudad y cargo de un contacto explican su error", async 
     ["email", "", null],
     ["email", "ana@empresa", "Escribe un correo válido, por ejemplo nombre@empresa.ec."],
     ["email", `${"a".repeat(55)}@empresa.ec`, "El correo no puede superar 64 caracteres."],
-    ["city", "Q", "La ciudad debe tener entre 2 y 60 caracteres."],
-    ["city", "Quito 2", "La ciudad solo puede tener letras, espacios, apóstrofos, guiones y puntos."],
+    ["city", "Q", "Elige un cantón de la provincia seleccionada."],
+    ["city", "Quito 2", "Elige un cantón de la provincia seleccionada."],
     ["position", "x".repeat(101), "El cargo no puede superar 100 caracteres."],
     ["position", "Gerente de TI", null],
   ]) {
@@ -140,6 +140,20 @@ test("apellido, correo, ciudad y cargo de un contacto explican su error", async 
       `${property}=${value}`,
     );
   }
+});
+
+test("el canton debe pertenecer a la provincia seleccionada", async () => {
+  const valid = { ...validRow, province: "pichincha", city: " quito " };
+  assert.equal(await firstError(CreateContactDto, valid, "city"), null);
+  assert.equal(plainToInstance(CreateContactDto, valid).city, "Quito");
+  assert.equal(
+    await firstError(CreateContactDto, { ...valid, city: "Cuenca" }, "city"),
+    "Elige un cantón de la provincia seleccionada.",
+  );
+  assert.equal(
+    await firstError(CreateContactDto, { ...validRow, city: "Quito" }, "city"),
+    "Elige un cantón de la provincia seleccionada.",
+  );
 });
 
 test("etiquetas: hasta 10, de 2 a 30 caracteres, con letras, números, espacios y guiones", async () => {
