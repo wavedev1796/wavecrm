@@ -14,7 +14,7 @@ Registrar contactos y empresas de Ecuador con su identificación validada, consu
 | CRM-12 | [Validación RUC/Cédula Ecuador](12%20-%20Validaci%C3%B3n%20RUC-C%C3%A9dula%20Ecuador.md) | Zaith Manangón | Completo (4/4 criterios) |
 | CRM-13 | [API Contactos/Empresas](13%20-%20API%20Contactos-Empresas.md) | Eduardo García | Completo (4/4 criterios) |
 | CRM-14 | [Listado + ficha de Contacto](14%20-%20Listado-ficha%20Contacto.md) | Eduardo García | Completo (4/4 criterios) |
-| CRM-15 | [Listado + ficha de Empresa](15%20-%20Listado-ficha%20Empresa.md) | Eduardo García | Parcial (3/5 criterios: listado, alta e importación; falta la ficha y la edición) |
+| CRM-15 | [Listado + ficha de Empresa](15%20-%20Listado-ficha%20Empresa.md) | Eduardo García | Completo (3/3 criterios; ficha, edición e historial el 2026-09-29) |
 | CRM-16 | [Importar contactos (CSV)](16%20-%20Importar%20contactos%20(CSV).md) | Zaith Manangón | Completo (4/4 criterios) |
 
 Tras probar CRM-14, el usuario pidió cambios en Contactos y la pantalla Empresas (2026-09-26). Los hizo Zaith Manangón, también en los tickets de Eduardo, con autorización del usuario: [Ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md).
@@ -41,11 +41,11 @@ Tras probar CRM-14, el usuario pidió cambios en Contactos y la pantalla Empresa
 
 | Métrica | Valor |
 | --- | --- |
-| Pruebas unitarias del API | 94 (+41) |
-| Pruebas de integración del API (Neon) | 40 (+16) |
-| Pruebas de la web (Vitest) | 168 (+58) |
-| Pruebas de navegador (Playwright) | 20 (+5) |
-| **Total** | **322** |
+| Pruebas unitarias del API | 97 (+44) |
+| Pruebas de integración del API (Neon) | 41 (+17) |
+| Pruebas de la web (Vitest) | 177 (+67) |
+| Pruebas de navegador (Playwright) | 22 (+7) |
+| **Total** | **337** |
 | Cobertura de líneas del API | 98,07 % |
 | Cobertura de líneas de la web | 98,45 % |
 
@@ -54,6 +54,6 @@ Detalle por ticket y paso a paso: [docs/Calidad/Pruebas del Sprint 2.md](../Cali
 ## Pendientes
 
 - Producción recibe las migraciones `20260924120000_contact_company_ec` y `20260927120000_contact_document_type` en el próximo despliegue de Render. `development` y `pruebas` ya tienen las dos.
-- Ficha y edición de empresa (resto de CRM-15).
+- Volver a ejecutar SonarQube para registrar las métricas posteriores a la extracción de `@wave/shared`.
 - `User.previousPasswordHashes` tiene `DEFAULT` en la base y no en el schema (migración de CRM-8). Se detectó al verificar la migración de este sprint.
 - Confirmar con un RUC real de sociedad reciente que el módulo 11 no rechaza empresas válidas.

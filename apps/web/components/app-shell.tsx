@@ -59,6 +59,27 @@ type ShellUser = {
   role: "ADMIN" | "VENDEDOR";
 } | null;
 
+function headerForPath(pathname: string) {
+  const exact = titleByPath[pathname];
+  if (exact) return exact;
+  if (pathname.startsWith("/contactos/")) {
+    return {
+      title: "Ficha de contacto",
+      subtitle: "Datos, negocios y actividades",
+    };
+  }
+  if (pathname.startsWith("/empresas/")) {
+    return {
+      title: "Ficha de empresa",
+      subtitle: "Contactos, negocios e historial",
+    };
+  }
+  return {
+    title: "Pipeline de ventas",
+    subtitle: "Quito, Ecuador · Septiembre 2026",
+  };
+}
+
 export function AppShell({
   children,
   user,
@@ -68,17 +89,7 @@ export function AppShell({
 }>) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const header =
-    titleByPath[pathname] ??
-    (pathname.startsWith("/contactos/")
-      ? {
-          title: "Ficha de contacto",
-          subtitle: "Datos, negocios y actividades",
-        }
-      : {
-          title: "Pipeline de ventas",
-          subtitle: "Quito, Ecuador · Septiembre 2026",
-        });
+  const header = headerForPath(pathname);
 
   return (
     <div className="app-shell">
@@ -87,7 +98,8 @@ export function AppShell({
         aria-label="Navegación principal"
       >
         <div className="brand-row">
-          <span className="brand-logo" role="img" aria-label="Wave" />
+          <span className="brand-logo" aria-hidden="true" />
+          <span className="sr-only">Wave</span>
           <span className="brand-tag">CRM</span>
           <button
             className="icon-button sidebar-close"

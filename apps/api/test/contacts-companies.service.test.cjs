@@ -22,7 +22,7 @@ const contact = {
 const company = { id: "company-1", name: "Wave Comercial", tags: ["cliente"] };
 
 function prismaFor(model, row) {
-  return {
+  const prisma = {
     [model]: {
       findMany: async () => [row],
       count: async () => 1,
@@ -31,8 +31,16 @@ function prismaFor(model, row) {
       update: async ({ data }) => ({ ...row, ...data }),
       delete: async () => row,
     },
-    $transaction: async (operations) => Promise.all(operations),
+    auditLog: {
+      findMany: async () => [],
+      create: async ({ data }) => data,
+    },
   };
+  prisma.$transaction = async (operation) =>
+    typeof operation === "function"
+      ? operation(prisma)
+      : Promise.all(operation);
+  return prisma;
 }
 
 test("CRM-13: contactos aplica búsqueda, filtros y paginación", async () => {
@@ -181,4 +189,42 @@ test("la búsqueda por documento ignora mayúsculas (pasaportes)", async () => {
     contains: "ab123",
     mode: "insensitive",
   });
+});
+
+test("la ficha de empresa incluye contactos negocios e historial", async () => {
+  const prisma = prismaFor("company", company);
+  prisma.auditLog.findMany = async () => [
+    { id: "log-1", action: "CREATE", user: { id: "user-1", name: "Ana" } },
+  ];
+  let companyQuery;
+  prisma.company.findUnique = async (args) => {
+    companyQuery = args;
+    return { ...company, contacts: [], deals: [] };
+  };
+
+  const result = await new CompaniesService(prisma).findOne("company-1");
+
+  assert.ok(companyQuery.include.contacts);
+  assert.ok(companyQuery.include.deals);
+  assert.equal(result.history[0].action, "CREATE");
+});
+
+test("editar una empresa registra los campos cambiados", async () => {
+  const prisma = prismaFor("company", company);
+  let audit;
+  prisma.auditLog.create = async ({ data }) => {
+    audit = data;
+    return data;
+  };
+
+  await new CompaniesService(prisma).update(
+    "company-1",
+    { name: "Wave Ecuador", city: "Quito" },
+    "user-1",
+  );
+
+  assert.equal(audit.action, "UPDATE");
+  assert.equal(audit.entityId, "company-1");
+  assert.equal(audit.userId, "user-1");
+  assert.deepEqual(audit.changes.fields, ["name", "city"]);
 });

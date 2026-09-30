@@ -81,3 +81,20 @@ Añadido por Zaith Manangón como parte de la calidad del Sprint 1. Solo se aña
 | Invitar, duplicado, cuenta desactivada, reactivar, editar y mensajes falsos por URL | E2E | `e2e/usuarios.spec.ts` |
 
 **Cómo correrlas:** `pnpm test`, `pnpm test:integration` y `pnpm test:e2e`. Paso a paso en [docs/Calidad/Pruebas del Sprint 1.md](../Calidad/Pruebas%20del%20Sprint%201.md).
+
+## Ajuste responsive (2026-09-28)
+
+### Implementación
+
+- En pantallas de hasta 760 px, la tabla deja de depender del desplazamiento horizontal: cada usuario se presenta como una tarjeta con las etiquetas **Rol**, **Estado**, **Invitación** y **Acciones**.
+- El buscador, el filtro de estado, la invitación y la paginación se reorganizan en una o dos columnas según el ancho disponible.
+- Los correos largos pueden partirse sin ensanchar la página y las acciones se acomodan en varias líneas.
+- En teléfonos de hasta 560 px, el diálogo de edición ocupa la pantalla completa y mantiene visibles sus acciones. Por debajo de 390 px, los botones se apilan.
+- Se añadieron atributos `data-label` a las celdas para conservar el contexto al transformar la tabla en tarjetas.
+
+### Validación
+
+| Prueba | Tipo | Archivo |
+| --- | --- | --- |
+| Estructura responsive: tabla marcada, tarjeta contenedora y etiquetas móviles de rol y acciones | Web | `apps/web/app/(dashboard)/usuarios/page.test.tsx` |
+| Vista móvil a 375 px: tarjetas visibles y diálogo de edición dentro del viewport | E2E | `e2e/usuarios.spec.ts` |

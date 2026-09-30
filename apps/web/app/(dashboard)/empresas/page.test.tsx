@@ -41,6 +41,10 @@ test("CRM-15: lista empresas con sus filtros, contactos y acciones", async () =>
   expect(row).toHaveTextContent("Comercial Andina S.A.");
   expect(row).toHaveTextContent("mayorista");
   expect(row).toHaveTextContent("Vendedor Demo");
+  expect(screen.getByRole("link", { name: /Comercial Andina/ })).toHaveAttribute(
+    "href",
+    "/empresas/e1",
+  );
   expect(screen.getByRole("link", { name: "Importar CSV" })).toHaveAttribute(
     "href",
     "/empresas/importar",

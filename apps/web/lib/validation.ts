@@ -95,3 +95,16 @@ export function companyNameError(value: string, { required }: { required: boolea
   if (!required && value.length > 160) return 'La razón social no puede superar 160 caracteres.';
   return COMPANY_NAME_PATTERN.test(value) ? null : 'El nombre solo puede tener letras, números y signos comerciales comunes.';
 }
+
+export function websiteError(value: string): string | null {
+  if (!value) return null;
+  if (value.length > 200) return 'El sitio web no puede superar 200 caracteres.';
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:'
+      ? null
+      : 'Escribe un sitio web válido con http:// o https://.';
+  } catch {
+    return 'Escribe un sitio web válido con http:// o https://.';
+  }
+}

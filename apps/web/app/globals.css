@@ -1018,7 +1018,9 @@ select {
   border: 1px solid var(--wave-line);
   border-radius: 12px;
   background: #f8faf9;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 .terms-consent.is-accepted {
   border-color: rgb(40 139 91 / 35%);
@@ -1331,6 +1333,13 @@ select {
 .row-actions .icon-button svg {
   width: 16px;
 }
+.users-table .contact-cell > span:last-child {
+  min-width: 0;
+}
+.users-table .contact-cell small {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
 .edit-form {
   width: min(380px, calc(100vw - 32px));
   padding: 20px;
@@ -1616,6 +1625,9 @@ select {
   grid-template-columns: 1fr 1fr;
   gap: 13px;
 }
+.contact-form-grid > * {
+  min-width: 0;
+}
 .contact-form label {
   display: flex;
   flex-direction: column;
@@ -1889,6 +1901,94 @@ select {
   .user-form {
     grid-template-columns: 1fr;
   }
+  .user-form .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .users-toolbar > div {
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .users-toolbar select {
+    width: 100%;
+  }
+  .users-data-card {
+    overflow: visible;
+    background: transparent;
+    box-shadow: none;
+  }
+  .users-data-card .table-scroll {
+    overflow: visible;
+  }
+  .users-table,
+  .users-table tbody,
+  .users-table tr,
+  .users-table td {
+    display: block;
+    width: 100%;
+  }
+  .users-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    border: 0;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .users-table tbody {
+    display: grid;
+    gap: 12px;
+    padding-block: 12px;
+  }
+  .users-table tbody tr {
+    overflow: hidden;
+    border: 1px solid var(--wave-line);
+    border-radius: 14px;
+    background: white;
+    box-shadow: var(--shadow-sm);
+  }
+  .users-table td {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--wave-line);
+    white-space: normal;
+  }
+  .users-table td::before {
+    content: attr(data-label);
+    color: var(--wave-faint);
+    font-size: 0.65rem;
+    font-weight: 750;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .users-table td[data-label="Usuario"] {
+    display: block;
+    padding-block: 14px;
+    background: linear-gradient(135deg, var(--wave-blue-soft), white 72%);
+  }
+  .users-table td[data-label="Usuario"]::before,
+  .users-table .empty-table::before {
+    display: none;
+  }
+  .users-table td:last-child {
+    border-bottom: 0;
+  }
+  .users-table .row-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .users-table .empty-table {
+    display: block;
+    height: auto;
+    padding: 32px 18px;
+  }
   .contact-detail-grid {
     grid-template-columns: 1fr;
   }
@@ -1897,10 +1997,12 @@ select {
     flex-direction: column;
   }
   .contact-list-actions {
+    display: grid;
     width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .contact-list-actions .button {
-    flex: 1;
+    justify-content: center;
   }
   .contact-filter-panel {
     grid-template-columns: 1fr;
@@ -2507,6 +2609,71 @@ select {
 }
 
 @media (max-width: 560px) {
+  .page-content {
+    padding: 14px 12px 24px;
+  }
+  .contact-list-header,
+  .contact-filter-panel {
+    padding-inline: 16px;
+  }
+  .contact-filter-fields {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .contact-filter-fields select,
+  .contact-filter-fields .input,
+  .contact-filter-fields .button {
+    width: 100%;
+  }
+  .contact-profile {
+    padding: 18px;
+  }
+  .contact-profile > .button {
+    width: 100%;
+  }
+  .contact-data-card,
+  .contact-related {
+    padding: 18px;
+  }
+  .contact-data-card dd {
+    margin-left: 0;
+    overflow-wrap: anywhere;
+  }
+  .contact-dialog {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+  }
+  .contact-dialog-panel {
+    max-height: 100dvh;
+  }
+  .contact-dialog-close {
+    top: 14px;
+    right: 14px;
+  }
+  .contact-form--modal > header {
+    min-height: 76px;
+    padding: 18px 64px 16px 18px;
+  }
+  .contact-form--modal > .alert {
+    margin: 16px 18px 0;
+  }
+  .contact-form--modal .contact-form-grid {
+    padding: 18px 18px 4px;
+  }
+  .contact-form--modal footer {
+    padding: 14px 18px;
+  }
+  .phone-field {
+    grid-template-columns: 1fr;
+  }
+  .contact-form footer .button {
+    flex: 1;
+    justify-content: center;
+  }
   .auth-screen {
     display: block;
     padding: 0;
@@ -2536,8 +2703,18 @@ select {
     display: none;
   }
   .user-dialog {
-    width: calc(100vw - 20px);
-    max-height: calc(100dvh - 20px);
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+  }
+  .user-dialog-card {
+    min-height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
   }
   .user-dialog-card > header,
   .edit-user-fields {
@@ -2545,6 +2722,47 @@ select {
   }
   .edit-user-form footer {
     padding-inline: 18px;
+  }
+  .edit-user-form footer .button {
+    flex: 1;
+    justify-content: center;
+  }
+  .invite-panel {
+    padding: 15px 16px;
+  }
+}
+
+@media (max-width: 390px) {
+  .user-summary {
+    grid-template-columns: 1fr;
+  }
+  .users-toolbar > div {
+    grid-template-columns: 1fr;
+  }
+  .users-toolbar .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .users-table td {
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+  }
+  .edit-user-form footer {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+  .edit-user-form footer .button,
+  .edit-user-submit {
+    width: 100%;
+  }
+  .contact-list-actions {
+    grid-template-columns: 1fr;
+  }
+  .contact-form footer {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+  .contact-form footer .button {
+    width: 100%;
   }
 }
 
@@ -2564,6 +2782,16 @@ select {
     padding-block: 16px;
   }
   .edit-user-form footer {
+    padding-block: 12px;
+  }
+  .contact-form--modal > header {
+    min-height: 68px;
+    padding-block: 14px;
+  }
+  .contact-form--modal .contact-form-grid {
+    padding-block: 16px 4px;
+  }
+  .contact-form--modal footer {
     padding-block: 12px;
   }
 }

@@ -1,4 +1,5 @@
 import { Building2 } from "lucide-react";
+import Link from "next/link";
 import { ListFilters } from "@/components/list-filters";
 import { ListHeader } from "@/components/list-header";
 import { Pagination } from "@/components/pagination";
@@ -99,12 +100,12 @@ function CompanyRow({ company }: Readonly<{ company: Company }>) {
   return (
     <tr>
       <td>
-        <span className="contact-cell">
+        <Link className="contact-cell contact-link" href={`/empresas/${company.id}`}>
           <span>
             <strong>{company.name}</strong>
             {company.legalName && <small>{company.legalName}</small>}
           </span>
-        </span>
+        </Link>
       </td>
       <td>{company.taxId ?? "—"}</td>
       <td>{company.province ?? "—"}</td>

@@ -51,9 +51,6 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
         ref={dialogRef}
         className="user-dialog"
         aria-labelledby={titleId}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) event.currentTarget.close();
-        }}
       >
         <div className="user-dialog-card">
           <header>

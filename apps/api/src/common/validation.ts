@@ -23,6 +23,7 @@ import {
   officialProvince,
   PROVINCES,
 } from './ecuador';
+import { officialCanton } from './cantons';
 import { normalizePhone, PHONE_INVALID } from './phone';
 
 // Mismas reglas y mensajes que apps/web/lib/validation.ts, apps/web/lib/password-rules.ts y apps/web/lib/ecuador.ts.
@@ -184,6 +185,36 @@ export const IsCity = () =>
     IsString({ message: CITY_LENGTH }),
     Length(2, 60, { message: CITY_LENGTH }),
     Matches(NAME_PATTERN, { message: 'La ciudad solo puede tener letras, espacios, apóstrofos, guiones y puntos.' }),
+  );
+
+/** Cantón oficial; debe pertenecer a la provincia que llega en el mismo cuerpo. */
+export const IsCanton = () =>
+  applyDecorators(
+    Transform(({ value, obj }: { value: unknown; obj: { province?: unknown } }) => {
+      if (typeof value !== 'string') return value;
+      if (!value.trim()) return null;
+      const normalizedValue = normalizeName(value);
+      const province = typeof obj.province === 'string' ? (officialProvince(obj.province) ?? obj.province) : obj.province;
+      return typeof province === 'string'
+        ? (officialCanton(province, normalizedValue) ?? normalizedValue)
+        : normalizedValue;
+    }),
+    IsOptional(),
+    ValidateBy(
+      {
+        name: 'isCanton',
+        validator: {
+          validate: (value: unknown, args) => {
+            if (typeof value !== 'string') return false;
+            const rawProvince = (args?.object as { province?: unknown } | undefined)?.province;
+            const province =
+              typeof rawProvince === 'string' ? (officialProvince(rawProvince) ?? rawProvince) : rawProvince;
+            return typeof province === 'string' && officialCanton(province, value) !== null;
+          },
+        },
+      },
+      { message: 'Elige un cantón de la provincia seleccionada.' },
+    ),
   );
 
 export const IsPosition = () =>

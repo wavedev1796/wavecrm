@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@fontsource-variable/plus-jakarta-sans": "^5.2.8",
+    "@wave/shared": "workspace:*",
     "libphonenumber-js": "^1.13.14",
     "lucide-react": "^0.542.0",
     "next": "^15.5.2",

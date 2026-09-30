@@ -41,14 +41,18 @@ export class CompaniesController {
 
   @Get(":id")
   @ApiOperation({ summary: "Obtiene la ficha de una empresa" })
-  findOne(@Param("id") id: string) {
+  findOne(@Param("id") id: string): ReturnType<CompaniesService["findOne"]> {
     return this.companies.findOne(id);
   }
 
   @Patch(":id")
   @ApiOperation({ summary: "Actualiza parcialmente una empresa" })
-  update(@Param("id") id: string, @Body() dto: UpdateCompanyDto) {
-    return this.companies.update(id, dto);
+  update(
+    @Param("id") id: string,
+    @Body() dto: UpdateCompanyDto,
+    @CurrentUser() actor: JwtPayload,
+  ) {
+    return this.companies.update(id, dto, actor.sub);
   }
 
   @Delete(":id")

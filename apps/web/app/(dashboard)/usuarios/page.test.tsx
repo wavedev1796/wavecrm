@@ -113,6 +113,20 @@ test("lista usuarios con su estado y solo las acciones que corresponden", async 
   expect(screen.getByText("Total").nextSibling).toHaveTextContent("4");
 });
 
+test("incluye la estructura adaptable para usuarios", async () => {
+  respond();
+  await open();
+  const table = screen.getByRole("table");
+  expect(table).toHaveClass("users-table");
+  expect(table.closest(".users-data-card")).not.toBeNull();
+  const userRow = screen.getByRole("row", { name: /ana@empresa.ec/ });
+  expect(userRow.querySelector('td[data-label="Rol"]')).toHaveTextContent("Vendedor");
+  expect(row("ana@empresa.ec").getByRole("button", { name: "Desactivar" }).closest("td")).toHaveAttribute(
+    "data-label",
+    "Acciones",
+  );
+});
+
 test("pasa al API solo filtros válidos y limita la búsqueda a 100 caracteres", async () => {
   respond();
   await open({ search: "ana", status: "borrado" });
