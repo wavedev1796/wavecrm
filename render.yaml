@@ -4,7 +4,7 @@ services:
     runtime: node
     region: virginia
     plan: starter
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @wave/database generate && pnpm --filter @wave/api build
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter "@wave/api..." build
     preDeployCommand: corepack enable && pnpm --filter @wave/database migrate:deploy
     startCommand: pnpm --filter @wave/api start:prod
     healthCheckPath: /api/v1/health
@@ -39,7 +39,7 @@ services:
     runtime: node
     region: virginia
     plan: starter
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @wave/web build
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter "@wave/web..." build
     startCommand: pnpm --filter @wave/web start
     envVars:
       - key: NODE_VERSION

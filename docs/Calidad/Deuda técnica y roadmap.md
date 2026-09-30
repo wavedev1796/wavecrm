@@ -99,12 +99,6 @@ El salto con mejor relación coste/beneficio es el del Sprint 2: ahí está todo
 
 Verificado contra el código de `ZaithManangon-Dev` después de integrar `EduardoGarcia-Dev` (merge `0f2be13`): `pnpm lint`, `pnpm build` y `pnpm test` (97 del API y 177 de la web) en verde.
 
-### Crítico antes de fusionar a `develop`
-
-| Deuda | Dónde | Riesgo |
-| --- | --- | --- |
-| Render no compila `@wave/shared` | `render.yaml`: `buildCommand` de `wavecrm-api` y `wavecrm-web` | Desde `28466fd`, el API y la web importan `@wave/shared` desde su `dist/`, que no se versiona. Simulado sin esa carpeta: el API falla con `TS2307: Cannot find module '@wave/shared'` y la web con `Module not found`. El primer despliegue con este código falla. Arreglo: `pnpm --filter @wave/shared build` antes del build de cada servicio. |
-
 ### Resuelto
 
 | Deuda (sección) | Cómo quedó |
@@ -112,6 +106,7 @@ Verificado contra el código de `ZaithManangon-Dev` después de integrar `Eduard
 | Correo de "olvidé mi contraseña" sin enviar (2) | CRM-8, 2026-09-22: enlace por correo, contraseña nueva y revocación de sesiones. |
 | SMTP mal configurado sin prueba (1) | `apps/api/test/mailer.service.test.cjs` cubre la autenticación SMTP incompleta y la configuración exigida en producción (`503`). |
 | CI sin `ZaithManangon-Dev` ni `develop` (6.1) | `ba3aefd`: el CI corre en push a `main`, `develop` y las dos ramas de desarrollo. |
+| Render no compilaba las dependencias del workspace (detectado en esta revisión) | `render.yaml` compilaba el API sin `@wave/database` (`TS2307: Cannot find module '@wave/database'`) y, desde `28466fd`, el API y la web sin `@wave/shared`. Ahora cada servicio usa `pnpm --filter "@wave/api..." build` y `pnpm --filter "@wave/web..." build`, que compilan antes sus dependencias. Simulado desde cero: los dos builds pasan y el API resuelve ambos paquetes al arrancar. |
 
 ### Resuelto en parte
 
