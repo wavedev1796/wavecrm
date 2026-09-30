@@ -123,3 +123,35 @@ Cargar muchos contactos de una vez desde un archivo CSV (el que exporta Excel), 
    - La primera vez responde `201 { "imported": 3 }`; la segunda, `422` con "Ya existe un contacto con esa cédula." en dos filas.
    - La fila de Carla necesita la empresa semilla con RUC `1791234561001` (`pnpm db:seed`).
 2. **Pantalla:** `/contactos` → **Importar CSV** → elegir el mismo archivo → revisar las columnas propuestas → **Importar contactos**.
+
+## Ciudad validada como cantón (2026-09-29)
+
+Cambio de Eduardo García en CRM-13 (`IsCanton`), documentado aquí por Zaith Manangón el 2026-09-30 porque cambia lo que acepta la importación.
+
+### Implementación
+
+- `apps/api/src/modules/contact-import/contact-import.dto.ts`: la columna `city` pasa de `IsCity` a `IsCanton`. La importación de empresas hereda la misma regla desde `CreateCompanyDto` (`common/dto/crm-record.dto.ts`).
+- El contrato de `POST /contacts/import` y `POST /companies/import` no cambia: el campo sigue llamándose `city` y un error sigue siendo un `422` con fila, columna y motivo.
+
+### Decisiones
+
+- La columna "Ciudad" ahora debe ser un cantón oficial (INEC) de la provincia de la misma fila:
+
+  | Valor en el CSV | Antes | Ahora |
+  | --- | --- | --- |
+  | `quito` con provincia `Pichincha` | válido | válido; se guarda `Quito` |
+  | `Cumbayá` (parroquia) con `Pichincha` | válido | `Elige un cantón de la provincia seleccionada.` |
+  | `Quito` sin provincia | válido | `Elige un cantón de la provincia seleccionada.` |
+
+- Como la importación es todo o nada, una sola fila con una parroquia o un barrio en la ciudad bloquea el archivo entero. Se corrige cambiándola por el cantón o dejando la celda vacía.
+- La pantalla de importación sigue rotulando el campo como **Ciudad** (con el alias `canton`), mientras los formularios dicen **Cantón**.
+
+### Validación
+
+- `contactos-ejemplo.csv` y `empresas-ejemplo.csv` pasan por `readImport` con los DTO reales sin errores: Quito, Guayaquil, Portoviejo y Cuenca son cantones de su provincia.
+- Un CSV con `Cumbayá` en Pichincha y otro con `Quito` sin provincia responden `Elige un cantón de la provincia seleccionada.` en la columna de la ciudad.
+- La regla la cubren las pruebas de Eduardo en `apps/api/test/validation.test.cjs` (`ContactImportRowDto` y `CreateContactDto`).
+
+## Pendientes
+
+- Rotular el campo de la importación como **Cantón** en `contactos/importar/fields.ts` y `empresas/importar/fields.ts`, igual que en los formularios.

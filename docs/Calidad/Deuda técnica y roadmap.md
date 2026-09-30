@@ -2,6 +2,8 @@
 
 Diagnóstico del 2026-09-20, al cierre del Sprint 1, con el Quality Gate de SonarQube en **PASSED** y 173 pruebas en verde. Documenta lo que la cobertura **no** dice y el orden en que conviene atacarlo. No sustituye a ningún ticket: es la lista de la que salen los tickets del Sprint 2 en adelante.
 
+> **Revisado el 2026-09-30, al cierre del Sprint 2.** Las secciones 1 a 7 conservan el diagnóstico original; qué se resolvió, qué sigue abierto y la deuda nueva están en [Revisión al cierre del Sprint 2](#revisión-al-cierre-del-sprint-2-2026-09-30), al final.
+
 Fuentes: `coverage/api/lcov.info` y `coverage/web/lcov.info` del análisis de cierre, `sonar-project.properties`, `.github/workflows/ci.yml` y el código de `apps/api`, `apps/web` y `packages/database`.
 
 ## 1. Huecos reales de cobertura
@@ -92,3 +94,55 @@ Estado actual (`.github/workflows/ci.yml`): `lint`, `test` y `build` en cada pul
 | Trimestre 2 | SaaS multicliente | Aislamiento por tenant, RBAC granular, auditoría consultable, gestión de secretos fuera de variables de entorno, SLO con alertas, retención y borrado de datos a petición |
 
 El salto con mejor relación coste/beneficio es el del Sprint 2: ahí está todo lo que hoy puede corromper datos reales.
+
+## Revisión al cierre del Sprint 2 (2026-09-30)
+
+Verificado contra el código de `ZaithManangon-Dev` después de integrar `EduardoGarcia-Dev` (merge `0f2be13`): `pnpm lint`, `pnpm build` y `pnpm test` (97 del API y 177 de la web) en verde.
+
+### Crítico antes de fusionar a `develop`
+
+| Deuda | Dónde | Riesgo |
+| --- | --- | --- |
+| Render no compila `@wave/shared` | `render.yaml`: `buildCommand` de `wavecrm-api` y `wavecrm-web` | Desde `28466fd`, el API y la web importan `@wave/shared` desde su `dist/`, que no se versiona. Simulado sin esa carpeta: el API falla con `TS2307: Cannot find module '@wave/shared'` y la web con `Module not found`. El primer despliegue con este código falla. Arreglo: `pnpm --filter @wave/shared build` antes del build de cada servicio. |
+
+### Resuelto
+
+| Deuda (sección) | Cómo quedó |
+| --- | --- |
+| Correo de "olvidé mi contraseña" sin enviar (2) | CRM-8, 2026-09-22: enlace por correo, contraseña nueva y revocación de sesiones. |
+| SMTP mal configurado sin prueba (1) | `apps/api/test/mailer.service.test.cjs` cubre la autenticación SMTP incompleta y la configuración exigida en producción (`503`). |
+| CI sin `ZaithManangon-Dev` ni `develop` (6.1) | `ba3aefd`: el CI corre en push a `main`, `develop` y las dos ramas de desarrollo. |
+
+### Resuelto en parte
+
+| Deuda (sección) | Qué cambió | Qué falta |
+| --- | --- | --- |
+| Validaciones duplicadas web/API (2) | Cédula, RUC, provincias y cantones viven en `packages/shared` (`@wave/shared`) y los usan los dos lados. | Siguen en espejo `phone.ts`, las reglas de `validation.ts` (decoradores en el API, funciones en la web) y la lectura de la cabecera CSV. Las protege `test/casos-de-validacion.json`. |
+| Datos de demostración (2) | El pie del sidebar muestra el nombre y el rol de la sesión. | `/pipeline` sigue con datos fijos. |
+| Límite de intentos solo en login (3.4) | También `POST /auth/forgot-password` y `POST /auth/password-resets/:token`. | `POST /auth/refresh` y el reenvío de invitaciones siguen sin límite. |
+| Huecos de cobertura de `users.service.ts` (1) | Hay prueba de no desactivar al último administrador activo. | Sin prueba: `P2003` → `409` al borrar, último administrador al editar el rol y el rollback cuando falla el correo de invitación. |
+
+### Sigue abierto
+
+- Rollback manual en vez de `prisma.$transaction` al invitar (`users.service.ts`).
+- Configuración SMTP validada al enviar, no al arrancar.
+- Sin tipos de DTO compartidos entre web y API, y sin observabilidad.
+- Seguridad (3): un refresh token por usuario, sin `Content-Security-Policy`, límites en la memoria del proceso, `JWT_SECRET` sin rotación y sin escaneo de dependencias ni de secretos en CI.
+- Escalabilidad (4): una sola instancia de web y de API hasta tener Redis.
+- SonarQube (5): `sonar.projectVersion` sigue en `0.1.0`; el repositorio no define `cpd.exclusions` ni un Quality Gate propio.
+- CI/CD (6): el CI corre lint, build y pruebas unitarias. Integración, e2e y SonarQube siguen siendo locales. La protección de `develop` y `main` no se pudo verificar desde el repositorio.
+
+### Nuevo en el Sprint 2
+
+| Deuda | Dónde | Riesgo |
+| --- | --- | --- |
+| Las reglas de `@wave/shared` no cuentan en la cobertura | `sonar.coverage.exclusions` incluye `packages/shared/src/**`; `test:coverage:api` solo mide `apps/api/dist` | Cédula, RUC y cantones se prueban desde el API y la web, pero SonarQube no los mide. Arreglo: medir `packages/shared/dist/**` con c8 y quitar la exclusión. |
+| SonarQube sin ejecutar tras `@wave/shared` | — | Las métricas del Sprint 2 son anteriores a la extracción. |
+| La misma persona puede registrarse dos veces | `Contact.documentId @unique` compara el texto | La cédula `1712345675` y el RUC `1712345675001` de la misma persona se guardan como dos contactos sin `409`. Es una decisión de producto. |
+| RUC de sociedad privada con módulo 11 estricto | `packages/shared/src/ecuador.ts:67` (`ponytail:`) | Puede rechazar RUC reales recientes. Pendiente de confirmar con un RUC real. |
+| `User.previousPasswordHashes` con `DEFAULT` en la base y no en el schema | migración de CRM-8 | `prisma migrate diff` lo marca como desajuste. |
+| Migraciones del Sprint 2 fuera de producción | `20260924120000_contact_company_ec`, `20260927120000_contact_document_type` | Las aplica el `preDeployCommand` de Render en el próximo despliegue. |
+| Importación de contactos limitada | `apps/api/src/modules/contact-import/` | Solo cédula (sin pasaporte ni RUC), sin actualizar existentes y sin `AuditLog`. La ciudad debe ser un cantón oficial (ver CRM-16). |
+| Auditoría parcial | `companies.service.ts` | Crear y editar empresas se registra en `AuditLog`; contactos e importaciones no. |
+| `Contact_document_pair` solo en SQL | migración `20260927120000_contact_document_type` | Prisma no modela `CHECK`. El proyecto usa `migrate deploy`, que sí la crea; un `db push` no. |
+| Errores de multer reconocidos por su texto | `apps/api/src/common/filters/global-exception.filter.ts` | Si busboy cambia el texto, el mensaje vuelve a salir en inglés. Lo detectan las pruebas de `app.setup`. |
