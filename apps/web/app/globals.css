@@ -1525,8 +1525,8 @@ select {
   gap: 9px;
 }
 .contact-filter-panel {
-  display: grid;
-  grid-template-columns: minmax(260px, 1.2fr) minmax(520px, 1.8fr);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   padding: 16px 24px;
@@ -1553,12 +1553,18 @@ select {
   padding-left: 40px;
   background: white;
 }
-.contact-filter-fields {
+/* El buscador ocupa lo que sobra; si los filtros no caben a su lado, bajan a su línea en vez de desbordar la tarjeta. */
+.contact-filter-panel > .contact-search {
+  flex: 1 1 260px;
+}
+.contact-filter-panel > .contact-filter-fields {
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 9px;
+  margin-left: auto;
 }
 .contact-filter-fields select {
-  min-width: 190px;
+  width: 220px;
   height: 44px;
 }
 .contact-filter-fields .input {
@@ -2101,12 +2107,13 @@ select {
   .contact-list-actions .button {
     justify-content: center;
   }
-  .contact-filter-panel {
-    grid-template-columns: 1fr;
+  .contact-filter-panel > .contact-search,
+  .contact-filter-panel > .contact-filter-fields {
+    flex-basis: 100%;
   }
-  .contact-filter-fields {
+  .contact-filter-panel > .contact-filter-fields {
     justify-content: flex-start;
-    flex-wrap: wrap;
+    margin-left: 0;
   }
   .contact-filter-fields select,
   .contact-filter-fields .input {
