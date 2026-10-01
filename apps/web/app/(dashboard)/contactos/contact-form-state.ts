@@ -25,7 +25,7 @@ export type ContactFormState = {
 export const emptyContactValues: ContactFormValues = {
   firstName: "",
   lastName: "",
-  documentType: "",
+  documentType: "CEDULA",
   documentId: "",
   company: "",
   companyId: "",

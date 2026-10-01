@@ -36,7 +36,7 @@ export async function saveContact(
     documentId: documentError(values.documentType, values.documentId),
     company:
       values.company && !values.companyId
-        ? "Elige una empresa de la lista."
+        ? "Elige una empresa de la lista o deja el campo vacío."
         : null,
     email: optionalEmailError(values.email),
     phone: phoneError(values.phone, country),
@@ -54,8 +54,8 @@ export async function saveContact(
     const body = {
       firstName: values.firstName,
       lastName: values.lastName,
-      documentType: values.documentType || null,
-      documentId: values.documentId || null,
+      documentType: values.documentType,
+      documentId: values.documentId,
       email: values.email,
       // Ya validado: el API recibe E.164 porque sin "+" asumiría Ecuador. Vacío borra el teléfono.
       phone: normalizePhone(values.phone, country) ?? "",

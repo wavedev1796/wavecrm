@@ -6,11 +6,11 @@ test.afterAll(async () => {
   await cleanup();
 });
 
-/** CSV como lo guarda Excel en español: punto y coma y cédulas de prueba válidas al azar. */
+/** CSV como lo guarda Excel en español: punto y coma, tipo de documento y cédulas de prueba válidas al azar. */
 const csv = (rows: string[]) => ({
   name: 'contactos.csv',
   mimeType: 'text/csv',
-  buffer: Buffer.from(['Nombre;Apellido;Cédula;Provincia', ...rows].join('\n')),
+  buffer: Buffer.from(['Nombre;Apellido;Tipo de documento;Cédula;Provincia', ...rows].join('\n')),
 });
 
 test('CRM-16: la importación muestra los errores por fila y luego importa el archivo corregido', async ({ page }) => {
@@ -24,12 +24,12 @@ test('CRM-16: la importación muestra los errores por fila y luego importa el ar
   await expect(page.getByRole('heading', { level: 1, name: 'Importar contactos' })).toBeVisible();
 
   const first = cedulaDePrueba();
-  await page.getByLabel('Archivo CSV').setInputFiles(csv([`Ana;López;${first};pichincha`, 'Luis;Mora;1712345678;Guayas']));
+  await page.getByLabel('Archivo CSV').setInputFiles(csv([`Ana;López;Cédula;${first};pichincha`, 'Luis;Mora;Cédula;1712345678;Guayas']));
   await page.getByRole('button', { name: 'Importar contactos' }).click();
   await expect(page.getByText('No se importó ningún contacto: 1 fila tiene errores.')).toBeVisible();
   await expect(page.getByRole('table', { name: 'Errores por fila' })).toContainText('La cédula no es válida.');
 
-  await page.getByLabel('Archivo CSV').setInputFiles(csv([`Ana;López;${first};pichincha`, `Luis;Mora;${cedulaDePrueba()};Guayas`]));
+  await page.getByLabel('Archivo CSV').setInputFiles(csv([`Ana;López;Cédula;${first};pichincha`, `Luis;Mora;Cédula;${cedulaDePrueba()};Guayas`]));
   await page.getByRole('button', { name: 'Importar contactos' }).click();
   await expect(page.getByText('Se importaron 2 contactos.')).toBeVisible();
   await expect(page.getByRole('table', { name: 'Errores por fila' })).toHaveCount(0);
@@ -40,8 +40,8 @@ test('Ajustes: el buscador filtra mientras se escribe', async ({ page }) => {
   const stamp = Date.now().toString(36);
   await prisma.contact.createMany({
     data: [
-      { firstName: 'Zoila', lastName: `Buscada${stamp}`, ownerId: seller.id },
-      { firstName: 'Otro', lastName: `Distinto${stamp}`, ownerId: seller.id },
+      { firstName: 'Zoila', lastName: `Buscada${stamp}`, documentType: 'CEDULA', documentId: cedulaDePrueba(), ownerId: seller.id },
+      { firstName: 'Otro', lastName: `Distinto${stamp}`, documentType: 'CEDULA', documentId: cedulaDePrueba(), ownerId: seller.id },
     ],
   });
   await login(page, seller.email);
@@ -66,6 +66,7 @@ test('Ajustes: crea un contacto con pasaporte y teléfono de Colombia', async ({
   // Sin tocar nada, guardar marca los errores en sus campos.
   await dialog.getByRole('button', { name: 'Crear contacto' }).click();
   await expect(dialog.getByText('Ingresa el nombre.')).toBeVisible();
+  await expect(dialog.getByText('Ingresa el número de documento.')).toBeVisible();
 
   // exact: getByLabel busca por subcadena sin mayúsculas, y "País del teléfono" contiene "teléfono".
   await dialog.getByLabel('Nombre', { exact: true }).fill('John');

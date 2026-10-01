@@ -151,26 +151,28 @@ test("CRM-13: consultar, editar o borrar un recurso inexistente responde 404", a
   await assert.rejects(companies.remove("missing"), NotFoundException);
 });
 
-test("tipo y número de documento se borran juntos", async () => {
+test("tipo y número de documento cambian juntos en un PATCH", async () => {
   const prisma = prismaFor("contact", contact);
   let data;
   prisma.contact.update = async (args) => {
     data = args.data;
     return contact;
   };
-  await new ContactsService(prisma).update("contact-1", { documentId: null });
-  assert.deepEqual(data, { documentId: null, documentType: null });
+  const document = { documentType: "PASAPORTE", documentId: "AB123456" };
+  await new ContactsService(prisma).update("contact-1", document);
+  assert.deepEqual(data, document);
 });
 
-test("un PATCH con tipo de documento y sin número se rechaza", async () => {
-  await assert.rejects(
-    new ContactsService(prismaFor("contact", contact)).update("contact-1", {
-      documentType: "RUC",
-    }),
-    (error) =>
-      error instanceof BadRequestException &&
-      error.message === "Ingresa el número de documento.",
-  );
+test("un PATCH con solo el tipo o solo el número de documento se rechaza", async () => {
+  for (const [dto, message] of [
+    [{ documentType: "RUC" }, "Ingresa el número de documento."],
+    [{ documentId: "1712345675" }, "Elige el tipo de documento."],
+  ]) {
+    await assert.rejects(
+      new ContactsService(prismaFor("contact", contact)).update("contact-1", dto),
+      (error) => error instanceof BadRequestException && error.message === message,
+    );
+  }
 });
 
 test("la búsqueda por documento ignora mayúsculas (pasaportes)", async () => {

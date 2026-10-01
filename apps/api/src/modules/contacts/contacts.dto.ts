@@ -25,23 +25,21 @@ export class CreateContactDto extends CrmRecordDto {
   @IsPersonName("apellido")
   lastName!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     enum: DOCUMENT_TYPES,
-    nullable: true,
-    description: "Tipo del documento; va siempre junto con documentId.",
+    description: "Tipo del documento, obligatorio; va siempre junto con documentId.",
     example: "CEDULA",
   })
   @IsDocumentType()
-  documentType?: DocumentType | null;
+  documentType!: DocumentType;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description:
-      "Cédula (10 dígitos), RUC de persona natural (13) o pasaporte (6 a 20 letras o números). Único; vacío lo borra junto con el tipo.",
+      "Cédula (10 dígitos), RUC de persona natural (13) o pasaporte (6 a 20 letras o números). Obligatorio y único; en un PATCH se puede cambiar, no borrar.",
     example: "1712345675",
-    nullable: true,
   })
   @IsDocument()
-  documentId?: string | null;
+  documentId!: string;
 
   @ApiPropertyOptional({ example: "Gerente comercial", nullable: true })
   @IsPosition()

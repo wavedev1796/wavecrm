@@ -18,17 +18,17 @@ export class ContactImportController {
     path: '/api/v1/contacts/import',
     summary: 'Importa contactos desde un CSV (todo o nada)',
     description:
-      'Valida cada fila con las reglas de Ecuador (cédula, teléfono, provincia, etiquetas) y la unicidad de la cédula. ' +
+      'Valida cada fila con las reglas de Ecuador (documento por tipo, teléfono, provincia, cantón, etiquetas) y la unicidad del documento. ' +
       'Si alguna fila falla no se guarda ninguna y el 422 lista fila, columna y motivo; la fila es la de la hoja de ' +
       'cálculo (la cabecera es la 1). El responsable de los contactos es quien importa. Disponible para ADMIN y VENDEDOR.',
-    mappingDescription: `JSON { campo: cabecera del CSV }. Obligatorios firstName y lastName. Campos: ${IMPORT_FIELDS.join(', ')}. companyTaxId enlaza con una empresa ya registrada por su RUC; tags admite varias etiquetas separadas por comas.`,
+    mappingDescription: `JSON { campo: cabecera del CSV }. Obligatorios firstName, lastName, documentType (Cédula, RUC o Pasaporte) y documentId. Campos: ${IMPORT_FIELDS.join(', ')}. companyTaxId enlaza con una empresa ya registrada por su RUC; tags admite varias etiquetas separadas por comas.`,
     mappingExample:
-      '{"firstName":"Nombre","lastName":"Apellido","documentId":"Cédula","phone":"Teléfono","province":"Provincia"}',
+      '{"firstName":"Nombre","lastName":"Apellido","documentType":"Tipo de documento","documentId":"Documento","phone":"Teléfono","province":"Provincia"}',
     missingColumn: 'Asigna la columna del apellido.',
-    conflict: 'Otra persona registró una de estas cédulas mientras importabas. Vuelve a subir el archivo.',
+    conflict: 'Otra persona registró uno de estos documentos mientras importabas. Vuelve a subir el archivo.',
     rejected: {
       message: 'No se importó ningún contacto: 1 fila tiene errores.',
-      errors: [{ row: 3, column: 'Cédula', message: 'La cédula no es válida.' }],
+      errors: [{ row: 3, column: 'Documento', message: 'La cédula no es válida.' }],
     },
   })
   importCsv(

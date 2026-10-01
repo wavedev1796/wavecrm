@@ -107,7 +107,7 @@
     {"valor":"telefono","error":"Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678."}
   ],
   "documento": [
-    {"tipo":"","valor":"","error":null},
+    {"tipo":"","valor":"","error":"Elige el tipo de documento."},
     {"tipo":"CEDULA","valor":" 171234567-5 ","error":null},
     {"tipo":"CEDULA","valor":"171234567","error":"La cédula debe tener 10 dígitos."},
     {"tipo":"CEDULA","valor":"1712345678","error":"La cédula no es válida."},

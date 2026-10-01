@@ -6,7 +6,7 @@ const casos = require("../../../test/casos-de-validacion.json");
 const { LoginDto, RefreshTokenDto } = require("../dist/modules/auth/auth.dto.js");
 const { ActivateInvitationDto, CreateUserDto, ListUsersDto } = require("../dist/modules/users/users.dto.js");
 const { ContactImportRowDto } = require("../dist/modules/contact-import/contact-import.dto.js");
-const { CreateContactDto } = require("../dist/modules/contacts/contacts.dto.js");
+const { CreateContactDto, UpdateContactDto } = require("../dist/modules/contacts/contacts.dto.js");
 const { CreateCompanyDto, UpdateCompanyDto } = require("../dist/modules/companies/companies.dto.js");
 
 /** Primer mensaje del campo, con las mismas opciones que el ValidationPipe global. */
@@ -21,7 +21,7 @@ async function firstError(Dto, body, property) {
 }
 
 const validUser = { name: "Ana López", email: "ana@empresa.ec", role: "VENDEDOR" };
-const validRow = { firstName: "Ana", lastName: "López" };
+const validRow = { firstName: "Ana", lastName: "López", documentType: "CEDULA", documentId: "1712345675" };
 
 for (const [caso, Dto, property, base] of [
   ["email", LoginDto, "email", { password: "x" }],
@@ -31,7 +31,6 @@ for (const [caso, Dto, property, base] of [
   ["rol", CreateUserDto, "role", validUser],
   ["contrasenaNueva", ActivateInvitationDto, "password", { passwordConfirmation: "x", termsAccepted: true }],
   ["nombre", ContactImportRowDto, "firstName", validRow],
-  ["cedula", ContactImportRowDto, "documentId", validRow],
   ["ruc", ContactImportRowDto, "companyTaxId", validRow],
   ["telefono", ContactImportRowDto, "phone", validRow],
   ["provincia", ContactImportRowDto, "province", validRow],
@@ -43,6 +42,13 @@ for (const [caso, Dto, property, base] of [
     }
   });
 }
+
+test('ContactImportRowDto.documentId cumple los casos compartidos de "cedula"', async () => {
+  // El vacío no aplica: el documento es obligatorio y ese caso lo cubren los de "documento".
+  for (const { valor, error } of casos.cedula.filter((item) => item.valor.trim())) {
+    assert.equal(await firstError(ContactImportRowDto, { ...validRow, documentId: valor }, "documentId"), error, valor);
+  }
+});
 
 test("los DTOs normalizan correo y nombre antes de usarlos", () => {
   assert.equal(plainToInstance(LoginDto, { email: " Ana@Empresa.EC ", password: "x" }).email, "ana@empresa.ec");
@@ -95,6 +101,7 @@ test("una fila de contacto normaliza identificacion telefono provincia canton y 
   const row = plainToInstance(ContactImportRowDto, {
     firstName: "  María   José ",
     lastName: "Cordero",
+    documentType: " Cédula ",
     documentId: "171234567-5",
     email: " Maria@Andina.EC ",
     phone: "099 123 4567",
@@ -109,6 +116,7 @@ test("una fila de contacto normaliza identificacion telefono provincia canton y 
     {
       firstName: "María José",
       lastName: "Cordero",
+      documentType: "CEDULA",
       documentId: "1712345675",
       email: "maria@andina.ec",
       phone: "+593991234567",
@@ -186,9 +194,21 @@ test("el documento se normaliza según su tipo", () => {
   assert.equal(passport.documentId, "AB123456");
   const ruc = plainToInstance(CreateContactDto, { ...validRow, documentType: "RUC", documentId: "171234567-5001" });
   assert.equal(ruc.documentId, "1712345675001");
-  const none = plainToInstance(CreateContactDto, { ...validRow, documentType: "", documentId: "  " });
-  assert.equal(none.documentType, null);
-  assert.equal(none.documentId, null);
+  const label = plainToInstance(CreateContactDto, { ...validRow, documentType: " pasaporte ", documentId: "ab 123456" });
+  assert.equal(label.documentType, "PASAPORTE");
+  assert.equal(label.documentId, "AB123456");
+});
+
+test("el documento es obligatorio al crear y no se puede vaciar al editar", async () => {
+  const name = { firstName: "Ana", lastName: "López" };
+  assert.equal(await firstError(CreateContactDto, name, "documentType"), "Elige el tipo de documento.");
+  assert.equal(await firstError(CreateContactDto, name, "documentId"), "Ingresa el número de documento.");
+  assert.equal(await firstError(CreateContactDto, { ...validRow, documentId: "  " }, "documentId"), "Ingresa el número de documento.");
+  assert.equal(await firstError(UpdateContactDto, {}, "documentType"), null);
+  assert.equal(await firstError(UpdateContactDto, {}, "documentId"), null);
+  assert.equal(await firstError(UpdateContactDto, { documentType: null }, "documentType"), "Elige el tipo de documento.");
+  assert.equal(await firstError(UpdateContactDto, { documentId: null }, "documentId"), "Ingresa el número de documento.");
+  assert.equal(await firstError(UpdateContactDto, { documentType: "RUC", documentId: "" }, "documentId"), "Ingresa el número de documento.");
 });
 
 test("el RUC de una empresa es obligatorio al crearla y no se puede vaciar", async () => {

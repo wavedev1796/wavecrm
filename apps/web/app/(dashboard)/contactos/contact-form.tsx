@@ -46,7 +46,9 @@ export function ContactForm({
     companyId: "company",
   });
   const [documentType, setDocumentType] = useState(state.values.documentType);
-  const type = DOCUMENT_TYPES.find(({ value }) => value === documentType);
+  const type =
+    DOCUMENT_TYPES.find(({ value }) => value === documentType) ??
+    DOCUMENT_TYPES[0];
 
   useEffect(() => {
     if (!id && state.contactId) router.push(`/contactos/${state.contactId}`);
@@ -54,10 +56,15 @@ export function ContactForm({
 
   const input = (field: keyof ContactFormValues) =>
     invalidProps(`contact-${field}`, error(field));
-  const field = (name: keyof ContactFormValues, label: string) => ({
+  const field = (
+    name: keyof ContactFormValues,
+    label: string,
+    required = false,
+  ) => ({
     id: `contact-${name}`,
     label,
     error: error(name),
+    required,
   });
 
   return (
@@ -76,14 +83,16 @@ export function ContactForm({
         </span>
         <div>
           <h2>{id ? "Editar contacto" : "Nuevo contacto"}</h2>
-          <p>Los datos se validan al guardar.</p>
+          <p>
+            Los campos con * son obligatorios. Los datos se validan al guardar.
+          </p>
         </div>
       </header>
       {state.feedback && (
         <Alert tone={state.feedback.tone}>{state.feedback.message}</Alert>
       )}
       <div className="contact-form-grid">
-        <Field {...field("firstName", "Nombre")}>
+        <Field {...field("firstName", "Nombre", true)}>
           <Input
             name="firstName"
             required
@@ -92,7 +101,7 @@ export function ContactForm({
             {...input("firstName")}
           />
         </Field>
-        <Field {...field("lastName", "Apellido")}>
+        <Field {...field("lastName", "Apellido", true)}>
           <Input
             name="lastName"
             required
@@ -101,13 +110,13 @@ export function ContactForm({
             {...input("lastName")}
           />
         </Field>
-        <Field id="contact-documentType" label="Tipo de documento">
+        <Field id="contact-documentType" label="Tipo de documento" required>
           <select
             name="documentType"
-            value={documentType}
+            required
+            value={type.value}
             onChange={(event) => setDocumentType(event.target.value)}
           >
-            <option value="">Sin documento</option>
             {DOCUMENT_TYPES.map(({ value, label }) => (
               <option key={value} value={value}>
                 {label}
@@ -115,17 +124,16 @@ export function ContactForm({
             ))}
           </select>
         </Field>
-        {type && (
-          <Field {...field("documentId", type.label)}>
-            <Input
-              name="documentId"
-              inputMode={type.value === "PASAPORTE" ? "text" : "numeric"}
-              placeholder={type.placeholder}
-              defaultValue={state.values.documentId}
-              {...input("documentId")}
-            />
-          </Field>
-        )}
+        <Field {...field("documentId", type.label, true)}>
+          <Input
+            name="documentId"
+            required
+            inputMode={type.value === "PASAPORTE" ? "text" : "numeric"}
+            placeholder={type.placeholder}
+            defaultValue={state.values.documentId}
+            {...input("documentId")}
+          />
+        </Field>
         <CompanyField
           defaultLabel={state.values.company}
           defaultId={state.values.companyId}

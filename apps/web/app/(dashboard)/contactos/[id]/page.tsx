@@ -34,8 +34,8 @@ export default async function ContactDetailPage({
     email: contact.email ?? "",
     phone: phone.national,
     phoneCountry: phone.country,
-    documentType: contact.documentType ?? "",
-    documentId: contact.documentId ?? "",
+    documentType: contact.documentType,
+    documentId: contact.documentId,
     company: contact.company ? companyLabel(contact.company) : "",
     companyId: contact.company?.id ?? "",
     province: contact.province ?? "",
@@ -87,10 +87,7 @@ export default async function ContactDetailPage({
               <Info
                 icon={<UserRound />}
                 label="Documento"
-                value={
-                  contact.documentId &&
-                  `${documentLabel ?? ""} ${contact.documentId}`.trim()
-                }
+                value={`${documentLabel ?? ""} ${contact.documentId}`.trim()}
               />
               <Info
                 icon={<MapPin />}

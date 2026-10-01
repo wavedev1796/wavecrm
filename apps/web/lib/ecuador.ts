@@ -48,9 +48,8 @@ export const DOCUMENT_TYPES = [
   placeholder: string;
 }>;
 
-/** Tipo y número van juntos; los dos vacíos representan un contacto sin documento. */
+/** El documento del contacto es obligatorio: tipo y número, validado con las reglas de su tipo. */
 export function documentError(type: string, value: string): string | null {
-  if (!type && !value) return null;
   if (!type) return "Elige el tipo de documento.";
   if (!isDocumentType(type)) return "Elige un tipo de documento válido.";
   if (!value) return "Ingresa el número de documento.";

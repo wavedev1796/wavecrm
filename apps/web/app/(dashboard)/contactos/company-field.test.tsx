@@ -20,7 +20,7 @@ test("sugiere empresas y guarda el id al elegir una o al pegar su RUC", async ()
     },
   ]);
   render(<CompanyField defaultLabel="" defaultId="" />);
-  const input = screen.getByLabelText("Empresa donde trabaja");
+  const input = screen.getByLabelText("Empresa donde trabaja (opcional)");
   fireEvent.change(input, { target: { value: "andina" } });
   await act(async () => vi.advanceTimersByTime(300));
   expect(search).toHaveBeenCalledWith("andina");
@@ -43,7 +43,7 @@ test("sugiere empresas y guarda el id al elegir una o al pegar su RUC", async ()
 test("si la sesión vence mientras busca, no se cae: la acción redirige al login y no devuelve nada", async () => {
   search.mockResolvedValue(undefined as never);
   render(<CompanyField defaultLabel="" defaultId="" />);
-  fireEvent.change(screen.getByLabelText("Empresa donde trabaja"), {
+  fireEvent.change(screen.getByLabelText("Empresa donde trabaja (opcional)"), {
     target: { value: "andina" },
   });
   await act(async () => vi.advanceTimersByTime(300));
@@ -51,19 +51,36 @@ test("si la sesión vence mientras busca, no se cae: la acción redirige al logi
   expect(hidden()).toHaveValue("");
 });
 
+test("es opcional: explica que puede quedar vacío y enlaza la ayuda y el error", () => {
+  const { rerender } = render(<CompanyField defaultLabel="" defaultId="" />);
+  const input = screen.getByLabelText("Empresa donde trabaja (opcional)");
+  expect(input).not.toBeRequired();
+  expect(input).toHaveAccessibleDescription(
+    "Déjalo vacío si trabaja de forma independiente.",
+  );
+
+  rerender(
+    <CompanyField
+      defaultLabel="Otra"
+      defaultId=""
+      error="Elige una empresa de la lista o deja el campo vacío."
+    />,
+  );
+  expect(input).toHaveAttribute("aria-invalid", "true");
+  expect(input).toHaveAccessibleDescription(
+    "Déjalo vacío si trabaja de forma independiente. Elige una empresa de la lista o deja el campo vacío.",
+  );
+});
+
 test("al editar conserva la empresa vinculada", () => {
   render(
     <CompanyField
       defaultLabel="Comercial Andina · 1791234561001"
       defaultId="e1"
-      error="Elige una empresa de la lista."
     />,
   );
-  expect(screen.getByLabelText("Empresa donde trabaja")).toHaveValue(
+  expect(screen.getByLabelText("Empresa donde trabaja (opcional)")).toHaveValue(
     "Comercial Andina · 1791234561001",
   );
   expect(hidden()).toHaveValue("e1");
-  expect(
-    screen.getByText("Elige una empresa de la lista."),
-  ).toBeInTheDocument();
 });

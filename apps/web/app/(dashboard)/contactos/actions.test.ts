@@ -29,6 +29,13 @@ function form(fields: Record<string, string>) {
   return data;
 }
 
+const person = {
+  firstName: "Ana",
+  lastName: "López",
+  documentType: "CEDULA",
+  documentId: "1712345675",
+};
+
 beforeEach(() => vi.clearAllMocks());
 
 test("CRM-14: usa los validadores antes de llamar al API", async () => {
@@ -47,7 +54,7 @@ test("CRM-14: usa los validadores antes de llamar al API", async () => {
   expect(result.fieldErrors).toEqual(
     expect.objectContaining({
       documentId: "La cédula debe tener 10 dígitos.",
-      company: "Elige una empresa de la lista.",
+      company: "Elige una empresa de la lista o deja el campo vacío.",
       phone:
         "Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678.",
       province: "Elige una provincia de Ecuador.",
@@ -94,13 +101,30 @@ test("CRM-14: normaliza y actualiza el contacto con su documento y su empresa", 
   expect(revalidatePath).toHaveBeenCalledWith("/contactos/contact-1");
 });
 
+test("el documento es obligatorio: sin número no llama al API", async () => {
+  const result = await saveContact(
+    empty,
+    form({ ...person, documentId: "  " }),
+  );
+  expect(result.fieldErrors.documentId).toBe("Ingresa el número de documento.");
+  expect(api).not.toHaveBeenCalled();
+});
+
+test("la empresa es opcional: sin empresa se guarda sin vínculo", async () => {
+  api.mockResolvedValueOnce(Response.json({ id: "contact-1" }));
+  const result = await saveContact(empty, form({ ...person, company: "" }));
+  expect(result.fieldErrors).toEqual({});
+  expect(JSON.parse(api.mock.calls[0]?.[1]?.body as string)).toEqual(
+    expect.objectContaining({ companyId: null }),
+  );
+});
+
 test("envía el teléfono en E.164 según el país elegido", async () => {
   api.mockResolvedValueOnce(Response.json({ id: "contact-1" }));
   await saveContact(
     empty,
     form({
-      firstName: "Ana",
-      lastName: "López",
+      ...person,
       phone: "601 234 5678",
       phoneCountry: "CO",
     }),
@@ -168,17 +192,11 @@ test("otros fallos del API o de conexión van a la alerta; la búsqueda de empre
   api.mockResolvedValueOnce(
     Response.json({ error: { message: "Sin permiso." } }, { status: 403 }),
   );
-  const denied = await saveContact(
-    empty,
-    form({ firstName: "Ana", lastName: "Vera" }),
-  );
+  const denied = await saveContact(empty, form(person));
   expect(denied.feedback).toEqual({ tone: "error", message: "Sin permiso." });
 
   api.mockRejectedValueOnce(new Error("red"));
-  const offline = await saveContact(
-    empty,
-    form({ firstName: "Ana", lastName: "Vera" }),
-  );
+  const offline = await saveContact(empty, form(person));
   expect(offline.feedback?.message).toBe(
     "No pudimos conectar con el servidor. Inténtalo de nuevo.",
   );

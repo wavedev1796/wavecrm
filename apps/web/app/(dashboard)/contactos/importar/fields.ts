@@ -15,9 +15,28 @@ export const CONTACT_IMPORT_FIELDS = [
     aliases: ["apellido", "apellidos"],
   },
   {
+    field: "documentType",
+    label: "Tipo de documento",
+    required: true,
+    aliases: [
+      "tipo de documento",
+      "tipo documento",
+      "tipo de identificacion",
+      "tipo",
+    ],
+  },
+  {
     field: "documentId",
-    label: "Cédula",
-    aliases: ["cedula", "identificacion", "numero de cedula"],
+    label: "Número de documento",
+    required: true,
+    aliases: [
+      "documento",
+      "numero de documento",
+      "cedula",
+      "numero de cedula",
+      "identificacion",
+      "pasaporte",
+    ],
   },
   {
     field: "email",
@@ -30,7 +49,7 @@ export const CONTACT_IMPORT_FIELDS = [
     aliases: ["telefono", "celular", "movil"],
   },
   { field: "province", label: "Provincia", aliases: ["provincia"] },
-  { field: "city", label: "Ciudad", aliases: ["ciudad", "canton"] },
+  { field: "city", label: "Cantón", aliases: ["canton", "ciudad"] },
   { field: "position", label: "Cargo", aliases: ["cargo", "puesto"] },
   {
     field: "tags",

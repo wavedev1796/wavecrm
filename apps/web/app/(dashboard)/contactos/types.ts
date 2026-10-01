@@ -13,8 +13,8 @@ export type Contact = {
   lastName: string;
   email: string | null;
   phone: string | null;
-  documentType: "CEDULA" | "RUC" | "PASAPORTE" | null;
-  documentId: string | null;
+  documentType: "CEDULA" | "RUC" | "PASAPORTE";
+  documentId: string;
   province: string | null;
   city: string | null;
   position: string | null;

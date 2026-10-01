@@ -177,6 +177,8 @@ test("rechaza un canton que no pertenece a la provincia", async () => {
     body: {
       firstName: "Ana",
       lastName: "Cordero",
+      documentType: "CEDULA",
+      documentId: cedulaDePrueba(),
       province: "Pichincha",
       city: "Cuenca",
     },
@@ -190,7 +192,13 @@ test("rechaza un canton que no pertenece a la provincia", async () => {
 test("CRM-13: valida datos y devuelve 404 para fichas inexistentes", async () => {
   const invalid = await call("/contacts", {
     method: "POST",
-    body: { firstName: "A1", lastName: "X", province: "Atlantis" },
+    body: {
+      firstName: "A1",
+      lastName: "X",
+      documentType: "CEDULA",
+      documentId: cedulaDePrueba(),
+      province: "Atlantis",
+    },
   });
   assert.equal(invalid.status, 400);
   assert.deepEqual(messageOf(invalid), [

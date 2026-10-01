@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { FieldError, invalidProps } from "@/components/ui/field-error";
+import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { normalizeDigits } from "@/lib/ecuador";
 import { searchCompanies } from "./actions";
@@ -23,7 +23,7 @@ type Props = Readonly<{
   error?: string;
 }>;
 
-/** Empresa registrada por nombre o RUC, con las sugerencias nativas del navegador (`<datalist>`). */
+/** Empresa registrada por nombre o RUC, con las sugerencias nativas del navegador (`<datalist>`). Es opcional. */
 export function CompanyField({ defaultLabel, defaultId, error }: Props) {
   const listId = useId();
   const [options, setOptions] = useState<CompanyOption[]>([]);
@@ -34,7 +34,7 @@ export function CompanyField({ defaultLabel, defaultId, error }: Props) {
   return (
     <div className="form-field">
       <label>
-        Empresa donde trabaja
+        Empresa donde trabaja (opcional)
         <Input
           name="company"
           list={listId}
@@ -55,9 +55,17 @@ export function CompanyField({ defaultLabel, defaultId, error }: Props) {
               if (exact) setCompanyId(exact.id);
             }, DELAY_MS);
           }}
-          {...invalidProps("contact-company", error)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={
+            error
+              ? "contact-company-hint contact-company-error"
+              : "contact-company-hint"
+          }
         />
       </label>
+      <p id="contact-company-hint" className="field-hint">
+        Déjalo vacío si trabaja de forma independiente.
+      </p>
       <datalist id={listId}>
         {options.map((option) => (
           <option key={option.id} value={option.label} />

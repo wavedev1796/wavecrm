@@ -15,7 +15,6 @@ import {
 import {
   DOCUMENT_TYPES,
   documentError,
-  isCedula,
   isDocumentType,
   isRuc,
   normalizeDigits,
@@ -81,10 +80,9 @@ export const IsNewPassword = () =>
     }),
   );
 
-// Contactos y empresas (Sprint 2 / Ticket 12). Todos opcionales: los usa la importación (CRM-16) y los usará CRM-13.
+// Contactos y empresas (Sprint 2 / Ticket 12). Opcionales salvo el documento del contacto y el RUC de la empresa.
 
 const TAG_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} -]*$/u;
-const CITY_LENGTH = 'La ciudad debe tener entre 2 y 60 caracteres.';
 
 /** Un texto vacío llega como `null`: IsOptional lo deja pasar, un alta guarda NULL y un PATCH puede borrar el valor. */
 const optional = (normalize: (value: string) => string) =>
@@ -99,13 +97,6 @@ const optional = (normalize: (value: string) => string) =>
 /** Regla propia sobre el texto ya normalizado. */
 const passes = (name: string, check: (value: string) => boolean, message: string) =>
   ValidateBy({ name, validator: { validate: (value: unknown) => typeof value === 'string' && check(value) } }, { message });
-
-export const IsCedula = () =>
-  applyDecorators(
-    optional(normalizeDigits),
-    Matches(/^\d{10}$/, { message: 'La cédula debe tener 10 dígitos.' }),
-    passes('isCedula', isCedula, 'La cédula no es válida.'),
-  );
 
 const rucRules = () => [
   Matches(/^\d{13}$/, { message: 'El RUC debe tener 13 dígitos.' }),
@@ -125,34 +116,43 @@ export const IsRequiredRuc = () =>
     ...rucRules(),
   );
 
+/** "Cédula", "cedula" o " CEDULA " → `CEDULA` (la celda de un CSV trae el nombre). Lo demás queda recortado y no pasa. */
+const documentTypeOf = (value: string) => {
+  const key = value.normalize('NFD').replace(/\p{M}/gu, '').trim().toUpperCase();
+  return isDocumentType(key) ? key : value.trim();
+};
+
+/** Tipo de documento del contacto, obligatorio. `null` o vacío dicen "Elige el tipo de documento.", también en un PATCH. */
 export const IsDocumentType = () =>
   applyDecorators(
-    optional((value) => value.trim()),
+    Transform(({ value }: { value: unknown }) => {
+      if (value === null) return '';
+      return typeof value === 'string' ? documentTypeOf(value) : value;
+    }),
+    IsNotEmpty({ message: 'Elige el tipo de documento.' }),
     IsIn(DOCUMENT_TYPES, { message: 'Elige un tipo de documento válido.' }),
   );
 
-/** Mensaje del par tipo/número: van juntos y el número se valida con las reglas de su tipo. */
-function documentPairError(dto: { documentType?: unknown }, number: unknown = null): string | null {
-  const type = dto.documentType ?? null;
-  if (type === null && number === null) return null; // sin documento, o un PATCH que lo borra
-  if (type === null) return 'Elige el tipo de documento.';
-  if (number === null || typeof number !== 'string') return 'Ingresa el número de documento.';
-  return isDocumentType(type) ? documentError(type, number) : null; // un tipo inválido lo reporta su campo
+/** Número obligatorio, con las reglas de su tipo. Un tipo ausente o inválido lo reporta su propio campo. */
+function documentNumberError(dto: { documentType?: unknown }, number: unknown): string | null {
+  if (typeof number !== 'string' || !number) return 'Ingresa el número de documento.';
+  return isDocumentType(dto.documentType) ? documentError(dto.documentType, number) : null;
 }
 
-/** Número de documento según `documentType` (cédula, RUC de persona natural o pasaporte). */
+/** Número de documento según `documentType` (cédula, RUC de persona natural o pasaporte). `null` o vacío no pasan. */
 export const IsDocument = () =>
   applyDecorators(
     Transform(({ value, obj }: { value: unknown; obj: { documentType?: unknown } }) => {
+      if (value === null) return '';
       if (typeof value !== 'string') return value;
-      const type = typeof obj.documentType === 'string' ? obj.documentType.trim() : obj.documentType;
-      return value.trim() ? normalizeDocument(type, value) : null;
+      const type = typeof obj.documentType === 'string' ? documentTypeOf(obj.documentType) : obj.documentType;
+      return normalizeDocument(type, value);
     }),
     ValidateBy({
       name: 'isDocument',
       validator: {
-        validate: (value: unknown, args) => documentPairError((args?.object ?? {}) as object, value) === null,
-        defaultMessage: (args) => documentPairError((args?.object ?? {}) as object, args?.value) ?? '',
+        validate: (value: unknown, args) => documentNumberError((args?.object ?? {}) as object, value) === null,
+        defaultMessage: (args) => documentNumberError((args?.object ?? {}) as object, args?.value) ?? '',
       },
     }),
   );
@@ -177,14 +177,6 @@ export const IsProvince = () =>
   applyDecorators(
     optional((value) => officialProvince(value) ?? value),
     IsIn(PROVINCES, { message: 'Elige una provincia de Ecuador.' }),
-  );
-
-export const IsCity = () =>
-  applyDecorators(
-    optional(normalizeName),
-    IsString({ message: CITY_LENGTH }),
-    Length(2, 60, { message: CITY_LENGTH }),
-    Matches(NAME_PATTERN, { message: 'La ciudad solo puede tener letras, espacios, apóstrofos, guiones y puntos.' }),
   );
 
 /** Cantón oficial; debe pertenecer a la provincia que llega en el mismo cuerpo. */

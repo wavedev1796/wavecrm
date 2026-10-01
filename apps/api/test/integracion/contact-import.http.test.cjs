@@ -3,11 +3,12 @@ const assert = require("node:assert/strict");
 const { PASSWORD, cedulaDePrueba, cleanup, createUser, rucDePrueba } = require("../../../../test/datos-de-prueba.cjs");
 const { startApi } = require("./api.cjs");
 
-const HEADER = "Nombre;Apellido;Cédula;Teléfono;Provincia;Etiquetas;RUC empresa";
+const HEADER = "Nombre;Apellido;Tipo;Documento;Teléfono;Provincia;Etiquetas;RUC empresa";
 const MAPPING = {
   firstName: "Nombre",
   lastName: "Apellido",
-  documentId: "Cédula",
+  documentType: "Tipo",
+  documentId: "Documento",
   phone: "Teléfono",
   province: "Provincia",
   tags: "Etiquetas",
@@ -19,7 +20,7 @@ let seller;
 let token;
 let company;
 const first = cedulaDePrueba();
-const second = cedulaDePrueba();
+const second = `${cedulaDePrueba()}001`; // RUC de persona natural
 
 /** Sube un CSV como lo hace la web: multipart con `file` y `mapping`. */
 function upload(content, { mapping = MAPPING, name = "contactos.csv", field = "file", auth = true } = {}) {
@@ -43,9 +44,11 @@ after(async () => {
 
 test("CRM-16: un CSV de Excel (Windows-1252 y punto y coma) crea contactos normalizados y enlazados a su empresa", async () => {
   const content = Buffer.from(
-    [HEADER, `María;Cordero;${first};099 123 4567;pichincha;Cliente, VIP;${company.taxId}`, `Luis;Mora;${second};;Guayas;;`].join(
-      "\r\n",
-    ),
+    [
+      HEADER,
+      `María;Cordero;Cédula;${first};099 123 4567;pichincha;Cliente, VIP;${company.taxId}`,
+      `Luis;Mora;RUC;${second};;Guayas;;`,
+    ].join("\r\n"),
     "latin1",
   );
   const response = await upload(content);
@@ -54,31 +57,39 @@ test("CRM-16: un CSV de Excel (Windows-1252 y punto y coma) crea contactos norma
 
   const saved = await api.prisma.contact.findUnique({ where: { documentId: first } });
   assert.equal(saved.firstName, "María");
+  assert.equal(saved.documentType, "CEDULA");
   assert.equal(saved.phone, "+593991234567");
   assert.equal(saved.province, "Pichincha");
   assert.deepEqual(saved.tags, ["cliente", "vip"]);
   assert.equal(saved.companyId, company.id);
   assert.equal(saved.ownerId, seller.id);
+  const ruc = await api.prisma.contact.findUnique({ where: { documentId: second } });
+  assert.equal(ruc.documentType, "RUC");
 });
 
-test("CRM-12/CRM-16: reimportar el mismo archivo no duplica porque las cédulas ya existen", async () => {
-  const response = await upload([HEADER, `María;Cordero;${first};;;;`, `Luis;Mora;${second};;;;`].join("\n"));
+test("CRM-12/CRM-16: reimportar el mismo archivo no duplica porque los documentos ya existen", async () => {
+  const response = await upload([HEADER, `María;Cordero;Cédula;${first};;;;`, `Luis;Mora;RUC;${second};;;;`].join("\n"));
   assert.equal(response.status, 422);
   assert.equal(response.body.error.message, "No se importó ningún contacto: 2 filas tienen errores.");
   assert.deepEqual(response.body.error.errors, [
-    { row: 2, column: "Cédula", message: "Ya existe un contacto con esa cédula." },
-    { row: 3, column: "Cédula", message: "Ya existe un contacto con esa cédula." },
+    { row: 2, column: "Documento", message: "Ya existe un contacto con ese documento." },
+    { row: 3, column: "Documento", message: "Ya existe un contacto con ese documento." },
   ]);
 });
 
 test("CRM-16: con una fila inválida no se guarda ninguna y el reporte indica fila, columna y motivo", async () => {
   const valid = cedulaDePrueba();
   const response = await upload(
-    [HEADER, `Ana;López;${valid};;;;`, "Eva;Ruiz;1712345678;02 1;Quito;;", `Rosa;Vera;;;;;${rucDePrueba()}`].join("\n"),
+    [
+      HEADER,
+      `Ana;López;Cédula;${valid};;;;`,
+      "Eva;Ruiz;Cédula;1712345678;02 1;Quito;;",
+      `Rosa;Vera;Pasaporte;P${Date.now()};;;;${rucDePrueba()}`,
+    ].join("\n"),
   );
   assert.equal(response.status, 422);
   assert.deepEqual(response.body.error.errors, [
-    { row: 3, column: "Cédula", message: "La cédula no es válida." },
+    { row: 3, column: "Documento", message: "La cédula no es válida." },
     { row: 3, column: "Teléfono", message: "Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678." },
     { row: 3, column: "Provincia", message: "Elige una provincia de Ecuador." },
     { row: 4, column: "RUC empresa", message: "No existe una empresa con ese RUC." },
@@ -87,7 +98,7 @@ test("CRM-16: con una fila inválida no se guarda ninguna y el reporte indica fi
 });
 
 test("CRM-16: archivo, mapeo o sesión inválidos responden con un mensaje claro", async () => {
-  const csv = [HEADER, "Ana;López;;;;;"].join("\n");
+  const csv = [HEADER, "Ana;López;Cédula;1712345675;;;;"].join("\n");
   const withoutFile = new FormData();
   withoutFile.set("mapping", JSON.stringify(MAPPING));
   const cases = [

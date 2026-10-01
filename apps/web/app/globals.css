@@ -537,15 +537,44 @@ summary:focus-visible {
   width: 18px;
   height: 18px;
 }
+/* Misma piel que .input (TOKENS.md, "Controles de formulario"), con flecha propia en vez de la nativa. */
 select {
   height: 40px;
-  padding: 0 34px 0 12px;
+  padding: 0 36px 0 12px;
   border: 1px solid var(--wave-line-strong);
   border-radius: 10px;
   color: var(--wave-text);
-  background: white;
+  background: white
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6a63' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 12px center / 16px 16px;
   font-size: 0.82rem;
+  text-overflow: ellipsis;
   cursor: pointer;
+  appearance: none;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+select:hover {
+  border-color: #c8c7bf;
+}
+select:focus,
+select:focus-visible {
+  border-color: var(--wave-blue);
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--wave-blue-soft);
+}
+select:disabled {
+  border-color: var(--wave-line-strong);
+  color: var(--wave-muted-strong);
+  background-color: #f1f0eb;
+  cursor: not-allowed;
+}
+select[aria-invalid="true"] {
+  border-color: var(--wave-danger);
+}
+select[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px var(--wave-danger-soft);
 }
 .card {
   border: 1px solid var(--wave-line);
@@ -1317,6 +1346,16 @@ select {
   min-width: 0;
   flex-direction: column;
   gap: 5px;
+}
+.field-required::after {
+  content: " *";
+  content: " *" / ""; /* el lector de pantalla no lo lee: el control ya es required */
+}
+.field-hint {
+  margin: 0;
+  color: var(--wave-muted-strong);
+  font-size: 0.72rem;
+  font-weight: 550;
 }
 .row-actions {
   display: flex;

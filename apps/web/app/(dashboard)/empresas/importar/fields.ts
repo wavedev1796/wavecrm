@@ -21,7 +21,7 @@ export const COMPANY_IMPORT_FIELDS = [
     aliases: ["telefono", "celular", "movil"],
   },
   { field: "province", label: "Provincia", aliases: ["provincia"] },
-  { field: "city", label: "Ciudad", aliases: ["ciudad", "canton"] },
+  { field: "city", label: "Cantón", aliases: ["canton", "ciudad"] },
   {
     field: "tags",
     label: "Etiquetas",

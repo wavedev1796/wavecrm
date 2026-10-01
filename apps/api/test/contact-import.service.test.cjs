@@ -5,11 +5,12 @@ const { Prisma } = require("@wave/database");
 const { ContactImportService } = require("../dist/modules/contact-import/contact-import.service.js");
 const { MAX_IMPORT_ROWS } = require("../dist/common/csv-import.js");
 
-const HEADER = "Nombre;Apellido;Cédula;Teléfono;Provincia;Etiquetas;RUC empresa";
+const HEADER = "Nombre;Apellido;Tipo;Documento;Teléfono;Provincia;Etiquetas;RUC empresa";
 const MAPPING = JSON.stringify({
   firstName: "Nombre",
   lastName: "Apellido",
-  documentId: "Cédula",
+  documentType: "Tipo",
+  documentId: "Documento",
   phone: "Teléfono",
   province: "Provincia",
   tags: "Etiquetas",
@@ -46,7 +47,11 @@ async function rejection(promise) {
 test("importa filas normalizadas, enlazadas a su empresa y con quien importa como responsable", async () => {
   const { importer, created } = service({ companies: [{ id: "company-1", taxId: "1791234561001" }] });
   const result = await importer.importCsv(
-    csv("  María ;Cordero;171234567-5;099 123 4567;pichincha;Cliente, VIP;1791234561001", "Luis;Mora;;;;;", ";;;;;;"),
+    csv(
+      "  María ;Cordero;Cédula;171234567-5;099 123 4567;pichincha;Cliente, VIP;1791234561001",
+      "Luis;Mora;pasaporte;ab-123 456;;;;",
+      ";;;;;;;",
+    ),
     MAPPING,
     "user-1",
   );
@@ -67,8 +72,8 @@ test("importa filas normalizadas, enlazadas a su empresa y con quien importa com
     {
       firstName: "Luis",
       lastName: "Mora",
-      documentId: null,
-      documentType: null,
+      documentId: "AB123456",
+      documentType: "PASAPORTE",
       phone: null,
       province: null,
       tags: [],
@@ -81,27 +86,33 @@ test("importa filas normalizadas, enlazadas a su empresa y con quien importa com
 test("con filas inválidas no guarda ninguna y reporta fila, columna y motivo en orden", async () => {
   const { importer, created } = service();
   const error = await rejection(
-    importer.importCsv(csv("Ana;López;1712345678;0991234567;Quito;;", "Luis;Mora;1712345675;;;;", "L;;;12;;;"), MAPPING, "user-1"),
+    importer.importCsv(
+      csv("Ana;López;Cédula;1712345678;0991234567;Quito;;", "Luis;Mora;Cédula;1712345675;;;;", "L;;;;12;;;"),
+      MAPPING,
+      "user-1",
+    ),
   );
   assert.ok(error instanceof UnprocessableEntityException);
   assert.deepEqual(error.getResponse(), {
     message: "No se importó ningún contacto: 2 filas tienen errores.",
     errors: [
-      { row: 2, column: "Cédula", message: "La cédula no es válida." },
+      { row: 2, column: "Documento", message: "La cédula no es válida." },
       { row: 2, column: "Provincia", message: "Elige una provincia de Ecuador." },
       { row: 4, column: "Nombre", message: "El nombre debe tener entre 2 y 100 caracteres." },
       { row: 4, column: "Apellido", message: "Ingresa el apellido." },
+      { row: 4, column: "Tipo", message: "Elige el tipo de documento." },
+      { row: 4, column: "Documento", message: "Ingresa el número de documento." },
       { row: 4, column: "Teléfono", message: "Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678." },
     ],
   });
   assert.equal(created.length, 0);
 });
 
-test("reporta cédulas repetidas en el archivo, ya registradas y empresas inexistentes", async () => {
-  const { importer } = service({ existing: ["0102030400"] });
+test("reporta documentos repetidos en el archivo, ya registrados y empresas inexistentes", async () => {
+  const { importer } = service({ existing: ["AB123456"] });
   const error = await rejection(
     importer.importCsv(
-      csv("Ana;López;1712345675;;;;", "Eva;Ruiz;171234567-5;;;;", "Luis;Mora;0102030400;;;;1791234561001"),
+      csv("Ana;López;Cédula;1712345675;;;;", "Eva;Ruiz;Cédula;171234567-5;;;;", "Luis;Mora;Pasaporte;AB123456;;;;1791234561001"),
       MAPPING,
       "user-1",
     ),
@@ -109,8 +120,8 @@ test("reporta cédulas repetidas en el archivo, ya registradas y empresas inexis
   assert.deepEqual(error.getResponse(), {
     message: "No se importó ningún contacto: 2 filas tienen errores.",
     errors: [
-      { row: 3, column: "Cédula", message: "La cédula se repite en la fila 2." },
-      { row: 4, column: "Cédula", message: "Ya existe un contacto con esa cédula." },
+      { row: 3, column: "Documento", message: "El documento se repite en la fila 2." },
+      { row: 4, column: "Documento", message: "Ya existe un contacto con ese documento." },
       { row: 4, column: "RUC empresa", message: "No existe una empresa con ese RUC." },
     ],
   });
@@ -118,20 +129,20 @@ test("reporta cédulas repetidas en el archivo, ya registradas y empresas inexis
 
 test("una sola fila con errores se anuncia en singular", async () => {
   const { importer } = service();
-  const error = await rejection(importer.importCsv(csv("Ana;;;;;;"), MAPPING, "user-1"));
+  const error = await rejection(importer.importCsv(csv("Ana;;;;;;;"), MAPPING, "user-1"));
   assert.equal(error.getResponse().message, "No se importó ningún contacto: 1 fila tiene errores.");
 });
 
 test("rechaza archivo o mapeo inválidos con un mensaje claro", async () => {
   const { importer } = service();
-  const row = "Ana;López;;;;;";
+  const row = "Ana;López;Cédula;1712345675;;;;";
   const many = Array.from({ length: MAX_IMPORT_ROWS + 1 }, () => row);
   for (const [file, mapping, message] of [
     [undefined, MAPPING, "Adjunta un archivo CSV."],
     [{ ...csv(row), originalname: "contactos.xlsx" }, MAPPING, "El archivo debe ser .csv."],
-    [csv('"Ana;López;;;;;'), MAPPING, "El archivo CSV no tiene un formato válido."],
+    [csv('"Ana;López;;;;;;'), MAPPING, "El archivo CSV no tiene un formato válido."],
     [csv(), MAPPING, "El archivo no tiene filas para importar."],
-    [csv(";;;;;;", ""), MAPPING, "El archivo no tiene filas para importar."],
+    [csv(";;;;;;;", ""), MAPPING, "El archivo no tiene filas para importar."],
     [csv(...many), MAPPING, "El archivo supera las 1000 filas. Divídelo en partes más pequeñas."],
     [csv(row), undefined, "El mapeo de columnas no tiene un formato válido."],
     [csv(row), "[]", "El mapeo de columnas no tiene un formato válido."],
@@ -144,6 +155,16 @@ test("rechaza archivo o mapeo inválidos con un mensaje claro", async () => {
     [csv(row), JSON.stringify({ firstName: "Nombre", lastName: "Apellidos" }), "La columna «Apellidos» no está en el archivo."],
     [csv(row), JSON.stringify({ firstName: "Nombre" }), "Asigna la columna del apellido."],
     [csv(row), JSON.stringify({ lastName: "Apellido" }), "Asigna la columna del nombre."],
+    [
+      csv(row),
+      JSON.stringify({ firstName: "Nombre", lastName: "Apellido" }),
+      "Asigna la columna del tipo de documento.",
+    ],
+    [
+      csv(row),
+      JSON.stringify({ firstName: "Nombre", lastName: "Apellido", documentType: "Tipo" }),
+      "Asigna la columna del número de documento.",
+    ],
   ]) {
     const error = await rejection(importer.importCsv(file, mapping, "user-1"));
     assert.ok(error instanceof BadRequestException, message);
@@ -151,13 +172,13 @@ test("rechaza archivo o mapeo inválidos con un mensaje claro", async () => {
   }
 });
 
-test("si otra persona registra una cédula a la vez responde 409", async () => {
+test("si otra persona registra uno de los documentos a la vez responde 409", async () => {
   const { importer } = service({
     createMany: async () => {
       throw new Prisma.PrismaClientKnownRequestError("duplicado", { code: "P2002", clientVersion: "6" });
     },
   });
-  const error = await rejection(importer.importCsv(csv("Ana;López;1712345675;;;;"), MAPPING, "user-1"));
+  const error = await rejection(importer.importCsv(csv("Ana;López;Cédula;1712345675;;;;"), MAPPING, "user-1"));
   assert.ok(error instanceof ConflictException);
-  assert.equal(error.message, "Otra persona registró una de estas cédulas mientras importabas. Vuelve a subir el archivo.");
+  assert.equal(error.message, "Otra persona registró uno de estos documentos mientras importabas. Vuelve a subir el archivo.");
 });

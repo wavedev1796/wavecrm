@@ -109,8 +109,8 @@ model Contact {
   lastName    String
   email       String?
   phone       String?
-  documentType DocumentType?
-  documentId  String?      @unique
+  documentType DocumentType
+  documentId  String       @unique
   province    String?
   city        String?
   position    String?

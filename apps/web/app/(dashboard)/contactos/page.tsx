@@ -105,7 +105,7 @@ function ContactRow({ contact }: Readonly<{ contact: Contact }>) {
           <span className="avatar">{initials(name)}</span>
           <span>
             <strong>{name}</strong>
-            <small>{contact.email ?? contact.documentId ?? "Sin correo"}</small>
+            <small>{contact.email ?? contact.documentId}</small>
           </span>
         </Link>
       </td>

@@ -7,8 +7,9 @@ export default function ImportContactsPage() {
     <ImportPage
       title="Importar contactos desde CSV"
       rules={[
-        "Nombre y apellido son obligatorios; el resto de columnas es opcional.",
-        "Separa las etiquetas con comas dentro de la celda. El RUC debe ser de una empresa ya registrada.",
+        "Nombre, apellido, tipo y número de documento son obligatorios; el resto de columnas es opcional.",
+        "El tipo de documento es Cédula, RUC o Pasaporte. El cantón debe ser de la provincia de la fila.",
+        "Separa las etiquetas con comas dentro de la celda. El RUC de la empresa debe ser de una empresa ya registrada.",
       ]}
       fields={CONTACT_IMPORT_FIELDS}
       action={importContacts}

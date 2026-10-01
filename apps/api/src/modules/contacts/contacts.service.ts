@@ -47,17 +47,17 @@ const contactDetailInclude = {
 } satisfies Prisma.ContactInclude;
 
 /**
- * Tipo y número van juntos (restricción Contact_document_pair): borrar uno borra el otro. En un PATCH, el
- * PartialType salta la validación del número si no llega, así que un tipo sin número se rechaza aquí.
+ * El documento es obligatorio y tipo y número viajan juntos. En un PATCH, el PartialType salta la validación del
+ * campo que no llega, así que cambiar solo uno de los dos se rechaza aquí.
  */
 function withDocumentPair<
-  T extends { documentId?: string | null; documentType?: unknown },
+  T extends { documentId?: string; documentType?: unknown },
 >(dto: T) {
-  if (dto.documentId === null || dto.documentType === null) {
-    return { ...dto, documentId: null, documentType: null };
-  }
   if (dto.documentType !== undefined && dto.documentId === undefined) {
     throw new BadRequestException("Ingresa el número de documento.");
+  }
+  if (dto.documentId !== undefined && dto.documentType === undefined) {
+    throw new BadRequestException("Elige el tipo de documento.");
   }
   return dto;
 }

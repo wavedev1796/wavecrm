@@ -7,7 +7,12 @@ import { ContactImportRowDto, IMPORT_FIELDS, type ImportField } from './contact-
 const CONTACT_IMPORT = {
   dto: ContactImportRowDto,
   fields: IMPORT_FIELDS,
-  required: { firstName: 'Asigna la columna del nombre.', lastName: 'Asigna la columna del apellido.' },
+  required: {
+    firstName: 'Asigna la columna del nombre.',
+    lastName: 'Asigna la columna del apellido.',
+    documentType: 'Asigna la columna del tipo de documento.',
+    documentId: 'Asigna la columna del número de documento.',
+  },
 };
 
 type Row = ImportRow<ContactImportRowDto, ImportField>;
@@ -27,7 +32,6 @@ export class ContactImportService {
       const { count } = await this.prisma.contact.createMany({
         data: rows.map(({ value: { companyTaxId, ...fields } }) => ({
           ...fields,
-          documentType: fields.documentId ? 'CEDULA' : null,
           companyId: companyTaxId ? companyIds.get(companyTaxId) : null,
           ownerId,
         })),
@@ -36,16 +40,16 @@ export class ContactImportService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException(
-          'Otra persona registró una de estas cédulas mientras importabas. Vuelve a subir el archivo.',
+          'Otra persona registró uno de estos documentos mientras importabas. Vuelve a subir el archivo.',
         );
       }
       throw error;
     }
   }
 
-  /** Cédula única (en el archivo y en la base) y empresa existente por RUC. Devuelve el id de cada RUC. */
+  /** Documento único (en el archivo y en la base) y empresa existente por RUC. Devuelve el id de cada RUC. */
   private async checkReferences(rows: Row[]) {
-    const firstRow = markDuplicates(rows, 'documentId', (first) => `La cédula se repite en la fila ${first}.`);
+    const firstRow = markDuplicates(rows, 'documentId', (first) => `El documento se repite en la fila ${first}.`);
     const valid = (row: Row, field: 'documentId' | 'companyTaxId') => (row.errors.has(field) ? null : row.value[field]);
     const taxIds = rows.map((row) => valid(row, 'companyTaxId')).filter((taxId): taxId is string => Boolean(taxId));
     const [existing, companies] = await Promise.all([
@@ -56,7 +60,7 @@ export class ContactImportService {
     const companyIds = new Map(companies.map((company) => [company.taxId, company.id]));
     for (const row of rows) {
       const documentId = valid(row, 'documentId');
-      if (documentId && taken.has(documentId)) row.errors.set('documentId', 'Ya existe un contacto con esa cédula.');
+      if (documentId && taken.has(documentId)) row.errors.set('documentId', 'Ya existe un contacto con ese documento.');
       const taxId = valid(row, 'companyTaxId');
       if (taxId && !companyIds.has(taxId)) row.errors.set('companyTaxId', 'No existe una empresa con ese RUC.');
     }

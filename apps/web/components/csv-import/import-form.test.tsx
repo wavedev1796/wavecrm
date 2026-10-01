@@ -33,11 +33,16 @@ test("al elegir el archivo propone una columna por campo y envía el mapeo elegi
 
   await user.upload(
     screen.getByLabelText("Archivo CSV"),
-    csv("Nombres;APELLIDOS;Cédula;Notas\nAna;López;;"),
+    csv(
+      "Nombres;APELLIDOS;Tipo de documento;Cédula;Notas\nAna;López;Cédula;1712345675;",
+    ),
   );
   expect(await screen.findByLabelText("Nombre *")).toHaveValue("Nombres");
   expect(screen.getByLabelText("Apellido *")).toHaveValue("APELLIDOS");
-  expect(screen.getByLabelText("Cédula")).toHaveValue("Cédula");
+  expect(screen.getByLabelText("Tipo de documento *")).toHaveValue(
+    "Tipo de documento",
+  );
+  expect(screen.getByLabelText("Número de documento *")).toHaveValue("Cédula");
   expect(screen.getByLabelText("Correo")).toHaveValue("");
 
   await user.selectOptions(screen.getByLabelText("Cargo"), "Notas");
@@ -54,6 +59,7 @@ test("al elegir el archivo propone una columna por campo y envía el mapeo elegi
   expect(JSON.parse(sent?.get("mapping") as string)).toEqual({
     firstName: "Nombres",
     lastName: "APELLIDOS",
+    documentType: "Tipo de documento",
     documentId: "Cédula",
     position: "Notas",
   });
@@ -65,7 +71,9 @@ test("al elegir el archivo propone una columna por campo y envía el mapeo elegi
   ).toBeDisabled();
   await user.upload(
     screen.getByLabelText("Archivo CSV"),
-    csv("Nombres;APELLIDOS;Cédula;Notas\nEva;Ruiz;;"),
+    csv(
+      "Nombres;APELLIDOS;Tipo de documento;Cédula;Notas\nEva;Ruiz;Pasaporte;AB123456;",
+    ),
   );
   expect(await screen.findByLabelText("Cargo")).toHaveValue("Notas");
 });

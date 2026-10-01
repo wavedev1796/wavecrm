@@ -1,7 +1,8 @@
 import {
-  IsCedula,
   IsCanton,
   IsContactEmail,
+  IsDocument,
+  IsDocumentType,
   IsPersonName,
   IsPhone,
   IsPosition,
@@ -9,11 +10,13 @@ import {
   IsRuc,
   IsTags,
 } from '../../common/validation';
+import type { DocumentType } from '../../common/ecuador';
 
 /** Campos que se pueden importar, en el orden en que se reportan los errores de una fila. */
 export const IMPORT_FIELDS = [
   'firstName',
   'lastName',
+  'documentType',
   'documentId',
   'email',
   'phone',
@@ -34,8 +37,12 @@ export class ContactImportRowDto {
   @IsPersonName('apellido')
   lastName!: string;
 
-  @IsCedula()
-  documentId?: string | null;
+  /** Cédula, RUC o pasaporte; la celda puede traer el nombre ("Cédula", "pasaporte"). */
+  @IsDocumentType()
+  documentType!: DocumentType;
+
+  @IsDocument()
+  documentId!: string;
 
   @IsContactEmail()
   email?: string | null;

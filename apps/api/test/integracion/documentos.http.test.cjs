@@ -66,7 +66,7 @@ test("contacto con pasaporte, teléfono extranjero, búsqueda sin mayúsculas y 
   );
 });
 
-test("RUC de persona natural sí, de sociedad no; tipo y número van juntos", async () => {
+test("RUC de persona natural sí, de sociedad no; el documento es obligatorio y no se puede vaciar", async () => {
   const natural = await call("/contacts", {
     method: "POST",
     body: {
@@ -78,20 +78,21 @@ test("RUC de persona natural sí, de sociedad no; tipo y número van juntos", as
   });
   assert.equal(natural.status, 201, JSON.stringify(natural.body));
 
-  for (const [body, message] of [
+  for (const [body, message, ...more] of [
     [
       { documentType: "RUC", documentId: "1791234561001" },
       "El RUC de una persona natural es su cédula seguida de 001.",
     ],
     [{ documentId: cedulaDePrueba() }, "Elige el tipo de documento."],
     [{ documentType: "CEDULA" }, "Ingresa el número de documento."],
+    [{}, "Elige el tipo de documento.", "Ingresa el número de documento."],
   ]) {
     const response = await call("/contacts", {
       method: "POST",
       body: { firstName: "Eva", lastName: "Ruiz", ...body },
     });
     assert.equal(response.status, 400, message);
-    assert.deepEqual(messageOf(response), [message]);
+    assert.deepEqual(messageOf(response), [message, ...more]);
   }
 
   const onlyType = await call(`/contacts/${natural.body.id}`, {
@@ -103,22 +104,20 @@ test("RUC de persona natural sí, de sociedad no; tipo y número van juntos", as
 
   const cleared = await call(`/contacts/${natural.body.id}`, {
     method: "PATCH",
-    body: { documentId: "" },
+    body: { documentType: null, documentId: "" },
   });
-  assert.equal(cleared.status, 200);
-  assert.equal(cleared.body.documentId, null);
-  assert.equal(cleared.body.documentType, null);
+  assert.equal(cleared.status, 400);
+  assert.deepEqual(messageOf(cleared), [
+    "Elige el tipo de documento.",
+    "Ingresa el número de documento.",
+  ]);
 });
 
-test("la base rechaza un documento sin tipo (Contact_document_pair)", async () => {
+test("la base exige tipo y número de documento (NOT NULL)", async () => {
+  // SQL directo: el cliente de Prisma ya no deja omitirlos, así que se prueba la columna.
   await assert.rejects(
-    api.prisma.contact.create({
-      data: {
-        firstName: "Sin",
-        lastName: "Tipo",
-        documentId: cedulaDePrueba(),
-        ownerId: user.id,
-      },
-    }),
+    api.prisma.$executeRaw`INSERT INTO "Contact" ("id", "firstName", "lastName", "documentId", "ownerId", "updatedAt")
+      VALUES (${`sin-tipo-${Date.now()}`}, 'Sin', 'Tipo', ${cedulaDePrueba()}, ${user.id}, now())`,
+    /23502/, // not_null_violation de Postgres
   );
 });
