@@ -105,6 +105,7 @@ Verificado contra el código de `ZaithManangon-Dev` después de integrar `Eduard
 | --- | --- |
 | Correo de "olvidé mi contraseña" sin enviar (2) | CRM-8, 2026-09-22: enlace por correo, contraseña nueva y revocación de sesiones. |
 | SMTP mal configurado sin prueba (1) | `apps/api/test/mailer.service.test.cjs` cubre la autenticación SMTP incompleta y la configuración exigida en producción (`503`). |
+| `Contact_document_pair` solo en SQL (Sprint 2) | El 2026-10-01 tipo y número pasaron a `NOT NULL` en el schema de Prisma y la restricción se eliminó: ya no hay regla de la base que Prisma no vea. |
 | CI sin `ZaithManangon-Dev` ni `develop` (6.1) | `ba3aefd`: el CI corre en push a `main`, `develop` y las dos ramas de desarrollo. |
 | Render no compilaba las dependencias del workspace (detectado en esta revisión) | `render.yaml` compilaba el API sin `@wave/database` (`TS2307: Cannot find module '@wave/database'`) y, desde `28466fd`, el API y la web sin `@wave/shared`. Ahora cada servicio usa `pnpm --filter "@wave/api..." build` y `pnpm --filter "@wave/web..." build`, que compilan antes sus dependencias. Simulado desde cero: los dos builds pasan y el API resuelve ambos paquetes al arrancar. |
 
@@ -136,8 +137,8 @@ Verificado contra el código de `ZaithManangon-Dev` después de integrar `Eduard
 | La misma persona puede registrarse dos veces | `Contact.documentId @unique` compara el texto | La cédula `1712345675` y el RUC `1712345675001` de la misma persona se guardan como dos contactos sin `409`. Es una decisión de producto. |
 | RUC de sociedad privada con módulo 11 estricto | `packages/shared/src/ecuador.ts:67` (`ponytail:`) | Puede rechazar RUC reales recientes. Pendiente de confirmar con un RUC real. |
 | `User.previousPasswordHashes` con `DEFAULT` en la base y no en el schema | migración de CRM-8 | `prisma migrate diff` lo marca como desajuste. |
-| Migraciones del Sprint 2 fuera de producción | `20260924120000_contact_company_ec`, `20260927120000_contact_document_type` | Las aplica el `preDeployCommand` de Render en el próximo despliegue. |
-| Importación de contactos limitada | `apps/api/src/modules/contact-import/` | Solo cédula (sin pasaporte ni RUC), sin actualizar existentes y sin `AuditLog`. La ciudad debe ser un cantón oficial (ver CRM-16). |
+| Migraciones del Sprint 2 fuera de producción | `20260924120000_contact_company_ec`, `20260927120000_contact_document_type`, `20261001120000_contact_document_required` | Las aplica el `preDeployCommand` de Render en el próximo despliegue. `development` no tiene la tercera (el usuario pidió no tocarla el 2026-10-01); el código funciona igual mientras no tenga contactos sin documento. |
+| Importación de contactos limitada | `apps/api/src/modules/contact-import/` | Desde el 2026-10-01 acepta cédula, RUC y pasaporte (obligatorios). Sigue sin actualizar contactos existentes y sin `AuditLog`. |
 | Auditoría parcial | `companies.service.ts` | Crear y editar empresas se registra en `AuditLog`; contactos e importaciones no. |
-| `Contact_document_pair` solo en SQL | migración `20260927120000_contact_document_type` | Prisma no modela `CHECK`. El proyecto usa `migrate deploy`, que sí la crea; un `db push` no. |
+| Barra de filtros desbordada a 1024 px | `.contact-filter-panel` en `apps/web/app/globals.css` (Contactos y Empresas) | La rejilla pide 840 px como mínimo; a 1024 px con la barra lateral la tarjeta mide 758 px y el botón **Aplicar** queda 58 px fuera. |
 | Errores de multer reconocidos por su texto | `apps/api/src/common/filters/global-exception.filter.ts` | Si busboy cambia el texto, el mensaje vuelve a salir en inglés. Lo detectan las pruebas de `app.setup`. |

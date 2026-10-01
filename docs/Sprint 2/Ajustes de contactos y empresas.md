@@ -1,6 +1,6 @@
 # Ajustes de contactos y pantalla de Empresas
 
-**Responsable:** Zaith Manangón · **Estado:** Completo (6/6 criterios). Toca CRM-11, 12, 13, 14, 15 (parcial) y 16. CRM-13, 14 y 15 son de Eduardo García; el usuario autorizó cambiarlos para este pedido (2026-09-26).
+**Responsable:** Zaith Manangón · **Estado:** Completo (6/6 criterios). Toca CRM-11, 12, 13, 14, 15 (parcial) y 16. CRM-13, 14 y 15 son de Eduardo García; el usuario autorizó cambiarlos para este pedido (2026-09-26). Ampliado el 2026-10-01 con el documento obligatorio y los selects de Wave (4/4 criterios).
 
 ## Objetivo
 
@@ -175,7 +175,74 @@ Pruebas nuevas destacadas (el detalle está en [Pruebas del Sprint 2](../Calidad
    - La primera vez responde `201 { "imported": 3 }`; la segunda, `422` con "Ya existe una empresa con ese RUC." en las tres filas.
 2. **Pantalla:** `/empresas` → **Importar CSV** → el mismo archivo. Después, `/contactos` → **Nuevo contacto** → escribir parte del nombre o del RUC en "Empresa donde trabaja".
 
+## Documento obligatorio, empresa opcional y selects de Wave (2026-10-01)
+
+Pedido del usuario: el documento del contacto (cédula, RUC o pasaporte) pasa a ser obligatorio; relacionar el contacto con una empresa sigue siendo opcional, porque también se trabaja con personas independientes; y los selects toman el estilo de Wave. Toca CRM-12, 13, 14 y 16, con autorización del usuario para los archivos de Eduardo García (CRM-13 y CRM-14). De paso se borra `IsCity`, que quedó sin uso cuando CRM-13 pasó a `IsCanton`.
+
+Criterios (salen del pedido):
+
+- [x] Un contacto no se puede crear sin tipo y número de documento, ni quedarse sin ellos al editarlo (web, API y base).
+- [x] La importación de contactos exige las columnas de tipo y número y acepta cédula, RUC de persona natural y pasaporte.
+- [x] "Empresa donde trabaja" se ve como opcional y explica que puede quedar vacía.
+- [x] Todos los selects comparten la piel de los inputs de Wave (altura, borde, radio, foco, error y deshabilitado) con flecha propia.
+
+### Implementación
+
+**Base de datos**
+
+- `packages/database/prisma/schema.prisma`: `Contact.documentType DocumentType` y `Contact.documentId String @unique`, sin `?`.
+- `packages/database/prisma/migrations/20261001120000_contact_document_required/migration.sql`: las dos columnas pasan a `NOT NULL` y se elimina `Contact_document_pair`, que ya no aporta nada. Falla si queda algún contacto sin documento.
+
+**API**
+
+- `apps/api/src/common/validation.ts`:
+  - `IsDocumentType` e `IsDocument` son obligatorios: `null` o vacío dicen `Elige el tipo de documento.` / `Ingresa el número de documento.`, también en un `PATCH` (mismo truco que `IsRequiredRuc`: `null` pasa a `""` para que el `IsOptional` del `PartialType` no lo salte).
+  - El tipo acepta el nombre que trae una celda: "Cédula", "cedula", " PASAPORTE " → `CEDULA`, `PASAPORTE`.
+  - Se borran `IsCity` (sin uso desde `IsCanton`) e `IsCedula` (la importación ahora usa tipo y número).
+- `apps/api/src/modules/contacts/contacts.dto.ts`: `documentType` y `documentId` obligatorios en Swagger y en el DTO.
+- `apps/api/src/modules/contacts/contacts.service.ts`: `withDocumentPair` ya no borra el documento; rechaza un `PATCH` con solo el tipo o solo el número.
+- Importación (`modules/contact-import/`): columnas obligatorias `documentType` y `documentId`; las filas se guardan con su tipo; unicidad y mensajes hablan de "documento". Swagger actualizado.
+
+**Web**
+
+- `components/form-field.tsx`: `required` pinta el `*` con CSS (`content: " *" / ""`), fuera del nombre accesible; el control lleva `required`.
+- `app/(dashboard)/contactos/contact-form.tsx` y `contact-form-state.ts`: el tipo arranca en **Cédula** (sin "Sin documento"), el número siempre visible y obligatorio, `*` en nombre, apellido, tipo y número, y la cabecera dice `Los campos con * son obligatorios. Los datos se validan al guardar.`
+- `app/(dashboard)/contactos/company-field.tsx`: etiqueta `Empresa donde trabaja (opcional)` y ayuda `Déjalo vacío si trabaja de forma independiente.`, enlazada con `aria-describedby` junto al error.
+- `app/(dashboard)/contactos/actions.ts`: envía siempre tipo y número; un nombre de empresa no registrado responde `Elige una empresa de la lista o deja el campo vacío.`
+- `lib/ecuador.ts`: `documentError` exige el documento.
+- `app/(dashboard)/contactos/types.ts`, `[id]/page.tsx` y `page.tsx`: el documento ya no es `null`.
+- Importación: `contactos/importar/fields.ts` suma **Tipo de documento** y **Número de documento** (obligatorios); las dos importaciones rotulan el cantón como **Cantón**; `contactos/importar/page.tsx` explica las reglas nuevas.
+- `app/globals.css` y `docs/design/TOKENS.md` (sección *Controles de formulario*): `select` sin apariencia nativa, chevron propio, hover, foco, error y deshabilitado iguales a `.input`; `.field-required` y `.field-hint`.
+
+**Datos y pruebas**
+
+- `docs/Sprint 2/contactos-ejemplo.csv`: columna `Tipo de documento` y un contacto de cada tipo (cédula, RUC y pasaporte).
+- `test/casos-de-validacion.json`: tipo y número vacíos dejan de ser válidos (`Elige el tipo de documento.`).
+
+### Decisiones
+
+| Tema | Decisión |
+| --- | --- |
+| Dónde se exige el documento | En la web, el API y la base (`NOT NULL`), elegido por el usuario. Se pudo sin migrar datos: `development` y producción no tenían contactos sin documento. En `pruebas` se borró el único que quedaba, con su OK. |
+| Tipo por defecto | Cédula, como el teléfono arranca en Ecuador. Sin opción vacía, el formulario no necesita el error "Elige el tipo de documento."; el API lo sigue dando. |
+| `PATCH` | Tipo y número se pueden cambiar, pero viajan juntos y no se pueden vaciar. |
+| Importación | Tipo y número obligatorios, con los tres tipos. El tipo se escribe como en la pantalla ("Cédula", "RUC", "Pasaporte"), sin importar tildes ni mayúsculas. Cierra el pendiente "Importar contactos con pasaporte o RUC". |
+| Empresa | Ya era opcional en el API y en la web: solo se hace visible. Un nombre que no es de la lista sigue dando error, para no perder el vínculo sin darse cuenta (opción del usuario). |
+| Marca de obligatorio | `*` por CSS con texto alternativo vacío: se ve, pero el lector de pantalla no dice "asterisco" ni cambia el nombre del campo (las pruebas lo buscan por "Nombre"). Lo anuncia `required`. Mismo `*` que ya usaba el mapeo de la importación. |
+| Selects | Una regla global para todos (documento, país, provincia, cantón, filtros, mapeo de importación y usuarios), elegido por el usuario. La flecha es un SVG en `data:` porque una variable CSS no entra en una URL. |
+
+### Validación
+
+- `pnpm lint` y `pnpm build` sin errores.
+- `pnpm test`: 98 del API y 180 de la web. `pnpm test:coverage`: 98,11 % de líneas en el API y 98,08 % en la web; los archivos de este cambio quedan sin líneas por cubrir.
+- `pnpm test:integration` (rama `pruebas`, con la migración aplicada): 41 en verde. `documentos.http.test.cjs` comprueba que el API no deja crear ni vaciar el documento y que la base rechaza una fila sin tipo (`23502`).
+- `pnpm test:e2e`: 22 en verde. Siguen encontrando los campos por `getByLabel('Nombre', { exact: true })`, así que el `*` no entra en el nombre accesible.
+- `prisma migrate diff` contra `pruebas`: `Contact` coincide con el schema (solo queda el desajuste conocido de `User.previousPasswordHashes`).
+- `contactos-ejemplo.csv` pasa por `readImport` con el DTO real: cédula, RUC y pasaporte sin errores. Un tipo vacío, `DNI` o un número vacío dan su mensaje en su columna.
+- Revisión en el navegador (1024 px y 375 px): selects y inputs a 40 px con el mismo borde y radio, flecha propia, cantón deshabilitado en gris, `*` y ayuda visibles; al guardar vacío marca nombre, apellido y número y enfoca "Nombre". En móvil el diálogo ocupa la pantalla sin scroll horizontal y los selects miden lo mismo que los inputs.
+- Detector de Impeccable sobre los archivos de interfaz cambiados: sin hallazgos nuevos.
+
 ## Pendientes
 
-- Importar contactos con pasaporte o RUC.
-- Producción recibe la migración `20260927120000_contact_document_type` en el próximo despliegue.
+- Producción recibe las migraciones `20260927120000_contact_document_type` y `20261001120000_contact_document_required` en el próximo despliegue. `development` aún no tiene la segunda: el usuario pidió no tocarla en este cambio.
+- A 1024 px la barra de filtros de Contactos y Empresas se sale 58 px de la tarjeta (anterior a este cambio: la rejilla pide 840 px como mínimo).

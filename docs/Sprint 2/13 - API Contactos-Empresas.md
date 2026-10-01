@@ -88,3 +88,21 @@ Las etiquetas del filtro se convierten a minúsculas antes de usar `tags: { has:
 - Los campos comunes de los DTO de contacto y empresa (correo, teléfono, ubicación, etiquetas y responsable) se concentraron en `CrmRecordDto`.
 - La ficha del API de empresa incluye contactos y negocios relacionados, además del historial de auditoría.
 - Crear o editar una empresa registra `CREATE` o `UPDATE` en `AuditLog`, con usuario y campos modificados.
+
+## Documento obligatorio (2026-10-01)
+
+Bloque añadido por Zaith Manangón, con autorización del usuario, como parte del pedido [documento obligatorio, empresa opcional y selects de Wave](Ajustes%20de%20contactos%20y%20empresas.md).
+
+### Implementación
+
+- `apps/api/src/modules/contacts/contacts.dto.ts`: `documentType` y `documentId` obligatorios (también en Swagger).
+- `apps/api/src/modules/contacts/contacts.service.ts`: `withDocumentPair` ya no vacía el documento y rechaza un `PATCH` con solo el tipo o solo el número.
+- Migración `20261001120000_contact_document_required`: las dos columnas `NOT NULL`, sin `Contact_document_pair`.
+
+### Decisiones
+
+- Cambio de contrato: `POST /contacts` sin documento responde `400` con `Elige el tipo de documento.` e `Ingresa el número de documento.`; un `PATCH` puede cambiar el documento, pero no vaciarlo. `companyId` sigue siendo opcional.
+
+### Validación
+
+- `apps/api/test/contacts-companies.service.test.cjs` y `apps/api/test/integracion/documentos.http.test.cjs` (rama `pruebas`): alta sin documento, `PATCH` que intenta vaciarlo o cambiar solo una parte, y la base rechaza una fila sin tipo.

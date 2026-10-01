@@ -85,3 +85,21 @@ Validar la identificación ecuatoriana antes de guardarla: cédula de 10 dígito
 - `apps/web/lib/ecuador.test.ts` (5) y `lib/validation.test.ts` (+1): la web cumple los mismos casos.
 - `pnpm test`: 77 pruebas del API y 129 de la web en verde. `pnpm lint` y `tsc --noEmit` sin errores.
 - La unicidad contra la base real la prueba `contact-import.http.test.cjs` (CRM-16): reimportar el mismo archivo responde `Ya existe un contacto con esa cédula.` sin crear nada.
+
+## Documento obligatorio (2026-10-01)
+
+Parte del pedido [documento obligatorio, empresa opcional y selects de Wave](Ajustes%20de%20contactos%20y%20empresas.md).
+
+### Implementación
+
+- `apps/api/src/common/validation.ts`: `IsDocumentType` e `IsDocument` pasan a ser obligatorios (`null` o vacío no pasan, tampoco en un `PATCH`), y el tipo acepta su nombre ("Cédula", "pasaporte"). Se borran `IsCedula` e `IsCity`, que quedaron sin uso.
+- `apps/web/lib/ecuador.ts`: `documentError` exige tipo y número.
+- `test/casos-de-validacion.json`: tipo y número vacíos responden `Elige el tipo de documento.`.
+
+### Decisiones
+
+- El vacío deja de ser un caso válido del documento, pero los casos de `cedula` siguen aceptando el vacío: describen la regla de la cédula, no la obligatoriedad. En el API se prueban sin ese caso.
+
+### Validación
+
+- `apps/api/test/validation.test.cjs`: obligatorio al crear y al editar, normalización del nombre del tipo y los casos compartidos. `apps/web/lib/ecuador.test.ts`: los mismos casos en la web.

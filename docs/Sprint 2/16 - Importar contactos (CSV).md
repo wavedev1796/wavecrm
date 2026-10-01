@@ -152,6 +152,39 @@ Cambio de Eduardo García en CRM-13 (`IsCanton`), documentado aquí por Zaith Ma
 - Un CSV con `Cumbayá` en Pichincha y otro con `Quito` sin provincia responden `Elige un cantón de la provincia seleccionada.` en la columna de la ciudad.
 - La regla la cubren las pruebas de Eduardo en `apps/api/test/validation.test.cjs` (`ContactImportRowDto` y `CreateContactDto`).
 
-## Pendientes
+## Documento por tipo y obligatorio (2026-10-01)
 
-- Rotular el campo de la importación como **Cantón** en `contactos/importar/fields.ts` y `empresas/importar/fields.ts`, igual que en los formularios.
+Parte del pedido [documento obligatorio, empresa opcional y selects de Wave](Ajustes%20de%20contactos%20y%20empresas.md). Cierra el pendiente de rotular **Cantón** y el de importar pasaporte y RUC.
+
+### Implementación
+
+- `apps/api/src/modules/contact-import/contact-import.dto.ts`: el campo nuevo `documentType` (`IsDocumentType`) y `documentId` con `IsDocument`, los dos obligatorios. Sustituyen a `IsCedula`, que se borra.
+- `contact-import.service.ts`: el mapeo exige `documentType` y `documentId`; cada fila se guarda con su tipo; los mensajes pasan de "cédula" a "documento".
+- `contact-import.controller.ts`: Swagger con el mapeo y los ejemplos nuevos.
+- Web: `contactos/importar/fields.ts` suma **Tipo de documento** y **Número de documento** (obligatorios, con alias como `cedula`, `documento` o `pasaporte`); las dos importaciones rotulan **Cantón**; `contactos/importar/page.tsx` explica las reglas.
+- `docs/Sprint 2/contactos-ejemplo.csv`: columna `Tipo de documento` y un contacto de cada tipo.
+
+### Decisiones
+
+- El contrato de `POST /contacts/import` cambia: `mapping` debe traer `documentType` y `documentId`.
+
+  | Caso | Respuesta |
+  | --- | --- |
+  | Falta la columna del tipo o del número en el mapeo | `400` `Asigna la columna del tipo de documento.` / `Asigna la columna del número de documento.` |
+  | Celda de tipo vacía o desconocida (`DNI`) | `422` `Elige el tipo de documento.` / `Elige un tipo de documento válido.` |
+  | Número vacío | `422` `Ingresa el número de documento.` |
+  | Número repetido en el archivo o ya registrado | `422` `El documento se repite en la fila N.` / `Ya existe un contacto con ese documento.` |
+  | Carrera con otra persona (`P2002`) | `409` `Otra persona registró uno de estos documentos mientras importabas. Vuelve a subir el archivo.` |
+
+- La celda del tipo se escribe como en la pantalla ("Cédula", "RUC", "Pasaporte"), sin importar tildes ni mayúsculas. El RUC es el de la persona natural, igual que en el formulario.
+
+### Validación
+
+- `apps/api/test/contact-import.service.test.cjs`: filas con cédula y pasaporte (`pasaporte`, `ab-123 456` → `PASAPORTE`, `AB123456`), errores de tipo y número por columna, documentos repetidos y ya registrados, y los dos mapeos incompletos nuevos.
+- `apps/api/test/integracion/contact-import.http.test.cjs` (rama `pruebas`): un CSV de Excel con cédula y RUC guarda cada contacto con su tipo; reimportar da `Ya existe un contacto con ese documento.`; una fila inválida no guarda nada.
+- `apps/web/components/csv-import/import-form.test.tsx`: la pantalla propone las columnas de tipo y número y las envía en el mapeo.
+- `e2e/contactos.spec.ts`: importar con una cédula inválida muestra el error y el archivo corregido importa 2 contactos.
+
+### Cómo probarlo a mano
+
+`POST /contacts/import` con `docs/Sprint 2/contactos-ejemplo.csv` y `mapping`: `{"firstName":"Nombre","lastName":"Apellido","documentType":"Tipo de documento","documentId":"Documento","email":"Correo","phone":"Teléfono","province":"Provincia","city":"Ciudad","position":"Cargo","tags":"Etiquetas","companyTaxId":"RUC empresa"}`. La primera vez responde `201 { "imported": 3 }` (cédula, RUC y pasaporte); la segunda, `422` con `Ya existe un contacto con ese documento.` en las tres filas.

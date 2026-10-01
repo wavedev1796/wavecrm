@@ -32,7 +32,7 @@ Tras probar CRM-14, el usuario pidió cambios en Contactos y la pantalla Empresa
 
 - **Reglas iguales en web y API**, como en el Sprint 1: un solo archivo de casos (`test/casos-de-validacion.json`, ahora con 111) prueba los dos lados.
 - **Los datos se guardan normalizados:** cédula y RUC solo con dígitos, pasaporte en mayúsculas, teléfono en E.164 de cualquier país (`+593…`, `+57…`), provincia con su nombre oficial y etiquetas en minúsculas.
-- **Contactos son personas naturales** con documento por tipo (cédula, RUC propio o pasaporte). Las empresas viven en `Company`, con RUC obligatorio.
+- **Contactos son personas naturales** con documento obligatorio por tipo (cédula, RUC propio o pasaporte; obligatorio desde el 2026-10-01). La empresa donde trabajan es opcional. Las empresas viven en `Company`, con RUC obligatorio.
 - **Visibilidad:** ADMIN y VENDEDOR ven y editan todos los contactos y empresas; el responsable (`ownerId`) es informativo y filtrable.
 - **Importación todo o nada:** si una fila falla, no se guarda ninguna y el reporte dice fila, columna y motivo.
 - **RUC de sociedad privada con módulo 11 estricto**, como pide el ticket. Si aparece un RUC real que no lo cumple, se relaja una línea de `isRuc`.
@@ -41,19 +41,19 @@ Tras probar CRM-14, el usuario pidió cambios en Contactos y la pantalla Empresa
 
 | Métrica | Valor |
 | --- | --- |
-| Pruebas unitarias del API | 97 (+44) |
+| Pruebas unitarias del API | 98 (+45) |
 | Pruebas de integración del API (Neon) | 41 (+17) |
-| Pruebas de la web (Vitest) | 177 (+67) |
+| Pruebas de la web (Vitest) | 180 (+70) |
 | Pruebas de navegador (Playwright) | 22 (+7) |
-| **Total** | **337** |
-| Cobertura de líneas del API | 98,07 % |
-| Cobertura de líneas de la web | 98,45 % |
+| **Total** | **341** |
+| Cobertura de líneas del API | 98,11 % |
+| Cobertura de líneas de la web | 98,08 % |
 
 Detalle por ticket y paso a paso: [docs/Calidad/Pruebas del Sprint 2.md](../Calidad/Pruebas%20del%20Sprint%202.md).
 
 ## Pendientes
 
-- Producción recibe las migraciones `20260924120000_contact_company_ec` y `20260927120000_contact_document_type` en el próximo despliegue de Render. `development` y `pruebas` ya tienen las dos.
+- Producción recibe las migraciones `20260924120000_contact_company_ec`, `20260927120000_contact_document_type` y `20261001120000_contact_document_required` en el próximo despliegue de Render. `pruebas` tiene las tres; `development`, las dos primeras (la tercera queda sin aplicar por indicación del usuario).
 - Volver a ejecutar SonarQube para registrar las métricas posteriores a la extracción de `@wave/shared`.
 - `User.previousPasswordHashes` tiene `DEFAULT` en la base y no en el schema (migración de CRM-8). Se detectó al verificar la migración de este sprint.
 - Confirmar con un RUC real de sociedad reciente que el módulo 11 no rechaza empresas válidas.

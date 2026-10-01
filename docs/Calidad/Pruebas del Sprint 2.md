@@ -1,15 +1,15 @@
 # Pruebas del Sprint 2
 
-Estado al 2026-09-29: **337 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
+Estado al 2026-10-01: **341 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md) (incluido el documento obligatorio del 2026-10-01), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
 
 | Capa | Pruebas |
 | --- | --- |
-| Unitarias del API | 97 |
+| Unitarias del API | 98 |
 | Integración del API contra Neon | 41 |
-| Web | 177 |
+| Web | 180 |
 | Navegador | 22 |
 
-La última medición del 2026-09-28 dio **98,07 %** de líneas en el API y **98,45 %** en la web. Tras extraer `@wave/shared` y completar la ficha de Empresa hay que volver a ejecutar `pnpm sonar:scan` para registrar la cobertura y duplicación nuevas.
+La última medición (`pnpm test:coverage`, 2026-10-01) dio **98,11 %** de líneas en el API y **98,08 %** en la web. La web baja desde el 98,45 % del 2026-09-28 por código sin cubrir anterior a este cambio (`app-shell.tsx`, `location-fields.tsx`, `new-company-dialog.tsx`, `edit-user-dialog.tsx`, `new-password-form.tsx`); los archivos del documento obligatorio quedan al 100 %. Falta ejecutar `pnpm sonar:scan` para registrar la duplicación tras extraer `@wave/shared`.
 
 ## Cómo correrlas (paso a paso)
 
@@ -21,7 +21,7 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 
 | Comando | Resultado esperado |
 | --- | --- |
-| `pnpm test` | `# tests 97` en el API y `Tests 177 passed` en la web |
+| `pnpm test` | `# tests 98` en el API y `Tests 180 passed` en la web |
 | `pnpm test:integration` | `# tests 41`, `# fail 0` |
 | `pnpm test:e2e` (con `pnpm dev` apagado) | `22 passed` |
 | `pnpm test:coverage` | `coverage/api/lcov.info` y `coverage/web/lcov.info` |
@@ -100,11 +100,16 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | `apps/web/app/(dashboard)/usuarios/page.test.tsx` | Web | +1 | Estructura de tabla adaptable y etiquetas de las tarjetas móviles |
 | `e2e/usuarios.spec.ts` | Navegador | +1 | Tarjetas de usuarios y diálogo de edición dentro del viewport móvil |
 | Revisión visual (navegador, rama `development`) | Manual | — | Unos 500 y 1280 px: errores al guardar, empresa sugerida, buscador en vivo, RUC repetido, importación con error, consola limpia |
+| `apps/api/test/validation.test.cjs` (2026-10-01) | Unitaria | +1 | Documento obligatorio al crear y al editar; el tipo acepta su nombre ("Cédula", "pasaporte") |
+| `apps/api/test/contact-import.service.test.cjs`, `contact-import.http.test.cjs` (2026-10-01) | Unitaria e integración | = | Importación con tipo y número obligatorios: cédula, RUC y pasaporte, errores por columna y unicidad del documento |
+| `apps/api/test/integracion/documentos.http.test.cjs` (2026-10-01) | Integración | = | Alta sin documento, `PATCH` que intenta vaciarlo y `NOT NULL` en la base (`23502`) |
+| `apps/web/app/(dashboard)/contactos/actions.test.ts`, `company-field.test.tsx` (2026-10-01) | Web | +3 | Documento obligatorio; empresa opcional con su ayuda; un contacto sin empresa se guarda sin vínculo |
+| Revisión visual (2026-10-01, rama `development`) | Manual | — | 1024 y 375 px: selects con la piel de los inputs, `*` y ayuda visibles, errores al guardar vacío |
 
 **Archivos CSV para probar a mano:**
 
 - `docs/Sprint 2/empresas-ejemplo.csv`: 3 empresas (privada, pública y persona natural).
-- `docs/Sprint 2/contactos-ejemplo.csv`: 3 contactos.
+- `docs/Sprint 2/contactos-ejemplo.csv`: 3 contactos, uno por tipo de documento (cédula, RUC y pasaporte).
 
 Otros juegos, con 8 empresas, 10 contactos y archivos con un error por fila, se generan fuera del repo.
 
@@ -115,9 +120,9 @@ Otros juegos, con 8 empresas, 10 contactos y archivos con un error por fila, se 
 | Cédula | 10 dígitos; provincia 01–24 o 30; tercer dígito 0–5; módulo 10 | "La cédula debe tener 10 dígitos." / "La cédula no es válida." |
 | RUC | 13 dígitos; natural, privada (módulo 11) o pública (módulo 11); establecimiento distinto de cero | "El RUC debe tener 13 dígitos." / "El RUC no es válido." |
 | Teléfono | cualquier país (`libphonenumber-js`); sin `+`, del país elegido (Ecuador por defecto); se guarda en E.164 | "Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678." |
-| Documento del contacto | cédula, RUC de persona natural o pasaporte (6–20 letras o números); tipo y número juntos | "El RUC de una persona natural es su cédula seguida de 001." / "El pasaporte debe tener entre 6 y 20 letras o números." / "Elige el tipo de documento." / "Ingresa el número de documento." |
+| Documento del contacto | obligatorio (desde el 2026-10-01): cédula, RUC de persona natural o pasaporte (6–20 letras o números); tipo y número juntos | "El RUC de una persona natural es su cédula seguida de 001." / "El pasaporte debe tener entre 6 y 20 letras o números." / "Elige el tipo de documento." / "Ingresa el número de documento." |
 | RUC de la empresa | obligatorio | "Ingresa el RUC." |
-| Empresa donde trabaja | una de las sugeridas | "Elige una empresa de la lista." |
+| Empresa donde trabaja | opcional; si se escribe, una de las sugeridas | "Elige una empresa de la lista o deja el campo vacío." |
 | Provincia | una de las 24, sin importar tildes | "Elige una provincia de Ecuador." |
 | Ciudad, cargo, etiquetas, apellido, correo del contacto | ver [CRM-12](../Sprint%202/12%20-%20Validaci%C3%B3n%20RUC-C%C3%A9dula%20Ecuador.md#mensajes) | — |
 | Archivo e importación | ver [CRM-16](../Sprint%202/16%20-%20Importar%20contactos%20(CSV).md#contrato) | — |

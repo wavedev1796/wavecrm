@@ -69,3 +69,17 @@ Pruebas nuevas, sin tildes ni prefijos de ticket en sus nombres:
 - Selector deshabilitado hasta elegir provincia, opciones correctas y limpieza al cambiarla (`location-fields.test.tsx`).
 - Catálogo de 24 provincias y 222 cantones, incluida Sevilla Don Bosco (`cantons.test.ts`).
 - Vista móvil real a 375 × 667 px, con modal y acciones dentro del viewport (`e2e/contactos.spec.ts`).
+
+## Documento obligatorio y empresa opcional (2026-10-01)
+
+Bloque añadido por Zaith Manangón, con autorización del usuario, como parte del pedido [documento obligatorio, empresa opcional y selects de Wave](Ajustes%20de%20contactos%20y%20empresas.md).
+
+### Implementación
+
+- `contact-form.tsx`: tipo de documento obligatorio que arranca en Cédula (sin "Sin documento"), número siempre visible, `*` en los campos obligatorios y la cabecera `Los campos con * son obligatorios. Los datos se validan al guardar.`
+- `company-field.tsx`: `Empresa donde trabaja (opcional)` con la ayuda `Déjalo vacío si trabaja de forma independiente.`; un nombre no registrado responde `Elige una empresa de la lista o deja el campo vacío.`
+- Los selects del formulario toman el estilo de Wave (regla global de `globals.css`).
+
+### Validación
+
+- `contact-form.test.tsx`, `company-field.test.tsx` y `actions.test.ts`: documento obligatorio, empresa opcional con su ayuda y un contacto sin empresa se guarda sin vínculo. `e2e/contactos.spec.ts`: guardar vacío marca también el número de documento.
