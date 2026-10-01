@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { callingCodeLabel, COUNTRIES, countryOrEcuador } from "@/lib/phone";
 
 type Props = Readonly<{
@@ -26,7 +27,7 @@ export function PhoneField({ id, country, number, error }: Props) {
     <div className="form-field">
       <label htmlFor={id}>Teléfono</label>
       <div className="phone-field">
-        <select
+        <Select
           name="phoneCountry"
           defaultValue={selected}
           aria-label="País del teléfono"
@@ -36,7 +37,7 @@ export function PhoneField({ id, country, number, error }: Props) {
               {label}
             </option>
           ))}
-        </select>
+        </Select>
         <Input
           id={id}
           name="phone"

@@ -406,7 +406,8 @@ summary:focus-visible {
   transform: none;
   opacity: 0.72;
 }
-.input {
+.input,
+.select-control {
   height: 40px;
   width: 100%;
   padding: 0 12px;
@@ -414,25 +415,97 @@ summary:focus-visible {
   border-radius: 10px;
   color: var(--wave-text);
   background: white;
+  font-family: inherit;
   font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.2;
   transition:
     border-color 0.16s ease,
     box-shadow 0.16s ease;
 }
+.select-control {
+  min-width: 0;
+  padding: 9px 38px 9px 12px;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--wave-muted-strong) 50%),
+    linear-gradient(135deg, var(--wave-muted-strong) 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) 50%,
+    calc(100% - 12px) 50%;
+  background-repeat: no-repeat;
+  background-size: 5px 5px, 5px 5px;
+  cursor: pointer;
+  line-height: 20px;
+  text-overflow: ellipsis;
+}
+.select-control option {
+  color: var(--wave-text);
+  background-color: var(--wave-white);
+  font-family: "Plus Jakarta Sans Variable", "Segoe UI", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.select-control option:checked {
+  color: var(--wave-white);
+  background-color: var(--wave-blue);
+}
+@supports (appearance: base-select) {
+  .select-control,
+  .select-control::picker(select) {
+    appearance: base-select;
+  }
+  .select-control {
+    align-items: center;
+  }
+  .select-control::picker(select) {
+    margin-top: 6px;
+    padding: 6px;
+    border: 1px solid var(--wave-line-strong);
+    border-radius: 12px;
+    background: var(--wave-white);
+    box-shadow: var(--shadow-md);
+  }
+  .select-control option {
+    min-height: 38px;
+    padding: 9px 12px;
+    border-radius: 8px;
+  }
+  .select-control option:hover,
+  .select-control option:focus-visible {
+    color: var(--wave-blue-dark);
+    background: var(--wave-blue-soft);
+  }
+  .select-control option:checked {
+    color: var(--wave-blue-dark);
+    background: var(--wave-blue-soft);
+  }
+  .select-control option::checkmark,
+  .select-control::picker-icon {
+    display: none;
+  }
+}
 .input::placeholder {
   color: var(--wave-faint);
 }
-.input:hover {
+.input:hover,
+.select-control:hover {
   border-color: #c8c7bf;
 }
-.input:focus {
+.input:focus,
+.select-control:focus {
   border-color: var(--wave-blue);
   outline: 0;
   box-shadow: 0 0 0 3px var(--wave-blue-soft);
 }
-.input:disabled {
+.input:disabled,
+.select-control:disabled {
   background: #f1f0eb;
   cursor: not-allowed;
+}
+.select-control:disabled {
+  color: var(--wave-muted);
+  opacity: 1;
 }
 @keyframes rise-in {
   from {
@@ -537,44 +610,15 @@ summary:focus-visible {
   width: 18px;
   height: 18px;
 }
-/* Misma piel que .input (TOKENS.md, "Controles de formulario"), con flecha propia en vez de la nativa. */
 select {
   height: 40px;
-  padding: 0 36px 0 12px;
+  padding: 0 34px 0 12px;
   border: 1px solid var(--wave-line-strong);
   border-radius: 10px;
   color: var(--wave-text);
-  background: white
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6a63' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
-    no-repeat right 12px center / 16px 16px;
+  background: white;
   font-size: 0.82rem;
-  text-overflow: ellipsis;
   cursor: pointer;
-  appearance: none;
-  transition:
-    border-color 0.16s ease,
-    box-shadow 0.16s ease;
-}
-select:hover {
-  border-color: #c8c7bf;
-}
-select:focus,
-select:focus-visible {
-  border-color: var(--wave-blue);
-  outline: 0;
-  box-shadow: 0 0 0 3px var(--wave-blue-soft);
-}
-select:disabled {
-  border-color: var(--wave-line-strong);
-  color: var(--wave-muted-strong);
-  background-color: #f1f0eb;
-  cursor: not-allowed;
-}
-select[aria-invalid="true"] {
-  border-color: var(--wave-danger);
-}
-select[aria-invalid="true"]:focus {
-  box-shadow: 0 0 0 3px var(--wave-danger-soft);
 }
 .card {
   border: 1px solid var(--wave-line);
@@ -974,10 +1018,12 @@ select[aria-invalid="true"]:focus {
 .auth-form .input::placeholder {
   color: var(--wave-muted-strong);
 }
-.input[aria-invalid="true"] {
+.input[aria-invalid="true"],
+.select-control[aria-invalid="true"] {
   border-color: var(--wave-danger);
 }
-.input[aria-invalid="true"]:focus {
+.input[aria-invalid="true"]:focus,
+.select-control[aria-invalid="true"]:focus {
   box-shadow: 0 0 0 3px var(--wave-danger-soft);
 }
 .field-error {
@@ -1347,6 +1393,10 @@ select[aria-invalid="true"]:focus {
   flex-direction: column;
   gap: 5px;
 }
+/* La etiqueta del formulario es flex en columna: en bloque, el * sigue al texto en vez de bajar de línea. */
+.form-field > label.field-required {
+  display: block;
+}
 .field-required::after {
   content: " *";
   content: " *" / ""; /* el lector de pantalla no lo lee: el control ya es required */
@@ -1675,6 +1725,11 @@ select[aria-invalid="true"]:focus {
   font-size: 0.7rem;
   font-weight: 650;
 }
+.contact-form .form-field > label {
+  min-height: 14px;
+  justify-content: center;
+  line-height: 1.25;
+}
 .contact-form select {
   width: 100%;
 }
@@ -1682,6 +1737,9 @@ select[aria-invalid="true"]:focus {
   display: grid;
   grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
   gap: 8px;
+}
+.phone-field > * {
+  min-width: 0;
 }
 .contact-form footer {
   display: flex;
@@ -2708,6 +2766,11 @@ select[aria-invalid="true"]:focus {
   }
   .phone-field {
     grid-template-columns: 1fr;
+  }
+  .contact-form .input,
+  .contact-form .select-control {
+    min-height: 44px;
+    font-size: 1rem;
   }
   .contact-form footer .button {
     flex: 1;

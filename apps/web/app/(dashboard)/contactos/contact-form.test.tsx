@@ -28,6 +28,7 @@ test("el documento es obligatorio: arranca en Cédula y el número toma la etiqu
   const type = screen.getByLabelText("Tipo de documento");
   expect(type).toHaveValue("CEDULA");
   expect(type).toBeRequired();
+  expect(type).toHaveClass("select-control");
   expect(screen.queryByRole("option", { name: "Sin documento" })).toBeNull();
   expect(screen.getByLabelText("Cédula")).toBeRequired();
   expect(

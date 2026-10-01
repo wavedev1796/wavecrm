@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Table } from "@/components/ui/table";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { SEARCH_MAX } from "@/lib/validation";
@@ -136,7 +137,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
               />
             </label>
             <div>
-              <select
+              <Select
                 name="status"
                 defaultValue={params.status ?? ""}
                 aria-label="Filtrar por estado"
@@ -145,7 +146,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
                 <option value="active">Activos</option>
                 <option value="pending">Pendientes</option>
                 <option value="inactive">Inactivos</option>
-              </select>
+              </Select>
               <Button variant="secondary" type="submit">
                 Filtrar
               </Button>

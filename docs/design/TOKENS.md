@@ -55,13 +55,14 @@ El logotipo vive en `apps/web/public/logo-wave.svg` (wordmark horizontal, propor
 
 ## Controles de formulario
 
-Input (`.input`) y select comparten la misma piel, para que un formulario se lea como un solo bloque:
+Input (`.input`) y select (componente `Select`, clase `.select-control`) comparten la misma piel, para que un formulario se lea como un solo bloque:
 
 - 40 px de alto, borde `--wave-line-strong`, radio `10px`, fondo blanco, texto `0.82rem`.
 - Hover: borde `#C8C7BF`. Foco: borde `--wave-blue` y anillo de 3 px `--wave-blue-soft`.
 - Error (`aria-invalid`): borde `--wave-danger` y, con foco, anillo `--wave-danger-soft`.
-- Deshabilitado: fondo `#F1F0EB`, texto `--wave-muted-strong` y cursor bloqueado.
-- Select: sin la apariencia nativa del sistema; flecha propia (chevron de 16 px, trazo 2, `--wave-muted-strong`) a 12 px del borde derecho.
+- Deshabilitado: fondo `#F1F0EB` y cursor bloqueado; el select pone el texto en `--wave-muted`.
+- Select: sin la apariencia nativa del sistema; flecha propia dibujada con dos gradientes de 5 px en `--wave-muted-strong`. Donde el navegador admite `appearance: base-select`, la lista desplegable también lleva la piel de Wave: borde `--wave-line-strong`, radio `12px`, `--shadow-md` y la opción activa o elegida en `--wave-blue-soft` con texto `--wave-blue-dark`.
+- En móvil (≤ 560 px), inputs y selects de los formularios de contacto y empresa (`.contact-form`) suben a 44 px y `1rem`.
 - Campo obligatorio: `*` después de la etiqueta, en el color de la etiqueta y oculto al lector de pantalla (el control lleva `aria-required`). El formulario lo explica en su cabecera.
 - Ayuda bajo el campo (`.field-hint`): `0.72rem / 550`, `--wave-muted-strong`, enlazada al control con `aria-describedby`.
 

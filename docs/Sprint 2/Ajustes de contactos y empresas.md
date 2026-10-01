@@ -184,7 +184,7 @@ Criterios (salen del pedido):
 - [x] Un contacto no se puede crear sin tipo y número de documento, ni quedarse sin ellos al editarlo (web, API y base).
 - [x] La importación de contactos exige las columnas de tipo y número y acepta cédula, RUC de persona natural y pasaporte.
 - [x] "Empresa donde trabaja" se ve como opcional y explica que puede quedar vacía.
-- [x] Todos los selects comparten la piel de los inputs de Wave (altura, borde, radio, foco, error y deshabilitado) con flecha propia.
+- [x] Todos los selects comparten la piel de los inputs de Wave (altura, borde, radio, foco, error y deshabilitado) con flecha propia. Lo entregó Eduardo García el mismo día (`773b5fa`); ver *Decisiones*.
 
 ### Implementación
 
@@ -205,14 +205,15 @@ Criterios (salen del pedido):
 
 **Web**
 
-- `components/form-field.tsx`: `required` pinta el `*` con CSS (`content: " *" / ""`), fuera del nombre accesible; el control lleva `required`.
+- `components/form-field.tsx`: `required` pinta el `*` con CSS (`content: " *" / ""`) en la etiqueta, fuera del nombre accesible; el control lleva `required`. Usa la etiqueta separada (`<label htmlFor>`) que introdujo Eduardo en `773b5fa`.
 - `app/(dashboard)/contactos/contact-form.tsx` y `contact-form-state.ts`: el tipo arranca en **Cédula** (sin "Sin documento"), el número siempre visible y obligatorio, `*` en nombre, apellido, tipo y número, y la cabecera dice `Los campos con * son obligatorios. Los datos se validan al guardar.`
 - `app/(dashboard)/contactos/company-field.tsx`: etiqueta `Empresa donde trabaja (opcional)` y ayuda `Déjalo vacío si trabaja de forma independiente.`, enlazada con `aria-describedby` junto al error.
 - `app/(dashboard)/contactos/actions.ts`: envía siempre tipo y número; un nombre de empresa no registrado responde `Elige una empresa de la lista o deja el campo vacío.`
 - `lib/ecuador.ts`: `documentError` exige el documento.
 - `app/(dashboard)/contactos/types.ts`, `[id]/page.tsx` y `page.tsx`: el documento ya no es `null`.
 - Importación: `contactos/importar/fields.ts` suma **Tipo de documento** y **Número de documento** (obligatorios); las dos importaciones rotulan el cantón como **Cantón**; `contactos/importar/page.tsx` explica las reglas nuevas.
-- `app/globals.css` y `docs/design/TOKENS.md` (sección *Controles de formulario*): `select` sin apariencia nativa, chevron propio, hover, foco, error y deshabilitado iguales a `.input`; `.field-required` y `.field-hint`.
+- `app/globals.css`: `.field-required` (en bloque, para que el `*` siga al texto dentro de la etiqueta flex) y `.field-hint`.
+- `docs/design/TOKENS.md`: sección nueva *Controles de formulario*, que documenta la piel común de input y select (el `Select` de Eduardo), la marca de obligatorio y la ayuda.
 
 **Datos y pruebas**
 
@@ -229,7 +230,7 @@ Criterios (salen del pedido):
 | Importación | Tipo y número obligatorios, con los tres tipos. El tipo se escribe como en la pantalla ("Cédula", "RUC", "Pasaporte"), sin importar tildes ni mayúsculas. Cierra el pendiente "Importar contactos con pasaporte o RUC". |
 | Empresa | Ya era opcional en el API y en la web: solo se hace visible. Un nombre que no es de la lista sigue dando error, para no perder el vínculo sin darse cuenta (opción del usuario). |
 | Marca de obligatorio | `*` por CSS con texto alternativo vacío: se ve, pero el lector de pantalla no dice "asterisco" ni cambia el nombre del campo (las pruebas lo buscan por "Nombre"). Lo anuncia `required`. Mismo `*` que ya usaba el mapeo de la importación. |
-| Selects | Una regla global para todos (documento, país, provincia, cantón, filtros, mapeo de importación y usuarios), elegido por el usuario. La flecha es un SVG en `data:` porque una variable CSS no entra en una URL. |
+| Selects | **Coordinación con CRM-14 y CRM-15.** Este cambio traía una regla global de `select` para todos (opción del usuario). Al integrar, Eduardo había subido esa misma mañana `773b5fa`: componente `Select` (`.select-control`) en todos los selects, con la lista desplegable de Wave donde el navegador admite `appearance: base-select`. Se adopta el suyo y se retira la regla global para no tener dos pieles; el alcance pedido (todos los selects) se mantiene. |
 
 ### Validación
 
@@ -240,6 +241,7 @@ Criterios (salen del pedido):
 - `prisma migrate diff` contra `pruebas`: `Contact` coincide con el schema (solo queda el desajuste conocido de `User.previousPasswordHashes`).
 - `contactos-ejemplo.csv` pasa por `readImport` con el DTO real: cédula, RUC y pasaporte sin errores. Un tipo vacío, `DNI` o un número vacío dan su mensaje en su columna.
 - Revisión en el navegador (1024 px y 375 px): selects y inputs a 40 px con el mismo borde y radio, flecha propia, cantón deshabilitado en gris, `*` y ayuda visibles; al guardar vacío marca nombre, apellido y número y enfoca "Nombre". En móvil el diálogo ocupa la pantalla sin scroll horizontal y los selects miden lo mismo que los inputs.
+- Tras integrar `773b5fa`: `pnpm build`, `pnpm test` (98 y 180) y `pnpm test:e2e` (22) en verde. La revisión visual encontró el `*` en una línea aparte (la etiqueta pasó a ser flex en columna) y se corrigió con `display: block` en la etiqueta obligatoria.
 - Detector de Impeccable sobre los archivos de interfaz cambiados: sin hallazgos nuevos.
 
 ## Pendientes

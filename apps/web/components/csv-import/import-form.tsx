@@ -6,6 +6,7 @@ import { useActionState, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
+import { Select } from "@/components/ui/select";
 import { Table } from "@/components/ui/table";
 import type { ImportState } from "@/lib/csv-import";
 import {
@@ -95,7 +96,7 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
             {fields.map(({ field, label, required }) => (
               <label key={field} className="form-field">
                 {required ? `${label} *` : label}
-                <select
+                <Select
                   value={mapping[field] ?? ""}
                   onChange={(event) =>
                     setMapping({ ...mapping, [field]: event.target.value })
@@ -109,7 +110,7 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
                       {column}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
             ))}
           </fieldset>

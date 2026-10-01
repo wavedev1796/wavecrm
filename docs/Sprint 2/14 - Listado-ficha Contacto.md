@@ -78,7 +78,7 @@ Bloque añadido por Zaith Manangón, con autorización del usuario, como parte d
 
 - `contact-form.tsx`: tipo de documento obligatorio que arranca en Cédula (sin "Sin documento"), número siempre visible, `*` en los campos obligatorios y la cabecera `Los campos con * son obligatorios. Los datos se validan al guardar.`
 - `company-field.tsx`: `Empresa donde trabaja (opcional)` con la ayuda `Déjalo vacío si trabaja de forma independiente.`; un nombre no registrado responde `Elige una empresa de la lista o deja el campo vacío.`
-- Los selects del formulario toman el estilo de Wave (regla global de `globals.css`).
+- Los selects usan el componente `Select` que Eduardo García subió el mismo día (`773b5fa`); `Field` añade la marca `*` sobre su etiqueta separada.
 
 ### Validación
 

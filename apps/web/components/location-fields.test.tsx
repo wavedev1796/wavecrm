@@ -14,6 +14,8 @@ const renderFields = (province = "", canton = "") =>
 
 test("deshabilita el canton hasta elegir una provincia", () => {
   renderFields();
+  expect(screen.getByLabelText("Provincia")).toHaveClass("select-control");
+  expect(screen.getByLabelText("Cantón")).toHaveClass("select-control");
   expect(screen.getByLabelText("Cantón")).toBeDisabled();
 });
 

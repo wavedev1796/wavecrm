@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { EMAIL_MAX, NAME_MAX } from "@/lib/validation";
 import { updateUser, type UserFormState } from "./actions";
 import { useShowFeedback } from "./users-feedback";
@@ -103,14 +104,14 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
               <div className="form-field">
                 <label>
                   Rol y permisos{' '}
-                  <select
+                  <Select
                     name="role"
                     defaultValue={values.role}
                     {...invalidProps(fieldId("role"), fieldErrors.role)}
                   >
                     <option value="VENDEDOR">Vendedor</option>
                     <option value="ADMIN">Administrador</option>
-                  </select>
+                  </Select>
                   <small>
                     Los administradores pueden gestionar usuarios, roles y
                     accesos.

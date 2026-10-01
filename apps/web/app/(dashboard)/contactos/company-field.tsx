@@ -33,36 +33,35 @@ export function CompanyField({ defaultLabel, defaultId, error }: Props) {
 
   return (
     <div className="form-field">
-      <label>
-        Empresa donde trabaja (opcional)
-        <Input
-          name="company"
-          list={listId}
-          defaultValue={defaultLabel}
-          autoComplete="off"
-          placeholder="Busca por nombre o RUC"
-          onChange={(event) => {
-            const text = event.currentTarget.value.trim();
-            const match = matchOf(options, text);
-            setCompanyId(match?.id ?? "");
-            clearTimeout(timer.current);
-            if (match || !text) return;
-            timer.current = setTimeout(async () => {
-              // Si la sesión venció, la acción redirige al login y aquí llega undefined.
-              const found = (await searchCompanies(text)) ?? [];
-              setOptions(found);
-              const exact = matchOf(found, text);
-              if (exact) setCompanyId(exact.id);
-            }, DELAY_MS);
-          }}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={
-            error
-              ? "contact-company-hint contact-company-error"
-              : "contact-company-hint"
-          }
-        />
-      </label>
+      <label htmlFor="contact-company">Empresa donde trabaja (opcional)</label>
+      <Input
+        id="contact-company"
+        name="company"
+        list={listId}
+        defaultValue={defaultLabel}
+        autoComplete="off"
+        placeholder="Busca por nombre o RUC"
+        onChange={(event) => {
+          const text = event.currentTarget.value.trim();
+          const match = matchOf(options, text);
+          setCompanyId(match?.id ?? "");
+          clearTimeout(timer.current);
+          if (match || !text) return;
+          timer.current = setTimeout(async () => {
+            // Si la sesión venció, la acción redirige al login y aquí llega undefined.
+            const found = (await searchCompanies(text)) ?? [];
+            setOptions(found);
+            const exact = matchOf(found, text);
+            if (exact) setCompanyId(exact.id);
+          }, DELAY_MS);
+        }}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={
+          error
+            ? "contact-company-hint contact-company-error"
+            : "contact-company-hint"
+        }
+      />
       <p id="contact-company-hint" className="field-hint">
         Déjalo vacío si trabaja de forma independiente.
       </p>

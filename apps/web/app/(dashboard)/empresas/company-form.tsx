@@ -50,7 +50,10 @@ export function CompanyForm({
   }, [state, onSaved]);
 
   const input = (field: keyof CompanyFormValues) =>
-    invalidProps(`company-${field}`, error(field));
+    ({
+      id: `company-${field}`,
+      ...invalidProps(`company-${field}`, error(field)),
+    });
   const text = (
     field: keyof CompanyFormValues,
     label: string,
