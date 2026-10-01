@@ -14,10 +14,8 @@ export function Field({
 }>) {
   return (
     <div className="form-field">
-      <label>
-        {label}
-        {children}
-      </label>
+      <label htmlFor={id}>{label}</label>
+      {children}
       <FieldError id={id} message={error} />
     </div>
   );

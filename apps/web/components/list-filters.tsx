@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LiveSearch } from "@/components/live-search";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { PROVINCES } from "@/lib/ecuador";
 import type { ListParams } from "@/lib/list-params";
 
@@ -29,7 +30,7 @@ export function ListFilters({
         placeholder={searchPlaceholder}
       />
       <div className="contact-filter-fields">
-        <select
+        <Select
           name="province"
           defaultValue={params.province ?? ""}
           aria-label="Filtrar por provincia"
@@ -38,7 +39,7 @@ export function ListFilters({
           {PROVINCES.map((province) => (
             <option key={province}>{province}</option>
           ))}
-        </select>
+        </Select>
         <Input
           name="tag"
           defaultValue={params.tag}

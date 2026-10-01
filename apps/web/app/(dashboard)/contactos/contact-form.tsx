@@ -10,6 +10,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { useFieldErrors } from "@/components/use-field-errors";
 import { DOCUMENT_TYPES } from "@/lib/ecuador";
 import { saveContact } from "./actions";
@@ -53,7 +54,10 @@ export function ContactForm({
   }, [id, router, state.contactId]);
 
   const input = (field: keyof ContactFormValues) =>
-    invalidProps(`contact-${field}`, error(field));
+    ({
+      id: `contact-${field}`,
+      ...invalidProps(`contact-${field}`, error(field)),
+    });
   const field = (name: keyof ContactFormValues, label: string) => ({
     id: `contact-${name}`,
     label,
@@ -102,7 +106,8 @@ export function ContactForm({
           />
         </Field>
         <Field id="contact-documentType" label="Tipo de documento">
-          <select
+          <Select
+            id="contact-documentType"
             name="documentType"
             value={documentType}
             onChange={(event) => setDocumentType(event.target.value)}
@@ -113,7 +118,7 @@ export function ContactForm({
                 {label}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
         {type && (
           <Field {...field("documentId", type.label)}>

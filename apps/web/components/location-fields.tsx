@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Field } from "@/components/form-field";
 import { invalidProps } from "@/components/ui/field-error";
+import { Select } from "@/components/ui/select";
 import { cantonsForProvince } from "@/lib/cantons";
 import { PROVINCES } from "@/lib/ecuador";
 
@@ -31,7 +32,8 @@ export function LocationFields({
   return (
     <>
       <Field id={provinceId} label="Provincia" error={provinceError}>
-        <select
+        <Select
+          id={provinceId}
           name="province"
           value={province}
           onChange={(event) => {
@@ -44,10 +46,11 @@ export function LocationFields({
           {PROVINCES.map((item) => (
             <option key={item}>{item}</option>
           ))}
-        </select>
+        </Select>
       </Field>
       <Field id={cantonId} label="Cantón" error={cantonError}>
-        <select
+        <Select
+          id={cantonId}
           name="city"
           value={canton}
           onChange={(event) => setCanton(event.target.value)}
@@ -60,7 +63,7 @@ export function LocationFields({
           {cantons.map((item) => (
             <option key={item}>{item}</option>
           ))}
-        </select>
+        </Select>
       </Field>
     </>
   );

@@ -25,6 +25,9 @@ test("no valida mientras se escribe ni al salir del campo", () => {
 test("el número de documento aparece al elegir su tipo, con su etiqueta", async () => {
   const user = userEvent.setup();
   render(<ContactForm />);
+  expect(screen.getByLabelText("Tipo de documento")).toHaveClass(
+    "select-control",
+  );
   expect(screen.queryByLabelText("Pasaporte")).toBeNull();
   await user.selectOptions(
     screen.getByLabelText("Tipo de documento"),

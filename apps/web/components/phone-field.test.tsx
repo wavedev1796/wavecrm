@@ -17,6 +17,9 @@ test("el servidor no pinta nombres de país: dependen de los datos de idioma de 
 test("Ecuador por defecto; el país y el número se editan por separado", () => {
   render(<PhoneField id="contact-phone" country="EC" number="" />);
   expect(screen.getByLabelText("País del teléfono")).toHaveValue("EC");
+  expect(screen.getByLabelText("País del teléfono")).toHaveClass(
+    "select-control",
+  );
   expect(screen.getByLabelText("Teléfono")).toHaveAttribute("name", "phone");
   expect(screen.getByLabelText("Teléfono")).not.toHaveAttribute("aria-invalid");
 });
