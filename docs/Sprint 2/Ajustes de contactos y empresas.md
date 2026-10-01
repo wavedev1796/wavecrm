@@ -244,7 +244,28 @@ Criterios (salen del pedido):
 - Tras integrar `773b5fa`: `pnpm build`, `pnpm test` (98 y 180) y `pnpm test:e2e` (22) en verde. La revisión visual encontró el `*` en una línea aparte (la etiqueta pasó a ser flex en columna) y se corrigió con `display: block` en la etiqueta obligatoria.
 - Detector de Impeccable sobre los archivos de interfaz cambiados: sin hallazgos nuevos.
 
+## Barra de filtros sin desborde y obligatorios de Empresa (2026-10-01)
+
+Pedido del usuario tras el cambio anterior: arreglar el desborde de la barra de filtros y marcar los obligatorios del formulario de empresa (CRM-15, de Eduardo García, con autorización del usuario).
+
+### Implementación
+
+- `apps/web/app/globals.css`:
+  - `.contact-filter-panel` deja la rejilla `minmax(260px, …) minmax(520px, …)`, que pedía 840 px, y pasa a `flex-wrap`. El buscador ocupa lo que sobra (`flex: 1 1 260px`); si los filtros no caben a su lado, bajan a su propia línea, alineados a la derecha, y dentro también pueden partirse.
+  - El select de provincia de la barra mide 220 px: con el `width: 100%` de `.select-control`, al poder saltar de línea ocupaba una fila entera.
+  - En móvil (≤ 760 px), buscador y filtros ocupan cada uno su línea completa, como antes.
+- `apps/web/app/(dashboard)/empresas/company-form.tsx`: `*` y `required` en **Nombre comercial** y **RUC**, y la cabecera `Los campos con * son obligatorios. Los datos se validan al guardar.`, igual que en Contactos.
+
+### Decisiones
+
+- Salto de línea en vez de un punto de corte fijo: el ancho de la tarjeta depende de la barra lateral y del padding de la página, así que un `@media` con un número mágico volvería a fallar en otro ancho.
+
+### Validación
+
+- Barra de Contactos y Empresas medida a 1440, 1280, 1024, 900, 780, 700 y 375 px, con **Limpiar** visible: ningún desborde. A 1440 y 1280 px todo va en una fila; a 1024 px los filtros pasan a una segunda fila; en móvil, una columna.
+- `company-form.test.tsx` (+1): nombre comercial y RUC son los únicos obligatorios y llevan la marca.
+- `pnpm lint`, `pnpm build`, `pnpm test` (98 y 181) y `pnpm test:e2e` (22) en verde.
+
 ## Pendientes
 
 - Producción recibe las migraciones `20260927120000_contact_document_type` y `20261001120000_contact_document_required` en el próximo despliegue. `development` aún no tiene la segunda: el usuario pidió no tocarla en este cambio.
-- A 1024 px la barra de filtros de Contactos y Empresas se sale 58 px de la tarjeta (anterior a este cambio: la rejilla pide 840 px como mínimo).

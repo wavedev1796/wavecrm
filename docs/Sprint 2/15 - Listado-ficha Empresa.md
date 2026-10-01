@@ -67,3 +67,15 @@ El título también exige listado y ficha: ambos están implementados. El alta y
 - El historial identifica creación o actualización, usuario, fecha y campos modificados.
 - Se añadieron sitio web y dirección al formulario, con las mismas restricciones del DTO del API.
 - Se añadieron pruebas unitarias del servicio, integración HTTP y componentes/server actions de la web.
+
+## Campos obligatorios marcados (2026-10-01)
+
+Bloque añadido por Zaith Manangón, con autorización del usuario, junto con los [ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md).
+
+### Implementación
+
+- `company-form.tsx`: **Nombre comercial** y **RUC** llevan `*` y `required`; la cabecera explica la marca, igual que el formulario de contacto.
+
+### Validación
+
+- `company-form.test.tsx` (+1): los dos son los únicos obligatorios y llevan la marca.

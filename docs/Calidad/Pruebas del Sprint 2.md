@@ -1,12 +1,12 @@
 # Pruebas del Sprint 2
 
-Estado al 2026-10-01: **341 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md) (incluido el documento obligatorio del 2026-10-01), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
+Estado al 2026-10-01: **342 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md) (incluido el documento obligatorio del 2026-10-01), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
 
 | Capa | Pruebas |
 | --- | --- |
 | Unitarias del API | 98 |
 | Integración del API contra Neon | 41 |
-| Web | 180 |
+| Web | 181 |
 | Navegador | 22 |
 
 La última medición (`pnpm test:coverage`, 2026-10-01) dio **98,11 %** de líneas en el API y **98,08 %** en la web. La web baja desde el 98,45 % del 2026-09-28 por código sin cubrir anterior a este cambio (`app-shell.tsx`, `location-fields.tsx`, `new-company-dialog.tsx`, `edit-user-dialog.tsx`, `new-password-form.tsx`); los archivos del documento obligatorio quedan al 100 %. Falta ejecutar `pnpm sonar:scan` para registrar la duplicación tras extraer `@wave/shared`.
@@ -21,7 +21,7 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 
 | Comando | Resultado esperado |
 | --- | --- |
-| `pnpm test` | `# tests 98` en el API y `Tests 180 passed` en la web |
+| `pnpm test` | `# tests 98` en el API y `Tests 181 passed` en la web |
 | `pnpm test:integration` | `# tests 41`, `# fail 0` |
 | `pnpm test:e2e` (con `pnpm dev` apagado) | `22 passed` |
 | `pnpm test:coverage` | `coverage/api/lcov.info` y `coverage/web/lcov.info` |
@@ -105,6 +105,8 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | `apps/api/test/integracion/documentos.http.test.cjs` (2026-10-01) | Integración | = | Alta sin documento, `PATCH` que intenta vaciarlo y `NOT NULL` en la base (`23502`) |
 | `apps/web/app/(dashboard)/contactos/actions.test.ts`, `company-field.test.tsx` (2026-10-01) | Web | +3 | Documento obligatorio; empresa opcional con su ayuda; un contacto sin empresa se guarda sin vínculo |
 | Revisión visual (2026-10-01, rama `development`) | Manual | — | 1024 y 375 px: selects con la piel de los inputs, `*` y ayuda visibles, errores al guardar vacío |
+| `apps/web/app/(dashboard)/empresas/company-form.test.tsx` (2026-10-01) | Web | +1 | Nombre comercial y RUC son los únicos obligatorios y llevan su marca |
+| Revisión visual de la barra de filtros (2026-10-01) | Manual | — | Contactos y Empresas de 1440 a 375 px, con **Limpiar** visible: sin desborde |
 
 **Archivos CSV para probar a mano:**
 
