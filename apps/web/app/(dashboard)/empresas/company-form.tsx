@@ -59,7 +59,12 @@ export function CompanyForm({
     label: string,
     props: React.ComponentProps<typeof Input> = {},
   ) => (
-    <Field id={`company-${field}`} label={label} error={error(field)}>
+    <Field
+      id={`company-${field}`}
+      label={label}
+      error={error(field)}
+      required={props.required}
+    >
       <Input
         name={field}
         defaultValue={state.values[field]}
@@ -85,16 +90,19 @@ export function CompanyForm({
         </span>
         <div>
           <h2>{id ? "Editar empresa" : "Añadir empresa"}</h2>
-          <p>Los datos se validan al guardar.</p>
+          <p>
+            Los campos con * son obligatorios. Los datos se validan al guardar.
+          </p>
         </div>
       </header>
       {state.feedback && (
         <Alert tone={state.feedback.tone}>{state.feedback.message}</Alert>
       )}
       <div className="contact-form-grid">
-        {text("name", "Nombre comercial", { maxLength: 120 })}
+        {text("name", "Nombre comercial", { maxLength: 120, required: true })}
         {text("legalName", "Razón social", { maxLength: 160 })}
         {text("taxId", "RUC", {
+          required: true,
           inputMode: "numeric",
           placeholder: "1791234561001",
         })}

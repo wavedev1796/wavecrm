@@ -34,6 +34,22 @@ test("CRM-15: marca los errores al guardar y avisa al terminar bien", async () =
   await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
 });
 
+test("nombre comercial y RUC son los únicos obligatorios y llevan su marca", () => {
+  render(<CompanyForm />);
+  expect(
+    screen.getByText(
+      "Los campos con * son obligatorios. Los datos se validan al guardar.",
+    ),
+  ).toBeInTheDocument();
+  for (const label of ["Nombre comercial", "RUC"]) {
+    expect(screen.getByLabelText(label)).toBeRequired();
+    expect(screen.getByText(label)).toHaveClass("field-required");
+  }
+  for (const label of ["Razón social", "Correo", "Dirección"]) {
+    expect(screen.getByLabelText(label)).not.toBeRequired();
+  }
+});
+
 test("CRM-15: un fallo del servidor se muestra en una alerta", async () => {
   save.mockResolvedValueOnce({
     feedback: {
