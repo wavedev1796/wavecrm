@@ -107,6 +107,7 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | Revisión visual (2026-10-01, rama `development`) | Manual | — | 1024 y 375 px: selects con la piel de los inputs, `*` y ayuda visibles, errores al guardar vacío |
 | `apps/web/app/(dashboard)/empresas/company-form.test.tsx` (2026-10-01) | Web | +1 | Nombre comercial y RUC son los únicos obligatorios y llevan su marca |
 | Revisión visual de la barra de filtros (2026-10-01) | Manual | — | Contactos y Empresas de 1440 a 375 px, con **Limpiar** visible: sin desborde |
+| Revisión visual de los selects (2026-10-03) | Manual | — | 1024 y 375 px: prefijo largo en una línea, listas de países y provincias con tope y desplazamiento, foco de teclado azul, cantón deshabilitado con flecha |
 
 **Archivos CSV para probar a mano:**
 

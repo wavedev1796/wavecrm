@@ -455,10 +455,17 @@ summary:focus-visible {
   .select-control::picker(select) {
     appearance: base-select;
   }
+  /* base-select partiría el texto largo en dos líneas y lo pasaría bajo la flecha: una línea, cortada en el borde del contenido. */
   .select-control {
     align-items: center;
+    white-space: nowrap;
+    overflow: clip;
+    overflow-clip-margin: content-box;
   }
+  /* Sin tope, las listas largas (países, provincias, cantones) ocupan toda la pantalla. */
   .select-control::picker(select) {
+    max-block-size: min(18rem, 50dvh);
+    overflow-y: auto;
     margin-top: 6px;
     padding: 6px;
     border: 1px solid var(--wave-line-strong);
@@ -475,6 +482,10 @@ summary:focus-visible {
   .select-control option:focus-visible {
     color: var(--wave-blue-dark);
     background: var(--wave-blue-soft);
+  }
+  .select-control option:focus-visible {
+    outline: 2px solid var(--wave-blue-line);
+    outline-offset: -2px;
   }
   .select-control option:checked {
     color: var(--wave-blue-dark);
@@ -500,7 +511,7 @@ summary:focus-visible {
 }
 .input:disabled,
 .select-control:disabled {
-  background: #f1f0eb;
+  background-color: #f1f0eb;
   cursor: not-allowed;
 }
 .select-control:disabled {

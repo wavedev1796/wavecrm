@@ -266,6 +266,31 @@ Pedido del usuario tras el cambio anterior: arreglar el desborde de la barra de 
 - `company-form.test.tsx` (+1): nombre comercial y RUC son los únicos obligatorios y llevan la marca.
 - `pnpm lint`, `pnpm build`, `pnpm test` (98 y 181) y `pnpm test:e2e` (22) en verde.
 
+## Selects de Wave en teléfono, provincia y cantón (2026-10-03)
+
+Pedido del usuario: que el prefijo del teléfono, la provincia, el cantón y cualquier otro selector se vean como el de tipo de documento. Todos usaban ya el componente `Select`, pero los de listas largas o textos largos fallaban en tres puntos que el de documento, con tres opciones cortas, no mostraba.
+
+### Implementación
+
+- `apps/web/app/globals.css` (piel compartida de `.select-control`, afecta a todos los selects de la web):
+  - Con `appearance: base-select`, el valor elegido queda en una línea (`white-space: nowrap`) y se corta en el borde del contenido (`overflow: clip` + `overflow-clip-margin: content-box`). Antes «Emiratos Árabes Unidos (+971)» partía el prefijo en dos líneas y el texto pasaba bajo la flecha.
+  - La lista desplegable mide como máximo `min(18rem, 50dvh)` y se desplaza por dentro. Antes la de países (245 opciones) y la de provincias (25) ocupaban la pantalla entera y tapaban el formulario.
+  - La opción con foco de teclado lleva un contorno de 2 px `--wave-blue-line`, en vez del anillo naranja del navegador.
+  - El estado deshabilitado cambia `background` por `background-color`: el atajo borraba los gradientes de la flecha y el cantón sin provincia se veía como un input.
+- `docs/design/TOKENS.md`: sección *Controles de formulario* con el tope de la lista, el foco de la opción, el corte del texto y la lista de selects que usan `Select`.
+
+### Decisiones
+
+- Corte limpio antes de la flecha y no puntos suspensivos: con `base-select` el texto vive en el árbol interno del navegador y `text-overflow: ellipsis` no le llega. La lista desplegada sí muestra el nombre completo.
+- El arreglo va en la clase compartida y no en cada campo: así cubre también los filtros de Contactos, Empresas y Usuarios, el rol de usuario y las columnas de importación.
+- La empresa del contacto sigue con `<datalist>`: es un buscador por nombre o RUC, no un select, y la lista de sugerencias la dibuja el navegador sin estilos propios.
+
+### Validación
+
+- Navegador (Chrome 152, 1024 y 375 px): prefijo «Emiratos Árabes Unidos (+971)» en una línea a 40 px de alto; listas de países y provincias de unas siete opciones con desplazamiento; foco de teclado en azul; cantón deshabilitado con su flecha. En móvil, los cuatro selects del formulario a 44 px y sin scroll horizontal.
+- Los 12 selects de `/usuarios` y los del formulario de contacto heredan los mismos estilos calculados.
+- `pnpm lint` y `pnpm build` en verde. Cambio solo de CSS: las pruebas existentes de `phone-field` y `location-fields` ya comprueban que usan `select-control`.
+
 ## Pendientes
 
 - Producción recibe las migraciones `20260927120000_contact_document_type` y `20261001120000_contact_document_required` en el próximo despliegue. `development` aún no tiene la segunda: el usuario pidió no tocarla en este cambio.

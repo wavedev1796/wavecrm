@@ -60,8 +60,12 @@ Input (`.input`) y select (componente `Select`, clase `.select-control`) compart
 - 40 px de alto, borde `--wave-line-strong`, radio `10px`, fondo blanco, texto `0.82rem`.
 - Hover: borde `#C8C7BF`. Foco: borde `--wave-blue` y anillo de 3 px `--wave-blue-soft`.
 - Error (`aria-invalid`): borde `--wave-danger` y, con foco, anillo `--wave-danger-soft`.
-- Deshabilitado: fondo `#F1F0EB` y cursor bloqueado; el select pone el texto en `--wave-muted`.
+- Deshabilitado: fondo `#F1F0EB` y cursor bloqueado; el select pone el texto en `--wave-muted` y conserva su flecha.
 - Select: sin la apariencia nativa del sistema; flecha propia dibujada con dos gradientes de 5 px en `--wave-muted-strong`. Donde el navegador admite `appearance: base-select`, la lista desplegable también lleva la piel de Wave: borde `--wave-line-strong`, radio `12px`, `--shadow-md` y la opción activa o elegida en `--wave-blue-soft` con texto `--wave-blue-dark`.
+  - La lista mide como máximo `min(18rem, 50dvh)` (unas siete opciones) y se desplaza por dentro: países, provincias y cantones no tapan la pantalla.
+  - La opción con foco de teclado lleva un contorno de 2 px `--wave-blue-line` hacia dentro, para distinguirla de la elegida.
+  - El valor elegido va en una sola línea y se corta antes de la flecha (p. ej. «Emiratos Árabes Unidos (+971)» en el prefijo del teléfono).
+- Todos los selects de la web (tipo de documento, prefijo del teléfono, provincia, cantón, filtros, rol de usuario y columnas de importación) usan el componente `Select`; no hay `<select>` sueltos.
 - En móvil (≤ 560 px), inputs y selects de los formularios de contacto y empresa (`.contact-form`) suben a 44 px y `1rem`.
 - Campo obligatorio: `*` después de la etiqueta, en el color de la etiqueta y oculto al lector de pantalla (el control lleva `aria-required`). El formulario lo explica en su cabecera.
 - Ayuda bajo el campo (`.field-hint`): `0.72rem / 550`, `--wave-muted-strong`, enlazada al control con `aria-describedby`.
