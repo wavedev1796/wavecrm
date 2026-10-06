@@ -1,15 +1,15 @@
 # Pruebas del Sprint 2
 
-Estado al 2026-10-05: **347 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md) (incluido el documento obligatorio del 2026-10-01), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
+Estado al 2026-10-05: **355 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md) (incluido el documento obligatorio del 2026-10-01), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
 
 | Capa | Pruebas |
 | --- | --- |
 | Unitarias del API | 98 |
 | Integración del API contra Neon | 41 |
-| Web | 186 |
+| Web | 194 |
 | Navegador | 22 |
 
-La última medición (`pnpm test:coverage`, 2026-10-01) dio **98,11 %** de líneas en el API y **98,08 %** en la web. La web baja desde el 98,45 % del 2026-09-28 por código sin cubrir anterior a este cambio (`app-shell.tsx`, `location-fields.tsx`, `new-company-dialog.tsx`, `edit-user-dialog.tsx`, `new-password-form.tsx`); los archivos del documento obligatorio quedan al 100 %. Falta ejecutar `pnpm sonar:scan` para registrar la duplicación tras extraer `@wave/shared`.
+La última medición del API (`pnpm test:coverage`, 2026-10-01) dio **98,11 %** de líneas. La de la web (`pnpm test:coverage:web`, 2026-10-05) dio **98,41 %**, con `content/` al 100 %. Falta ejecutar `pnpm sonar:scan` para registrar la duplicación tras extraer `@wave/shared` y `content/`.
 
 
 Eduardo necesito hablar contigo.
@@ -23,7 +23,7 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 
 | Comando | Resultado esperado |
 | --- | --- |
-| `pnpm test` | `# tests 98` en el API y `Tests 186 passed` en la web |
+| `pnpm test` | `# tests 98` en el API y `Tests 194 passed` en la web |
 | `pnpm test:integration` | `# tests 41`, `# fail 0` |
 | `pnpm test:e2e` (con `pnpm dev` apagado) | `22 passed` |
 | `pnpm test:coverage` | `coverage/api/lcov.info` y `coverage/web/lcov.info` |
@@ -110,6 +110,17 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | `apps/web/app/(dashboard)/empresas/company-form.test.tsx` (2026-10-01) | Web | +1 | Nombre comercial y RUC son los únicos obligatorios y llevan su marca |
 | Revisión visual de la barra de filtros (2026-10-01) | Manual | — | Contactos y Empresas de 1440 a 375 px, con **Limpiar** visible: sin desborde |
 | Revisión visual de los selects (2026-10-03) | Manual | — | 1024 y 375 px: prefijo largo en una línea, listas de países y provincias con tope y desplazamiento, foco de teclado azul, cantón deshabilitado con flecha |
+
+### CRM-17 a CRM-19 · Excel, plantilla y diccionario (2026-10-05)
+
+| Archivo | Tipo | Pruebas | Qué verifica |
+| --- | --- | --- | --- |
+| `apps/web/components/csv-import/spreadsheet.test.tsx` | Web | 4 | Un `.xlsx` se convierte a CSV (cero inicial de texto, RUC numérico, comillas); un CSV pasa igual y un `.xlsx` dañado falla; plantillas de contactos y empresas en `.xlsx` y CSV (BOM y `;`) con el mapeo propuesto completo |
+| `apps/web/components/csv-import/import-form.test.tsx` | Web | +1 | Un `.xlsx` propone el mapeo, se envía como CSV y un `.xlsx` dañado muestra su aviso |
+| `apps/web/content/catalogos.test.ts` | Web | 6 | Cada lista de `@wave/shared` repite su `enum` del schema de Prisma |
+| `apps/web/lib/format.test.ts` | Web | 2 | Iniciales, dinero y fechas en `es-EC` |
+| Revisión visual (2026-10-05, rama `pruebas`) | Manual | — | Importar un `.xlsx` con una cédula inválida: mapeo propuesto, fila 2 rechazada y nada guardado |
+| `pnpm test:e2e` (2026-10-05) | Navegador | 22 | Sin cambios de texto tras mover todo a `content/` |
 
 **Archivos CSV para probar a mano:**
 

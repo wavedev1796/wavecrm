@@ -18,7 +18,7 @@ Registrar contactos y empresas de Ecuador con su identificación validada, consu
 | CRM-16 | [Importar contactos (CSV)](16%20-%20Importar%20contactos%20(CSV).md) | Zaith Manangón | Completo (4/4 criterios) |
 | CRM-17 | [Importar desde Excel](17%20-%20Importar%20desde%20Excel.md) | Zaith Manangón | Completo (4/4 criterios) |
 | CRM-18 | [Plantilla de importación](18%20-%20Plantilla%20de%20importaci%C3%B3n.md) | Zaith Manangón | Completo (4/4 criterios) |
-| CRM-19 | [Diccionario de textos de la web](19%20-%20Diccionario%20de%20textos%20de%20la%20web.md) | Zaith Manangón | En curso |
+| CRM-19 | [Diccionario de textos de la web](19%20-%20Diccionario%20de%20textos%20de%20la%20web.md) | Zaith Manangón | Completo (4/4 criterios) |
 
 Tras probar CRM-14, el usuario pidió cambios en Contactos y la pantalla Empresas (2026-09-26). Los hizo Zaith Manangón, también en los tickets de Eduardo, con autorización del usuario: [Ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md).
 
@@ -46,11 +46,11 @@ Tras probar CRM-14, el usuario pidió cambios en Contactos y la pantalla Empresa
 | --- | --- |
 | Pruebas unitarias del API | 98 (+45) |
 | Pruebas de integración del API (Neon) | 41 (+17) |
-| Pruebas de la web (Vitest) | 181 (+71) |
+| Pruebas de la web (Vitest) | 194 (+84) |
 | Pruebas de navegador (Playwright) | 22 (+7) |
-| **Total** | **342** |
+| **Total** | **355** |
 | Cobertura de líneas del API | 98,11 % |
-| Cobertura de líneas de la web | 98,08 % |
+| Cobertura de líneas de la web | 98,41 % |
 
 Detalle por ticket y paso a paso: [docs/Calidad/Pruebas del Sprint 2.md](../Calidad/Pruebas%20del%20Sprint%202.md).
 
