@@ -14,6 +14,8 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ESTADO_NEGOCIO } from "@/content/catalogos";
+import { COMUN } from "@/content/comun";
+import { EMPRESAS } from "@/content/empresas";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { formatPhone, splitPhone } from "@/lib/phone";
@@ -28,7 +30,8 @@ export default async function CompanyDetailPage({
     `/companies/${encodeURIComponent(id)}`,
   );
   if (response.status === 404) notFound();
-  if (!response.ok) return <p role="alert">No pudimos cargar la empresa.</p>;
+  const texto = EMPRESAS.ficha;
+  if (!response.ok) return <p role="alert">{texto.errorCarga}</p>;
 
   const company = (await response.json()) as CompanyDetail;
   const phone = splitPhone(company.phone);
@@ -49,16 +52,16 @@ export default async function CompanyDetailPage({
   return (
     <div className="contact-detail-page">
       <Link className="back-link" href="/empresas">
-        ← Volver a empresas
+        {texto.volver}
       </Link>
       <section className="contact-profile card">
         <span className="avatar contact-profile-avatar">
           <Building2 aria-hidden />
         </span>
         <div>
-          <span>Ficha de empresa</span>
+          <span>{texto.etiqueta}</span>
           <h2>{company.name}</h2>
-          <p>{company.legalName ?? "Sin razón social"}</p>
+          <p>{company.legalName ?? texto.sinRazonSocial}</p>
         </div>
         <div className="contact-tags">
           {company.tags.map((tag) => (
@@ -72,25 +75,25 @@ export default async function CompanyDetailPage({
       <div className="contact-detail-grid">
         <div className="contact-detail-main">
           <Card className="contact-data-card">
-            <h3>Datos de la empresa</h3>
+            <h3>{texto.datos}</h3>
             <dl>
-              <Info icon={<Building2 />} label="RUC" value={company.taxId} />
-              <Info icon={<Mail />} label="Correo" value={company.email} />
+              <Info icon={<Building2 />} label={texto.campos.ruc} value={company.taxId} />
+              <Info icon={<Mail />} label={texto.campos.correo} value={company.email} />
               <Info
                 icon={<Phone />}
-                label="Teléfono"
+                label={texto.campos.telefono}
                 value={company.phone && formatPhone(company.phone)}
               />
               <Info
                 icon={<MapPin />}
-                label="Ubicación"
+                label={texto.campos.ubicacion}
                 value={[company.address, company.city, company.province]
                   .filter(Boolean)
                   .join(", ")}
               />
               <Info
                 icon={<Globe2 />}
-                label="Sitio web"
+                label={texto.campos.sitioWeb}
                 value={
                   company.website ? (
                     <a href={company.website}>{company.website}</a>
@@ -99,7 +102,7 @@ export default async function CompanyDetailPage({
               />
               <Info
                 icon={<UserRound />}
-                label="Responsable"
+                label={texto.campos.responsable}
                 value={company.owner?.name}
               />
             </dl>
@@ -108,7 +111,8 @@ export default async function CompanyDetailPage({
           <Card className="contact-related">
             <h3>
               <Users />
-              Contactos <Badge tone="blue">{company.contacts.length}</Badge>
+              {texto.contactos}{" "}
+              <Badge tone="blue">{company.contacts.length}</Badge>
             </h3>
             {company.contacts.length ? (
               company.contacts.map((contact) => (
@@ -119,20 +123,25 @@ export default async function CompanyDetailPage({
                         {contact.firstName} {contact.lastName}
                       </strong>
                     </Link>
-                    <span>{contact.position ?? contact.email ?? "Sin cargo"}</span>
+                    <span>
+                      {contact.position ?? contact.email ?? texto.sinCargo}
+                    </span>
                   </div>
-                  <b>{contact.phone ? formatPhone(contact.phone) : "—"}</b>
+                  <b>
+                    {contact.phone ? formatPhone(contact.phone) : COMUN.sinDato}
+                  </b>
                 </article>
               ))
             ) : (
-              <p>No hay contactos vinculados.</p>
+              <p>{texto.sinContactos}</p>
             )}
           </Card>
 
           <Card className="contact-related">
             <h3>
               <CircleDollarSign />
-              Negocios <Badge tone="blue">{company.deals.length}</Badge>
+              {texto.negocios}{" "}
+              <Badge tone="blue">{company.deals.length}</Badge>
             </h3>
             {company.deals.length ? (
               company.deals.map((deal) => (
@@ -147,21 +156,21 @@ export default async function CompanyDetailPage({
                 </article>
               ))
             ) : (
-              <p>No hay negocios vinculados.</p>
+              <p>{texto.sinNegocios}</p>
             )}
           </Card>
 
           <Card className="contact-related company-history">
             <h3>
               <Clock3 />
-              Historial
+              {texto.historial.titulo}
             </h3>
             {company.history.length ? (
               company.history.map((entry) => (
                 <article key={entry.id}>
                   <div>
                     <strong>{historyLabel(entry)}</strong>
-                    <span>{entry.user?.name ?? "Sistema"}</span>
+                    <span>{entry.user?.name ?? texto.historial.sistema}</span>
                   </div>
                   <b>{formatDateTime(entry.createdAt)}</b>
                 </article>
@@ -169,8 +178,8 @@ export default async function CompanyDetailPage({
             ) : (
               <article>
                 <div>
-                  <strong>Empresa creada</strong>
-                  <span>Registro anterior al historial detallado</span>
+                  <strong>{texto.historial.creada}</strong>
+                  <span>{texto.historial.anterior}</span>
                 </div>
                 <b>{formatDateTime(company.createdAt)}</b>
               </article>
@@ -199,30 +208,17 @@ function Info({
         {icon}
         <span>{label}</span>
       </dt>
-      <dd>{value || "—"}</dd>
+      <dd>{value || COMUN.sinDato}</dd>
     </div>
   );
 }
 
-const FIELD_LABELS: Record<string, string> = {
-  name: "nombre comercial",
-  legalName: "razón social",
-  taxId: "RUC",
-  website: "sitio web",
-  phone: "teléfono",
-  email: "correo",
-  province: "provincia",
-  city: "cantón",
-  address: "dirección",
-  tags: "etiquetas",
-  ownerId: "responsable",
-};
-
 function historyLabel(entry: CompanyDetail["history"][number]) {
-  if (entry.action === "CREATE") return "Empresa creada";
+  const texto = EMPRESAS.ficha.historial;
+  if (entry.action === "CREATE") return texto.creada;
   const fields = entry.changes?.fields
-    ?.map((field) => FIELD_LABELS[field] ?? field)
+    ?.map((field) => texto.campos[field] ?? field)
     .join(", ");
-  return fields ? `Actualizó ${fields}` : "Empresa actualizada";
+  return fields ? texto.actualizo(fields) : texto.actualizada;
 }
 

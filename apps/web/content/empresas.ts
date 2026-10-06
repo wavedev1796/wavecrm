@@ -1,0 +1,103 @@
+// Empresas (CRM-19): listado, ficha con historial, formulario y diálogo. La importación está en content/importacion.ts.
+
+export const EMPRESAS = {
+  listado: {
+    titulo: "Todas las empresas",
+    resumenSinDatos: "Consulta y organiza tus cuentas",
+    total: (n: number) =>
+      n === 1 ? "1 empresa registrada" : `${n} empresas registradas`,
+    buscar: {
+      etiqueta: "Buscar empresa",
+      placeholder: "Buscar por nombre, razón social o RUC",
+    },
+    // Arreglo en el orden de la tabla: lo reutiliza el esqueleto de carga.
+    columnas: [
+      "Empresa",
+      "RUC",
+      "Provincia",
+      "Etiquetas",
+      "Contactos",
+      "Responsable",
+    ],
+    sinResultados: "No hay empresas que coincidan con los filtros.",
+    errorCarga: "No pudimos cargar las empresas. Recarga la página.",
+    paginacion: "Paginación de empresas",
+    sinAsignar: "Sin asignar",
+    creada: "Empresa creada.",
+  },
+  ficha: {
+    errorCarga: "No pudimos cargar la empresa.",
+    volver: "← Volver a empresas",
+    etiqueta: "Ficha de empresa",
+    sinRazonSocial: "Sin razón social",
+    datos: "Datos de la empresa",
+    campos: {
+      ruc: "RUC",
+      correo: "Correo",
+      telefono: "Teléfono",
+      ubicacion: "Ubicación",
+      sitioWeb: "Sitio web",
+      responsable: "Responsable",
+    },
+    contactos: "Contactos",
+    sinContactos: "No hay contactos vinculados.",
+    sinCargo: "Sin cargo",
+    negocios: "Negocios",
+    sinNegocios: "No hay negocios vinculados.",
+    historial: {
+      titulo: "Historial",
+      sistema: "Sistema",
+      creada: "Empresa creada",
+      actualizada: "Empresa actualizada",
+      actualizo: (campos: string) => `Actualizó ${campos}`,
+      anterior: "Registro anterior al historial detallado",
+      // Nombre de cada campo del AuditLog en "Actualizó …".
+      campos: {
+        name: "nombre comercial",
+        legalName: "razón social",
+        taxId: "RUC",
+        website: "sitio web",
+        phone: "teléfono",
+        email: "correo",
+        province: "provincia",
+        city: "cantón",
+        address: "dirección",
+        tags: "etiquetas",
+        ownerId: "responsable",
+      } as Record<string, string>,
+    },
+  },
+  formulario: {
+    editar: "Editar empresa",
+    nueva: "Añadir empresa",
+    ayuda: "Los campos con * son obligatorios. Los datos se validan al guardar.",
+    campos: {
+      nombre: "Nombre comercial",
+      razonSocial: "Razón social",
+      ruc: "RUC",
+      rucPlaceholder: "1791234561001",
+      sitioWeb: "Sitio web",
+      sitioWebPlaceholder: "https://empresa.ec",
+      correo: "Correo",
+      correoPlaceholder: "ventas@empresa.ec",
+      direccion: "Dirección",
+      etiquetas: "Etiquetas",
+      etiquetasPlaceholder: "cliente, distribuidor",
+    },
+    cancelar: "Cancelar",
+    guardar: "Guardar cambios",
+    crear: "Crear empresa",
+    errores: {
+      ruc: "Ingresa el RUC.",
+      // Sujeto del mensaje de longitud de lib/validation ("La dirección …").
+      direccion: "La dirección",
+    },
+    actualizada: "Empresa actualizada.",
+    creada: "Empresa creada.",
+  },
+  dialogo: {
+    abrir: "Añadir empresa",
+    etiqueta: "Añadir empresa",
+    cerrar: "Cerrar añadir empresa",
+  },
+} as const;

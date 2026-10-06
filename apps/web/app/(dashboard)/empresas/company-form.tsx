@@ -10,12 +10,15 @@ import { Button } from "@/components/ui/button";
 import { invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { useFieldErrors } from "@/components/use-field-errors";
+import { EMPRESAS } from "@/content/empresas";
 import { saveCompany } from "./actions";
 import {
   emptyCompanyValues,
   type CompanyFormState,
   type CompanyFormValues,
 } from "./company-form-state";
+
+const texto = EMPRESAS.formulario;
 
 const initial: CompanyFormState = {
   feedback: null,
@@ -89,32 +92,30 @@ export function CompanyForm({
           <Building2 aria-hidden />
         </span>
         <div>
-          <h2>{id ? "Editar empresa" : "Añadir empresa"}</h2>
-          <p>
-            Los campos con * son obligatorios. Los datos se validan al guardar.
-          </p>
+          <h2>{id ? texto.editar : texto.nueva}</h2>
+          <p>{texto.ayuda}</p>
         </div>
       </header>
       {state.feedback && (
         <Alert tone={state.feedback.tone}>{state.feedback.message}</Alert>
       )}
       <div className="contact-form-grid">
-        {text("name", "Nombre comercial", { maxLength: 120, required: true })}
-        {text("legalName", "Razón social", { maxLength: 160 })}
-        {text("taxId", "RUC", {
+        {text("name", texto.campos.nombre, { maxLength: 120, required: true })}
+        {text("legalName", texto.campos.razonSocial, { maxLength: 160 })}
+        {text("taxId", texto.campos.ruc, {
           required: true,
           inputMode: "numeric",
-          placeholder: "1791234561001",
+          placeholder: texto.campos.rucPlaceholder,
         })}
-        {text("website", "Sitio web", {
+        {text("website", texto.campos.sitioWeb, {
           type: "url",
           maxLength: 200,
-          placeholder: "https://empresa.ec",
+          placeholder: texto.campos.sitioWebPlaceholder,
         })}
-        {text("email", "Correo", {
+        {text("email", texto.campos.correo, {
           type: "email",
           maxLength: 64,
-          placeholder: "ventas@empresa.ec",
+          placeholder: texto.campos.correoPlaceholder,
         })}
         <PhoneField
           id="company-phone"
@@ -129,18 +130,20 @@ export function CompanyForm({
           provinceError={error("province")}
           cantonError={error("city")}
         />
-        {text("address", "Dirección", { maxLength: 200 })}
-        {text("tags", "Etiquetas", { placeholder: "cliente, distribuidor" })}
+        {text("address", texto.campos.direccion, { maxLength: 200 })}
+        {text("tags", texto.campos.etiquetas, {
+          placeholder: texto.campos.etiquetasPlaceholder,
+        })}
       </div>
       <footer>
         {onCancel && (
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancelar
+            {texto.cancelar}
           </Button>
         )}
         <Button type="submit" loading={pending}>
           <Check aria-hidden />
-          {id ? "Guardar cambios" : "Crear empresa"}
+          {id ? texto.guardar : texto.crear}
         </Button>
       </footer>
     </form>

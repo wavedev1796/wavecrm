@@ -24,7 +24,7 @@ Cada fase termina con `lint`, `test` y `build` de la web en verde y un commit pr
 | 3 | Comunes y navegación | `content/comun.ts` y `content/navegacion.ts`; el error de conexión repetido en 8 archivos sale de un solo lugar | Hecha (2026-10-05) |
 | 4a | Acceso | `content/acceso.ts`: login, recuperar, restablecer y activar cuenta | Hecha (2026-10-05) |
 | 4b | Contactos | `content/contactos.ts`: listado, ficha, formulario y diálogo | Hecha (2026-10-05) |
-| 4c | Empresas | `content/empresas.ts` | Pendiente |
+| 4c | Empresas | `content/empresas.ts` | Hecha (2026-10-05) |
 | 4d | Usuarios | `content/usuarios.ts` | Pendiente |
 | 4e | Importación | `content/importacion.ts`: `components/csv-import/` y las dos pantallas de importar | Pendiente |
 

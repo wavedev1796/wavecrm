@@ -7,6 +7,8 @@ import { TagList } from "@/components/tag-list";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { Table } from "@/components/ui/table";
+import { COMUN } from "@/content/comun";
+import { EMPRESAS } from "@/content/empresas";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { listQuery } from "@/lib/list-params";
 import { NewCompanyDialog } from "./new-company-dialog";
@@ -30,23 +32,20 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
   );
   const result = response.ok ? ((await response.json()) as CompanyList) : null;
   const companies = result?.data ?? [];
+  const texto = EMPRESAS.listado;
 
   return (
     <div className="contacts-page">
-      {params.creada === "1" && <Alert tone="success">Empresa creada.</Alert>}
+      {params.creada === "1" && <Alert tone="success">{texto.creada}</Alert>}
       {!result && (
-        <Alert tone="error">
-          No pudimos cargar las empresas. Recarga la página.
-        </Alert>
+        <Alert tone="error">{texto.errorCarga}</Alert>
       )}
       <Card className="data-card">
         <ListHeader
           icon={<Building2 aria-hidden />}
-          title="Todas las empresas"
+          title={texto.titulo}
           summary={
-            result
-              ? companyCount(result.meta.total)
-              : "Consulta y organiza tus cuentas"
+            result ? texto.total(result.meta.total) : texto.resumenSinDatos
           }
           importHref="/empresas/importar"
         >
@@ -55,18 +54,15 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
         <ListFilters
           basePath="/empresas"
           params={params}
-          searchLabel="Buscar empresa"
-          searchPlaceholder="Buscar por nombre, razón social o RUC"
+          searchLabel={texto.buscar.etiqueta}
+          searchPlaceholder={texto.buscar.placeholder}
         />
         <Table>
           <thead>
             <tr>
-              <th>Empresa</th>
-              <th>RUC</th>
-              <th>Provincia</th>
-              <th>Etiquetas</th>
-              <th>Contactos</th>
-              <th>Responsable</th>
+              {texto.columnas.map((columna) => (
+                <th key={columna}>{columna}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -75,8 +71,8 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
             ))}
             {result && !companies.length && (
               <tr>
-                <td colSpan={6} className="empty-table">
-                  No hay empresas que coincidan con los filtros.
+                <td colSpan={texto.columnas.length} className="empty-table">
+                  {texto.sinResultados}
                 </td>
               </tr>
             )}
@@ -88,7 +84,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
             params={params}
             meta={result.meta}
             shown={companies.length}
-            label="Paginación de empresas"
+            label={texto.paginacion}
           />
         )}
       </Card>
@@ -107,17 +103,13 @@ function CompanyRow({ company }: Readonly<{ company: Company }>) {
           </span>
         </Link>
       </td>
-      <td>{company.taxId ?? "—"}</td>
-      <td>{company.province ?? "—"}</td>
+      <td>{company.taxId ?? COMUN.sinDato}</td>
+      <td>{company.province ?? COMUN.sinDato}</td>
       <td>
         <TagList tags={company.tags} />
       </td>
       <td>{company._count.contacts}</td>
-      <td>{company.owner?.name ?? "Sin asignar"}</td>
+      <td>{company.owner?.name ?? EMPRESAS.listado.sinAsignar}</td>
     </tr>
   );
-}
-
-function companyCount(total: number) {
-  return total === 1 ? "1 empresa registrada" : `${total} empresas registradas`;
 }

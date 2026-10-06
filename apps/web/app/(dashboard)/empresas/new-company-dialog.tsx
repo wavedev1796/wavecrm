@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { FormDialog } from "@/components/form-dialog";
+import { EMPRESAS } from "@/content/empresas";
 import { CompanyForm } from "./company-form";
 
 export function NewCompanyDialog() {
@@ -18,9 +19,9 @@ export function NewCompanyDialog() {
   return (
     <FormDialog
       dialogRef={dialog}
-      triggerLabel="Añadir empresa"
-      label="Añadir empresa"
-      closeLabel="Cerrar añadir empresa"
+      triggerLabel={EMPRESAS.dialogo.abrir}
+      label={EMPRESAS.dialogo.etiqueta}
+      closeLabel={EMPRESAS.dialogo.cerrar}
     >
       <CompanyForm
         key={formKey}

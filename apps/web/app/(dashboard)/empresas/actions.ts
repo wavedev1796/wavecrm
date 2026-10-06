@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { COMUN } from "@/content/comun";
+import { EMPRESAS } from "@/content/empresas";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
 import { cantonError } from "@/lib/cantons";
 import { normalizeDigits, provinceError, rucError } from "@/lib/ecuador";
@@ -31,13 +32,18 @@ export async function saveCompany(
   const invalid = fieldErrors({
     name: companyNameError(values.name, { required: true }),
     legalName: companyNameError(values.legalName, { required: false }),
-    taxId: values.taxId ? rucError(values.taxId) : "Ingresa el RUC.",
+    taxId: values.taxId ? rucError(values.taxId) : EMPRESAS.formulario.errores.ruc,
     website: websiteError(values.website),
     email: optionalEmailError(values.email),
     phone: phoneError(values.phone, country),
     province: provinceError(values.province),
     city: cantonError(values.province, values.city),
-    address: optionalLengthError(values.address, "La dirección", 1, 200),
+    address: optionalLengthError(
+      values.address,
+      EMPRESAS.formulario.errores.direccion,
+      1,
+      200,
+    ),
     tags: tagsError(values.tags),
   });
   if (invalid) return { feedback: null, fieldErrors: invalid, values };
@@ -82,7 +88,9 @@ export async function saveCompany(
     return {
       feedback: {
         tone: "success",
-        message: id ? "Empresa actualizada." : "Empresa creada.",
+        message: id
+          ? EMPRESAS.formulario.actualizada
+          : EMPRESAS.formulario.creada,
       },
       fieldErrors: {},
       values,
