@@ -2,7 +2,7 @@
 
 | Carpeta            | Contenido                                                      |
 | ------------------ | -------------------------------------------------------------- |
-| `Sprint X/`        | Un `.md` por ticket y un `README.md` con el resumen del sprint |
+| `Sprint X/`        | Un `.md` por ticket, un `README.md` con el resumen del sprint y, al cierre, `Reporte del Sprint X.md` |
 | `Calidad/`         | Pruebas por sprint, SonarQube y deuda técnica                  |
 | `Infraestructura/` | Notas que no pertenecen a un ticket (Neon)                     |
 | `design/`          | Tokens y guía visual                                           |
@@ -65,3 +65,38 @@ Reglas:
 - **Coordinación con otro ticket** (un módulo compartido que cambió): va en _Decisiones_ como `**Coordinación con CRM-N.**`.
 - Documentos sin número CRM (pedidos del usuario, como _Ajustes de contactos y empresas_): misma estructura, con `# Título` sin prefijo.
 - Decisiones técnicas fuera de ticket: en el ticket más cercano o en una nota en `docs/`.
+
+## Reporte del sprint
+
+Uno por sprint, al cierre: `docs/Sprint X/Reporte del Sprint X.md`. Es el balance del equipo sobre el sprint completo; los reportes semanales de cada persona no van en el repositorio. Modelo: [Reporte del Sprint 1](Sprint%201/Reporte%20del%20Sprint%201.md).
+
+```markdown
+# Reporte del Sprint X — Nombre del sprint
+
+**Periodo:** del D al D de mes de AAAA
+**Equipo:** Nombre Apellido y Nombre Apellido · **Fecha del reporte:** D de mes de AAAA
+
+## 1. Resumen ejecutivo
+
+Dos párrafos: qué entrega el sprint y qué queda pendiente; resultado de calidad.
+
+## 2. Tickets cerrados
+
+| CRM | Ticket | Responsable | Resultado |
+
+Commits del periodo: total y por persona.
+
+## 3. Métricas de calidad
+
+| Métrica | Valor |   (pruebas por capa, cobertura, Quality Gate)
+
+Punto de partida del sprint.
+
+## 4. Hallazgos encontrados y corregidos
+
+| # | Hallazgo | Impacto | Corrección |
+
+## 5. Impedimentos
+
+## 6. Siguientes pasos (Sprint X+1)
+```

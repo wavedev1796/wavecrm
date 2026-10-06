@@ -1,7 +1,7 @@
 # Neon: base de datos compartida de desarrollo
 
 > **Caso aparte de los tickets.** Indicación del arquitecto de software: que los dos desarrolladores compartan la misma base de datos en Neon.
-> **Estado (2026-09-14):** fases 1 a 4 aplicadas. Pendiente: PR a `develop` (fase 0) y validación simultánea de ambos desarrolladores.
+> **Estado (2026-09-14):** fases 1 a 4 aplicadas. Pendiente: validación simultánea de ambos desarrolladores.
 
 ## Objetivo
 
@@ -41,10 +41,10 @@ Conclusión: el desfase entre ramas es silencioso con los comandos seguros y des
 
 ### Fase 0: una sola historia de migraciones (bloqueante)
 
-1. Integrar el trabajo del Sprint 0 y el Sprint 1 en `develop`: PR de `ZaithManangon-Dev` a `develop`.
-2. Eduardo trae `develop` a `EduardoGarcia-Dev` **antes** de crear migraciones de CRM-7. Hoy su rama solo tiene commits del Sprint 0, así que no debería haber conflictos: es el momento más barato para alinearse.
+1. ~~Integrar el trabajo del Sprint 0 y el Sprint 1 en `develop` por PR.~~ _Descartado: el equipo no tiene permiso sobre `develop`. Se alinean las dos ramas de desarrollo entre sí._
+2. Eduardo trae `ZaithManangon-Dev` a `EduardoGarcia-Dev` **antes** de crear migraciones de CRM-7. Hoy su rama solo tiene commits del Sprint 0, así que no debería haber conflictos: es el momento más barato para alinearse.
 3. Informar a Eduardo del cambio de roles a `ADMIN | VENDEDOR` (decisión del equipo en CRM-6), porque el CRUD de usuarios de CRM-7 depende de ellos.
-4. Comprobación: `git diff origin/develop origin/EduardoGarcia-Dev -- packages/database/prisma/migrations` y lo mismo con `ZaithManangon-Dev` deben salir vacíos.
+4. Comprobación: `git diff origin/ZaithManangon-Dev origin/EduardoGarcia-Dev -- packages/database/prisma/migrations` debe salir vacío.
 
 ### Fase 1: proyecto Neon
 
@@ -91,7 +91,7 @@ Conclusión: el desfase entre ramas es silencioso con los comandos seguros y des
 3. **Una migración aplicada en Neon no se edita nunca**; si hay que corregirla, se crea otra.
 4. **Antes de aplicar en Neon, se avisa en el chat del equipo.**
    - _Aditivas_ (tablas nuevas, columnas opcionales): se pueden aplicar desde la rama personal, porque el código del otro sigue funcionando.
-   - _Destructivas_ (borrar o renombrar columnas, quitar valores de un enum, como hizo CRM-6): solo cuando ambas ramas ya tienen el código que deja de usar lo viejo, es decir, tras integrarse en `develop` y actualizar las dos ramas.
+   - _Destructivas_ (borrar o renombrar columnas, quitar valores de un enum, como hizo CRM-6): solo cuando ambas ramas ya tienen el código que deja de usar lo viejo, es decir, tras subirse a `ZaithManangon-Dev` y `EduardoGarcia-Dev`.
 5. **Tras cada pull o merge que traiga migraciones:** `pnpm db:generate`, y `pnpm db:migrate:deploy` si hay pendientes.
 6. **Como `migrate status` no detecta migraciones ajenas**, ante un error raro se compara el SQL Editor de Neon (`select migration_name from _prisma_migrations order by migration_name;`) con `packages/database/prisma/migrations`.
 
@@ -104,7 +104,7 @@ Conclusión: el desfase entre ramas es silencioso con los comandos seguros y des
 - **Zaith Manangón, dueño del proyecto Neon.** Decisión del equipo (2026-09-10).
 - **Neon en Ohio (`aws-us-east-2`), Render en Virginia.** Decisión de Zaith Manangón (2026-09-13). El proyecto se creó en Ohio por error, en contra de la decisión del 2026-09-10 que sigue abajo. Como Neon no permite cambiar la región, se evaluó recrearlo y se decidió mantenerlo: el coste es latencia adicional entre regiones en cada consulta del API desplegado. Si en producción se nota, la salida es crear un proyecto nuevo en Virginia y migrar los datos.
 - **Render y Neon en Virginia** _(sustituida para Neon el 2026-09-13)_. Decisión del equipo (2026-09-10). Es la región más cercana a Ecuador entre las que ofrecen los dos proveedores (Oregon, Ohio, Virginia, Frankfurt y Singapur), y ponerlos juntos evita latencia entre el API y la base. Ninguno de los dos permite cambiarla después, por eso queda fijada en `render.yaml` antes del primer despliegue.
-- **Ramas sincronizadas y `develop` solo por PR.** Regla del equipo desde 2026-09-10 (`ai-rules/GIT_WORKFLOW.md`): `ZaithManangon-Dev` y `EduardoGarcia-Dev` contienen siempre el mismo código, así que la divergencia de migraciones que motivó la fase 0 no debería repetirse.
+- **Ramas sincronizadas y `develop` fuera de alcance.** Regla del equipo desde 2026-09-10 (`ai-rules/GIT_WORKFLOW.md`); desde 2026-10-05 no se usa `develop`, porque no hay permiso sobre esa rama. `ZaithManangon-Dev` y `EduardoGarcia-Dev` contienen siempre el mismo código, así que la divergencia de migraciones que motivó la fase 0 no debería repetirse.
 
 ## Decisiones abiertas (a confirmar con el arquitecto)
 
@@ -134,7 +134,7 @@ Conclusión: el desfase entre ramas es silencioso con los comandos seguros y des
 **Fase 0 (2026-09-10)**
 
 - Hecho: `ZaithManangon-Dev` (CRM-6, CRM-8, logotipo, PRODUCT.md, CRM-10) subida también a `EduardoGarcia-Dev` como avance directo, sin push forzado. Las dos ramas remotas quedaron en el mismo commit, con las migraciones `initial` y `auth_roles_password`.
-- Pendiente: PR de `ZaithManangon-Dev` a `develop`. No se pudo abrir desde el agente porque `gh` estaba autenticado con una cuenta sin acceso al repositorio.
+- Descartado (2026-10-05): el PR de `ZaithManangon-Dev` a `develop`. El equipo no tiene permiso sobre esa rama (`gh` estaba autenticado con una cuenta sin acceso al repositorio).
 - Pendiente: Eduardo trae los cambios, añade `JWT_SECRET` a su `.env` y aplica la migración en su Docker (`pnpm db:migrate`, `pnpm db:seed`).
 
 **Fase 1**
