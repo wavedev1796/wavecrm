@@ -2,6 +2,7 @@
 
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { IMPORTACION } from "@/content/importacion";
 import type { ImportFieldSpec } from "./csv-header";
 import { downloadTemplate } from "./spreadsheet";
 
@@ -21,7 +22,7 @@ export function TemplateDownload({ fields, fileName }: Props) {
         onClick={() => downloadTemplate(fields, fileName, "xlsx")}
       >
         <Download aria-hidden />
-        Descargar plantilla Excel
+        {IMPORTACION.plantilla.excel}
       </Button>
       <Button
         type="button"
@@ -29,7 +30,7 @@ export function TemplateDownload({ fields, fileName }: Props) {
         onClick={() => downloadTemplate(fields, fileName, "csv")}
       >
         <Download aria-hidden />
-        Descargar plantilla CSV
+        {IMPORTACION.plantilla.csv}
       </Button>
     </div>
   );

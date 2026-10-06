@@ -1,5 +1,6 @@
 "use server";
 
+import { IMPORTACION } from "@/content/importacion";
 import { sendImport, type ImportState } from "@/lib/csv-import";
 
 export async function importContacts(
@@ -9,7 +10,7 @@ export async function importContacts(
   return sendImport(
     "/contacts/import",
     formData,
-    { one: "contacto", many: "contactos" },
+    { one: IMPORTACION.contactos.uno, many: IMPORTACION.contactos.varios },
     "/contactos",
   );
 }

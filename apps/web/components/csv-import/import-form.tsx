@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Select } from "@/components/ui/select";
 import { Table } from "@/components/ui/table";
+import { IMPORTACION } from "@/content/importacion";
 import type { ImportState } from "@/lib/csv-import";
 import {
   guessMapping,
@@ -21,6 +22,7 @@ type Mapping = Record<string, string>;
 // Mismo límite que el API. Se revisa al elegir el archivo porque Next rechaza por su cuenta
 // una server action de más de 2 MB y esa respuesta rompe la página en vez de mostrar un aviso.
 const MAX_FILE_BYTES = 1024 * 1024;
+const texto = IMPORTACION.formulario;
 
 /** Solo los campos con una columna que exista en el archivo. */
 const chosen = (mapping: Mapping, columns: string[]): Mapping =>
@@ -74,11 +76,11 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
     setCsv(ready ?? null);
     setColumns(header);
     if (unreadable)
-      setFileError("No pudimos leer el archivo de Excel. Revisa que sea un .xlsx válido.");
+      setFileError(texto.errores.excelIlegible);
     else if (tooLarge)
-      setFileError("El archivo supera 1 MB. Divídelo en partes más pequeñas.");
+      setFileError(texto.errores.muyGrande);
     else if (file && !header.length)
-      setFileError("El archivo no tiene una fila de cabecera.");
+      setFileError(texto.errores.sinCabecera);
     else setFileError(null);
     // Lo elegido a mano se conserva si el archivo corregido trae la misma columna.
     setMapping((current) => ({
@@ -97,7 +99,7 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
       >
         <div className="form-field">
           <label>
-            Archivo Excel o CSV{" "}
+            {texto.archivo}{" "}
             <input
               name="file"
               type="file"
@@ -111,7 +113,7 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
 
         {columns.length > 0 && (
           <fieldset className="import-mapping">
-            <legend>¿Qué columna del archivo corresponde a cada dato?</legend>
+            <legend>{texto.mapeo}</legend>
             {fields.map(({ field, label, required }) => (
               <label key={field} className="form-field">
                 {required ? `${label} *` : label}
@@ -122,7 +124,7 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
                   }
                 >
                   <option value="">
-                    {required ? "Elige una columna" : "No importar"}
+                    {required ? texto.eligeColumna : texto.noImportar}
                   </option>
                   {columns.map((column) => (
                     <option key={column} value={column}>
@@ -142,7 +144,7 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
         />
         <Button type="submit" loading={pending} disabled={!columns.length}>
           <FileUp aria-hidden />
-          {`Importar ${noun}`}
+          {texto.importar(noun)}
         </Button>
       </form>
 
@@ -153,19 +155,21 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
           {state.tone === "success" && (
             <>
               {" "}
-              <Link href={listHref}>{`Ver ${noun}`}</Link>
+              <Link href={listHref}>{texto.ver(noun)}</Link>
             </>
           )}
         </Alert>
       )}
       {state?.errors.length ? (
         <>
-          <Table className="import-errors" aria-label="Errores por fila">
+          <Table className="import-errors" aria-label={texto.reporte.etiqueta}>
             <thead>
               <tr>
-                <th scope="col">Fila</th>
-                <th scope="col">Columna</th>
-                <th scope="col">Error</th>
+                {texto.reporte.columnas.map((columna) => (
+                  <th key={columna} scope="col">
+                    {columna}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -178,10 +182,7 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
               ))}
             </tbody>
           </Table>
-          <p className="import-hint">
-            Corrige esas filas en el archivo y vuelve a elegirlo para
-            importarlo.
-          </p>
+          <p className="import-hint">{texto.reporte.ayuda}</p>
         </>
       ) : null}
     </>

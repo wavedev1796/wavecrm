@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { COMUN } from "@/content/comun";
+import { IMPORTACION } from "@/content/importacion";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
 import { formText } from "@/lib/validation";
 
@@ -28,7 +29,7 @@ export async function sendImport(
   const file = formData.get("file");
   // Sin archivo elegido, el navegador envía un File vacío.
   if (!(file instanceof File) || !file.size)
-    return failure("Adjunta un archivo Excel o CSV.");
+    return failure(IMPORTACION.envio.sinArchivo);
   // Un FormData nuevo: al API solo le llegan el archivo y el mapeo, no los campos internos de Next.
   const body = new FormData();
   body.set("file", file, file.name);
@@ -44,10 +45,11 @@ export async function sendImport(
     if (!response.ok) return failure(await apiError(response));
     const { imported } = (await response.json()) as { imported: number };
     revalidatePath(listPath);
-    const message =
-      imported === 1
-        ? `Se importó 1 ${noun.one}.`
-        : `Se importaron ${imported} ${noun.many}.`;
+    const message = IMPORTACION.envio.importados(
+      imported,
+      noun.one,
+      noun.many,
+    );
     return { tone: "success", message, errors: [] };
   } catch (error) {
     // Una sesión vencida redirige al login desde authenticatedApi: no es un error de conexión.

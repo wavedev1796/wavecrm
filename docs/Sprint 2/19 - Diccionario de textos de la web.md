@@ -26,6 +26,6 @@ Cada fase termina con `lint`, `test` y `build` de la web en verde y un commit pr
 | 4b | Contactos | `content/contactos.ts`: listado, ficha, formulario y diálogo | Hecha (2026-10-05) |
 | 4c | Empresas | `content/empresas.ts` | Hecha (2026-10-05) |
 | 4d | Usuarios | `content/usuarios.ts` | Hecha (2026-10-05) |
-| 4e | Importación | `content/importacion.ts`: `components/csv-import/` y las dos pantallas de importar | Pendiente |
+| 4e | Importación | `content/importacion.ts`: `components/csv-import/` y las dos pantallas de importar | Hecha (2026-10-05) |
 
 El plan sale de `03-diccionario-textos.md` (fuera del repo), adaptado a las rutas actuales: la reorganización en `features/` es del Sprint 3 y moverá estos archivos sin tocar `content/`.
