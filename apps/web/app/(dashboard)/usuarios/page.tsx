@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Table } from "@/components/ui/table";
 import { ROL_USUARIO } from "@/content/catalogos";
+import { COMUN } from "@/content/comun";
+import { USUARIOS, type EstadoUsuario } from "@/content/usuarios";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatDate, initials } from "@/lib/format";
 import { SEARCH_MAX } from "@/lib/validation";
@@ -36,7 +38,7 @@ type User = {
   email: string;
   role: UserRole;
   active: boolean;
-  status: "active" | "inactive" | "pending";
+  status: EstadoUsuario;
   invitationSentAt: string | null;
   invitationExpiresAt: string | null;
 };
@@ -91,26 +93,24 @@ export default async function UsersPage({ searchParams }: PageProps) {
     <div className="users-page">
       <UsersFeedbackProvider>
         {!result && (
-          <Alert tone="error">
-            No pudimos cargar los usuarios. Recarga la página.
-          </Alert>
+          <Alert tone="error">{USUARIOS.errorCarga}</Alert>
         )}
 
-        <section className="user-summary" aria-label="Resumen de usuarios">
+        <section className="user-summary" aria-label={USUARIOS.resumen.etiqueta}>
           <Card>
-            <span>Total</span>
+            <span>{USUARIOS.resumen.total}</span>
             <strong>{result?.meta.total ?? 0}</strong>
           </Card>
           <Card>
-            <span>Activos en página</span>
+            <span>{USUARIOS.resumen.activos}</span>
             <strong>{counts.active}</strong>
           </Card>
           <Card>
-            <span>Pendientes en página</span>
+            <span>{USUARIOS.resumen.pendientes}</span>
             <strong>{counts.pending}</strong>
           </Card>
           <Card>
-            <span>Inactivos en página</span>
+            <span>{USUARIOS.resumen.inactivos}</span>
             <strong>{counts.inactive}</strong>
           </Card>
         </section>
@@ -118,57 +118,52 @@ export default async function UsersPage({ searchParams }: PageProps) {
         <details className="invite-panel card">
           <summary>
             <MailPlus />
-            Invitar usuario
+            {USUARIOS.invitar.titulo}
           </summary>
           <InviteUserForm />
-          <p>
-            La persona recibirá un enlace válido durante 48 horas para crear su
-            contraseña.
-          </p>
+          <p>{USUARIOS.invitar.aviso}</p>
         </details>
 
         <Card className="data-card users-data-card">
           <form className="table-toolbar users-toolbar" method="get">
             <label className="table-search">
               <Search />
-              <span className="sr-only">Buscar usuario</span>
+              <span className="sr-only">{USUARIOS.filtros.buscar}</span>
               <Input
                 name="search"
                 defaultValue={params.search}
                 maxLength={SEARCH_MAX}
-                placeholder="Nombre o correo…"
+                placeholder={USUARIOS.filtros.buscarPlaceholder}
               />
             </label>
             <div>
               <Select
                 name="status"
                 defaultValue={params.status ?? ""}
-                aria-label="Filtrar por estado"
+                aria-label={USUARIOS.filtros.estado}
               >
-                <option value="">Todos los estados</option>
-                <option value="active">Activos</option>
-                <option value="pending">Pendientes</option>
-                <option value="inactive">Inactivos</option>
+                <option value="">{USUARIOS.filtros.todos}</option>
+                <option value="active">{USUARIOS.filtros.activos}</option>
+                <option value="pending">{USUARIOS.filtros.pendientes}</option>
+                <option value="inactive">{USUARIOS.filtros.inactivos}</option>
               </Select>
               <Button variant="secondary" type="submit">
-                Filtrar
+                {USUARIOS.filtros.filtrar}
               </Button>
             </div>
           </form>
           <Table className="users-table">
             <thead>
               <tr>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Invitación</th>
-                <th>Acciones</th>
+                {USUARIOS.columnas.map((columna) => (
+                  <th key={columna}>{columna}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td data-label="Usuario">
+                  <td data-label={USUARIOS.columnas[0]}>
                     <div className="contact-cell">
                       <span className="avatar">{initials(user.name)}</span>
                       <span>
@@ -177,25 +172,25 @@ export default async function UsersPage({ searchParams }: PageProps) {
                       </span>
                     </div>
                   </td>
-                  <td data-label="Rol">
+                  <td data-label={USUARIOS.columnas[1]}>
                     {ROL_USUARIO[user.role]}
                   </td>
-                  <td data-label="Estado">
+                  <td data-label={USUARIOS.columnas[2]}>
                     <StatusBadge status={user.status} />
                   </td>
-                  <td data-label="Invitación">
+                  <td data-label={USUARIOS.columnas[3]}>
                     {user.invitationSentAt
                       ? formatDate(user.invitationSentAt)
-                      : "—"}
+                      : COMUN.sinDato}
                   </td>
-                  <td data-label="Acciones">
+                  <td data-label={USUARIOS.columnas[4]}>
                     <div className="row-actions">
                       <EditUserDialog user={user} />
                       {user.status === "pending" && (
                         <RowAction
                           action={resendInvitation}
                           id={user.id}
-                          label="Reenviar invitación"
+                          label={USUARIOS.acciones.reenviar}
                         >
                           <RefreshCw aria-hidden />
                         </RowAction>
@@ -204,7 +199,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
                         <RowAction
                           action={deactivateUser}
                           id={user.id}
-                          label="Desactivar"
+                          label={USUARIOS.acciones.desactivar}
                         >
                           <UserX aria-hidden />
                         </RowAction>
@@ -213,7 +208,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
                         <RowAction
                           action={reactivateUser}
                           id={user.id}
-                          label="Reactivar"
+                          label={USUARIOS.acciones.reactivar}
                         >
                           <UserCheck aria-hidden />
                         </RowAction>
@@ -222,7 +217,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
                         <RowAction
                           action={deleteUser}
                           id={user.id}
-                          label="Eliminar"
+                          label={USUARIOS.acciones.eliminar}
                         >
                           <Trash2 aria-hidden />
                         </RowAction>
@@ -233,21 +228,24 @@ export default async function UsersPage({ searchParams }: PageProps) {
               ))}
               {result && !users.length && (
                 <tr>
-                  <td colSpan={5} className="empty-table">
-                    No hay usuarios que coincidan con el filtro.
+                  <td colSpan={USUARIOS.columnas.length} className="empty-table">
+                    {USUARIOS.sinResultados}
                   </td>
                 </tr>
               )}
             </tbody>
           </Table>
           {meta && (
-            <nav className="table-footer" aria-label="Paginación de usuarios">
+            <nav className="table-footer" aria-label={USUARIOS.paginacion}>
               <span>
                 {users.length
-                  ? `Mostrando ${(meta.page - 1) * meta.limit + 1}–${(meta.page - 1) * meta.limit + users.length} de ${meta.total}`
-                  : `Mostrando 0 de ${meta.total}`}
-                {" · "}
-                Página {meta.page} de {Math.max(meta.totalPages, 1)}
+                  ? COMUN.paginacion.rango(
+                      (meta.page - 1) * meta.limit + 1,
+                      (meta.page - 1) * meta.limit + users.length,
+                      meta.total,
+                    )
+                  : COMUN.paginacion.vacia(meta.total)}{" "}
+                {COMUN.paginacion.pagina(meta.page, Math.max(meta.totalPages, 1))}
               </span>
               <div>
                 {meta.page > 1 ? (
@@ -255,14 +253,14 @@ export default async function UsersPage({ searchParams }: PageProps) {
                     className="button button--secondary"
                     href={usersPageHref(params, meta.page - 1)}
                   >
-                    Anterior
+                    {COMUN.paginacion.anterior}
                   </a>
                 ) : (
                   <span
                     className="button button--secondary"
                     aria-disabled="true"
                   >
-                    Anterior
+                    {COMUN.paginacion.anterior}
                   </span>
                 )}
                 {meta.page < meta.totalPages ? (
@@ -270,14 +268,14 @@ export default async function UsersPage({ searchParams }: PageProps) {
                     className="button button--secondary"
                     href={usersPageHref(params, meta.page + 1)}
                   >
-                    Siguiente
+                    {COMUN.paginacion.siguiente}
                   </a>
                 ) : (
                   <span
                     className="button button--secondary"
                     aria-disabled="true"
                   >
-                    Siguiente
+                    {COMUN.paginacion.siguiente}
                   </span>
                 )}
               </div>
@@ -289,11 +287,14 @@ export default async function UsersPage({ searchParams }: PageProps) {
   );
 }
 
-function StatusBadge({ status }: Readonly<{ status: User["status"] }>) {
-  if (status === "active") return <Badge tone="success">Activo</Badge>;
-  if (status === "pending")
-    return <Badge tone="warning">Invitación pendiente</Badge>;
-  return <Badge tone="neutral">Inactivo</Badge>;
+const TONO_ESTADO = {
+  active: "success",
+  pending: "warning",
+  inactive: "neutral",
+} as const satisfies Record<EstadoUsuario, string>;
+
+function StatusBadge({ status }: Readonly<{ status: EstadoUsuario }>) {
+  return <Badge tone={TONO_ESTADO[status]}>{USUARIOS.estados[status]}</Badge>;
 }
 
 

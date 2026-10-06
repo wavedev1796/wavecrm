@@ -9,6 +9,7 @@ import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ROL_USUARIO } from "@/content/catalogos";
+import { USUARIOS } from "@/content/usuarios";
 import { EMAIL_MAX, NAME_MAX } from "@/lib/validation";
 import { updateUser, type UserFormState } from "./actions";
 import { useShowFeedback } from "./users-feedback";
@@ -35,6 +36,7 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
     { feedback: null, fieldErrors: {}, values: { name: user.name, email: user.email, role: user.role } },
   );
   const { fieldErrors, values } = state;
+  const texto = USUARIOS.editar;
   const titleId = `edit-user-title-${user.id}`;
   const fieldId = (name: string) => `edit-${user.id}-${name}`;
 
@@ -43,11 +45,11 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
       <button
         type="button"
         className="icon-button"
-        title="Editar"
+        title={USUARIOS.acciones.editar}
         onClick={() => dialogRef.current?.showModal()}
       >
         <Pencil aria-hidden />
-        <span className="sr-only">Editar {user.name}</span>
+        <span className="sr-only">{USUARIOS.acciones.editarA(user.name)}</span>
       </button>
 
       <dialog
@@ -58,14 +60,14 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
         <div className="user-dialog-card">
           <header>
             <div>
-              <span>Administración de usuarios</span>
-              <h2 id={titleId}>Editar usuario</h2>
-              <p>Actualiza sus datos y el nivel de acceso al CRM.</p>
+              <span>{texto.etiqueta}</span>
+              <h2 id={titleId}>{texto.titulo}</h2>
+              <p>{texto.descripcion}</p>
             </div>
             <button
               type="button"
               className="icon-button"
-              aria-label="Cerrar"
+              aria-label={texto.cerrar}
               onClick={() => dialogRef.current?.close()}
             >
               <X aria-hidden />
@@ -78,7 +80,7 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
               {state.feedback?.tone === "error" && <Alert tone="error">{state.feedback.message}</Alert>}
               <div className="form-field">
                 <label>
-                  Nombre completo
+                  {texto.nombre}
                   <Input
                     name="name"
                     required
@@ -91,7 +93,7 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
               </div>
               <div className="form-field">
                 <label>
-                  Correo electrónico
+                  {texto.correo}
                   <Input
                     name="email"
                     type="email"
@@ -105,7 +107,7 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
               </div>
               <div className="form-field">
                 <label>
-                  Rol y permisos{' '}
+                  {texto.rol}{' '}
                   <Select
                     name="role"
                     defaultValue={values.role}
@@ -114,10 +116,7 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
                     <option value="VENDEDOR">{ROL_USUARIO.VENDEDOR}</option>
                     <option value="ADMIN">{ROL_USUARIO.ADMIN}</option>
                   </Select>
-                  <small>
-                    Los administradores pueden gestionar usuarios, roles y
-                    accesos.
-                  </small>
+                  <small>{texto.rolAyuda}</small>
                 </label>
                 <FieldError id={fieldId("role")} message={fieldErrors.role} />
               </div>
@@ -128,11 +127,11 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
                 variant="secondary"
                 onClick={() => dialogRef.current?.close()}
               >
-                Cancelar
+                {texto.cancelar}
               </Button>
               <Button type="submit" className="edit-user-submit" loading={pending}>
                 <Check aria-hidden />
-                Aplicar cambios
+                {texto.aplicar}
               </Button>
             </footer>
           </form>

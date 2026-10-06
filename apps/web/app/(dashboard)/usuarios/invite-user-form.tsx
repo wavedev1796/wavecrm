@@ -8,9 +8,12 @@ import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ROL_USUARIO } from "@/content/catalogos";
+import { USUARIOS } from "@/content/usuarios";
 import { EMAIL_MAX, NAME_MAX } from "@/lib/validation";
 import { inviteUser, type UserFormState } from "./actions";
 import { useShowFeedback } from "./users-feedback";
+
+const texto = USUARIOS.invitar;
 
 const initialState: UserFormState = {
   feedback: null,
@@ -37,12 +40,12 @@ export function InviteUserForm() {
       <form action={formAction} className="user-form" noValidate aria-busy={pending || undefined}>
         <div className="form-field">
           <label>
-            Nombre
+            {texto.nombre}
             <Input
               name="name"
               required
               maxLength={NAME_MAX}
-              placeholder="Nombre completo"
+              placeholder={texto.nombrePlaceholder}
               defaultValue={values.name}
               {...invalidProps("invite-name", fieldErrors.name)}
             />
@@ -51,13 +54,13 @@ export function InviteUserForm() {
         </div>
         <div className="form-field">
           <label>
-            Correo
+            {texto.correo}
             <Input
               name="email"
               type="email"
               required
               maxLength={EMAIL_MAX}
-              placeholder="persona@empresa.ec"
+              placeholder={texto.correoPlaceholder}
               defaultValue={values.email}
               {...invalidProps("invite-email", fieldErrors.email)}
             />
@@ -66,7 +69,7 @@ export function InviteUserForm() {
         </div>
         <div className="form-field">
           <label>
-            Rol{' '}
+            {texto.rol}{' '}
             <Select name="role" defaultValue={values.role} {...invalidProps("invite-role", fieldErrors.role)}>
               <option value="VENDEDOR">{ROL_USUARIO.VENDEDOR}</option>
               <option value="ADMIN">{ROL_USUARIO.ADMIN}</option>
@@ -76,7 +79,7 @@ export function InviteUserForm() {
         </div>
         <Button type="submit" loading={pending}>
           <MailPlus />
-          Enviar invitación
+          {texto.enviar}
         </Button>
       </form>
     </>

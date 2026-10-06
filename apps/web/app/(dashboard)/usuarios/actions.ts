@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { COMUN } from "@/content/comun";
+import { USUARIOS } from "@/content/usuarios";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
 import {
   emailError,
@@ -28,7 +29,7 @@ export async function inviteUser(
   _state: UserFormState,
   formData: FormData,
 ): Promise<UserFormState> {
-  const state = await submitUser(formData, "/users", "POST", "Invitación enviada.");
+  const state = await submitUser(formData, "/users", "POST", USUARIOS.mensajes.invitacionEnviada);
   // Tras invitar, el formulario queda vacío para la siguiente persona.
   return state.feedback?.tone === "success"
     ? { ...state, values: { name: "", email: "", role: "VENDEDOR" } }
@@ -40,23 +41,23 @@ export async function updateUser(
   formData: FormData,
 ): Promise<UserFormState> {
   const id = formText(formData, "id");
-  return submitUser(formData, `/users/${encodeURIComponent(id)}`, "PATCH", "Usuario actualizado.");
+  return submitUser(formData, `/users/${encodeURIComponent(id)}`, "PATCH", USUARIOS.mensajes.actualizado);
 }
 
 export async function deactivateUser(formData: FormData) {
-  return rowAction(formData, "/deactivate", "PATCH", "Usuario desactivado.");
+  return rowAction(formData, "/deactivate", "PATCH", USUARIOS.mensajes.desactivado);
 }
 
 export async function reactivateUser(formData: FormData) {
-  return rowAction(formData, "/reactivate", "PATCH", "Usuario reactivado.");
+  return rowAction(formData, "/reactivate", "PATCH", USUARIOS.mensajes.reactivado);
 }
 
 export async function resendInvitation(formData: FormData) {
-  return rowAction(formData, "/resend-invitation", "POST", "Invitación reenviada.");
+  return rowAction(formData, "/resend-invitation", "POST", USUARIOS.mensajes.invitacionReenviada);
 }
 
 export async function deleteUser(formData: FormData) {
-  return rowAction(formData, "", "DELETE", "Usuario eliminado.");
+  return rowAction(formData, "", "DELETE", USUARIOS.mensajes.eliminado);
 }
 
 async function submitUser(
