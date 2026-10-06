@@ -17,6 +17,8 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import type { UserRole } from "@wave/shared";
+import { ROL_USUARIO } from "@/content/catalogos";
 import { logout } from "@/app/(auth)/actions";
 import { Input } from "./ui/input";
 
@@ -56,7 +58,7 @@ const titleByPath: Record<string, { title: string; subtitle: string }> = {
 type ShellUser = {
   name: string;
   email: string;
-  role: "ADMIN" | "VENDEDOR";
+  role: UserRole;
 } | null;
 
 function headerForPath(pathname: string) {
@@ -149,7 +151,7 @@ export function AppShell({
           <span>
             <strong>{user?.name ?? "Usuario"}</strong>
             <small>
-              {user?.role === "ADMIN" ? "Administrador" : "Vendedor"}
+              {ROL_USUARIO[user?.role ?? "VENDEDOR"]}
             </small>
           </span>
           <button

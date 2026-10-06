@@ -1,3 +1,4 @@
+import type { UserRole } from "@wave/shared";
 import { AppShell } from "@/components/app-shell";
 import { authenticatedApi } from "@/lib/authenticated-api";
 
@@ -5,7 +6,7 @@ type CurrentUser = {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "VENDEDOR";
+  role: UserRole;
 };
 
 export default async function DashboardLayout({

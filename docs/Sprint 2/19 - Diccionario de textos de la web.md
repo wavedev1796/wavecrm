@@ -1,6 +1,6 @@
 # CRM-19 — Diccionario de textos de la web
 
-**Responsable:** Zaith Manangón · **Estado:** En curso. Ticket añadido al Sprint 2 el 2026-10-05. Toca archivos de CRM-5, CRM-7, CRM-9, CRM-14 y CRM-15 (Eduardo García) solo para mover sus textos; necesita la autorización del usuario antes de empezar.
+**Responsable:** Zaith Manangón · **Estado:** En curso. Ticket añadido al Sprint 2 el 2026-10-05. Toca archivos de CRM-5, CRM-7, CRM-9, CRM-14 y CRM-15 (Eduardo García) solo para mover sus textos, con autorización del usuario (2026-10-05).
 
 ## Objetivo
 
@@ -19,7 +19,7 @@ Cada fase termina con `lint`, `test` y `build` de la web en verde y un commit pr
 
 | # | Fase | Qué deja hecho | Estado |
 | --- | --- | --- | --- |
-| 1 | Catálogos | `packages/shared/src/catalogos.ts` (códigos de los enums), `content/catalogos.ts` (etiquetas), prueba contra el schema y tipos de `@wave/shared` en lugar de uniones a mano | Pendiente |
+| 1 | Catálogos | `packages/shared/src/catalogos.ts` (códigos de los enums), `content/catalogos.ts` (etiquetas), prueba contra el schema y tipos de `@wave/shared` en lugar de uniones a mano | Hecha (2026-10-05) |
 | 2 | Formatos | `lib/format.ts` (`initials`, `formatMoney`, `formatDate`, `formatDateTime`) en lugar de las copias locales | Pendiente |
 | 3 | Comunes y navegación | `content/comun.ts` y `content/navegacion.ts`; el error de conexión repetido en 8 archivos sale de un solo lugar | Pendiente |
 | 4a | Acceso | `content/acceso.ts`: login, recuperar, restablecer y activar cuenta | Pendiente |

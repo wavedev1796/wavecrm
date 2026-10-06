@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { ROL_USUARIO } from "@/content/catalogos";
 import { EMAIL_MAX, NAME_MAX } from "@/lib/validation";
 import { inviteUser, type UserFormState } from "./actions";
 import { useShowFeedback } from "./users-feedback";
@@ -67,8 +68,8 @@ export function InviteUserForm() {
           <label>
             Rol{' '}
             <Select name="role" defaultValue={values.role} {...invalidProps("invite-role", fieldErrors.role)}>
-              <option value="VENDEDOR">Vendedor</option>
-              <option value="ADMIN">Administrador</option>
+              <option value="VENDEDOR">{ROL_USUARIO.VENDEDOR}</option>
+              <option value="ADMIN">{ROL_USUARIO.ADMIN}</option>
             </Select>
           </label>
           <FieldError id="invite-role" message={fieldErrors.role} />

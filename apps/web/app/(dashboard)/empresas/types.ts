@@ -1,3 +1,5 @@
+import type { DealStatus } from "@wave/shared";
+
 export type Company = {
   id: string;
   name: string;
@@ -31,7 +33,7 @@ export type CompanyDetail = Company & {
     title: string;
     value: string;
     currency: string;
-    status: "OPEN" | "WON" | "LOST";
+    status: DealStatus;
     expectedClose: string | null;
     stage: { id: string; name: string; color: string | null };
   }>;

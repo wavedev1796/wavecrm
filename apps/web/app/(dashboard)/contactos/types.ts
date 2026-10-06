@@ -1,3 +1,5 @@
+import type { ActivityStatus, ActivityType, DealStatus, DocumentType } from "@wave/shared";
+
 export type ContactCompany = {
   id: string;
   name: string;
@@ -13,7 +15,7 @@ export type Contact = {
   lastName: string;
   email: string | null;
   phone: string | null;
-  documentType: "CEDULA" | "RUC" | "PASAPORTE";
+  documentType: DocumentType;
   documentId: string;
   province: string | null;
   city: string | null;
@@ -31,14 +33,14 @@ export type ContactDetail = Contact & {
     title: string;
     value: string;
     currency: string;
-    status: "OPEN" | "WON" | "LOST";
+    status: DealStatus;
     expectedClose: string | null;
     stage: { id: string; name: string; color: string | null };
   }>;
   activities: Array<{
     id: string;
-    type: "CALL" | "EMAIL" | "MEETING" | "TASK";
-    status: "PENDING" | "COMPLETED" | "CANCELLED";
+    type: ActivityType;
+    status: ActivityStatus;
     subject: string;
     description: string | null;
     dueAt: string | null;

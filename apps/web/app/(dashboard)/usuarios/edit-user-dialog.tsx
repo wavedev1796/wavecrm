@@ -2,11 +2,13 @@
 
 import { Check, Pencil, X } from "lucide-react";
 import { useActionState, useRef } from "react";
+import type { UserRole } from "@wave/shared";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { ROL_USUARIO } from "@/content/catalogos";
 import { EMAIL_MAX, NAME_MAX } from "@/lib/validation";
 import { updateUser, type UserFormState } from "./actions";
 import { useShowFeedback } from "./users-feedback";
@@ -15,7 +17,7 @@ type EditableUser = {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "VENDEDOR";
+  role: UserRole;
 };
 
 export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
@@ -109,8 +111,8 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
                     defaultValue={values.role}
                     {...invalidProps(fieldId("role"), fieldErrors.role)}
                   >
-                    <option value="VENDEDOR">Vendedor</option>
-                    <option value="ADMIN">Administrador</option>
+                    <option value="VENDEDOR">{ROL_USUARIO.VENDEDOR}</option>
+                    <option value="ADMIN">{ROL_USUARIO.ADMIN}</option>
                   </Select>
                   <small>
                     Los administradores pueden gestionar usuarios, roles y

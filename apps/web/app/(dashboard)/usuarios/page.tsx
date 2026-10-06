@@ -7,6 +7,7 @@ import {
   UserX,
 } from "lucide-react";
 import { redirect } from "next/navigation";
+import type { UserRole } from "@wave/shared";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Table } from "@/components/ui/table";
+import { ROL_USUARIO } from "@/content/catalogos";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { SEARCH_MAX } from "@/lib/validation";
 import {
@@ -31,7 +33,7 @@ type User = {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "VENDEDOR";
+  role: UserRole;
   active: boolean;
   status: "active" | "inactive" | "pending";
   invitationSentAt: string | null;
@@ -175,7 +177,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
                     </div>
                   </td>
                   <td data-label="Rol">
-                    {user.role === "ADMIN" ? "Administrador" : "Vendedor"}
+                    {ROL_USUARIO[user.role]}
                   </td>
                   <td data-label="Estado">
                     <StatusBadge status={user.status} />

@@ -13,6 +13,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { ESTADO_NEGOCIO } from "@/content/catalogos";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatPhone, splitPhone } from "@/lib/phone";
 import { CompanyForm } from "../company-form";
@@ -138,7 +139,7 @@ export default async function CompanyDetailPage({
                   <div>
                     <strong>{deal.title}</strong>
                     <span>
-                      {deal.stage.name} · {dealStatus(deal.status)}
+                      {deal.stage.name} · {ESTADO_NEGOCIO[deal.status]}
                     </span>
                   </div>
                   <b>{money(deal.value, deal.currency)}</b>
@@ -233,5 +234,3 @@ const dateTime = (value: string) =>
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
-const dealStatus = (status: CompanyDetail["deals"][number]["status"]) =>
-  ({ OPEN: "Abierto", WON: "Ganado", LOST: "Perdido" })[status];

@@ -10,6 +10,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { ESTADO_NEGOCIO, TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { DOCUMENT_TYPES } from "@/lib/ecuador";
 import { formatPhone, splitPhone } from "@/lib/phone";
@@ -114,7 +115,7 @@ export default async function ContactDetailPage({
                   <div>
                     <strong>{deal.title}</strong>
                     <span>
-                      {deal.stage.name} · {dealStatus(deal.status)}
+                      {deal.stage.name} · {ESTADO_NEGOCIO[deal.status]}
                     </span>
                   </div>
                   <b>{money(deal.value, deal.currency)}</b>
@@ -135,7 +136,7 @@ export default async function ContactDetailPage({
                   <div>
                     <strong>{activity.subject}</strong>
                     <span>
-                      {activityType(activity.type)}
+                      {TIPO_ACTIVIDAD[activity.type]}
                       {activity.assignee ? ` · ${activity.assignee.name}` : ""}
                     </span>
                   </div>
@@ -182,9 +183,3 @@ const date = (value: string) =>
   new Intl.DateTimeFormat("es-EC", { dateStyle: "medium" }).format(
     new Date(value),
   );
-const dealStatus = (status: ContactDetail["deals"][number]["status"]) =>
-  ({ OPEN: "Abierto", WON: "Ganado", LOST: "Perdido" })[status];
-const activityType = (type: ContactDetail["activities"][number]["type"]) =>
-  ({ CALL: "Llamada", EMAIL: "Correo", MEETING: "Reunión", TASK: "Tarea" })[
-    type
-  ];

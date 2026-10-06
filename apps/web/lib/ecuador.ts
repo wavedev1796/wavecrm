@@ -6,6 +6,7 @@ import {
   officialProvince,
   type DocumentType,
 } from "@wave/shared";
+import { TIPO_DOCUMENTO } from "@/content/catalogos";
 
 export { normalizeDigits, normalizeDocument, PROVINCES } from "@wave/shared";
 
@@ -39,9 +40,21 @@ export function provinceError(value: string): string | null {
 
 // Metadatos visuales; las reglas y los valores válidos viven en @wave/shared.
 export const DOCUMENT_TYPES = [
-  { value: "CEDULA", label: "Cédula", placeholder: "1712345675" },
-  { value: "RUC", label: "RUC", placeholder: "1712345675001" },
-  { value: "PASAPORTE", label: "Pasaporte", placeholder: "AB123456" },
+  {
+    value: "CEDULA",
+    label: TIPO_DOCUMENTO.CEDULA.etiqueta,
+    placeholder: TIPO_DOCUMENTO.CEDULA.ejemplo,
+  },
+  {
+    value: "RUC",
+    label: TIPO_DOCUMENTO.RUC.etiqueta,
+    placeholder: TIPO_DOCUMENTO.RUC.ejemplo,
+  },
+  {
+    value: "PASAPORTE",
+    label: TIPO_DOCUMENTO.PASAPORTE.etiqueta,
+    placeholder: TIPO_DOCUMENTO.PASAPORTE.ejemplo,
+  },
 ] as const satisfies ReadonlyArray<{
   value: DocumentType;
   label: string;
