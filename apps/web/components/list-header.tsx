@@ -1,5 +1,6 @@
 import { Upload } from "lucide-react";
 import Link from "next/link";
+import { COMUN } from "@/content/comun";
 
 type Props = Readonly<{
   icon: React.ReactNode;
@@ -22,7 +23,7 @@ export function ListHeader({
       <div className="contact-list-title">
         <span className="contact-list-mark">{icon}</span>
         <div>
-          <span>Directorio comercial</span>
+          <span>{COMUN.directorio.etiqueta}</span>
           <h2>{title}</h2>
           <p>{summary}</p>
         </div>
@@ -30,7 +31,7 @@ export function ListHeader({
       <div className="contact-list-actions">
         <Link className="button button--secondary" href={importHref}>
           <Upload aria-hidden />
-          Importar
+          {COMUN.directorio.importar}
         </Link>
         {children}
       </div>

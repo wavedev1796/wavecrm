@@ -2,6 +2,7 @@
 // pantalla, que son las únicas que el cliente puede llamar; así no queda un proxy genérico al API.
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
+import { COMUN } from "@/content/comun";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
 import { formText } from "@/lib/validation";
 
@@ -51,6 +52,6 @@ export async function sendImport(
   } catch (error) {
     // Una sesión vencida redirige al login desde authenticatedApi: no es un error de conexión.
     unstable_rethrow(error);
-    return failure("No pudimos conectar con el servidor. Inténtalo de nuevo.");
+    return failure(COMUN.errores.conexion);
   }
 }

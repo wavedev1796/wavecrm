@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { COMUN } from "@/content/comun";
 import { listHref, type ListParams } from "@/lib/list-params";
 
 type Props = Readonly<{
@@ -15,9 +16,9 @@ export function Pagination({ basePath, params, meta, shown, label }: Props) {
     <nav className="table-footer" aria-label={label}>
       <span>
         {shown
-          ? `Mostrando ${first + 1}–${first + shown} de ${meta.total}`
-          : `Mostrando 0 de ${meta.total}`}{" "}
-        · Página {meta.page} de {Math.max(meta.totalPages, 1)}
+          ? COMUN.paginacion.rango(first + 1, first + shown, meta.total)
+          : COMUN.paginacion.vacia(meta.total)}{" "}
+        {COMUN.paginacion.pagina(meta.page, Math.max(meta.totalPages, 1))}
       </span>
       <div>
         <PageLink
@@ -25,7 +26,7 @@ export function Pagination({ basePath, params, meta, shown, label }: Props) {
             meta.page > 1 ? listHref(basePath, params, meta.page - 1) : null
           }
         >
-          Anterior
+          {COMUN.paginacion.anterior}
         </PageLink>
         <PageLink
           href={
@@ -34,7 +35,7 @@ export function Pagination({ basePath, params, meta, shown, label }: Props) {
               : null
           }
         >
-          Siguiente
+          {COMUN.paginacion.siguiente}
         </PageLink>
       </div>
     </nav>

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { API_URL } from "@/lib/api";
+import { COMUN } from "@/content/comun";
 import { apiError } from "@/lib/authenticated-api";
 import { confirmationError, passwordError, type NewPasswordState } from "@/lib/password-rules";
 import { fieldErrors, formText } from "@/lib/validation";
@@ -28,7 +29,7 @@ export async function resetPassword(
       cache: "no-store",
     });
   } catch {
-    return { error: "No pudimos conectar con el servidor. Inténtalo de nuevo.", fieldErrors: {} };
+    return { error: COMUN.errores.conexion, fieldErrors: {} };
   }
   // 409: la contraseña repite una de las recordadas. Es un problema del campo, no del enlace.
   if (response.status === 409) {

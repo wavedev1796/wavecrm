@@ -4,6 +4,7 @@ import { LiveSearch } from "@/components/live-search";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { COMUN } from "@/content/comun";
 import { PROVINCES } from "@/lib/ecuador";
 import type { ListParams } from "@/lib/list-params";
 
@@ -33,9 +34,9 @@ export function ListFilters({
         <Select
           name="province"
           defaultValue={params.province ?? ""}
-          aria-label="Filtrar por provincia"
+          aria-label={COMUN.filtros.provincia}
         >
-          <option value="">Todas las provincias</option>
+          <option value="">{COMUN.filtros.todasLasProvincias}</option>
           {PROVINCES.map((province) => (
             <option key={province}>{province}</option>
           ))}
@@ -44,17 +45,17 @@ export function ListFilters({
           name="tag"
           defaultValue={params.tag}
           maxLength={30}
-          placeholder="Etiqueta"
-          aria-label="Filtrar por etiqueta"
+          placeholder={COMUN.filtros.etiquetaPlaceholder}
+          aria-label={COMUN.filtros.etiqueta}
         />
         <Button type="submit">
           <Filter aria-hidden />
-          Aplicar filtros
+          {COMUN.filtros.aplicar}
         </Button>
         {(params.search || params.province || params.tag) && (
           <Link className="button button--ghost" href={basePath}>
             <X aria-hidden />
-            Limpiar
+            {COMUN.filtros.limpiar}
           </Link>
         )}
       </div>

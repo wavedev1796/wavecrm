@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { API_URL } from "@/lib/api";
+import { COMUN } from "@/content/comun";
 import { apiError } from "@/lib/authenticated-api";
 import { confirmationError, passwordError, type NewPasswordState } from "@/lib/password-rules";
 import { fieldErrors, formText } from "@/lib/validation";
@@ -40,7 +41,7 @@ export async function activateAccount(
       },
     );
   } catch {
-    return { error: "No pudimos conectar con el servidor. Inténtalo de nuevo.", fieldErrors: {} };
+    return { error: COMUN.errores.conexion, fieldErrors: {} };
   }
   if (!response.ok) return { error: await apiError(response), fieldErrors: {} };
   redirect("/login?activated=1");

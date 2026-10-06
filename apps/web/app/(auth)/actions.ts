@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { API_URL } from '@/lib/api';
+import { COMUN } from '@/content/comun';
 import { apiError } from '@/lib/authenticated-api';
 import { clearSession, readSession, writeSession } from '@/lib/session';
 import {
@@ -41,7 +42,7 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
       cache: 'no-store',
     });
   } catch {
-    return { email, fieldErrors: {}, error: 'No pudimos conectar con el servidor. Inténtalo de nuevo.' };
+    return { email, fieldErrors: {}, error: COMUN.errores.conexion };
   }
 
   if (!response.ok) {

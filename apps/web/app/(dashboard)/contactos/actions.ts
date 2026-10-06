@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
+import { COMUN } from "@/content/comun";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
 import { cantonError } from "@/lib/cantons";
 import { documentError, normalizeDocument, provinceError } from "@/lib/ecuador";
@@ -101,7 +102,7 @@ export async function saveContact(
     return {
       feedback: {
         tone: "error",
-        message: "No pudimos conectar con el servidor. Inténtalo de nuevo.",
+        message: COMUN.errores.conexion,
       },
       fieldErrors: {},
       values,

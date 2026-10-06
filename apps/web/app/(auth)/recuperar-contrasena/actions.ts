@@ -1,6 +1,7 @@
 'use server';
 
 import { API_URL } from '@/lib/api';
+import { COMUN } from '@/content/comun';
 import { emailError, formText, normalizeEmail } from '@/lib/validation';
 
 export type ForgotPasswordState = {
@@ -30,7 +31,7 @@ export async function requestPasswordReset(
     return {
       requestedFor: null,
       fieldError: null,
-      error: 'No pudimos conectar con el servidor. Inténtalo de nuevo.',
+      error: COMUN.errores.conexion,
     };
   }
 

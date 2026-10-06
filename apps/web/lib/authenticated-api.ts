@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { COMUN } from "@/content/comun";
 import { redirect } from "next/navigation";
 import { API_URL } from "./api";
 import { readSession, SESSION_EXPIRED_PATH } from "./session";
@@ -23,7 +24,7 @@ export async function authenticatedApi(path: string, init: RequestInit = {}) {
 }
 
 export async function apiError(response: Response) {
-  const fallback = "No pudimos completar la operación.";
+  const fallback = COMUN.errores.operacion;
   try {
     const body = (await response.json()) as {
       error?: { message?: string | string[] };

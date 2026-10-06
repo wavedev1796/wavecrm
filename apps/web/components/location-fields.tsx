@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Field } from "@/components/form-field";
 import { invalidProps } from "@/components/ui/field-error";
 import { Select } from "@/components/ui/select";
+import { COMUN } from "@/content/comun";
 import { cantonsForProvince } from "@/lib/cantons";
 import { PROVINCES } from "@/lib/ecuador";
 
@@ -31,7 +32,7 @@ export function LocationFields({
 
   return (
     <>
-      <Field id={provinceId} label="Provincia" error={provinceError}>
+      <Field id={provinceId} label={COMUN.formulario.provincia} error={provinceError}>
         <Select
           id={provinceId}
           name="province"
@@ -42,13 +43,13 @@ export function LocationFields({
           }}
           {...invalidProps(provinceId, provinceError)}
         >
-          <option value="">Sin provincia</option>
+          <option value="">{COMUN.formulario.sinProvincia}</option>
           {PROVINCES.map((item) => (
             <option key={item}>{item}</option>
           ))}
         </Select>
       </Field>
-      <Field id={cantonId} label="Cantón" error={cantonError}>
+      <Field id={cantonId} label={COMUN.formulario.canton} error={cantonError}>
         <Select
           id={cantonId}
           name="city"
@@ -58,7 +59,9 @@ export function LocationFields({
           {...invalidProps(cantonId, cantonError)}
         >
           <option value="">
-            {province ? "Sin cantón" : "Elige una provincia"}
+            {province
+              ? COMUN.formulario.sinCanton
+              : COMUN.formulario.eligeProvincia}
           </option>
           {cantons.map((item) => (
             <option key={item}>{item}</option>

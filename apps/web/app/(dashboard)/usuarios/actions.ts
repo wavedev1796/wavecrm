@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
+import { COMUN } from "@/content/comun";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
 import {
   emailError,
@@ -98,7 +99,7 @@ async function mutate(
   } catch (error) {
     // Una sesión vencida redirige al login desde authenticatedApi: no es un error de conexión.
     unstable_rethrow(error);
-    return { tone: "error", message: "No pudimos conectar con el servidor. Inténtalo de nuevo." };
+    return { tone: "error", message: COMUN.errores.conexion };
   }
   revalidatePath("/usuarios");
   return { tone: "success", message: success };

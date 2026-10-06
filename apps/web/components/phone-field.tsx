@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { COMUN } from "@/content/comun";
 import { callingCodeLabel, COUNTRIES, countryOrEcuador } from "@/lib/phone";
 
 type Props = Readonly<{
@@ -25,12 +26,12 @@ export function PhoneField({ id, country, number, error }: Props) {
 
   return (
     <div className="form-field">
-      <label htmlFor={id}>Teléfono</label>
+      <label htmlFor={id}>{COMUN.formulario.telefono}</label>
       <div className="phone-field">
         <Select
           name="phoneCountry"
           defaultValue={selected}
-          aria-label="País del teléfono"
+          aria-label={COMUN.formulario.paisTelefono}
         >
           {countries.map(({ code, label }) => (
             <option key={code} value={code}>

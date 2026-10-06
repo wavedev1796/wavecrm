@@ -21,7 +21,7 @@ Cada fase termina con `lint`, `test` y `build` de la web en verde y un commit pr
 | --- | --- | --- | --- |
 | 1 | Catálogos | `packages/shared/src/catalogos.ts` (códigos de los enums), `content/catalogos.ts` (etiquetas), prueba contra el schema y tipos de `@wave/shared` en lugar de uniones a mano | Hecha (2026-10-05) |
 | 2 | Formatos | `lib/format.ts` (`initials`, `formatMoney`, `formatDate`, `formatDateTime`) en lugar de las copias locales | Hecha (2026-10-05) |
-| 3 | Comunes y navegación | `content/comun.ts` y `content/navegacion.ts`; el error de conexión repetido en 8 archivos sale de un solo lugar | Pendiente |
+| 3 | Comunes y navegación | `content/comun.ts` y `content/navegacion.ts`; el error de conexión repetido en 8 archivos sale de un solo lugar | Hecha (2026-10-05) |
 | 4a | Acceso | `content/acceso.ts`: login, recuperar, restablecer y activar cuenta | Pendiente |
 | 4b | Contactos | `content/contactos.ts`: listado, ficha, formulario y diálogo | Pendiente |
 | 4c | Empresas | `content/empresas.ts` | Pendiente |

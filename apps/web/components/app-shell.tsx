@@ -19,42 +19,20 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { UserRole } from "@wave/shared";
 import { ROL_USUARIO } from "@/content/catalogos";
+import { MARCA } from "@/content/comun";
+import { NAVEGACION } from "@/content/navegacion";
 import { initials } from "@/lib/format";
 import { logout } from "@/app/(auth)/actions";
 import { Input } from "./ui/input";
 
 const navItems = [
-  { href: "/pipeline", label: "Pipeline", icon: LayoutDashboard },
-  { href: "/contactos", label: "Contactos", icon: Users },
-  { href: "/empresas", label: "Empresas", icon: Building2 },
-  { href: "/cotizaciones", label: "Cotizaciones", icon: FileText },
-  { href: "/actividades", label: "Actividades", icon: CalendarDays },
-  { href: "/reportes", label: "Reportes", icon: BarChart3 },
+  { href: "/pipeline", label: NAVEGACION.menu.pipeline, icon: LayoutDashboard },
+  { href: "/contactos", label: NAVEGACION.menu.contactos, icon: Users },
+  { href: "/empresas", label: NAVEGACION.menu.empresas, icon: Building2 },
+  { href: "/cotizaciones", label: NAVEGACION.menu.cotizaciones, icon: FileText },
+  { href: "/actividades", label: NAVEGACION.menu.actividades, icon: CalendarDays },
+  { href: "/reportes", label: NAVEGACION.menu.reportes, icon: BarChart3 },
 ];
-
-const titleByPath: Record<string, { title: string; subtitle: string }> = {
-  "/pipeline": {
-    title: "Pipeline de ventas",
-    subtitle: "Quito, Ecuador · Septiembre 2026",
-  },
-  "/contactos": { title: "Contactos", subtitle: "248 contactos · 62 empresas" },
-  "/contactos/importar": {
-    title: "Importar contactos",
-    subtitle: "Carga masiva desde Excel o CSV",
-  },
-  "/empresas": { title: "Empresas", subtitle: "Directorio comercial" },
-  "/empresas/importar": {
-    title: "Importar empresas",
-    subtitle: "Carga masiva desde Excel o CSV",
-  },
-  "/cotizaciones": {
-    title: "Cotizaciones",
-    subtitle: "Propuestas y seguimiento",
-  },
-  "/actividades": { title: "Actividades", subtitle: "Agenda del equipo" },
-  "/reportes": { title: "Reportes", subtitle: "Rendimiento comercial" },
-  "/usuarios": { title: "Usuarios", subtitle: "Cuentas y accesos del equipo" },
-};
 
 type ShellUser = {
   name: string;
@@ -63,24 +41,11 @@ type ShellUser = {
 } | null;
 
 function headerForPath(pathname: string) {
-  const exact = titleByPath[pathname];
+  const exact = NAVEGACION.cabeceras[pathname];
   if (exact) return exact;
-  if (pathname.startsWith("/contactos/")) {
-    return {
-      title: "Ficha de contacto",
-      subtitle: "Datos, negocios y actividades",
-    };
-  }
-  if (pathname.startsWith("/empresas/")) {
-    return {
-      title: "Ficha de empresa",
-      subtitle: "Contactos, negocios e historial",
-    };
-  }
-  return {
-    title: "Pipeline de ventas",
-    subtitle: "Quito, Ecuador · Septiembre 2026",
-  };
+  if (pathname.startsWith("/contactos/")) return NAVEGACION.fichaContacto;
+  if (pathname.startsWith("/empresas/")) return NAVEGACION.fichaEmpresa;
+  return NAVEGACION.porDefecto;
 }
 
 export function AppShell({
@@ -98,16 +63,16 @@ export function AppShell({
     <div className="app-shell">
       <aside
         className={`sidebar ${mobileOpen ? "sidebar--open" : ""}`}
-        aria-label="Navegación principal"
+        aria-label={NAVEGACION.shell.navegacion}
       >
         <div className="brand-row">
           <span className="brand-logo" aria-hidden="true" />
-          <span className="sr-only">Wave</span>
-          <span className="brand-tag">CRM</span>
+          <span className="sr-only">{MARCA.nombre}</span>
+          <span className="brand-tag">{MARCA.etiqueta}</span>
           <button
             className="icon-button sidebar-close"
             onClick={() => setMobileOpen(false)}
-            aria-label="Cerrar menú"
+            aria-label={NAVEGACION.shell.cerrarMenu}
           >
             <X />
           </button>
@@ -117,7 +82,7 @@ export function AppShell({
           {[
             ...navItems,
             ...(user?.role === "ADMIN"
-              ? [{ href: "/usuarios", label: "Usuarios", icon: UserCog }]
+              ? [{ href: "/usuarios", label: NAVEGACION.menu.usuarios, icon: UserCog }]
               : []),
           ].map(({ href, label, icon: Icon }) => {
             // Las subrutas (/contactos/importar, fichas…) marcan su sección.
@@ -138,7 +103,7 @@ export function AppShell({
         </nav>
 
         <div className="goal-card">
-          <span>Meta del mes</span>
+          <span>{NAVEGACION.shell.metaDelMes}</span>
           <strong>
             $15.9k <small>/ $23k</small>
           </strong>
@@ -148,9 +113,9 @@ export function AppShell({
         </div>
 
         <form className="profile-card" action={logout}>
-          <span className="avatar">{initials(user?.name) || "W"}</span>
+          <span className="avatar">{initials(user?.name) || MARCA.inicial}</span>
           <span>
-            <strong>{user?.name ?? "Usuario"}</strong>
+            <strong>{user?.name ?? NAVEGACION.shell.usuario}</strong>
             <small>
               {ROL_USUARIO[user?.role ?? "VENDEDOR"]}
             </small>
@@ -158,8 +123,8 @@ export function AppShell({
           <button
             className="icon-button"
             type="submit"
-            aria-label="Cerrar sesión"
-            title="Cerrar sesión"
+            aria-label={NAVEGACION.shell.cerrarSesion}
+            title={NAVEGACION.shell.cerrarSesion}
           >
             <LogOut aria-hidden="true" />
           </button>
@@ -170,7 +135,7 @@ export function AppShell({
         <button
           className="sidebar-backdrop"
           onClick={() => setMobileOpen(false)}
-          aria-label="Cerrar menú"
+          aria-label={NAVEGACION.shell.cerrarMenu}
         />
       )}
 
@@ -179,7 +144,7 @@ export function AppShell({
           <button
             className="icon-button menu-button"
             onClick={() => setMobileOpen(true)}
-            aria-label="Abrir menú"
+            aria-label={NAVEGACION.shell.abrirMenu}
           >
             <Menu />
           </button>
@@ -189,13 +154,13 @@ export function AppShell({
           </div>
           <label className="global-search">
             <Search aria-hidden="true" />
-            <span className="sr-only">Buscar</span>
-            <Input placeholder="Buscar en Wave…" />
-            <kbd>⌘ K</kbd>
+            <span className="sr-only">{NAVEGACION.shell.buscar}</span>
+            <Input placeholder={NAVEGACION.shell.buscarPlaceholder} />
+            <kbd>{NAVEGACION.shell.atajoBuscar}</kbd>
           </label>
           <button
             className="notification-button"
-            aria-label="Actividades pendientes"
+            aria-label={NAVEGACION.shell.pendientes}
           >
             <Activity />
             <span>3</span>
