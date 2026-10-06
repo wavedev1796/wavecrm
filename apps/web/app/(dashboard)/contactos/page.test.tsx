@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({
 }));
 const api = vi.mocked(authenticatedApi);
 
-test("CRM-14: lista contactos reales, conserva Importar CSV y envía filtros", async () => {
+test("CRM-14: lista contactos reales, conserva Importar y envía filtros", async () => {
   api.mockResolvedValue(
     Response.json({
       data: [
@@ -56,7 +56,7 @@ test("CRM-14: lista contactos reales, conserva Importar CSV y envía filtros", a
       name: /Ana López/,
     }),
   ).toHaveAttribute("href", "/contactos/c1");
-  expect(screen.getByRole("link", { name: "Importar CSV" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: /^Importar$/ })).toHaveAttribute(
     "href",
     "/contactos/importar",
   );

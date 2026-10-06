@@ -14,6 +14,7 @@ import {
   readCsvHeader,
   type ImportFieldSpec,
 } from "./csv-header";
+import { asCsv } from "./spreadsheet";
 
 type Mapping = Record<string, string>;
 
@@ -40,6 +41,8 @@ type Props = Readonly<{
 export function ImportForm({ fields, action, noun, listHref }: Props) {
   const [state, formAction, pending] = useActionState<ImportState, FormData>(
     async (previous, formData) => {
+      // Se envía el CSV ya leído al elegir el archivo: un Excel viaja convertido y el API recibe siempre lo mismo.
+      if (csv) formData.set("file", csv);
       const next = await action(previous, formData);
       // React vacía el formulario al terminar la acción: se vuelve a elegir el archivo (el corregido,
       // si hubo errores) y el mapeo hecho a mano se conserva para él.
@@ -49,14 +52,30 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
     null,
   );
   const [columns, setColumns] = useState<string[]>([]);
+  const [csv, setCsv] = useState<File | null>(null);
   const [mapping, setMapping] = useState<Mapping>({});
   const [fileError, setFileError] = useState<string | null>(null);
 
   async function chooseFile(file: File | undefined) {
-    const tooLarge = file && file.size > MAX_FILE_BYTES;
-    const header = file && !tooLarge ? await readCsvHeader(file) : [];
+    let converted: File | undefined;
+    let unreadable = false;
+    if (file && file.size <= MAX_FILE_BYTES) {
+      try {
+        converted = await asCsv(file);
+      } catch {
+        unreadable = true;
+      }
+    }
+    // El límite vale para lo que se envía: un Excel convertido a CSV puede pesar más que el original.
+    const tooLarge =
+      file && !unreadable && (!converted || converted.size > MAX_FILE_BYTES);
+    const ready = tooLarge ? undefined : converted;
+    const header = ready ? await readCsvHeader(ready) : [];
+    setCsv(ready ?? null);
     setColumns(header);
-    if (tooLarge)
+    if (unreadable)
+      setFileError("No pudimos leer el archivo de Excel. Revisa que sea un .xlsx válido.");
+    else if (tooLarge)
       setFileError("El archivo supera 1 MB. Divídelo en partes más pequeñas.");
     else if (file && !header.length)
       setFileError("El archivo no tiene una fila de cabecera.");
@@ -78,11 +97,11 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
       >
         <div className="form-field">
           <label>
-            Archivo CSV{" "}
+            Archivo Excel o CSV{" "}
             <input
               name="file"
               type="file"
-              accept=".csv,text/csv"
+              accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
               onChange={(event) => chooseFile(event.currentTarget.files?.[0])}
               {...invalidProps("import-file", fileError)}
             />

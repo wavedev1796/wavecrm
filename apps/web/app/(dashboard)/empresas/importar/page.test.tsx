@@ -7,7 +7,7 @@ vi.mock("./actions", () => ({ importCompanies: vi.fn() }));
 test("CRM-15: explica las reglas e importa empresas", () => {
   render(<ImportCompaniesPage />);
   expect(
-    screen.getByRole("heading", { name: "Importar empresas desde CSV" }),
+    screen.getByRole("heading", { name: "Importar empresas desde Excel o CSV" }),
   ).toBeInTheDocument();
   expect(
     screen.getByText(

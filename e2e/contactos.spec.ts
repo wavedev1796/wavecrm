@@ -19,17 +19,17 @@ test('CRM-16: la importación muestra los errores por fila y luego importa el ar
   await expect(page).toHaveURL(/\/pipeline$/);
 
   await page.goto('/contactos');
-  await page.getByRole('link', { name: 'Importar CSV' }).click();
+  await page.getByRole('link', { name: 'Importar', exact: true }).click();
   await expect(page).toHaveURL(/\/contactos\/importar$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Importar contactos' })).toBeVisible();
 
   const first = cedulaDePrueba();
-  await page.getByLabel('Archivo CSV').setInputFiles(csv([`Ana;López;Cédula;${first};pichincha`, 'Luis;Mora;Cédula;1712345678;Guayas']));
+  await page.getByLabel('Archivo Excel o CSV').setInputFiles(csv([`Ana;López;Cédula;${first};pichincha`, 'Luis;Mora;Cédula;1712345678;Guayas']));
   await page.getByRole('button', { name: 'Importar contactos' }).click();
   await expect(page.getByText('No se importó ningún contacto: 1 fila tiene errores.')).toBeVisible();
   await expect(page.getByRole('table', { name: 'Errores por fila' })).toContainText('La cédula no es válida.');
 
-  await page.getByLabel('Archivo CSV').setInputFiles(csv([`Ana;López;Cédula;${first};pichincha`, `Luis;Mora;Cédula;${cedulaDePrueba()};Guayas`]));
+  await page.getByLabel('Archivo Excel o CSV').setInputFiles(csv([`Ana;López;Cédula;${first};pichincha`, `Luis;Mora;Cédula;${cedulaDePrueba()};Guayas`]));
   await page.getByRole('button', { name: 'Importar contactos' }).click();
   await expect(page.getByText('Se importaron 2 contactos.')).toBeVisible();
   await expect(page.getByRole('table', { name: 'Errores por fila' })).toHaveCount(0);

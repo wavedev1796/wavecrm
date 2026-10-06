@@ -45,7 +45,7 @@ test("CRM-15: lista empresas con sus filtros, contactos y acciones", async () =>
     "href",
     "/empresas/e1",
   );
-  expect(screen.getByRole("link", { name: "Importar CSV" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: /^Importar$/ })).toHaveAttribute(
     "href",
     "/empresas/importar",
   );

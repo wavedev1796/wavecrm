@@ -7,12 +7,12 @@ vi.mock("./actions", () => ({ importContacts: vi.fn() }));
 test("explica el formato del archivo y la regla de todo o nada", () => {
   render(<ImportContactsPage />);
   expect(
-    screen.getByRole("heading", { name: "Importar contactos desde CSV" }),
+    screen.getByRole("heading", { name: "Importar contactos desde Excel o CSV" }),
   ).toBeInTheDocument();
   expect(screen.getByText(/no se guarda ninguna/)).toBeInTheDocument();
   expect(screen.getByText(/1000 filas/)).toBeInTheDocument();
-  expect(screen.getByLabelText("Archivo CSV")).toHaveAttribute(
+  expect(screen.getByLabelText("Archivo Excel o CSV")).toHaveAttribute(
     "accept",
-    ".csv,text/csv",
+    ".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv",
   );
 });

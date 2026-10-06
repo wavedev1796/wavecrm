@@ -38,7 +38,7 @@ test("sin archivo avisa sin llamar al API", async () => {
   for (const data of [form(), form(empty)]) {
     expect(await importContacts(null, data)).toEqual({
       tone: "error",
-      message: "Adjunta un archivo CSV.",
+      message: "Adjunta un archivo Excel o CSV.",
       errors: [],
     });
   }

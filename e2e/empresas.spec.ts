@@ -40,17 +40,17 @@ test('CRM-15/16: importar empresas muestra los errores y luego importa el archiv
   await expect(page).toHaveURL(/\/pipeline$/);
 
   await page.goto('/empresas');
-  await page.getByRole('link', { name: 'Importar CSV' }).click();
+  await page.getByRole('link', { name: 'Importar', exact: true }).click();
   await expect(page).toHaveURL(/\/empresas\/importar$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Importar empresas' })).toBeVisible();
 
   const first = rucDePrueba();
-  await page.getByLabel('Archivo CSV').setInputFiles(csv([`Uno;${first};Pichincha`, 'Dos;1791234562001;Guayas']));
+  await page.getByLabel('Archivo Excel o CSV').setInputFiles(csv([`Uno;${first};Pichincha`, 'Dos;1791234562001;Guayas']));
   await page.getByRole('button', { name: 'Importar empresas' }).click();
   await expect(page.getByText('No se importó ninguna empresa: 1 fila tiene errores.')).toBeVisible();
   await expect(page.getByRole('table', { name: 'Errores por fila' })).toContainText('El RUC no es válido.');
 
-  await page.getByLabel('Archivo CSV').setInputFiles(csv([`Uno;${first};Pichincha`, `Dos;${rucDePrueba()};Guayas`]));
+  await page.getByLabel('Archivo Excel o CSV').setInputFiles(csv([`Uno;${first};Pichincha`, `Dos;${rucDePrueba()};Guayas`]));
   await page.getByRole('button', { name: 'Importar empresas' }).click();
   await expect(page.getByText('Se importaron 2 empresas.')).toBeVisible();
 });

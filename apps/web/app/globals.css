@@ -1844,6 +1844,11 @@ select {
 .import-rules {
   padding-left: 18px;
 }
+.import-template {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .import-form {
   display: flex;
   flex-direction: column;

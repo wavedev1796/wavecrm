@@ -5,7 +5,7 @@ import { CONTACT_IMPORT_FIELDS } from "./fields";
 export default function ImportContactsPage() {
   return (
     <ImportPage
-      title="Importar contactos desde CSV"
+      title="Importar contactos desde Excel o CSV"
       rules={[
         "Nombre, apellido, tipo y número de documento son obligatorios; el resto de columnas es opcional.",
         "El tipo de documento es Cédula, RUC o Pasaporte. El cantón debe ser de la provincia de la fila.",

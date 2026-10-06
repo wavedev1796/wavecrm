@@ -9,7 +9,7 @@ type Props = Readonly<{
   children: React.ReactNode;
 }>;
 
-/** Cabecera de un directorio (Contactos, Empresas): título, conteo, "Importar CSV" y la acción de alta. */
+/** Cabecera de un directorio (Contactos, Empresas): título, conteo, "Importar" y la acción de alta. */
 export function ListHeader({
   icon,
   title,
@@ -30,7 +30,7 @@ export function ListHeader({
       <div className="contact-list-actions">
         <Link className="button button--secondary" href={importHref}>
           <Upload aria-hidden />
-          Importar CSV
+          Importar
         </Link>
         {children}
       </div>

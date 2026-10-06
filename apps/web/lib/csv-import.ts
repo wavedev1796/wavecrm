@@ -27,7 +27,7 @@ export async function sendImport(
   const file = formData.get("file");
   // Sin archivo elegido, el navegador envía un File vacío.
   if (!(file instanceof File) || !file.size)
-    return failure("Adjunta un archivo CSV.");
+    return failure("Adjunta un archivo Excel o CSV.");
   // Un FormData nuevo: al API solo le llegan el archivo y el mapeo, no los campos internos de Next.
   const body = new FormData();
   body.set("file", file, file.name);

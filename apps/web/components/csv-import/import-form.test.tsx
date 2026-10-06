@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { CONTACT_IMPORT_FIELDS } from "@/app/(dashboard)/contactos/importar/fields";
 import type { ImportState } from "@/lib/csv-import";
+import writeXlsxFile from "write-excel-file/browser";
 import { ImportForm } from "./import-form";
 
 const importMock =
@@ -32,7 +33,7 @@ test("al elegir el archivo propone una columna por campo y envía el mapeo elegi
   ).toBeDisabled();
 
   await user.upload(
-    screen.getByLabelText("Archivo CSV"),
+    screen.getByLabelText("Archivo Excel o CSV"),
     csv(
       "Nombres;APELLIDOS;Tipo de documento;Cédula;Notas\nAna;López;Cédula;1712345675;",
     ),
@@ -70,7 +71,7 @@ test("al elegir el archivo propone una columna por campo y envía el mapeo elegi
     screen.getByRole("button", { name: "Importar contactos" }),
   ).toBeDisabled();
   await user.upload(
-    screen.getByLabelText("Archivo CSV"),
+    screen.getByLabelText("Archivo Excel o CSV"),
     csv(
       "Nombres;APELLIDOS;Tipo de documento;Cédula;Notas\nEva;Ruiz;Pasaporte;AB123456;",
     ),
@@ -81,7 +82,7 @@ test("al elegir el archivo propone una columna por campo y envía el mapeo elegi
 test("un archivo de más de 1 MB o sin cabecera se explica antes de enviarlo", async () => {
   const user = userEvent.setup();
   render(<Form />);
-  const input = screen.getByLabelText("Archivo CSV");
+  const input = screen.getByLabelText("Archivo Excel o CSV");
 
   await user.upload(input, csv(`Nombre\n${"x".repeat(1024 * 1024)}`));
   expect(
@@ -114,7 +115,7 @@ test("muestra el reporte de errores por fila", async () => {
   const user = userEvent.setup();
   render(<Form />);
   await user.upload(
-    screen.getByLabelText("Archivo CSV"),
+    screen.getByLabelText("Archivo Excel o CSV"),
     csv("Nombre,Apellido,Cédula\nAna,López,1712345678"),
   );
   await screen.findByLabelText("Nombre *");
@@ -129,6 +130,37 @@ test("muestra el reporte de errores por fila", async () => {
   expect(
     screen.getByText(
       "Corrige esas filas en el archivo y vuelve a elegirlo para importarlo.",
+    ),
+  ).toBeInTheDocument();
+});
+
+test("CRM-17: un Excel propone el mapeo y se envía convertido a CSV", async () => {
+  importMock.mockResolvedValue({
+    tone: "success",
+    message: "Se importó 1 contacto.",
+    errors: [],
+  });
+  const user = userEvent.setup();
+  render(<Form />);
+  const input = screen.getByLabelText("Archivo Excel o CSV");
+  const sheet = await writeXlsxFile([
+    ["Nombre", "Apellido"],
+    ["Ana", "López"],
+  ]).toBlob();
+
+  await user.upload(input, new File([sheet], "contactos.xlsx"));
+  expect(await screen.findByLabelText("Nombre *")).toHaveValue("Nombre");
+  await user.click(screen.getByRole("button", { name: "Importar contactos" }));
+
+  await screen.findByRole("status");
+  const sent = importMock.mock.calls.at(-1)?.[1].get("file") as File;
+  expect(sent.name).toBe("contactos.csv");
+  expect(await sent.text()).toBe("Nombre,Apellido\r\nAna,López");
+
+  await user.upload(input, new File(["no es un Excel"], "roto.xlsx"));
+  expect(
+    await screen.findByText(
+      "No pudimos leer el archivo de Excel. Revisa que sea un .xlsx válido.",
     ),
   ).toBeInTheDocument();
 });
