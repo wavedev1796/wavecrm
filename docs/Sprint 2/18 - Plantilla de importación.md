@@ -1,6 +1,6 @@
 # CRM-18 — Plantilla de importación
 
-**Responsable:** Zaith Manangón · **Estado:** En curso (4/4 criterios cubiertos por pruebas; falta la revisión visual). Ticket añadido al Sprint 2 el 2026-10-05.
+**Responsable:** Zaith Manangón · **Estado:** Completo (4/4 criterios). Ticket añadido al Sprint 2 el 2026-10-05.
 
 ## Objetivo
 
@@ -40,3 +40,4 @@ El ticket no trae criterios escritos; salen del pedido del usuario (2026-10-05).
   - El CSV empieza con el BOM (`EF BB BF`) y trae las etiquetas separadas por `;`.
   - Leída de vuelta, la cabecera de cada plantilla (la CSV y la Excel ya convertida) coincide con las etiquetas, y `guessMapping` propone una columna para cada campo.
 - `pnpm lint`, `pnpm --filter @wave/web test` (186) y `pnpm build` sin errores.
+- Revisión en el navegador (2026-10-05): los dos botones aparecen entre las reglas y el campo del archivo, en una fila, con el estilo secundario de Wave. La descarga en sí la cubren las pruebas: en el navegador no se descargó nada.

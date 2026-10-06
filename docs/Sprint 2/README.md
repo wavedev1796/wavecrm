@@ -16,8 +16,8 @@ Registrar contactos y empresas de Ecuador con su identificación validada, consu
 | CRM-14 | [Listado + ficha de Contacto](14%20-%20Listado-ficha%20Contacto.md) | Eduardo García | Completo (4/4 criterios) |
 | CRM-15 | [Listado + ficha de Empresa](15%20-%20Listado-ficha%20Empresa.md) | Eduardo García | Completo (3/3 criterios; ficha, edición e historial el 2026-09-29) |
 | CRM-16 | [Importar contactos (CSV)](16%20-%20Importar%20contactos%20(CSV).md) | Zaith Manangón | Completo (4/4 criterios) |
-| CRM-17 | [Importar desde Excel](17%20-%20Importar%20desde%20Excel.md) | Zaith Manangón | En curso (4/4 criterios; falta la revisión visual) |
-| CRM-18 | [Plantilla de importación](18%20-%20Plantilla%20de%20importaci%C3%B3n.md) | Zaith Manangón | En curso (4/4 criterios; falta la revisión visual) |
+| CRM-17 | [Importar desde Excel](17%20-%20Importar%20desde%20Excel.md) | Zaith Manangón | Completo (4/4 criterios) |
+| CRM-18 | [Plantilla de importación](18%20-%20Plantilla%20de%20importaci%C3%B3n.md) | Zaith Manangón | Completo (4/4 criterios) |
 | CRM-19 | [Diccionario de textos de la web](19%20-%20Diccionario%20de%20textos%20de%20la%20web.md) | Zaith Manangón | En curso |
 
 Tras probar CRM-14, el usuario pidió cambios en Contactos y la pantalla Empresas (2026-09-26). Los hizo Zaith Manangón, también en los tickets de Eduardo, con autorización del usuario: [Ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md).

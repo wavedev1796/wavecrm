@@ -1,16 +1,18 @@
 # Pruebas del Sprint 2
 
-Estado al 2026-10-01: **342 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md) (incluido el documento obligatorio del 2026-10-01), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
+Estado al 2026-10-05: **347 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md) (incluido el documento obligatorio del 2026-10-01), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
 
 | Capa | Pruebas |
 | --- | --- |
 | Unitarias del API | 98 |
 | Integración del API contra Neon | 41 |
-| Web | 181 |
+| Web | 186 |
 | Navegador | 22 |
 
 La última medición (`pnpm test:coverage`, 2026-10-01) dio **98,11 %** de líneas en el API y **98,08 %** en la web. La web baja desde el 98,45 % del 2026-09-28 por código sin cubrir anterior a este cambio (`app-shell.tsx`, `location-fields.tsx`, `new-company-dialog.tsx`, `edit-user-dialog.tsx`, `new-password-form.tsx`); los archivos del documento obligatorio quedan al 100 %. Falta ejecutar `pnpm sonar:scan` para registrar la duplicación tras extraer `@wave/shared`.
 
+
+Eduardo necesito hablar contigo.
 ## Cómo correrlas (paso a paso)
 
 Igual que en el [Sprint 1](Pruebas%20del%20Sprint%201.md#cómo-correrlas-paso-a-paso). Además, **la rama `pruebas` de Neon necesita las migraciones del sprint**:
@@ -21,7 +23,7 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 
 | Comando | Resultado esperado |
 | --- | --- |
-| `pnpm test` | `# tests 98` en el API y `Tests 181 passed` en la web |
+| `pnpm test` | `# tests 98` en el API y `Tests 186 passed` en la web |
 | `pnpm test:integration` | `# tests 41`, `# fail 0` |
 | `pnpm test:e2e` (con `pnpm dev` apagado) | `22 passed` |
 | `pnpm test:coverage` | `coverage/api/lcov.info` y `coverage/web/lcov.info` |

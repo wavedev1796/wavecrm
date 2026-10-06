@@ -1,6 +1,6 @@
 # CRM-17 — Importar desde Excel
 
-**Responsable:** Zaith Manangón · **Estado:** En curso (4/4 criterios cubiertos por pruebas; falta la revisión visual). Ticket añadido al Sprint 2 el 2026-10-05.
+**Responsable:** Zaith Manangón · **Estado:** Completo (4/4 criterios). Ticket añadido al Sprint 2 el 2026-10-05.
 
 ## Objetivo
 
@@ -42,3 +42,4 @@ El ticket no trae criterios escritos; salen del pedido del usuario (2026-10-05).
 - `components/csv-import/import-form.test.tsx` (+1): un `.xlsx` propone el mapeo, se envía como `contactos.csv` con el contenido convertido, y un `.xlsx` dañado muestra su aviso.
 - Pruebas de pantalla y e2e actualizadas a los textos nuevos (`Archivo Excel o CSV`, `Importar`).
 - `pnpm lint`, `tsc --noEmit` de la web, `pnpm --filter @wave/web test` (186) y `pnpm build` sin errores. `/contactos/importar` y `/empresas/importar` miden 109 kB de primera carga: las librerías no entran en ella.
+- Revisión en el navegador contra la rama `pruebas` (2026-10-05): un `.xlsx` con nombre, apellido, tipo, número y provincia propone esas 5 columnas solo. Al enviarlo con una cédula inválida responde `No se importó ningún contacto: 1 fila tiene errores.` con la fila 2, `Número de documento`, `La cédula no es válida.`, y no guarda nada. La consola quedó sin errores. El listado de Empresas muestra **Importar** con enlace a `/empresas/importar`.
