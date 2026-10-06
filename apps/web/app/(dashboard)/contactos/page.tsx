@@ -8,6 +8,7 @@ import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { Table } from "@/components/ui/table";
 import { authenticatedApi } from "@/lib/authenticated-api";
+import { initials } from "@/lib/format";
 import { listQuery } from "@/lib/list-params";
 import { NewContactDialog } from "./new-contact-dialog";
 import type { Contact, ContactList } from "./types";
@@ -123,12 +124,4 @@ function contactCount(total: number) {
   return total === 1
     ? "1 contacto registrado"
     : `${total} contactos registrados`;
-}
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
 }

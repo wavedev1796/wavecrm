@@ -17,6 +17,7 @@ import { Select } from "@/components/ui/select";
 import { Table } from "@/components/ui/table";
 import { ROL_USUARIO } from "@/content/catalogos";
 import { authenticatedApi } from "@/lib/authenticated-api";
+import { formatDate, initials } from "@/lib/format";
 import { SEARCH_MAX } from "@/lib/validation";
 import {
   deactivateUser,
@@ -295,20 +296,7 @@ function StatusBadge({ status }: Readonly<{ status: User["status"] }>) {
   return <Badge tone="neutral">Inactivo</Badge>;
 }
 
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-EC", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
-}
 
 function positivePage(value?: string) {
   const page = Number(value);

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ESTADO_NEGOCIO, TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { authenticatedApi } from "@/lib/authenticated-api";
+import { formatDate, formatMoney, initials } from "@/lib/format";
 import { DOCUMENT_TYPES } from "@/lib/ecuador";
 import { formatPhone, splitPhone } from "@/lib/phone";
 import { ContactForm } from "../contact-form";
@@ -118,7 +119,7 @@ export default async function ContactDetailPage({
                       {deal.stage.name} · {ESTADO_NEGOCIO[deal.status]}
                     </span>
                   </div>
-                  <b>{money(deal.value, deal.currency)}</b>
+                  <b>{formatMoney(deal.value, deal.currency)}</b>
                 </article>
               ))
             ) : (
@@ -140,7 +141,7 @@ export default async function ContactDetailPage({
                       {activity.assignee ? ` · ${activity.assignee.name}` : ""}
                     </span>
                   </div>
-                  <b>{activity.dueAt ? date(activity.dueAt) : "Sin fecha"}</b>
+                  <b>{activity.dueAt ? formatDate(activity.dueAt) : "Sin fecha"}</b>
                 </article>
               ))
             ) : (
@@ -168,18 +169,3 @@ function Info({
     </div>
   );
 }
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-const money = (value: string, currency: string) =>
-  new Intl.NumberFormat("es-EC", { style: "currency", currency }).format(
-    Number(value),
-  );
-const date = (value: string) =>
-  new Intl.DateTimeFormat("es-EC", { dateStyle: "medium" }).format(
-    new Date(value),
-  );

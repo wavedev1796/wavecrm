@@ -19,6 +19,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { UserRole } from "@wave/shared";
 import { ROL_USUARIO } from "@/content/catalogos";
+import { initials } from "@/lib/format";
 import { logout } from "@/app/(auth)/actions";
 import { Input } from "./ui/input";
 
@@ -147,7 +148,7 @@ export function AppShell({
         </div>
 
         <form className="profile-card" action={logout}>
-          <span className="avatar">{initials(user?.name)}</span>
+          <span className="avatar">{initials(user?.name) || "W"}</span>
           <span>
             <strong>{user?.name ?? "Usuario"}</strong>
             <small>
@@ -206,14 +207,3 @@ export function AppShell({
   );
 }
 
-function initials(name = "") {
-  return (
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase() || "W"
-  );
-}

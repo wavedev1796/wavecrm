@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ESTADO_NEGOCIO } from "@/content/catalogos";
 import { authenticatedApi } from "@/lib/authenticated-api";
+import { formatDateTime, formatMoney } from "@/lib/format";
 import { formatPhone, splitPhone } from "@/lib/phone";
 import { CompanyForm } from "../company-form";
 import type { CompanyDetail } from "../types";
@@ -142,7 +143,7 @@ export default async function CompanyDetailPage({
                       {deal.stage.name} · {ESTADO_NEGOCIO[deal.status]}
                     </span>
                   </div>
-                  <b>{money(deal.value, deal.currency)}</b>
+                  <b>{formatMoney(deal.value, deal.currency)}</b>
                 </article>
               ))
             ) : (
@@ -162,7 +163,7 @@ export default async function CompanyDetailPage({
                     <strong>{historyLabel(entry)}</strong>
                     <span>{entry.user?.name ?? "Sistema"}</span>
                   </div>
-                  <b>{dateTime(entry.createdAt)}</b>
+                  <b>{formatDateTime(entry.createdAt)}</b>
                 </article>
               ))
             ) : (
@@ -171,7 +172,7 @@ export default async function CompanyDetailPage({
                   <strong>Empresa creada</strong>
                   <span>Registro anterior al historial detallado</span>
                 </div>
-                <b>{dateTime(company.createdAt)}</b>
+                <b>{formatDateTime(company.createdAt)}</b>
               </article>
             )}
           </Card>
@@ -225,12 +226,3 @@ function historyLabel(entry: CompanyDetail["history"][number]) {
   return fields ? `Actualizó ${fields}` : "Empresa actualizada";
 }
 
-const money = (value: string, currency: string) =>
-  new Intl.NumberFormat("es-EC", { style: "currency", currency }).format(
-    Number(value),
-  );
-const dateTime = (value: string) =>
-  new Intl.DateTimeFormat("es-EC", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
