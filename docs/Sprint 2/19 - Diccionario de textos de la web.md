@@ -1,6 +1,6 @@
 # CRM-19 — Diccionario de textos de la web
 
-**Responsable:** Zaith Manangón · **Estado:** En curso. Ticket añadido al Sprint 2 el 2026-10-05. Toca archivos de CRM-5, CRM-7, CRM-9, CRM-14 y CRM-15 (Eduardo García) solo para mover sus textos; necesita la autorización del usuario antes de la fase 3.
+**Responsable:** Zaith Manangón · **Estado:** En curso. Ticket añadido al Sprint 2 el 2026-10-05. Toca archivos de CRM-5, CRM-7, CRM-9, CRM-14 y CRM-15 (Eduardo García) solo para mover sus textos; necesita la autorización del usuario antes de empezar.
 
 ## Objetivo
 
