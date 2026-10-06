@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { PasswordInput } from "@/components/ui/password-input";
+import { ACCESO } from "@/content/acceso";
 import {
   confirmationError,
   PASSWORD_MAX,
@@ -63,7 +64,7 @@ export function NewPasswordForm({
       {state.error && <Alert tone="error">{state.error}</Alert>}
 
       <div className="field">
-        <label htmlFor="password">Contraseña</label>
+        <label htmlFor="password">{ACCESO.campos.contrasena}</label>
         <PasswordInput
           id="password"
           name="password"
@@ -81,21 +82,23 @@ export function NewPasswordForm({
       <ul
         id="password-rules"
         className="password-rules"
-        aria-label="Requisitos de la contraseña"
+        aria-label={ACCESO.campos.requisitos}
       >
         {passwordChecks(password).map((check) => (
           <li key={check.id} data-met={check.met}>
             {check.met ? <CircleCheck aria-hidden /> : <Circle aria-hidden />}
             {check.label}
             <span className="sr-only">
-              {check.met ? " (cumplido)" : " (pendiente)"}
+              {check.met ? ACCESO.campos.cumplido : ACCESO.campos.pendiente}
             </span>
           </li>
         ))}
       </ul>
 
       <div className="field">
-        <label htmlFor="passwordConfirmation">Confirmar contraseña</label>
+        <label htmlFor="passwordConfirmation">
+          {ACCESO.campos.confirmarContrasena}
+        </label>
         <PasswordInput
           id="passwordConfirmation"
           name="passwordConfirmation"

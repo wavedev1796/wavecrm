@@ -1,6 +1,7 @@
 "use client";
 
 import { NewPasswordForm } from "@/components/new-password-form";
+import { ACCESO } from "@/content/acceso";
 import { resetPassword } from "./actions";
 
 export function ResetPasswordForm({ token }: Readonly<{ token: string }>) {
@@ -8,8 +9,8 @@ export function ResetPasswordForm({ token }: Readonly<{ token: string }>) {
     <NewPasswordForm
       token={token}
       action={resetPassword}
-      submitLabel="Guardar contraseña"
-      pendingLabel="Guardando…"
+      submitLabel={ACCESO.restablecer.guardar}
+      pendingLabel={ACCESO.restablecer.guardando}
     />
   );
 }

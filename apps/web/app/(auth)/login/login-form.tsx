@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { ACCESO } from "@/content/acceso";
 import { EMAIL_MAX, LOGIN_PASSWORD_MAX } from "@/lib/validation";
 import { login, type LoginState } from "../actions";
 
@@ -31,13 +32,13 @@ export function LoginForm() {
       ) : null}
 
       <div className="field">
-        <label htmlFor="email">Correo</label>
+        <label htmlFor="email">{ACCESO.campos.correo}</label>
         <Input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="tucorreo@empresa.ec"
+          placeholder={ACCESO.campos.correoPlaceholder}
           maxLength={EMAIL_MAX}
           defaultValue={state.email}
           required
@@ -49,9 +50,9 @@ export function LoginForm() {
 
       <div className="field">
         <div className="field-heading">
-          <label htmlFor="password">Contraseña</label>
+          <label htmlFor="password">{ACCESO.campos.contrasena}</label>
           <Link className="auth-link" href="/recuperar-contrasena">
-            ¿Olvidaste tu contraseña?
+            {ACCESO.login.olvidaste}
           </Link>
         </div>
         <PasswordInput
@@ -66,11 +67,9 @@ export function LoginForm() {
       </div>
 
       <Button className="auth-submit" type="submit" loading={pending}>
-        {pending ? "Entrando…" : "Entrar"}
+        {pending ? ACCESO.login.entrando : ACCESO.login.entrar}
       </Button>
-      <p className="auth-security">
-        Acceso seguro para miembros autorizados de tu equipo.
-      </p>
+      <p className="auth-security">{ACCESO.login.seguridad}</p>
     </form>
   );
 }

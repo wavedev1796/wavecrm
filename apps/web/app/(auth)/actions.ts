@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { API_URL } from '@/lib/api';
+import { ACCESO } from '@/content/acceso';
 import { COMUN } from '@/content/comun';
 import { apiError } from '@/lib/authenticated-api';
 import { clearSession, readSession, writeSession } from '@/lib/session';
@@ -22,9 +23,9 @@ export type LoginState = {
 };
 
 const ERROR_BY_STATUS: Record<number, string> = {
-  401: 'Correo o contraseña incorrectos.',
-  403: 'Tu cuenta está desactivada. Pide a un administrador que la reactive.',
-  429: 'Demasiados intentos. Espera un minuto e inténtalo de nuevo.',
+  401: ACCESO.login.errores.credenciales,
+  403: ACCESO.login.errores.desactivada,
+  429: ACCESO.login.errores.intentos,
 };
 
 export async function login(_previous: LoginState, formData: FormData): Promise<LoginState> {
@@ -49,13 +50,13 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
     // Un 400 significa que las reglas de la web y del API se separaron: se muestra el motivo del API.
     const error =
       ERROR_BY_STATUS[response.status] ??
-      (response.status === 400 ? await apiError(response) : 'No pudimos iniciar sesión. Inténtalo de nuevo.');
+      (response.status === 400 ? await apiError(response) : ACCESO.login.errores.generico);
     return { email, fieldErrors: {}, error };
   }
 
   const data = (await response.json()) as { accessToken?: string; refreshToken?: string };
   if (!data.accessToken || !data.refreshToken) {
-    return { email, fieldErrors: {}, error: 'El servidor devolvió una respuesta inesperada. Avisa al equipo técnico.' };
+    return { email, fieldErrors: {}, error: ACCESO.login.errores.respuesta };
   }
 
   await writeSession(await cookies(), data.accessToken, data.refreshToken);

@@ -9,6 +9,8 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
+import { ACCESO } from "@/content/acceso";
+import { MARCA } from "@/content/comun";
 
 export default function AuthLayout({
   children,
@@ -24,22 +26,18 @@ export default function AuthLayout({
         <aside className="auth-aside">
           <div className="auth-brand">
             <span className="brand-logo" aria-hidden="true" />
-            <span className="sr-only">Wave</span>
-            <span className="brand-tag">CRM</span>
+            <span className="sr-only">{MARCA.nombre}</span>
+            <span className="brand-tag">{MARCA.etiqueta}</span>
           </div>
           <CrmIllustration />
           <div className="auth-pitch">
-            <p className="auth-title">
-              Tu operación comercial, siempre conectada.
-            </p>
-            <p>
-              Clientes, negocios y equipo en un solo lugar pensado para Ecuador.
-            </p>
+            <p className="auth-title">{ACCESO.marco.lema}</p>
+            <p>{ACCESO.marco.descripcion}</p>
           </div>
           <DealPreview />
         </aside>
       </div>
-      <small className="auth-footer">© 2026 Wave · thewavesea.com</small>
+      <small className="auth-footer">{ACCESO.marco.pie}</small>
     </div>
   );
 }
@@ -55,8 +53,8 @@ function CrmIllustration() {
       </svg>
       <div className="auth-visual-core">
         <Sparkles />
-        <strong>Wave</strong>
-        <span>Todo fluye</span>
+        <strong>{ACCESO.marco.ilustracion.marca}</strong>
+        <span>{ACCESO.marco.ilustracion.lema}</span>
       </div>
       <VisualNode className="auth-node--mail" icon={Mail} />
       <VisualNode className="auth-node--people" icon={Users} />
@@ -86,22 +84,24 @@ function DealPreview() {
   return (
     <section
       className="deal-preview"
-      aria-label="Ejemplo de un negocio en Wave CRM"
+      aria-label={ACCESO.marco.ejemplo.etiqueta}
     >
       <div className="deal-preview-head">
-        <span className="deal-preview-tag">Vista de ejemplo</span>
-        <span className="deal-preview-stage">Negociación · 45 %</span>
+        <span className="deal-preview-tag">{ACCESO.marco.ejemplo.tag}</span>
+        <span className="deal-preview-stage">
+          {ACCESO.marco.ejemplo.etapa}
+        </span>
       </div>
-      <strong>Renovación de equipos</strong>
-      <b>$4.200,00</b>
+      <strong>{ACCESO.marco.ejemplo.titulo}</strong>
+      <b>{ACCESO.marco.ejemplo.valor}</b>
       <ul>
         <li>
           <CircleCheck aria-hidden />
-          RUC 17•••••••001 · validado
+          {ACCESO.marco.ejemplo.ruc}
         </li>
         <li>
           <FileText aria-hidden />
-          Cotización adjunta
+          {ACCESO.marco.ejemplo.cotizacion}
         </li>
       </ul>
       <div className="deal-preview-stages">

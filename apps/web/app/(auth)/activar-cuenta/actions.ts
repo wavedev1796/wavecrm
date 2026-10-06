@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { API_URL } from "@/lib/api";
+import { ACCESO } from "@/content/acceso";
 import { COMUN } from "@/content/comun";
 import { apiError } from "@/lib/authenticated-api";
 import { confirmationError, passwordError, type NewPasswordState } from "@/lib/password-rules";
@@ -24,7 +25,7 @@ export async function activateAccount(
   if (invalid) return { error: null, fieldErrors: invalid };
   if (!termsAccepted) {
     return {
-      error: "Debes leer y aceptar los términos y condiciones para activar tu cuenta.",
+      error: ACCESO.activar.terminosObligatorios,
       fieldErrors: {},
     };
   }

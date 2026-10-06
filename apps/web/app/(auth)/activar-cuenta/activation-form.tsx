@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { NewPasswordForm } from "@/components/new-password-form";
+import { ACCESO } from "@/content/acceso";
 import { activateAccount } from "./actions";
 import { TermsConsent } from "./terms-consent";
 
@@ -12,8 +13,8 @@ export function ActivationForm({ token }: Readonly<{ token: string }>) {
     <NewPasswordForm
       token={token}
       action={activateAccount}
-      submitLabel="Activar mi cuenta"
-      pendingLabel="Activando…"
+      submitLabel={ACCESO.activar.activar}
+      pendingLabel={ACCESO.activar.activando}
       submitDisabled={!termsAccepted}
     >
       <TermsConsent accepted={termsAccepted} onAcceptedChange={setTermsAccepted} />

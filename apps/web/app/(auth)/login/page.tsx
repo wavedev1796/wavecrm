@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Alert } from "@/components/ui/alert";
+import { ACCESO } from "@/content/acceso";
 import { LoginForm } from "./login-form";
 
-export const metadata: Metadata = { title: "Iniciar sesión" };
+export const metadata: Metadata = { title: ACCESO.login.titulo };
 
 export default async function LoginPage({
   searchParams,
@@ -13,23 +14,19 @@ export default async function LoginPage({
   const params = await searchParams;
   return (
     <div className="auth-box">
-      <span className="auth-eyebrow">Bienvenido a Wave CRM</span>
-      <h1>Inicia sesión en tu cuenta</h1>
-      <p className="auth-lead">
-        Continúa donde lo dejaste y mantén a tu equipo al día.
-      </p>
+      <span className="auth-eyebrow">{ACCESO.login.eyebrow}</span>
+      <h1>{ACCESO.login.encabezado}</h1>
+      <p className="auth-lead">{ACCESO.login.lead}</p>
       {params.activated === "1" && (
-        <Alert tone="success">
-          Tu cuenta fue activada. Ya puedes iniciar sesión.
-        </Alert>
+        <Alert tone="success">{ACCESO.login.avisos.activada}</Alert>
       )}
       {params.contrasena === "actualizada" && (
         <Alert tone="success">
-          Tu contraseña fue actualizada. Inicia sesión con tu nueva contraseña.
+          {ACCESO.login.avisos.contrasenaActualizada}
         </Alert>
       )}
       {params.sesion === "expirada" && (
-        <Alert tone="note">Tu sesión terminó. Vuelve a iniciar sesión.</Alert>
+        <Alert tone="note">{ACCESO.login.avisos.sesionExpirada}</Alert>
       )}
       <LoginForm />
     </div>

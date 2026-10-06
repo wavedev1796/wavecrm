@@ -3,8 +3,10 @@
 import { CheckCircle2, ExternalLink, FileText, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ACCESO } from "@/content/acceso";
 
 const PDF_URL = "/documents/terminos-y-privacidad-wave-crm.pdf";
+const TEXTO = ACCESO.activar.terminos;
 
 type Props = Readonly<{
   accepted: boolean;
@@ -35,13 +37,13 @@ export function TermsConsent({ accepted, onAcceptedChange }: Props) {
         />
         <div>
           <label htmlFor="termsAccepted">
-            Acepto los términos y condiciones y la política de privacidad
+            {TEXTO.acepto}
           </label>
           <button className="terms-review" type="button" onClick={openTerms}>
-            {accepted ? "Volver a leer el documento" : "Leer antes de aceptar"}
+            {accepted ? TEXTO.releer : TEXTO.leer}
           </button>
         </div>
-        {accepted && <CheckCircle2 className="terms-status" aria-label="Términos aceptados" />}
+        {accepted && <CheckCircle2 className="terms-status" aria-label={TEXTO.aceptados} />}
       </div>
 
       <dialog
@@ -53,10 +55,10 @@ export function TermsConsent({ accepted, onAcceptedChange }: Props) {
         <div className="terms-dialog-header">
           <div className="terms-dialog-icon"><FileText aria-hidden /></div>
           <div>
-            <span>Documento legal · Versión 1.0</span>
-            <h2 id="terms-title">Términos y política de privacidad</h2>
+            <span>{TEXTO.documento}</span>
+            <h2 id="terms-title">{TEXTO.tituloDialogo}</h2>
           </div>
-          <button className="terms-close" type="button" onClick={closeTerms} aria-label="Cerrar">
+          <button className="terms-close" type="button" onClick={closeTerms} aria-label={TEXTO.cerrar}>
             <X aria-hidden />
           </button>
         </div>
@@ -139,8 +141,8 @@ export function TermsConsent({ accepted, onAcceptedChange }: Props) {
             <div className="terms-document-end">
               <CheckCircle2 aria-hidden />
               <div>
-                <strong>Fin del documento</strong>
-                <span>Ya puedes aceptar y continuar con la activación.</span>
+                <strong>{TEXTO.fin}</strong>
+                <span>{TEXTO.finDetalle}</span>
               </div>
             </div>
           </div>
@@ -148,10 +150,10 @@ export function TermsConsent({ accepted, onAcceptedChange }: Props) {
 
         <div className="terms-dialog-footer">
           <a href={PDF_URL} target="_blank" rel="noreferrer">
-            <ExternalLink aria-hidden /> Abrir PDF completo
+            <ExternalLink aria-hidden /> {TEXTO.abrirPdf}
           </a>
           <div>
-            {!reachedEnd && <span>Lee hasta el final para continuar</span>}
+            {!reachedEnd && <span>{TEXTO.leeHastaElFinal}</span>}
             <Button
               type="button"
               disabled={!reachedEnd}
@@ -160,7 +162,7 @@ export function TermsConsent({ accepted, onAcceptedChange }: Props) {
                 closeTerms();
               }}
             >
-              Aceptar y continuar
+              {TEXTO.aceptar}
             </Button>
           </div>
         </div>

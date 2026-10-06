@@ -1,6 +1,7 @@
 'use server';
 
 import { API_URL } from '@/lib/api';
+import { ACCESO } from '@/content/acceso';
 import { COMUN } from '@/content/comun';
 import { emailError, formText, normalizeEmail } from '@/lib/validation';
 
@@ -41,8 +42,8 @@ export async function requestPasswordReset(
       fieldError: null,
       error:
         response.status === 429
-          ? 'Demasiados intentos. Espera un minuto e inténtalo de nuevo.'
-          : 'No pudimos enviar el enlace. Inténtalo de nuevo.',
+          ? ACCESO.recuperar.errores.intentos
+          : ACCESO.recuperar.errores.generico,
     };
   }
   // El API responde igual exista o no la cuenta, así que esta pantalla tampoco distingue.
