@@ -7,6 +7,8 @@ import { TagList } from "@/components/tag-list";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { Table } from "@/components/ui/table";
+import { COMUN } from "@/content/comun";
+import { CONTACTOS } from "@/content/contactos";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { initials } from "@/lib/format";
 import { listQuery } from "@/lib/list-params";
@@ -30,22 +32,19 @@ export default async function ContactsPage({ searchParams }: PageProps) {
   );
   const result = response.ok ? ((await response.json()) as ContactList) : null;
   const contacts = result?.data ?? [];
+  const texto = CONTACTOS.listado;
 
   return (
     <div className="contacts-page">
       {!result && (
-        <Alert tone="error">
-          No pudimos cargar los contactos. Recarga la página.
-        </Alert>
+        <Alert tone="error">{texto.errorCarga}</Alert>
       )}
       <Card className="data-card">
         <ListHeader
           icon={<UsersRound aria-hidden />}
-          title="Todos los contactos"
+          title={texto.titulo}
           summary={
-            result
-              ? contactCount(result.meta.total)
-              : "Consulta y organiza tu cartera"
+            result ? texto.total(result.meta.total) : texto.resumenSinDatos
           }
           importHref="/contactos/importar"
         >
@@ -54,17 +53,15 @@ export default async function ContactsPage({ searchParams }: PageProps) {
         <ListFilters
           basePath="/contactos"
           params={params}
-          searchLabel="Buscar contacto"
-          searchPlaceholder="Buscar por nombre, empresa, documento o RUC"
+          searchLabel={texto.buscar.etiqueta}
+          searchPlaceholder={texto.buscar.placeholder}
         />
         <Table>
           <thead>
             <tr>
-              <th>Contacto</th>
-              <th>Empresa</th>
-              <th>Provincia</th>
-              <th>Etiquetas</th>
-              <th>Responsable</th>
+              {texto.columnas.map((columna) => (
+                <th key={columna}>{columna}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -73,8 +70,8 @@ export default async function ContactsPage({ searchParams }: PageProps) {
             ))}
             {result && !contacts.length && (
               <tr>
-                <td colSpan={5} className="empty-table">
-                  No hay contactos que coincidan con los filtros.
+                <td colSpan={texto.columnas.length} className="empty-table">
+                  {texto.sinResultados}
                 </td>
               </tr>
             )}
@@ -86,7 +83,7 @@ export default async function ContactsPage({ searchParams }: PageProps) {
             params={params}
             meta={result.meta}
             shown={contacts.length}
-            label="Paginación de contactos"
+            label={texto.paginacion}
           />
         )}
       </Card>
@@ -110,18 +107,12 @@ function ContactRow({ contact }: Readonly<{ contact: Contact }>) {
           </span>
         </Link>
       </td>
-      <td>{contact.company?.name ?? "—"}</td>
-      <td>{contact.province ?? "—"}</td>
+      <td>{contact.company?.name ?? COMUN.sinDato}</td>
+      <td>{contact.province ?? COMUN.sinDato}</td>
       <td>
         <TagList tags={contact.tags} />
       </td>
-      <td>{contact.owner?.name ?? "Sin asignar"}</td>
+      <td>{contact.owner?.name ?? CONTACTOS.listado.sinAsignar}</td>
     </tr>
   );
-}
-
-function contactCount(total: number) {
-  return total === 1
-    ? "1 contacto registrado"
-    : `${total} contactos registrados`;
 }

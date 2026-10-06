@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { COMUN } from "@/content/comun";
+import { CONTACTOS } from "@/content/contactos";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
 import { cantonError } from "@/lib/cantons";
 import { documentError, normalizeDocument, provinceError } from "@/lib/ecuador";
@@ -37,7 +38,7 @@ export async function saveContact(
     documentId: documentError(values.documentType, values.documentId),
     company:
       values.company && !values.companyId
-        ? "Elige una empresa de la lista o deja el campo vacío."
+        ? CONTACTOS.formulario.errores.empresa
         : null,
     email: optionalEmailError(values.email),
     phone: phoneError(values.phone, country),
@@ -45,7 +46,7 @@ export async function saveContact(
     city: cantonError(values.province, values.city),
     position:
       values.position.length > 100
-        ? "El cargo no puede superar 100 caracteres."
+        ? CONTACTOS.formulario.errores.cargo
         : null,
     tags: tagsError(values.tags),
   });
@@ -91,7 +92,9 @@ export async function saveContact(
     return {
       feedback: {
         tone: "success",
-        message: id ? "Contacto actualizado." : "Contacto creado.",
+        message: id
+          ? CONTACTOS.formulario.actualizado
+          : CONTACTOS.formulario.creado,
       },
       fieldErrors: {},
       values,

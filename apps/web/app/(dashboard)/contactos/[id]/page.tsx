@@ -11,6 +11,8 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ESTADO_NEGOCIO, TIPO_ACTIVIDAD } from "@/content/catalogos";
+import { COMUN } from "@/content/comun";
+import { CONTACTOS } from "@/content/contactos";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatDate, formatMoney, initials } from "@/lib/format";
 import { DOCUMENT_TYPES } from "@/lib/ecuador";
@@ -27,7 +29,8 @@ export default async function ContactDetailPage({
     `/contacts/${encodeURIComponent(id)}`,
   );
   if (response.status === 404) notFound();
-  if (!response.ok) return <p role="alert">No pudimos cargar el contacto.</p>;
+  const texto = CONTACTOS.ficha;
+  if (!response.ok) return <p role="alert">{texto.errorCarga}</p>;
   const contact = (await response.json()) as ContactDetail;
   const phone = splitPhone(contact.phone);
   const values = {
@@ -51,19 +54,19 @@ export default async function ContactDetailPage({
   return (
     <div className="contact-detail-page">
       <Link className="back-link" href="/contactos">
-        ← Volver a contactos
+        {texto.volver}
       </Link>
       <section className="contact-profile card">
         <span className="avatar contact-profile-avatar">
           {initials(`${contact.firstName} ${contact.lastName}`)}
         </span>
         <div>
-          <span>Ficha de contacto</span>
+          <span>{texto.etiqueta}</span>
           <h2>
             {contact.firstName} {contact.lastName}
           </h2>
           <p>
-            {contact.position ?? "Sin cargo"}
+            {contact.position ?? texto.sinCargo}
             {contact.company ? ` · ${contact.company.name}` : ""}
           </p>
         </div>
@@ -78,29 +81,29 @@ export default async function ContactDetailPage({
       <div className="contact-detail-grid">
         <div className="contact-detail-main">
           <Card className="contact-data-card">
-            <h3>Datos del contacto</h3>
+            <h3>{texto.datos}</h3>
             <dl>
-              <Info icon={<Mail />} label="Correo" value={contact.email} />
+              <Info icon={<Mail />} label={texto.campos.correo} value={contact.email} />
               <Info
                 icon={<Phone />}
-                label="Teléfono"
+                label={texto.campos.telefono}
                 value={contact.phone && formatPhone(contact.phone)}
               />
               <Info
                 icon={<UserRound />}
-                label="Documento"
+                label={texto.campos.documento}
                 value={`${documentLabel ?? ""} ${contact.documentId}`.trim()}
               />
               <Info
                 icon={<MapPin />}
-                label="Ubicación"
+                label={texto.campos.ubicacion}
                 value={[contact.city, contact.province]
                   .filter(Boolean)
                   .join(", ")}
               />
               <Info
                 icon={<UserRound />}
-                label="Responsable"
+                label={texto.campos.responsable}
                 value={contact.owner?.name}
               />
             </dl>
@@ -108,7 +111,8 @@ export default async function ContactDetailPage({
           <Card className="contact-related">
             <h3>
               <CircleDollarSign />
-              Negocios <Badge tone="blue">{contact.deals.length}</Badge>
+              {texto.negocios}{" "}
+              <Badge tone="blue">{contact.deals.length}</Badge>
             </h3>
             {contact.deals.length ? (
               contact.deals.map((deal) => (
@@ -123,13 +127,14 @@ export default async function ContactDetailPage({
                 </article>
               ))
             ) : (
-              <p>No hay negocios vinculados.</p>
+              <p>{texto.sinNegocios}</p>
             )}
           </Card>
           <Card className="contact-related">
             <h3>
               <CalendarDays />
-              Actividades <Badge tone="blue">{contact.activities.length}</Badge>
+              {texto.actividades}{" "}
+              <Badge tone="blue">{contact.activities.length}</Badge>
             </h3>
             {contact.activities.length ? (
               contact.activities.map((activity) => (
@@ -141,11 +146,11 @@ export default async function ContactDetailPage({
                       {activity.assignee ? ` · ${activity.assignee.name}` : ""}
                     </span>
                   </div>
-                  <b>{activity.dueAt ? formatDate(activity.dueAt) : "Sin fecha"}</b>
+                  <b>{activity.dueAt ? formatDate(activity.dueAt) : texto.sinFecha}</b>
                 </article>
               ))
             ) : (
-              <p>No hay actividades vinculadas.</p>
+              <p>{texto.sinActividades}</p>
             )}
           </Card>
         </div>
@@ -165,7 +170,7 @@ function Info({
         {icon}
         <span>{label}</span>
       </dt>
-      <dd>{value || "—"}</dd>
+      <dd>{value || COMUN.sinDato}</dd>
     </div>
   );
 }

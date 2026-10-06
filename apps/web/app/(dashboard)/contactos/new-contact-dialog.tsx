@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { FormDialog } from "@/components/form-dialog";
+import { CONTACTOS } from "@/content/contactos";
 import { ContactForm } from "./contact-form";
 
 export function NewContactDialog() {
@@ -9,9 +10,9 @@ export function NewContactDialog() {
   return (
     <FormDialog
       dialogRef={dialog}
-      triggerLabel="Nuevo contacto"
-      label="Crear nuevo contacto"
-      closeLabel="Cerrar nuevo contacto"
+      triggerLabel={CONTACTOS.dialogo.abrir}
+      label={CONTACTOS.dialogo.etiqueta}
+      closeLabel={CONTACTOS.dialogo.cerrar}
     >
       <ContactForm embedded onCancel={() => dialog.current?.close()} />
     </FormDialog>

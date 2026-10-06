@@ -12,6 +12,7 @@ import { invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useFieldErrors } from "@/components/use-field-errors";
+import { CONTACTOS } from "@/content/contactos";
 import { DOCUMENT_TYPES } from "@/lib/ecuador";
 import { saveContact } from "./actions";
 import { CompanyField } from "./company-field";
@@ -35,6 +36,7 @@ export function ContactForm({
   onCancel,
 }: ContactFormProps) {
   const router = useRouter();
+  const texto = CONTACTOS.formulario;
   const initial: ContactFormState = {
     feedback: null,
     fieldErrors: {},
@@ -86,17 +88,15 @@ export function ContactForm({
           <IdCard aria-hidden />
         </span>
         <div>
-          <h2>{id ? "Editar contacto" : "Nuevo contacto"}</h2>
-          <p>
-            Los campos con * son obligatorios. Los datos se validan al guardar.
-          </p>
+          <h2>{id ? texto.editar : texto.nuevo}</h2>
+          <p>{texto.ayuda}</p>
         </div>
       </header>
       {state.feedback && (
         <Alert tone={state.feedback.tone}>{state.feedback.message}</Alert>
       )}
       <div className="contact-form-grid">
-        <Field {...field("firstName", "Nombre", true)}>
+        <Field {...field("firstName", texto.campos.nombre, true)}>
           <Input
             name="firstName"
             required
@@ -105,7 +105,7 @@ export function ContactForm({
             {...input("firstName")}
           />
         </Field>
-        <Field {...field("lastName", "Apellido", true)}>
+        <Field {...field("lastName", texto.campos.apellido, true)}>
           <Input
             name="lastName"
             required
@@ -114,7 +114,11 @@ export function ContactForm({
             {...input("lastName")}
           />
         </Field>
-        <Field id="contact-documentType" label="Tipo de documento" required>
+        <Field
+          id="contact-documentType"
+          label={texto.campos.tipoDocumento}
+          required
+        >
           <Select
             id="contact-documentType"
             name="documentType"
@@ -144,12 +148,12 @@ export function ContactForm({
           defaultId={state.values.companyId}
           error={error("company")}
         />
-        <Field {...field("email", "Correo")}>
+        <Field {...field("email", texto.campos.correo)}>
           <Input
             name="email"
             type="email"
             maxLength={64}
-            placeholder="persona@empresa.ec"
+            placeholder={texto.campos.correoPlaceholder}
             defaultValue={state.values.email}
             {...input("email")}
           />
@@ -167,7 +171,7 @@ export function ContactForm({
           provinceError={error("province")}
           cantonError={error("city")}
         />
-        <Field {...field("position", "Cargo")}>
+        <Field {...field("position", texto.campos.cargo)}>
           <Input
             name="position"
             maxLength={100}
@@ -175,10 +179,10 @@ export function ContactForm({
             {...input("position")}
           />
         </Field>
-        <Field {...field("tags", "Etiquetas")}>
+        <Field {...field("tags", texto.campos.etiquetas)}>
           <Input
             name="tags"
-            placeholder="cliente, vip"
+            placeholder={texto.campos.etiquetasPlaceholder}
             defaultValue={state.values.tags}
             {...input("tags")}
           />
@@ -187,12 +191,12 @@ export function ContactForm({
       <footer>
         {onCancel && (
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancelar
+            {texto.cancelar}
           </Button>
         )}
         <Button type="submit" loading={pending}>
           <Check aria-hidden />
-          {id ? "Guardar cambios" : "Crear contacto"}
+          {id ? texto.guardar : texto.crear}
         </Button>
       </footer>
     </form>

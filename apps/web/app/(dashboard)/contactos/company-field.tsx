@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { normalizeDigits } from "@/lib/ecuador";
+import { CONTACTOS } from "@/content/contactos";
 import { searchCompanies } from "./actions";
 import type { CompanyOption } from "./contact-form-state";
 
@@ -33,14 +34,16 @@ export function CompanyField({ defaultLabel, defaultId, error }: Props) {
 
   return (
     <div className="form-field">
-      <label htmlFor="contact-company">Empresa donde trabaja (opcional)</label>
+      <label htmlFor="contact-company">
+        {CONTACTOS.formulario.empresa.etiqueta}
+      </label>
       <Input
         id="contact-company"
         name="company"
         list={listId}
         defaultValue={defaultLabel}
         autoComplete="off"
-        placeholder="Busca por nombre o RUC"
+        placeholder={CONTACTOS.formulario.empresa.placeholder}
         onChange={(event) => {
           const text = event.currentTarget.value.trim();
           const match = matchOf(options, text);
@@ -63,7 +66,7 @@ export function CompanyField({ defaultLabel, defaultId, error }: Props) {
         }
       />
       <p id="contact-company-hint" className="field-hint">
-        Déjalo vacío si trabaja de forma independiente.
+        {CONTACTOS.formulario.empresa.ayuda}
       </p>
       <datalist id={listId}>
         {options.map((option) => (
