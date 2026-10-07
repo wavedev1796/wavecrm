@@ -188,3 +188,15 @@ Parte del pedido [documento obligatorio, empresa opcional y selects de Wave](Aju
 ### Cómo probarlo a mano
 
 `POST /contacts/import` con `docs/Sprint 2/contactos-ejemplo.csv` y `mapping`: `{"firstName":"Nombre","lastName":"Apellido","documentType":"Tipo de documento","documentId":"Documento","email":"Correo","phone":"Teléfono","province":"Provincia","city":"Ciudad","position":"Cargo","tags":"Etiquetas","companyTaxId":"RUC empresa"}`. La primera vez responde `201 { "imported": 3 }` (cédula, RUC y pasaporte); la segunda, `422` con `Ya existe un contacto con ese documento.` en las tres filas.
+
+## Teléfono o correo obligatorio (2026-10-07)
+
+Detalle en los [ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md#teléfono-o-correo-obligatorio-en-contactos-2026-10-07).
+
+### Implementación
+
+- `contact-import.service.ts`: el mapeo debe asignar la columna del teléfono o la del correo («Asigna la columna del teléfono o la del correo.»), y cada fila necesita al menos uno de los dos. El error va en la columna del teléfono, o en la del correo si es la única asignada.
+
+### Validación
+
+- `contact-import.service.test.cjs` (+1 y casos nuevos en las existentes) y `contact-import.http.test.cjs` (rama `pruebas`).

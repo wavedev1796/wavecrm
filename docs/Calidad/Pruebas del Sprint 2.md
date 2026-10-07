@@ -1,12 +1,12 @@
 # Pruebas del Sprint 2
 
-Estado al 2026-10-07: **356 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md) (incluido el documento obligatorio del 2026-10-01), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
+Estado al 2026-10-07: **361 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md) (incluido el documento obligatorio del 2026-10-01), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
 
 | Capa | Pruebas |
 | --- | --- |
-| Unitarias del API | 98 |
-| Integración del API contra Neon | 41 |
-| Web | 195 |
+| Unitarias del API | 100 |
+| Integración del API contra Neon | 42 |
+| Web | 197 |
 | Navegador | 22 |
 
 La última medición del API (`pnpm test:coverage`, 2026-10-01) dio **98,11 %** de líneas. La de la web (`pnpm test:coverage:web`, 2026-10-05) dio **98,41 %**, con `content/` al 100 %. Falta ejecutar `pnpm sonar:scan` para registrar la duplicación tras extraer `@wave/shared` y `content/`.
@@ -23,8 +23,8 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 
 | Comando | Resultado esperado |
 | --- | --- |
-| `pnpm test` | `# tests 98` en el API y `Tests 195 passed` en la web |
-| `pnpm test:integration` | `# tests 41`, `# fail 0` |
+| `pnpm test` | `# tests 100` en el API y `Tests 197 passed` en la web |
+| `pnpm test:integration` | `# tests 42`, `# fail 0` |
 | `pnpm test:e2e` (con `pnpm dev` apagado) | `22 passed` |
 | `pnpm test:coverage` | `coverage/api/lcov.info` y `coverage/web/lcov.info` |
 
@@ -116,6 +116,11 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | Archivo | Tipo | Pruebas | Qué verifica |
 | --- | --- | --- | --- |
 | `apps/web/components/csv-import/spreadsheet.test.tsx` | Web | 5 | Un `.xlsx` se convierte a CSV (cero inicial de texto, RUC numérico, comillas); un CSV pasa igual y un `.xlsx` dañado falla; plantillas de contactos y empresas en `.xlsx` y CSV (BOM y `;`) con el mapeo propuesto completo; el Excel trae la hoja de datos solo con la cabecera y la hoja **Instrucciones** con cada columna, su ayuda y un ejemplo (2026-10-07) |
+| `apps/web/components/csv-import/spreadsheet.test.tsx` (listas, 2026-10-07) | Web | +1 | Hoja **Listas** oculta con tipos de documento, provincias y cantones; validación de lista en tipo de documento, provincia y cantón (según la provincia de la fila), después del formato condicional |
+| `contacts-companies.service.test.cjs`, `contact-import.service.test.cjs` (teléfono o correo, 2026-10-07) | Unitaria | +2 | Contacto sin teléfono ni correo al crear, al vaciar el único medio en un `PATCH` y al importar; mapeo sin ninguna de las dos columnas; error en la columna del correo cuando es la única |
+| `apps/api/test/integracion/documentos.http.test.cjs` (teléfono o correo, 2026-10-07) | Integración | +1 | `400` al crear sin ninguno y al vaciar el correo, `200` al cambiarlo por teléfono, `CHECK` de la base (`23514`) |
+| `apps/web/app/(dashboard)/contactos/actions.test.ts` (teléfono o correo, 2026-10-07) | Web | +1 | Sin teléfono ni correo no llama al API; con solo el correo, sí |
+| Revisión de las listas en Excel de escritorio (2026-10-07) | Manual | — | Tipo de documento, provincia y cantón dependiente aceptan y rechazan lo esperado; **Listas** oculta; los dos archivos abren sin reparar |
 | `apps/web/components/csv-import/import-form.test.tsx` | Web | +1 | Un `.xlsx` propone el mapeo, se envía como CSV y un `.xlsx` dañado muestra su aviso |
 | `apps/web/content/catalogos.test.ts` | Web | 6 | Cada lista de `@wave/shared` repite su `enum` del schema de Prisma |
 | `apps/web/lib/format.test.ts` | Web | 2 | Iniciales, dinero y fechas en `es-EC` |

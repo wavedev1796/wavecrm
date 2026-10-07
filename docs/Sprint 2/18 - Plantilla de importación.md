@@ -69,3 +69,33 @@ Pedido del usuario: una segunda hoja que explique cada columna con un ejemplo, y
 - `spreadsheet.test.tsx` (+1): la primera hoja se llama como la entidad y solo trae la cabecera; la segunda, **Instrucciones**, trae el título, los pasos, la cabecera de la tabla, una fila por campo (etiqueta, Sí/No, ayuda y ejemplo, que conserva el 0 inicial como texto) y las reglas al final.
 - Plantillas reales generadas y abiertas en Excel de escritorio y exportadas a PDF: cabeceras en los dos azules, bandas y bordes en la hoja de datos, área usada `A1:K1` (contactos) y `A1:H1` (empresas) con 2 reglas de formato condicional; hoja de instrucciones legible, con filas de alto parejo.
 - `pnpm lint`, `pnpm --filter @wave/web test` (195) y `pnpm build` en verde.
+
+## Listas desplegables en la plantilla (2026-10-07)
+
+Pedido del usuario: que el tipo de documento y los demás campos con opciones fijas se elijan de una lista en la plantilla, para evitar errores de tipeo.
+
+### Implementación
+
+- `apps/web/components/csv-import/spreadsheet.ts`:
+  - Tercera hoja, **Listas**, oculta: en A los tipos de documento (`TIPO_DOCUMENTO` de `content/catalogos.ts`), en B las 24 provincias (`PROVINCES`) y en C-D cada cantón junto a su provincia (`CANTONS_BY_PROVINCE`). Son las mismas fuentes que los selects del formulario.
+  - Validación de datos de tipo lista en las filas 2 a 1001 de la hoja de datos. **Tipo de documento** y **Provincia** apuntan a su columna de **Listas**; **Cantón** usa `OFFSET` + `MATCH` + `COUNTIF` para mostrar solo los cantones de la provincia de su fila.
+  - Un valor que no está en la lista se rechaza con el aviso «Valor no válido» y un mensaje propio de la columna.
+  - `write-excel-file` no trae validación de datos: una *feature* propia inserta `<dataValidations>` en la hoja y marca **Listas** con `state="hidden"` en `workbook.xml`.
+  - La columna «¿Obligatoria?» acepta un texto propio por campo (`obligatoria`), para «Sí, o el correo».
+- `apps/web/content/importacion.ts`: `plantilla.listas` (nombre de la hoja, cabeceras y mensajes), un cuarto paso en las instrucciones y las ayudas de tipo de documento, provincia y cantón, que ahora dicen «Elígelo de la lista».
+- Contactos lleva lista en tipo de documento, provincia y cantón; empresas, en provincia y cantón.
+
+### Decisiones
+
+- **El CSV no puede tener listas:** es texto plano. Solo el Excel las trae; el API valida igual todo lo que se importa.
+- **Opciones en una hoja oculta**, no escritas en la regla: las provincias pasan los 255 caracteres que admite una lista escrita, y el cantón necesita una fórmula sobre un rango.
+- **Excel no revisa lo pegado:** copiar desde otro archivo salta la validación. El cuarto paso de las instrucciones lo avisa, y el API rechaza el valor al importar.
+- **Sin provincia, la lista de cantones queda vacía y Excel deja escribir cualquier cantón;** el API lo rechaza con «Elige un cantón de la provincia seleccionada.».
+- **`<dataValidations>` va a mano después del último `<conditionalFormatting>`:** el ayudante de la librería lo dejaba entre las dos reglas de las bandas y Excel no abría el archivo.
+- Excel compara las listas sin mayúsculas pero con tildes: «guayas» pasa y «Cedula» no, hay que elegir «Cédula».
+
+### Validación
+
+- `spreadsheet.test.tsx` (+1): la hoja **Listas** trae los tres tipos, las 24 provincias y cada cantón con su provincia, y va oculta; la hoja de datos valida C, G y H con su mensaje, después de todo el formato condicional.
+- Excel de escritorio: los dos archivos abren sin reparar y con **Listas** oculta. Se aceptan «Cédula» y «pasaporte» y se rechaza «Cedula»; se aceptan «Pichincha» y «guayas» y se rechaza «Quito» como provincia; con Pichincha se aceptan Quito y Rumiñahui y se rechaza Cuenca, y con Azuay se acepta Cuenca. En empresas, las listas quedan en F y G.
+- `pnpm lint`, `pnpm build` y la web (197) en verde.

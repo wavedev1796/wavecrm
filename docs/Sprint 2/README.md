@@ -44,11 +44,11 @@ Tras probar CRM-14, el usuario pidió cambios en Contactos y la pantalla Empresa
 
 | Métrica | Valor |
 | --- | --- |
-| Pruebas unitarias del API | 98 (+45) |
-| Pruebas de integración del API (Neon) | 41 (+17) |
-| Pruebas de la web (Vitest) | 195 (+85) |
+| Pruebas unitarias del API | 100 (+47) |
+| Pruebas de integración del API (Neon) | 42 (+18) |
+| Pruebas de la web (Vitest) | 197 (+87) |
 | Pruebas de navegador (Playwright) | 22 (+7) |
-| **Total** | **356** |
+| **Total** | **361** |
 | Cobertura de líneas del API | 98,11 % |
 | Cobertura de líneas de la web | 98,41 % |
 

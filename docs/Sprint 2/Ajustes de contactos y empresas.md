@@ -291,6 +291,35 @@ Pedido del usuario: que el prefijo del teléfono, la provincia, el cantón y cua
 - Los 12 selects de `/usuarios` y los del formulario de contacto heredan los mismos estilos calculados.
 - `pnpm lint` y `pnpm build` en verde. Cambio solo de CSS: las pruebas existentes de `phone-field` y `location-fields` ya comprueban que usan `select-control`.
 
+## Teléfono o correo obligatorio en contactos (2026-10-07)
+
+Pedido del usuario: todo contacto debe tener al menos una forma de contacto. Ante la pregunta de cuál, eligió la recomendación: teléfono **o** correo (al menos uno), solo en contactos, validado en la web, el API, la importación y la base.
+
+### Implementación
+
+- `packages/database/prisma/migrations/20261007120000_contact_phone_or_email/migration.sql` (nuevo): `CHECK "Contact_phone_or_email"`, que pide teléfono o correo no vacíos. `schema.prisma` lo anota con `///` sobre `email`.
+- `apps/api/src/common/validation.ts`: `CONTACT_METHOD_REQUIRED` («Ingresa un teléfono o un correo.»).
+- `apps/api/src/modules/contacts/contacts.service.ts` (CRM-13, con autorización del usuario): `requireContactMethod` en `create` y `update`. En un `PATCH` cuenta lo que el contacto ya tiene guardado: `requireContact` trae ahora `phone` y `email`. `contacts.controller.ts` lo describe en Swagger.
+- `apps/api/src/modules/contact-import/contact-import.service.ts`: sin columna de teléfono ni de correo, `400` «Asigna la columna del teléfono o la del correo.»; una fila sin ninguno de los dos da el error en la columna del teléfono, o en la del correo si es la única asignada.
+- `apps/web/app/(dashboard)/contactos/actions.ts`: el error se marca en **Teléfono** antes de llamar al API. `apps/web/content/contactos.ts`: `errores.contacto` y la cabecera del formulario: «Los campos con * son obligatorios, además de un teléfono o un correo. Los datos se validan al guardar.».
+- Importación: la regla de la pantalla y de la plantilla dice «y al menos un teléfono o un correo»; la hoja **Instrucciones** marca Correo y Teléfono con «Sí, o el teléfono» y «Sí, o el correo».
+
+### Decisiones
+
+- **Uno de los dos, no uno fijo:** el trato va mucho por celular o WhatsApp, pero las cotizaciones se envían por correo; exigir uno concreto bloquearía contactos reales que dieron el otro.
+- **Solo contactos:** a la empresa se la contacta por sus personas, y muchas se registran solo con nombre y RUC.
+- **El error va en Teléfono**, en el formulario y en el reporte de importación: un solo mensaje que nombra los dos campos, en vez de repetirlo en ambos.
+- **CHECK con `btrim`:** además de `NULL`, rechaza textos en blanco escritos a mano en la base. Prisma no expresa CHECK, así que vive solo en la migración (anotado en el schema y en la deuda técnica).
+- Antes de migrar se comprobó con la misma condición que ningún contacto de `pruebas` (15) ni de `development` (1) la viola. La migración se aplicó solo en `pruebas`.
+
+### Validación
+
+- API: `contacts-companies.service.test.cjs` (+1) y `contact-import.service.test.cjs` (+1, y casos nuevos en las existentes): alta sin ninguno, `PATCH` que vacía el único medio guardado, cambio de uno por otro, mapeo sin ninguna de las dos columnas y error en la columna del correo cuando es la única.
+- Integración en `pruebas` (+1, `documentos.http.test.cjs`): `400` al crear sin ninguno y al vaciar el correo, `200` al cambiarlo por un teléfono, y la base rechaza un `UPDATE` directo (`23514`, `check_violation`).
+- Web: `actions.test.ts` (+1); `contact-form.test.tsx` comprueba la nueva cabecera.
+- e2e: el diálogo vacío muestra «Ingresa un teléfono o un correo.» y la importación lleva columna Correo.
+- `pnpm lint`, `pnpm build`, `pnpm test` (100 y 197), `pnpm test:integration` (42) y `pnpm test:e2e` (22) en verde.
+
 ## Pendientes
 
-- Producción recibe las migraciones `20260927120000_contact_document_type` y `20261001120000_contact_document_required` en el próximo despliegue. `development` aún no tiene la segunda: el usuario pidió no tocarla en este cambio.
+- Producción recibe las migraciones `20260927120000_contact_document_type`, `20261001120000_contact_document_required` y `20261007120000_contact_phone_or_email` en el próximo despliegue. `development` aún no tiene las dos últimas: el usuario pidió no tocarla.

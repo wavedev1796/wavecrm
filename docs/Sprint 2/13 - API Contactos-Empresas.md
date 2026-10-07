@@ -106,3 +106,16 @@ Bloque añadido por Zaith Manangón, con autorización del usuario, como parte d
 ### Validación
 
 - `apps/api/test/contacts-companies.service.test.cjs` y `apps/api/test/integracion/documentos.http.test.cjs` (rama `pruebas`): alta sin documento, `PATCH` que intenta vaciarlo o cambiar solo una parte, y la base rechaza una fila sin tipo.
+
+## Teléfono o correo obligatorio (2026-10-07)
+
+Bloque añadido por Zaith Manangón, con autorización del usuario, junto con los [ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md#teléfono-o-correo-obligatorio-en-contactos-2026-10-07).
+
+### Implementación
+
+- `POST /contacts` exige al menos `phone` o `email`; un `PATCH` no puede dejar al contacto sin ninguno (cuenta lo ya guardado). Los dos responden `400` «Ingresa un teléfono o un correo.».
+- `contacts.service.ts`: `requireContactMethod`. La base lo respalda con `CHECK "Contact_phone_or_email"` (migración `20261007120000_contact_phone_or_email`).
+
+### Validación
+
+- `contacts-companies.service.test.cjs` (+1) y `documentos.http.test.cjs` (+1, rama `pruebas`).
