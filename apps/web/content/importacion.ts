@@ -8,12 +8,12 @@ const TELEFONO = {
   ejemplo: "0987654321",
 };
 const PROVINCIA = {
-  ayuda: "Una de las 24 provincias de Ecuador.",
+  ayuda: "Elígela de la lista: una de las 24 provincias de Ecuador.",
   ejemplo: "Pichincha",
 };
 const CANTON = {
   ayuda:
-    "Cantón de la provincia de esa misma fila. Si lo escribes, escribe también la provincia.",
+    "Elígelo de la lista, que muestra los cantones de la provincia de esa misma fila: elige primero la provincia.",
   ejemplo: "Quito",
 };
 const ETIQUETAS = {
@@ -39,12 +39,22 @@ export const IMPORTACION = {
       pasos: (hoja: string) => [
         `Escribe los datos en la hoja «${hoja}»: una fila por registro, desde la fila 2.`,
         "No cambies ni borres los nombres de las columnas: así Wave CRM reconoce cada dato.",
-        "Las columnas con la cabecera azul oscuro son obligatorias; las de cabecera clara pueden quedar vacías.",
+        "La cabecera azul oscuro marca las columnas obligatorias; la tabla de abajo dice qué va en cada una.",
+        "Las columnas con lista desplegable (flecha en la celda) solo aceptan un valor de la lista. Si pegas datos de otro archivo, Excel no los revisa.",
       ],
       columnas: ["Columna", "¿Obligatoria?", "Qué escribir", "Ejemplo"],
       si: "Sí",
       no: "No",
       reglas: "Antes de importar",
+    },
+    // Hoja oculta con las opciones de las listas desplegables y el aviso al escribir un valor que no está.
+    listas: {
+      hoja: "Listas",
+      columnas: ["Tipo de documento", "Provincia", "Provincia", "Cantón"],
+      titulo: "Valor no válido",
+      documentType: "Elige Cédula, RUC o Pasaporte de la lista.",
+      province: "Elige una provincia de Ecuador de la lista.",
+      city: "Elige un cantón de la lista. Si está vacía, elige primero la provincia de esta fila.",
     },
   },
   formulario: {
@@ -75,7 +85,7 @@ export const IMPORTACION = {
   contactos: {
     titulo: "Importar contactos desde Excel o CSV",
     reglas: [
-      "Nombre, apellido, tipo y número de documento son obligatorios; el resto de columnas es opcional.",
+      "Nombre, apellido, tipo y número de documento son obligatorios, y al menos un teléfono o un correo; el resto de columnas es opcional.",
       "El tipo de documento es Cédula, RUC o Pasaporte. El cantón debe ser de la provincia de la fila.",
       "Separa las etiquetas con comas dentro de la celda. El RUC de la empresa debe ser de una empresa ya registrada.",
     ],
@@ -93,7 +103,7 @@ export const IMPORTACION = {
         ejemplo: "Suárez",
       },
       documentType: {
-        ayuda: "Cédula, RUC o Pasaporte.",
+        ayuda: "Elígelo de la lista: Cédula, RUC o Pasaporte.",
         ejemplo: "Cédula",
       },
       documentId: {
@@ -102,10 +112,16 @@ export const IMPORTACION = {
         ejemplo: "1103040505",
       },
       email: {
-        ayuda: "Correo de la persona, hasta 64 caracteres.",
+        ayuda:
+          "Correo de la persona, hasta 64 caracteres. Escribe al menos el correo o el teléfono.",
         ejemplo: "csuarez@comercialandina.ec",
+        obligatoria: "Sí, o el teléfono",
       },
-      phone: TELEFONO,
+      phone: {
+        ...TELEFONO,
+        ayuda: `${TELEFONO.ayuda} Escribe al menos el teléfono o el correo.`,
+        obligatoria: "Sí, o el correo",
+      },
       province: PROVINCIA,
       city: CANTON,
       position: {

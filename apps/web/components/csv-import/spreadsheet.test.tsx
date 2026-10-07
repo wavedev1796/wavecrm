@@ -1,3 +1,4 @@
+import { inflateRawSync } from "node:zlib";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import readXlsxFile from "read-excel-file/browser";
@@ -24,11 +25,11 @@ function captureDownloads() {
     return "blob:plantilla";
   });
   vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
-  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
-    function (this: HTMLAnchorElement) {
-      names.push(this.download);
-    },
-  );
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+    this: HTMLAnchorElement,
+  ) {
+    names.push(this.download);
+  });
   return { blobs, names };
 }
 
@@ -61,10 +62,23 @@ function guideFor(
   const columnas = Object.fromEntries(
     fields.map(({ field, label }) => [
       field,
-      { ayuda: `Qué va en ${label}`, ejemplo: "0991234567" },
+      {
+        ayuda: `Qué va en ${label}`,
+        ejemplo: "0991234567",
+        ...(field === "email" && { obligatoria: "Sí, o el teléfono" }),
+      },
     ]),
   );
   return { hoja, varios, columnas };
+}
+
+/** Un archivo de dentro del .xlsx (un zip): su cabecera local trae el tamaño y viene con deflate. */
+async function xlsxEntry(xlsx: Blob, name: string) {
+  const zip = Buffer.from(await xlsx.arrayBuffer());
+  const at = zip.indexOf(Buffer.from(`${name}`)) - 30;
+  const size = zip.readUInt32LE(at + 18);
+  const start = at + 30 + zip.readUInt16LE(at + 26) + zip.readUInt16LE(at + 28);
+  return inflateRawSync(zip.subarray(start, start + size)).toString("utf8");
 }
 
 test.each([
@@ -145,13 +159,69 @@ test("CRM-18: el Excel trae la hoja de datos vacía y otra de instrucciones por 
     "Qué escribir",
     "Ejemplo",
   ]);
-  for (const { label, required } of fields) {
+  for (const { field, label, required } of fields) {
+    const obligatoria = field === "email" ? "Sí, o el teléfono" : null;
     expect(rows).toContainEqual([
       label,
-      required ? "Sí" : "No",
+      obligatoria ?? (required ? "Sí" : "No"),
       `Qué va en ${label}`,
       "0991234567",
     ]);
   }
   expect(rows.at(-1)?.[0]).toBe("• Regla de prueba.");
+});
+
+test("CRM-18: tipo de documento, provincia y cantón traen lista desplegable; el cantón según la provincia", async () => {
+  const { blobs } = captureDownloads();
+  const user = userEvent.setup();
+  const fields: readonly ImportFieldSpec[] = CONTACT_IMPORT_FIELDS;
+  render(
+    <TemplateDownload
+      fields={fields}
+      fileName="plantilla-contactos"
+      guide={guideFor("Contactos", "contactos", fields)}
+      rules={[]}
+    />,
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Descargar plantilla Excel" }),
+  );
+  await vi.waitFor(() => expect(blobs).toHaveLength(1));
+  const xlsx = blobs[0] as Blob;
+
+  // Las opciones, en una tercera hoja oculta: tipos de documento, provincias y cada cantón con su provincia.
+  const [, , listas] = await readXlsxFile(xlsx);
+  expect(listas?.sheet).toBe("Listas");
+  const [header, ...options] = listas?.data ?? [];
+  expect(header).toEqual([
+    "Tipo de documento",
+    "Provincia",
+    "Provincia",
+    "Cantón",
+  ]);
+  expect(options.map((row) => row[0]).filter(Boolean)).toEqual([
+    "Cédula",
+    "RUC",
+    "Pasaporte",
+  ]);
+  expect(options.map((row) => row[1]).filter(Boolean)).toHaveLength(24);
+  expect(options).toContainEqual([null, null, "Pichincha", "Rumiñahui"]);
+  expect(await xlsxEntry(xlsx, "xl/workbook.xml")).toContain(
+    'name="Listas" state="hidden"',
+  );
+
+  const sheet = await xlsxEntry(xlsx, "xl/worksheets/sheet1.xml");
+  // Excel no abre el archivo si <dataValidations> no va después de todos los <conditionalFormatting>.
+  expect(sheet.indexOf("<dataValidations")).toBeGreaterThan(
+    sheet.lastIndexOf("</conditionalFormatting>"),
+  );
+  // Tipo de documento (C), provincia (G) y cantón (H), en las 1000 filas.
+  expect(sheet).toContain(
+    `sqref="C2:C1001"><formula1>'Listas'!$A$2:$A$4</formula1>`,
+  );
+  expect(sheet).toContain(
+    `sqref="G2:G1001"><formula1>'Listas'!$B$2:$B$25</formula1>`,
+  );
+  expect(sheet).toMatch(/sqref="H2:H1001"><formula1>OFFSET\(.*MATCH\(\$G2,/);
+  expect(sheet).toContain('error="Elige Cédula, RUC o Pasaporte de la lista."');
 });

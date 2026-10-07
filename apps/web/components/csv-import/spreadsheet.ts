@@ -1,7 +1,10 @@
 // Excel en la importación (CRM-17 y CRM-18). Un .xlsx se convierte a CSV en el navegador, así el API recibe
 // siempre un CSV y lo valida igual. Las librerías se cargan solo cuando se usan.
 import type { Row, Sheet } from "write-excel-file/browser";
+import { TIPO_DOCUMENTO } from "@/content/catalogos";
 import { IMPORTACION } from "@/content/importacion";
+import { CANTONS_BY_PROVINCE } from "@/lib/cantons";
+import { PROVINCES } from "@/lib/ecuador";
 import type { ImportFieldSpec } from "./csv-header";
 
 const EXCEL = /\.xlsx$/i;
@@ -39,7 +42,15 @@ export type TemplateGuide<Field extends string = string> = Readonly<{
   varios: string;
   /** Qué escribir en cada columna, con un ejemplo válido. Exige una entrada por cada `field`. */
   columnas: Readonly<
-    Record<Field, Readonly<{ ayuda: string; ejemplo: string }>>
+    Record<
+      Field,
+      Readonly<{
+        ayuda: string;
+        ejemplo: string;
+        /** Texto de "¿Obligatoria?" cuando no es un simple Sí/No: "Sí, o el correo". */
+        obligatoria?: string;
+      }>
+    >
   >;
 }>;
 
@@ -66,6 +77,29 @@ const BORDER = { borderStyle: "thin", borderColor: WAVE.line } as const;
 /** Filas con bordes y bandas en la hoja de datos: las que el API acepta en un archivo. */
 const DATA_ROWS = 1000;
 
+// Listas desplegables (validación de datos de Excel): las mismas opciones que los selects del formulario.
+// Viven en una hoja oculta: A tipos de documento, B provincias, C-D cada cantón junto a su provincia.
+const LISTS = IMPORTACION.plantilla.listas;
+const DOCUMENT_TYPES = Object.values(TIPO_DOCUMENTO).map(
+  ({ etiqueta }) => etiqueta,
+);
+const CANTONS = Object.entries(CANTONS_BY_PROVINCE).flatMap(
+  ([province, cantons]) => cantons.map((canton) => [province, canton]),
+);
+const CONDITIONAL_END = "</conditionalFormatting>";
+const listRange = (column: string, count: number) =>
+  `'${LISTS.hoja}'!$${column}$2:$${column}$${count + 1}`;
+
+/** Fórmula de la lista de cada campo. `province` es la celda de la provincia en la fila 2 ("$G2"). */
+function listFormula(field: string, province: string | undefined) {
+  if (field === "documentType") return listRange("A", DOCUMENT_TYPES.length);
+  if (field === "province") return listRange("B", PROVINCES.length);
+  if (field !== "city" || !province) return null;
+  // Recorta la columna de cantones al bloque de la provincia de la fila; sin provincia, la lista queda vacía.
+  const provinces = listRange("C", CANTONS.length);
+  return `OFFSET('${LISTS.hoja}'!$D$1,MATCH(${province},${provinces},0),0,COUNTIF(${provinces},${province}),1)`;
+}
+
 /**
  * Plantilla con una columna por campo, con el nombre que se ve en pantalla (guessMapping la reconoce).
  * El Excel trae primero la hoja de datos, que es la que se importa, y después las instrucciones.
@@ -84,9 +118,23 @@ export async function downloadTemplate<Spec extends ImportFieldSpec>(
     );
     return;
   }
-  const { default: writeXlsxFile } = await import("write-excel-file/browser");
+  const [{ default: writeXlsxFile }, xml] = await Promise.all([
+    import("write-excel-file/browser"),
+    import("write-excel-file/utility"),
+  ]);
   const text = IMPORTACION.plantilla.instrucciones;
   const help = (field: Spec["field"]) => guide.columnas[field];
+  const column = (index: number) => xml.getCellAddress(0, index).slice(0, -1);
+  const provinceIndex = fields.findIndex(({ field }) => field === "province");
+  const provinceCell =
+    provinceIndex < 0 ? undefined : `$${column(provinceIndex)}2`;
+  const validations = fields.flatMap(({ field }, index) => {
+    const formula = listFormula(field, provinceCell);
+    if (!formula) return [];
+    const error = LISTS[field as "documentType" | "province" | "city"];
+    const range = `${column(index)}2:${column(index)}${DATA_ROWS + 1}`;
+    return `<dataValidation type="list" allowBlank="1" showErrorMessage="1" errorTitle="${xml.sanitizeAttributeValue(LISTS.titulo)}" error="${xml.sanitizeAttributeValue(error)}" sqref="${range}"><formula1>${xml.sanitizeTextContent(formula)}</formula1></dataValidation>`;
+  });
   // Alto según las líneas de "Qué escribir" (unos 64 caracteres por línea, de sobra) más aire arriba y abajo.
   const row = (index: number, field: Spec["field"]) =>
     ({
@@ -157,9 +205,12 @@ export async function downloadTemplate<Spec extends ImportFieldSpec>(
           { ...row(index, field), value: label, fontWeight: "bold" },
           {
             ...row(index, field),
-            value: required ? text.si : text.no,
+            value: help(field).obligatoria ?? (required ? text.si : text.no),
             align: "center",
-            ...(required && { fontWeight: "bold", textColor: WAVE.blueDark }),
+            ...((required || help(field).obligatoria) && {
+              fontWeight: "bold",
+              textColor: WAVE.blueDark,
+            }),
           },
           { ...row(index, field), value: help(field).ayuda },
           // String: el ejemplo de un documento o RUC queda como texto, como debe escribirse.
@@ -170,7 +221,44 @@ export async function downloadTemplate<Spec extends ImportFieldSpec>(
         ...rules.map((rule) => [`• ${rule}`]),
       ],
     },
+    {
+      sheet: LISTS.hoja,
+      data: [
+        [...LISTS.columnas],
+        ...CANTONS.map((canton, index): Row => [
+          DOCUMENT_TYPES[index],
+          PROVINCES[index],
+          ...canton,
+        ]),
+      ],
+    },
   ];
-  const blob = await writeXlsxFile(sheets).toBlob();
+  const blob = await writeXlsxFile(sheets, {
+    features: [
+      {
+        files: {
+          transform: {
+            "xl/worksheets/sheet{id}.xml": {
+              // Excel exige <dataValidations> justo después de todos los <conditionalFormatting>, y la hoja
+              // de datos siempre los trae (las bandas). El ayudante de la librería lo dejaba entre dos.
+              transform: (content, { sheet }) => {
+                if (sheet !== guide.hoja || !validations.length) return content;
+                const end =
+                  content.lastIndexOf(CONDITIONAL_END) + CONDITIONAL_END.length;
+                const markup = `<dataValidations count="${validations.length}">${validations.join("")}</dataValidations>`;
+                return content.slice(0, end) + markup + content.slice(end);
+              },
+            },
+            "xl/workbook.xml": {
+              transformElementAttributes: (tagName, attributes) =>
+                tagName === "sheet" && attributes.name === LISTS.hoja
+                  ? { ...attributes, state: "hidden" }
+                  : attributes,
+            },
+          },
+        },
+      },
+    ],
+  }).toBlob();
   save(blob, `${fileName}.xlsx`);
 }
