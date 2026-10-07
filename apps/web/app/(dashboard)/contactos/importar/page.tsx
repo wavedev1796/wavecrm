@@ -8,6 +8,7 @@ export default function ImportContactsPage() {
     <ImportPage
       title={IMPORTACION.contactos.titulo}
       rules={IMPORTACION.contactos.reglas}
+      guide={IMPORTACION.contactos}
       fields={CONTACT_IMPORT_FIELDS}
       action={importContacts}
       noun={IMPORTACION.contactos.varios}

@@ -4,22 +4,18 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IMPORTACION } from "@/content/importacion";
 import type { ImportFieldSpec } from "./csv-header";
-import { downloadTemplate } from "./spreadsheet";
+import { downloadTemplate, type Template } from "./spreadsheet";
 
-type Props = Readonly<{
-  fields: readonly ImportFieldSpec[];
-  /** Nombre del archivo descargado, sin extensión: "plantilla-contactos". */
-  fileName: string;
-}>;
-
-/** Descarga la plantilla de la importación en Excel o CSV (CRM-18). */
-export function TemplateDownload({ fields, fileName }: Props) {
+/** Descarga la plantilla de la importación en Excel (con hoja de instrucciones) o CSV (CRM-18). */
+export function TemplateDownload<Spec extends ImportFieldSpec>(
+  template: Template<Spec>,
+) {
   return (
     <div className="import-template">
       <Button
         type="button"
         variant="secondary"
-        onClick={() => downloadTemplate(fields, fileName, "xlsx")}
+        onClick={() => downloadTemplate(template, "xlsx")}
       >
         <Download aria-hidden />
         {IMPORTACION.plantilla.excel}
@@ -27,7 +23,7 @@ export function TemplateDownload({ fields, fileName }: Props) {
       <Button
         type="button"
         variant="secondary"
-        onClick={() => downloadTemplate(fields, fileName, "csv")}
+        onClick={() => downloadTemplate(template, "csv")}
       >
         <Download aria-hidden />
         {IMPORTACION.plantilla.csv}

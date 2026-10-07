@@ -8,6 +8,7 @@ export default function ImportCompaniesPage() {
     <ImportPage
       title={IMPORTACION.empresas.titulo}
       rules={IMPORTACION.empresas.reglas}
+      guide={IMPORTACION.empresas}
       fields={COMPANY_IMPORT_FIELDS}
       action={importCompanies}
       noun={IMPORTACION.empresas.varios}

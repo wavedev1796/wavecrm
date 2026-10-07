@@ -1,6 +1,27 @@
 // Importación desde Excel o CSV (CRM-19): pantalla y formulario compartidos y lo propio de cada entidad.
 // Las etiquetas de columna viven en importar/fields.ts junto a sus alias, que reflejan la lectura del API.
 
+// Hoja "Instrucciones" de la plantilla Excel: qué escribir en cada columna (por `field`) y un ejemplo válido.
+const TELEFONO = {
+  ayuda:
+    "Número de Ecuador tal como se marca, celular o fijo con su código de provincia. De otro país, empieza con + y el código del país (+57 300 123 4567).",
+  ejemplo: "0987654321",
+};
+const PROVINCIA = {
+  ayuda: "Una de las 24 provincias de Ecuador.",
+  ejemplo: "Pichincha",
+};
+const CANTON = {
+  ayuda:
+    "Cantón de la provincia de esa misma fila. Si lo escribes, escribe también la provincia.",
+  ejemplo: "Quito",
+};
+const ETIQUETAS = {
+  ayuda:
+    "Hasta 10, separadas por comas dentro de la celda. Cada una de 2 a 30 caracteres: letras, números, espacios y guiones.",
+  ejemplo: "cliente, mayorista",
+};
+
 export const IMPORTACION = {
   intro:
     "Sube la hoja de Excel (.xlsx) o un CSV, elige qué columna corresponde a cada dato e impórtala. Si empiezas de cero, descarga la plantilla.",
@@ -12,6 +33,19 @@ export const IMPORTACION = {
   plantilla: {
     excel: "Descargar plantilla Excel",
     csv: "Descargar plantilla CSV",
+    instrucciones: {
+      hoja: "Instrucciones",
+      titulo: (varios: string) => `Cómo llenar la plantilla de ${varios}`,
+      pasos: (hoja: string) => [
+        `Escribe los datos en la hoja «${hoja}»: una fila por registro, desde la fila 2.`,
+        "No cambies ni borres los nombres de las columnas: así Wave CRM reconoce cada dato.",
+        "Las columnas con la cabecera azul oscuro son obligatorias; las de cabecera clara pueden quedar vacías.",
+      ],
+      columnas: ["Columna", "¿Obligatoria?", "Qué escribir", "Ejemplo"],
+      si: "Sí",
+      no: "No",
+      reglas: "Antes de importar",
+    },
   },
   formulario: {
     archivo: "Archivo Excel o CSV",
@@ -47,6 +81,44 @@ export const IMPORTACION = {
     ],
     uno: "contacto",
     varios: "contactos",
+    hoja: "Contactos",
+    columnas: {
+      firstName: {
+        ayuda:
+          "Nombre o nombres de la persona, de 2 a 100 caracteres: letras, espacios, apóstrofos, guiones y puntos.",
+        ejemplo: "Carla",
+      },
+      lastName: {
+        ayuda: "Apellido o apellidos, con las mismas reglas que el nombre.",
+        ejemplo: "Suárez",
+      },
+      documentType: {
+        ayuda: "Cédula, RUC o Pasaporte.",
+        ejemplo: "Cédula",
+      },
+      documentId: {
+        ayuda:
+          "Cédula de 10 dígitos, RUC de persona natural de 13 (su cédula seguida de 001) o pasaporte de 6 a 20 letras o números. No puede repetirse en otro contacto.",
+        ejemplo: "1103040505",
+      },
+      email: {
+        ayuda: "Correo de la persona, hasta 64 caracteres.",
+        ejemplo: "csuarez@comercialandina.ec",
+      },
+      phone: TELEFONO,
+      province: PROVINCIA,
+      city: CANTON,
+      position: {
+        ayuda: "Puesto de la persona en su empresa, hasta 100 caracteres.",
+        ejemplo: "Jefa de compras",
+      },
+      tags: ETIQUETAS,
+      companyTaxId: {
+        ayuda:
+          "RUC de una empresa ya registrada en Wave CRM. Déjalo vacío si la persona trabaja de forma independiente.",
+        ejemplo: "1791234561001",
+      },
+    },
   },
   empresas: {
     titulo: "Importar empresas desde Excel o CSV",
@@ -56,5 +128,30 @@ export const IMPORTACION = {
     ],
     uno: "empresa",
     varios: "empresas",
+    hoja: "Empresas",
+    columnas: {
+      name: {
+        ayuda:
+          "Nombre comercial, con el que se conoce a la empresa. De 2 a 120 caracteres.",
+        ejemplo: "Comercial Andina",
+      },
+      legalName: {
+        ayuda: "Nombre legal que figura en el RUC, hasta 160 caracteres.",
+        ejemplo: "Comercial Andina Cía. Ltda.",
+      },
+      taxId: {
+        ayuda:
+          "RUC de 13 dígitos con dígito verificador válido. No puede estar registrado en otra empresa.",
+        ejemplo: "1799663186001",
+      },
+      email: {
+        ayuda: "Correo general de la empresa, hasta 64 caracteres.",
+        ejemplo: "ventas@comercialandina.ec",
+      },
+      phone: { ...TELEFONO, ejemplo: "02 245 7812" },
+      province: PROVINCIA,
+      city: CANTON,
+      tags: ETIQUETAS,
+    },
   },
 } as const;
