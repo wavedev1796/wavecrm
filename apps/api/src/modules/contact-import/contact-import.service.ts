@@ -1,6 +1,7 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { Prisma } from '@wave/database';
 import { markDuplicates, readImport, rejectInvalidRows, type ImportRow, type UploadedCsv } from '../../common/csv-import';
+import { CONTACT_METHOD_REQUIRED } from '../../common/validation';
 import { PrismaService } from '../prisma/prisma.service';
 import { ContactImportRowDto, IMPORT_FIELDS, type ImportField } from './contact-import.dto';
 
@@ -24,6 +25,17 @@ export class ContactImportService {
   /** Todo o nada: valida cada fila y solo guarda si ninguna tiene errores. */
   async importCsv(file: UploadedCsv | undefined, rawMapping: string | undefined, ownerId: string) {
     const { mapping, rows } = await readImport(file, rawMapping, CONTACT_IMPORT);
+    if (!mapping.phone && !mapping.email) {
+      throw new BadRequestException('Asigna la columna del teléfono o la del correo.');
+    }
+    // Al menos un teléfono o un correo por fila; el error va en la columna del teléfono si se asignó.
+    const contactField = mapping.phone ? 'phone' : 'email';
+    for (const row of rows) {
+      const { phone, email } = row.value;
+      if (!phone && !email && !row.errors.has('phone') && !row.errors.has('email')) {
+        row.errors.set(contactField, CONTACT_METHOD_REQUIRED);
+      }
+    }
     const companyIds = await this.checkReferences(rows);
     rejectInvalidRows(rows, mapping, IMPORT_FIELDS, 'ningún contacto');
 

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { Prisma } from "@wave/database";
+import { CONTACT_METHOD_REQUIRED } from "../../common/validation";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   CreateContactDto,
@@ -60,6 +61,16 @@ function withDocumentPair<
     throw new BadRequestException("Elige el tipo de documento.");
   }
   return dto;
+}
+
+/** Al menos un teléfono o un correo. En un PATCH cuenta lo que el contacto ya tiene guardado. */
+function requireContactMethod(contact: {
+  phone?: string | null;
+  email?: string | null;
+}) {
+  if (!contact.phone && !contact.email) {
+    throw new BadRequestException(CONTACT_METHOD_REQUIRED);
+  }
 }
 
 @Injectable()
@@ -125,6 +136,7 @@ export class ContactsService {
   }
 
   async create(dto: CreateContactDto, actorId: string) {
+    requireContactMethod(dto);
     try {
       return await this.prisma.contact.create({
         data: {
@@ -139,7 +151,11 @@ export class ContactsService {
   }
 
   async update(id: string, dto: UpdateContactDto) {
-    await this.requireContact(id);
+    const current = await this.requireContact(id);
+    requireContactMethod({
+      phone: dto.phone === undefined ? current.phone : dto.phone,
+      email: dto.email === undefined ? current.email : dto.email,
+    });
     try {
       return await this.prisma.contact.update({
         where: { id },
@@ -159,7 +175,7 @@ export class ContactsService {
   private async requireContact(id: string) {
     const contact = await this.prisma.contact.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, phone: true, email: true },
     });
     if (!contact) throw new NotFoundException("Contacto no encontrado.");
     return contact;

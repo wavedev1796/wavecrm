@@ -34,7 +34,10 @@ export class ContactsController {
   }
 
   @Post()
-  @ApiOperation({ summary: "Crea un contacto" })
+  @ApiOperation({
+    summary: "Crea un contacto",
+    description: "Exige al menos un teléfono o un correo.",
+  })
   create(@Body() dto: CreateContactDto, @CurrentUser() actor: JwtPayload) {
     return this.contacts.create(dto, actor.sub);
   }
@@ -46,7 +49,11 @@ export class ContactsController {
   }
 
   @Patch(":id")
-  @ApiOperation({ summary: "Actualiza parcialmente un contacto" })
+  @ApiOperation({
+    summary: "Actualiza parcialmente un contacto",
+    description:
+      "No puede dejar al contacto sin teléfono ni correo: cuenta lo que ya tiene guardado.",
+  })
   update(@Param("id") id: string, @Body() dto: UpdateContactDto) {
     return this.contacts.update(id, dto);
   }

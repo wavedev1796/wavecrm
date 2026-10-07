@@ -33,7 +33,7 @@ test("el documento es obligatorio: arranca en Cédula y el número toma la etiqu
   expect(screen.getByLabelText("Cédula")).toBeRequired();
   expect(
     screen.getByText(
-      "Los campos con * son obligatorios. Los datos se validan al guardar.",
+      "Los campos con * son obligatorios, además de un teléfono o un correo. Los datos se validan al guardar.",
     ),
   ).toBeInTheDocument();
 

@@ -57,6 +57,7 @@ test("contacto con pasaporte, teléfono extranjero, búsqueda sin mayúsculas y 
       lastName: "Persona",
       documentType: "PASAPORTE",
       documentId: passport,
+      phone: "0991234568",
     },
   });
   assert.equal(duplicate.status, 409);
@@ -74,6 +75,7 @@ test("RUC de persona natural sí, de sociedad no; el documento es obligatorio y 
       lastName: "Mora",
       documentType: "RUC",
       documentId: `${cedulaDePrueba()}001`,
+      email: "ana.mora@wave.ec",
     },
   });
   assert.equal(natural.status, 201, JSON.stringify(natural.body));
@@ -111,6 +113,41 @@ test("RUC de persona natural sí, de sociedad no; el documento es obligatorio y 
     "Elige el tipo de documento.",
     "Ingresa el número de documento.",
   ]);
+});
+
+test("un contacto necesita al menos un teléfono o un correo; la base también lo exige", async () => {
+  const body = {
+    firstName: "Sin",
+    lastName: "Contacto",
+    documentType: "CEDULA",
+    documentId: cedulaDePrueba(),
+  };
+  const missing = await call("/contacts", { method: "POST", body });
+  assert.equal(missing.status, 400);
+  assert.equal(messageOf(missing), "Ingresa un teléfono o un correo.");
+
+  const created = await call("/contacts", {
+    method: "POST",
+    body: { ...body, email: "sin.telefono@wave.ec" },
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  // Vaciar el único medio guardado se rechaza; cambiarlo por el otro, no.
+  const cleared = await call(`/contacts/${created.body.id}`, {
+    method: "PATCH",
+    body: { email: "" },
+  });
+  assert.equal(cleared.status, 400);
+  assert.equal(messageOf(cleared), "Ingresa un teléfono o un correo.");
+  const swapped = await call(`/contacts/${created.body.id}`, {
+    method: "PATCH",
+    body: { email: "", phone: "0991234567" },
+  });
+  assert.equal(swapped.status, 200, JSON.stringify(swapped.body));
+
+  await assert.rejects(
+    api.prisma.$executeRaw`UPDATE "Contact" SET "phone" = NULL WHERE "id" = ${created.body.id}`,
+    /23514/, // check_violation de Postgres: Contact_phone_or_email
+  );
 });
 
 test("la base exige tipo y número de documento (NOT NULL)", async () => {

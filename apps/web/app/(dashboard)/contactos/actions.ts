@@ -41,13 +41,15 @@ export async function saveContact(
         ? CONTACTOS.formulario.errores.empresa
         : null,
     email: optionalEmailError(values.email),
-    phone: phoneError(values.phone, country),
+    phone:
+      phoneError(values.phone, country) ??
+      (values.phone || values.email
+        ? null
+        : CONTACTOS.formulario.errores.contacto),
     province: provinceError(values.province),
     city: cantonError(values.province, values.city),
     position:
-      values.position.length > 100
-        ? CONTACTOS.formulario.errores.cargo
-        : null,
+      values.position.length > 100 ? CONTACTOS.formulario.errores.cargo : null,
     tags: tagsError(values.tags),
   });
   if (invalid) return { feedback: null, fieldErrors: invalid, values };

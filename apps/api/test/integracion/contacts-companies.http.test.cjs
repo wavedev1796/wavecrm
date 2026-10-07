@@ -111,6 +111,7 @@ test("CRM-13: crea un contacto relacionado y rechaza la cédula repetida", async
       lastName: "Persona",
       documentType: "CEDULA",
       documentId,
+      phone: "0991234568",
     },
   });
   assert.equal(duplicate.status, 409);

@@ -35,6 +35,9 @@ const NAME_PATTERN = /^\p{L}[\p{L}\p{M} '’.-]*$/u;
 const NEW_PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!-/:-@[-`{-~]).*$/;
 
 const EMAIL_INVALID = 'Escribe un correo válido, por ejemplo nombre@empresa.ec.';
+
+/** Un contacto necesita al menos un teléfono o un correo; la base lo exige con `Contact_phone_or_email`. */
+export const CONTACT_METHOD_REQUIRED = 'Ingresa un teléfono o un correo.';
 const LOGIN_PASSWORD_REQUIRED = 'Ingresa tu contraseña.';
 const NEW_PASSWORD_LENGTH = 'La contraseña debe tener entre 8 y 16 caracteres.';
 

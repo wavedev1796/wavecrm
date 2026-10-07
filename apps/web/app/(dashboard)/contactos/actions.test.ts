@@ -34,6 +34,7 @@ const person = {
   lastName: "López",
   documentType: "CEDULA",
   documentId: "1712345675",
+  phone: "0991234567",
 };
 
 beforeEach(() => vi.clearAllMocks());
@@ -110,6 +111,27 @@ test("el documento es obligatorio: sin número no llama al API", async () => {
   expect(api).not.toHaveBeenCalled();
 });
 
+test("sin teléfono ni correo no llama al API; con solo el correo, sí", async () => {
+  const missing = await saveContact(
+    empty,
+    form({ ...person, phone: " ", email: "" }),
+  );
+  expect(missing.fieldErrors).toEqual({
+    phone: "Ingresa un teléfono o un correo.",
+  });
+  expect(api).not.toHaveBeenCalled();
+
+  api.mockResolvedValueOnce(Response.json({ id: "contact-1" }));
+  const onlyEmail = await saveContact(
+    empty,
+    form({ ...person, phone: "", email: "ana@empresa.ec" }),
+  );
+  expect(onlyEmail.fieldErrors).toEqual({});
+  expect(JSON.parse(api.mock.calls[0]?.[1]?.body as string)).toEqual(
+    expect.objectContaining({ phone: "", email: "ana@empresa.ec" }),
+  );
+});
+
 test("la empresa es opcional: sin empresa se guarda sin vínculo", async () => {
   api.mockResolvedValueOnce(Response.json({ id: "contact-1" }));
   const result = await saveContact(empty, form({ ...person, company: "" }));
@@ -152,6 +174,7 @@ test("un pasaporte se normaliza y un 409 se muestra junto al documento", async (
       lastName: "López",
       documentType: "PASAPORTE",
       documentId: "ab 123456",
+      email: "ana@empresa.ec",
     }),
   );
   expect(JSON.parse(api.mock.calls[0]?.[1]?.body as string)).toEqual(

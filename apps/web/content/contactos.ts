@@ -39,7 +39,8 @@ export const CONTACTOS = {
   formulario: {
     editar: "Editar contacto",
     nuevo: "Nuevo contacto",
-    ayuda: "Los campos con * son obligatorios. Los datos se validan al guardar.",
+    ayuda:
+      "Los campos con * son obligatorios, además de un teléfono o un correo. Los datos se validan al guardar.",
     campos: {
       nombre: "Nombre",
       apellido: "Apellido",
@@ -61,6 +62,8 @@ export const CONTACTOS = {
     errores: {
       empresa: "Elige una empresa de la lista o deja el campo vacío.",
       cargo: "El cargo no puede superar 100 caracteres.",
+      // Mismo texto que el API (CONTACT_METHOD_REQUIRED): un contacto necesita teléfono o correo.
+      contacto: "Ingresa un teléfono o un correo.",
     },
     actualizado: "Contacto actualizado.",
     creado: "Contacto creado.",

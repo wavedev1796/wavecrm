@@ -17,6 +17,8 @@ const contact = {
   id: "contact-1",
   firstName: "Ana",
   lastName: "López",
+  phone: "+593991234567",
+  email: null,
   tags: ["cliente"],
 };
 const company = { id: "company-1", name: "Wave Comercial", tags: ["cliente"] };
@@ -94,7 +96,7 @@ test("CRM-13: el creador queda como responsable por defecto", async () => {
   const contactPrisma = prismaFor("contact", contact);
   const companyPrisma = prismaFor("company", company);
   const createdContact = await new ContactsService(contactPrisma).create(
-    { firstName: "Ana", lastName: "López" },
+    { firstName: "Ana", lastName: "López", phone: "+593991234567" },
     "user-1",
   );
   const createdCompany = await new CompaniesService(companyPrisma).create(
@@ -119,7 +121,7 @@ test("CRM-13: traduce cédula y RUC duplicados a 409", async () => {
 
   await assert.rejects(
     new ContactsService(contactPrisma).create(
-      { firstName: "Ana", lastName: "López" },
+      { firstName: "Ana", lastName: "López", email: "ana@empresa.ec" },
       "user-1",
     ),
     (error) =>
@@ -173,6 +175,24 @@ test("un PATCH con solo el tipo o solo el número de documento se rechaza", asyn
       (error) => error instanceof BadRequestException && error.message === message,
     );
   }
+});
+
+test("un contacto necesita al menos un teléfono o un correo, también al editarlo", async () => {
+  const rejected = (promise) =>
+    assert.rejects(
+      promise,
+      (error) =>
+        error instanceof BadRequestException &&
+        error.message === "Ingresa un teléfono o un correo.",
+    );
+  const contacts = () => new ContactsService(prismaFor("contact", contact));
+  await rejected(
+    contacts().create({ firstName: "Ana", lastName: "López", email: null }, "user-1"),
+  );
+  // El guardado solo tiene teléfono: borrarlo sin dar un correo deja al contacto sin forma de contacto.
+  await rejected(contacts().update("contact-1", { phone: null }));
+  await contacts().update("contact-1", { phone: null, email: "ana@empresa.ec" });
+  await contacts().update("contact-1", { city: "Quito" });
 });
 
 test("la búsqueda por documento ignora mayúsculas (pasaportes)", async () => {

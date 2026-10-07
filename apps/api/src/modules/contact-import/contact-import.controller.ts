@@ -18,10 +18,11 @@ export class ContactImportController {
     path: '/api/v1/contacts/import',
     summary: 'Importa contactos desde un CSV (todo o nada)',
     description:
-      'Valida cada fila con las reglas de Ecuador (documento por tipo, teléfono, provincia, cantón, etiquetas) y la unicidad del documento. ' +
+      'Valida cada fila con las reglas de Ecuador (documento por tipo, teléfono, provincia, cantón, etiquetas), la unicidad del documento ' +
+      'y que traiga al menos un teléfono o un correo. ' +
       'Si alguna fila falla no se guarda ninguna y el 422 lista fila, columna y motivo; la fila es la de la hoja de ' +
       'cálculo (la cabecera es la 1). El responsable de los contactos es quien importa. Disponible para ADMIN y VENDEDOR.',
-    mappingDescription: `JSON { campo: cabecera del CSV }. Obligatorios firstName, lastName, documentType (Cédula, RUC o Pasaporte) y documentId. Campos: ${IMPORT_FIELDS.join(', ')}. companyTaxId enlaza con una empresa ya registrada por su RUC; tags admite varias etiquetas separadas por comas.`,
+    mappingDescription: `JSON { campo: cabecera del CSV }. Obligatorios firstName, lastName, documentType (Cédula, RUC o Pasaporte), documentId y al menos phone o email. Campos: ${IMPORT_FIELDS.join(', ')}. companyTaxId enlaza con una empresa ya registrada por su RUC; tags admite varias etiquetas separadas por comas.`,
     mappingExample:
       '{"firstName":"Nombre","lastName":"Apellido","documentType":"Tipo de documento","documentId":"Documento","phone":"Teléfono","province":"Provincia"}',
     missingColumn: 'Asigna la columna del apellido.',

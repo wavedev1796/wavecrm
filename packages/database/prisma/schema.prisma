@@ -107,6 +107,7 @@ model Contact {
   id          String       @id @default(cuid())
   firstName   String
   lastName    String
+  /// Al menos uno de los dos, email o phone: CHECK "Contact_phone_or_email" (solo en la migración SQL).
   email       String?
   phone       String?
   documentType DocumentType

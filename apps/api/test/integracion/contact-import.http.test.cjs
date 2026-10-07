@@ -47,7 +47,7 @@ test("CRM-16: un CSV de Excel (Windows-1252 y punto y coma) crea contactos norma
     [
       HEADER,
       `María;Cordero;Cédula;${first};099 123 4567;pichincha;Cliente, VIP;${company.taxId}`,
-      `Luis;Mora;RUC;${second};;Guayas;;`,
+      `Luis;Mora;RUC;${second};04 234 5678;Guayas;;`,
     ].join("\r\n"),
     "latin1",
   );
@@ -68,7 +68,9 @@ test("CRM-16: un CSV de Excel (Windows-1252 y punto y coma) crea contactos norma
 });
 
 test("CRM-12/CRM-16: reimportar el mismo archivo no duplica porque los documentos ya existen", async () => {
-  const response = await upload([HEADER, `María;Cordero;Cédula;${first};;;;`, `Luis;Mora;RUC;${second};;;;`].join("\n"));
+  const response = await upload(
+    [HEADER, `María;Cordero;Cédula;${first};0991234567;;;`, `Luis;Mora;RUC;${second};0991234568;;;`].join("\n"),
+  );
   assert.equal(response.status, 422);
   assert.equal(response.body.error.message, "No se importó ningún contacto: 2 filas tienen errores.");
   assert.deepEqual(response.body.error.errors, [
@@ -82,7 +84,7 @@ test("CRM-16: con una fila inválida no se guarda ninguna y el reporte indica fi
   const response = await upload(
     [
       HEADER,
-      `Ana;López;Cédula;${valid};;;;`,
+      `Ana;López;Cédula;${valid};0991234567;;;`,
       "Eva;Ruiz;Cédula;1712345678;02 1;Quito;;",
       `Rosa;Vera;Pasaporte;P${Date.now()};;;;${rucDePrueba()}`,
     ].join("\n"),
@@ -92,6 +94,7 @@ test("CRM-16: con una fila inválida no se guarda ninguna y el reporte indica fi
     { row: 3, column: "Documento", message: "La cédula no es válida." },
     { row: 3, column: "Teléfono", message: "Escribe un teléfono válido, por ejemplo 0991234567 o +57 601 234 5678." },
     { row: 3, column: "Provincia", message: "Elige una provincia de Ecuador." },
+    { row: 4, column: "Teléfono", message: "Ingresa un teléfono o un correo." },
     { row: 4, column: "RUC empresa", message: "No existe una empresa con ese RUC." },
   ]);
   assert.equal(await api.prisma.contact.count({ where: { documentId: valid } }), 0);

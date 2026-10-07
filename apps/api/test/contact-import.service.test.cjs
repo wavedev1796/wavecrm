@@ -49,7 +49,7 @@ test("importa filas normalizadas, enlazadas a su empresa y con quien importa com
   const result = await importer.importCsv(
     csv(
       "  María ;Cordero;Cédula;171234567-5;099 123 4567;pichincha;Cliente, VIP;1791234561001",
-      "Luis;Mora;pasaporte;ab-123 456;;;;",
+      "Luis;Mora;pasaporte;ab-123 456;+57 300 123 4567;;;",
       ";;;;;;;",
     ),
     MAPPING,
@@ -74,7 +74,7 @@ test("importa filas normalizadas, enlazadas a su empresa y con quien importa com
       lastName: "Mora",
       documentId: "AB123456",
       documentType: "PASAPORTE",
-      phone: null,
+      phone: "+573001234567",
       province: null,
       tags: [],
       companyId: null,
@@ -94,10 +94,11 @@ test("con filas inválidas no guarda ninguna y reporta fila, columna y motivo en
   );
   assert.ok(error instanceof UnprocessableEntityException);
   assert.deepEqual(error.getResponse(), {
-    message: "No se importó ningún contacto: 2 filas tienen errores.",
+    message: "No se importó ningún contacto: 3 filas tienen errores.",
     errors: [
       { row: 2, column: "Documento", message: "La cédula no es válida." },
       { row: 2, column: "Provincia", message: "Elige una provincia de Ecuador." },
+      { row: 3, column: "Teléfono", message: "Ingresa un teléfono o un correo." },
       { row: 4, column: "Nombre", message: "El nombre debe tener entre 2 y 100 caracteres." },
       { row: 4, column: "Apellido", message: "Ingresa el apellido." },
       { row: 4, column: "Tipo", message: "Elige el tipo de documento." },
@@ -112,7 +113,11 @@ test("reporta documentos repetidos en el archivo, ya registrados y empresas inex
   const { importer } = service({ existing: ["AB123456"] });
   const error = await rejection(
     importer.importCsv(
-      csv("Ana;López;Cédula;1712345675;;;;", "Eva;Ruiz;Cédula;171234567-5;;;;", "Luis;Mora;Pasaporte;AB123456;;;;1791234561001"),
+      csv(
+        "Ana;López;Cédula;1712345675;0991234567;;;",
+        "Eva;Ruiz;Cédula;171234567-5;0991234568;;;",
+        "Luis;Mora;Pasaporte;AB123456;0991234569;;;1791234561001",
+      ),
       MAPPING,
       "user-1",
     ),
@@ -165,6 +170,11 @@ test("rechaza archivo o mapeo inválidos con un mensaje claro", async () => {
       JSON.stringify({ firstName: "Nombre", lastName: "Apellido", documentType: "Tipo" }),
       "Asigna la columna del número de documento.",
     ],
+    [
+      csv(row),
+      JSON.stringify({ firstName: "Nombre", lastName: "Apellido", documentType: "Tipo", documentId: "Documento" }),
+      "Asigna la columna del teléfono o la del correo.",
+    ],
   ]) {
     const error = await rejection(importer.importCsv(file, mapping, "user-1"));
     assert.ok(error instanceof BadRequestException, message);
@@ -178,7 +188,25 @@ test("si otra persona registra uno de los documentos a la vez responde 409", asy
       throw new Prisma.PrismaClientKnownRequestError("duplicado", { code: "P2002", clientVersion: "6" });
     },
   });
-  const error = await rejection(importer.importCsv(csv("Ana;López;Cédula;1712345675;;;;"), MAPPING, "user-1"));
+  const error = await rejection(importer.importCsv(csv("Ana;López;Cédula;1712345675;0991234567;;;"), MAPPING, "user-1"));
   assert.ok(error instanceof ConflictException);
   assert.equal(error.message, "Otra persona registró uno de estos documentos mientras importabas. Vuelve a subir el archivo.");
+});
+
+test("cada contacto trae al menos un teléfono o un correo; con solo el correo, el error va en esa columna", async () => {
+  const header = "Nombre;Apellido;Tipo;Documento;Correo";
+  const file = (line) => ({ originalname: "contactos.csv", buffer: Buffer.from(`${header}\r\n${line}`, "utf8") });
+  const mapping = JSON.stringify({
+    firstName: "Nombre",
+    lastName: "Apellido",
+    documentType: "Tipo",
+    documentId: "Documento",
+    email: "Correo",
+  });
+  const { importer } = service();
+  assert.deepEqual(await importer.importCsv(file("Ana;López;Cédula;1712345675;ana@empresa.ec"), mapping, "user-1"), {
+    imported: 1,
+  });
+  const error = await rejection(importer.importCsv(file("Ana;López;Cédula;1712345675;"), mapping, "user-1"));
+  assert.deepEqual(error.getResponse().errors, [{ row: 2, column: "Correo", message: "Ingresa un teléfono o un correo." }]);
 });
