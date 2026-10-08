@@ -1,4 +1,4 @@
-// Excel en la importación (CRM-17 y CRM-18). Un .xlsx se convierte a CSV en el navegador, así el API recibe
+// Excel y plantillas en la importación. Un .xlsx se convierte a CSV en el navegador, así el API recibe
 // siempre un CSV y lo valida igual. Las librerías se cargan solo cuando se usan.
 import type { Row, Sheet } from "write-excel-file/browser";
 import { TIPO_DOCUMENTO } from "@/content/catalogos";

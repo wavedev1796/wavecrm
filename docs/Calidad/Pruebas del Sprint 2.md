@@ -1,12 +1,12 @@
 # Pruebas del Sprint 2
 
-Estado al 2026-10-07: **361 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md) (incluido el documento obligatorio del 2026-10-01), la ficha de Empresa y las vistas responsive de Contactos y Usuarios:
+Estado al 2026-10-08: **364 pruebas registradas**, con los [ajustes de contactos y empresas](../Sprint%202/Ajustes%20de%20contactos%20y%20empresas.md) (incluido el documento obligatorio del 2026-10-01), la ficha de Empresa, las vistas responsive de Contactos y Usuarios y los skeletons de carga:
 
 | Capa | Pruebas |
 | --- | --- |
 | Unitarias del API | 100 |
 | Integración del API contra Neon | 42 |
-| Web | 197 |
+| Web | 200 |
 | Navegador | 22 |
 
 La última medición del API (`pnpm test:coverage`, 2026-10-01) dio **98,11 %** de líneas. La de la web (`pnpm test:coverage:web`, 2026-10-05) dio **98,41 %**, con `content/` al 100 %. Falta ejecutar `pnpm sonar:scan` para registrar la duplicación tras extraer `@wave/shared` y `content/`.
@@ -23,7 +23,7 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 
 | Comando | Resultado esperado |
 | --- | --- |
-| `pnpm test` | `# tests 100` en el API y `Tests 197 passed` en la web |
+| `pnpm test` | `# tests 100` en el API y `Tests 200 passed` en la web |
 | `pnpm test:integration` | `# tests 42`, `# fail 0` |
 | `pnpm test:e2e` (con `pnpm dev` apagado) | `22 passed` |
 | `pnpm test:coverage` | `coverage/api/lcov.info` y `coverage/web/lcov.info` |
@@ -111,7 +111,7 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | Revisión visual de la barra de filtros (2026-10-01) | Manual | — | Contactos y Empresas de 1440 a 375 px, con **Limpiar** visible: sin desborde |
 | Revisión visual de los selects (2026-10-03) | Manual | — | 1024 y 375 px: prefijo largo en una línea, listas de países y provincias con tope y desplazamiento, foco de teclado azul, cantón deshabilitado con flecha |
 
-### CRM-17 a CRM-19 · Excel, plantilla y diccionario (2026-10-05)
+### Entregas adicionales · Excel, plantilla y diccionario (2026-10-05)
 
 | Archivo | Tipo | Pruebas | Qué verifica |
 | --- | --- | --- | --- |

@@ -6,7 +6,7 @@ import { IMPORTACION } from "@/content/importacion";
 import type { ImportFieldSpec } from "./csv-header";
 import { downloadTemplate, type Template } from "./spreadsheet";
 
-/** Descarga la plantilla de la importación en Excel (con hoja de instrucciones) o CSV (CRM-18). */
+/** Descarga la plantilla de la importación en Excel (con hoja de instrucciones) o CSV. */
 export function TemplateDownload<Spec extends ImportFieldSpec>(
   template: Template<Spec>,
 ) {

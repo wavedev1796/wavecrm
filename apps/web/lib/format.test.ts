@@ -1,14 +1,14 @@
 import { expect, test } from "vitest";
 import { formatDate, formatDateTime, formatMoney, initials } from "./format";
 
-test("CRM-19: iniciales de hasta dos palabras, sin importar los espacios", () => {
+test("iniciales de hasta dos palabras, sin importar los espacios", () => {
   expect(initials("Ana López")).toBe("AL");
   expect(initials("  maría   josé  pérez ")).toBe("MJ");
   expect(initials("")).toBe("");
   expect(initials()).toBe("");
 });
 
-test("CRM-19: dinero y fechas en es-EC, iguales a los formatos que reemplazan", () => {
+test("dinero y fechas en es-EC, iguales a los formatos que reemplazan", () => {
   const es = (options: Intl.DateTimeFormatOptions) =>
     new Intl.DateTimeFormat("es-EC", options).format(
       new Date("2026-10-05T15:30:00Z"),

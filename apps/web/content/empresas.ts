@@ -1,4 +1,4 @@
-// Empresas (CRM-19): listado, ficha con historial, formulario y diálogo. La importación está en content/importacion.ts.
+// Empresas: listado, ficha con historial, formulario y diálogo. La importación está en content/importacion.ts.
 
 export const EMPRESAS = {
   listado: {

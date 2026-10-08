@@ -1,4 +1,4 @@
-// Textos compartidos por toda la web (CRM-19). Las pruebas siguen escribiendo el texto literal:
+// Textos compartidos por toda la web. Las pruebas siguen escribiendo el texto literal:
 // así un cambio involuntario aquí se detecta.
 
 export const MARCA = {

@@ -1,4 +1,4 @@
-// Importación desde Excel o CSV (CRM-19): pantalla y formulario compartidos y lo propio de cada entidad.
+// Importación desde Excel o CSV: pantalla y formulario compartidos y lo propio de cada entidad.
 // Las etiquetas de columna viven en importar/fields.ts junto a sus alias, que reflejan la lectura del API.
 
 // Hoja "Instrucciones" de la plantilla Excel: qué escribir en cada columna (por `field`) y un ejemplo válido.

@@ -1,5 +1,9 @@
 # CRM-14 — Listado y ficha de Contacto
 
+## Mejora posterior: skeletons de carga (2026-10-08)
+
+Se agregaron estados de carga con la misma estructura responsive para el listado y la ficha de contactos. No cambian filtros, navegación, validaciones ni edición. El detalle de la mejora adicional está en [Skeletons de carga](Mejora%20adicional%20-%20Skeletons%20de%20carga.md).
+
 **Responsable:** Eduardo García · **Estado:** Completo (4/4 criterios)
 
 ## Objetivo

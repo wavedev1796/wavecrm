@@ -134,7 +134,7 @@ test("muestra el reporte de errores por fila", async () => {
   ).toBeInTheDocument();
 });
 
-test("CRM-17: un Excel propone el mapeo y se envía convertido a CSV", async () => {
+test("un Excel propone el mapeo y se envía convertido a CSV", async () => {
   importMock.mockResolvedValue({
     tone: "success",
     message: "Se importó 1 contacto.",

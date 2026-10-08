@@ -1,4 +1,4 @@
-// Formatos de pantalla en es-EC (CRM-19): una sola copia para toda la web.
+// Formatos de pantalla en es-EC: una sola copia para toda la web.
 const LOCALE = "es-EC";
 
 /** Hasta dos iniciales en mayúscula: "Ana López" → "AL". Sin nombre devuelve "". */

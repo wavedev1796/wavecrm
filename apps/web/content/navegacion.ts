@@ -1,4 +1,4 @@
-// Menú, cabecera de cada ruta y textos del shell (CRM-19). Los iconos siguen en app-shell.tsx.
+// Menú, cabecera de cada ruta y textos del shell. Los iconos siguen en app-shell.tsx.
 
 type Cabecera = { title: string; subtitle: string };
 

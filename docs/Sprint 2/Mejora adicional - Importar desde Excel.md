@@ -1,12 +1,12 @@
-# CRM-17 — Importar desde Excel
+# Mejora adicional — Importar desde Excel
 
-**Responsable:** Zaith Manangón · **Estado:** Completo (4/4 criterios). Ticket añadido al Sprint 2 el 2026-10-05.
+**Responsable:** Zaith Manangón · **Estado:** Completa (4/4 criterios) · **Clasificación:** Entrega adicional, sin número CRM.
 
 ## Objetivo
 
 Que la importación de contactos y de empresas acepte el archivo de Excel (`.xlsx`) tal como lo tiene el usuario, sin pedirle que lo guarde antes como CSV.
 
-El ticket no trae criterios escritos; salen del pedido del usuario (2026-10-05).
+Los criterios salen del pedido del usuario (2026-10-05); esta mejora se añadió después de planificar el backlog numerado.
 
 ## Criterios de aceptación
 

@@ -1,4 +1,4 @@
-// Pantallas de acceso (CRM-19): login, recuperar y restablecer contraseña y activar cuenta.
+// Pantallas de acceso: login, recuperar y restablecer contraseña y activar cuenta.
 // El texto legal de los términos se queda en activar-cuenta/terms-consent.tsx (también existe como PDF).
 
 export const ACCESO = {

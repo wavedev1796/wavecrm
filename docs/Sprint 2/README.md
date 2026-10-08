@@ -1,6 +1,6 @@
 # Sprint 2 — Contactos y Empresas
 
-**Periodo:** 23 de septiembre al 6 de octubre de 2026 (se amplió del 4 al 6 de octubre para los tickets CRM-17 a CRM-19).
+**Periodo:** 23 de septiembre al 7 de octubre de 2026 (el cierre se amplió para terminar entregas adicionales del sprint).
 
 ## Objetivo
 
@@ -16,11 +16,19 @@ Registrar contactos y empresas de Ecuador con su identificación validada, consu
 | CRM-14 | [Listado + ficha de Contacto](14%20-%20Listado-ficha%20Contacto.md) | Eduardo García | Completo (4/4 criterios) |
 | CRM-15 | [Listado + ficha de Empresa](15%20-%20Listado-ficha%20Empresa.md) | Eduardo García | Completo (3/3 criterios; ficha, edición e historial el 2026-09-29) |
 | CRM-16 | [Importar contactos (CSV)](16%20-%20Importar%20contactos%20(CSV).md) | Zaith Manangón | Completo (4/4 criterios) |
-| CRM-17 | [Importar desde Excel](17%20-%20Importar%20desde%20Excel.md) | Zaith Manangón | Completo (4/4 criterios) |
-| CRM-18 | [Plantilla de importación](18%20-%20Plantilla%20de%20importaci%C3%B3n.md) | Zaith Manangón | Completo (4/4 criterios) |
-| CRM-19 | [Diccionario de textos de la web](19%20-%20Diccionario%20de%20textos%20de%20la%20web.md) | Zaith Manangón | Completo (4/4 criterios) |
 
 Tras probar CRM-14, el usuario pidió cambios en Contactos y la pantalla Empresas (2026-09-26). Los hizo Zaith Manangón, también en los tickets de Eduardo, con autorización del usuario: [Ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md).
+
+## Entregas adicionales del sprint
+
+Se incorporaron después de planificar el backlog numerado. Se documentan por nombre y no reciben identificadores CRM.
+
+| Entrega adicional | Responsable | Estado |
+| --- | --- | --- |
+| [Importar desde Excel](Mejora%20adicional%20-%20Importar%20desde%20Excel.md) | Zaith Manangón | Completa (4/4 criterios) |
+| [Plantilla de importación](Mejora%20adicional%20-%20Plantilla%20de%20importaci%C3%B3n.md) | Zaith Manangón | Completa (4/4 criterios) |
+| [Diccionario de textos de la web](Mejora%20adicional%20-%20Diccionario%20de%20textos%20de%20la%20web.md) | Zaith Manangón | Completa (4/4 criterios) |
+| [Skeletons de carga](Mejora%20adicional%20-%20Skeletons%20de%20carga.md) | Eduardo García | Completa |
 
 ## Decisiones transversales
 
@@ -46,9 +54,9 @@ Tras probar CRM-14, el usuario pidió cambios en Contactos y la pantalla Empresa
 | --- | --- |
 | Pruebas unitarias del API | 100 (+47) |
 | Pruebas de integración del API (Neon) | 42 (+18) |
-| Pruebas de la web (Vitest) | 197 (+87) |
+| Pruebas de la web (Vitest) | 200 (+90) |
 | Pruebas de navegador (Playwright) | 22 (+7) |
-| **Total** | **361** |
+| **Total** | **364** |
 | Cobertura de líneas del API | 98,11 % |
 | Cobertura de líneas de la web | 98,41 % |
 

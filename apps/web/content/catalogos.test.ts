@@ -27,6 +27,6 @@ test.each([
   ["ActivityStatus", ACTIVITY_STATUSES],
   ["QuoteStatus", QUOTE_STATUSES],
   ["DocumentType", DOCUMENT_TYPES],
-])("CRM-19: @wave/shared repite el enum %s del schema de Prisma", (name, codes) => {
+])("@wave/shared repite el enum %s del schema de Prisma", (name, codes) => {
   expect([...codes]).toEqual(prismaEnum(name));
 });

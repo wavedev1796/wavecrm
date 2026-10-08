@@ -1,5 +1,9 @@
 # CRM-15 — Listado y ficha de Empresa
 
+## Mejora posterior: skeletons de carga (2026-10-08)
+
+Se agregaron estados de carga con la misma estructura responsive para el listado y la ficha de empresas. No cambian filtros, navegación, historial ni edición. El detalle de la mejora adicional está en [Skeletons de carga](Mejora%20adicional%20-%20Skeletons%20de%20carga.md).
+
 **Responsable:** Eduardo García · **Estado:** Completo (3/3 criterios). El listado, el alta y la importación los entregó Zaith Manangón con los [ajustes de contactos y empresas](Ajustes%20de%20contactos%20y%20empresas.md), con autorización del usuario (2026-09-26).
 
 ## Objetivo

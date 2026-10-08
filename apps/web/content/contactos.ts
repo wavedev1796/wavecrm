@@ -1,4 +1,4 @@
-// Contactos (CRM-19): listado, ficha, formulario y diálogo. La importación está en content/importacion.ts.
+// Contactos: listado, ficha, formulario y diálogo. La importación está en content/importacion.ts.
 
 export const CONTACTOS = {
   listado: {

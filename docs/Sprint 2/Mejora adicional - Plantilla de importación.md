@@ -1,12 +1,12 @@
-# CRM-18 — Plantilla de importación
+# Mejora adicional — Plantilla de importación
 
-**Responsable:** Zaith Manangón · **Estado:** Completo (4/4 criterios). Ticket añadido al Sprint 2 el 2026-10-05.
+**Responsable:** Zaith Manangón · **Estado:** Completa (4/4 criterios) · **Clasificación:** Entrega adicional, sin número CRM.
 
 ## Objetivo
 
 Dar al usuario el formato exacto del archivo que tiene que subir: un botón **Descargar plantilla** en cada pantalla de importación.
 
-El ticket no trae criterios escritos; salen del pedido del usuario (2026-10-05).
+Los criterios salen del pedido del usuario (2026-10-05); esta mejora se añadió después de planificar el backlog numerado.
 
 ## Criterios de aceptación
 
@@ -53,12 +53,12 @@ Pedido del usuario: una segunda hoja que explique cada columna con un ejemplo, y
   - **Instrucciones**: título, tres pasos, una tabla `Columna | ¿Obligatoria? | Qué escribir | Ejemplo` con bordes y bandas, y al final las reglas de la pantalla (*Antes de importar*). Sin cuadrícula; el alto de cada fila sale del largo de la ayuda.
 - `apps/web/content/importacion.ts`: `plantilla.instrucciones` (textos de la hoja) y, en `contactos` y `empresas`, `hoja` y `columnas` (qué escribir y un ejemplo válido por campo). Teléfono, provincia, cantón y etiquetas comparten texto.
 - `apps/web/components/csv-import/template-download.tsx` e `import-page.tsx`: pasan la guía y las reglas. Los dos `importar/page.tsx` entregan `guide={IMPORTACION.contactos|empresas}`.
-- `apps/web/components/csv-import/spreadsheet.test.tsx`: la prueba de CRM-18 pasa una guía de prueba y hay una prueba nueva de la hoja de instrucciones.
+- `apps/web/components/csv-import/spreadsheet.test.tsx`: la prueba de la plantilla pasa una guía de prueba y hay una prueba nueva de la hoja de instrucciones.
 
 ### Decisiones
 
 - **Bandas y bordes por formato condicional**, no con celdas vacías con estilo: la hoja de datos sigue con solo la cabecera (Excel la ve como `A1:K1`), así que al subir la plantilla no aparecen filas fantasma. Cubre 1000 filas, el máximo que acepta el API.
-- **La hoja de datos va primero:** al importar un Excel se lee la primera hoja (CRM-17). Las instrucciones van en la segunda pestaña.
+- **La hoja de datos va primero:** al importar un Excel se lee la primera hoja. Las instrucciones van en la segunda pestaña.
 - **Obligatorias por color, no con `*`:** la cabecera debe ser la etiqueta exacta para que `guessMapping` proponga el mapeo completo. El tercer paso de las instrucciones explica los colores.
 - **Una entrada de ayuda por campo exigida por tipos:** `TemplateGuide<Field>` pide una clave por cada `field` de `fields.ts`. Si alguien agrega un campo y olvida su instrucción, `tsc` y el build fallan.
 - **Los ejemplos van como texto**, para que un RUC o una cédula se vean como deben escribirse. Son los del CSV de ejemplo del Sprint 2, válidos.

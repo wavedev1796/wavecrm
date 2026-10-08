@@ -1,4 +1,4 @@
-// Usuarios (CRM-19): resumen, invitación, filtros, tabla, edición y mensajes de las acciones.
+// Usuarios: resumen, invitación, filtros, tabla, edición y mensajes de las acciones.
 // Los roles están en content/catalogos.ts y la paginación en content/comun.ts.
 
 export type EstadoUsuario = "active" | "inactive" | "pending";

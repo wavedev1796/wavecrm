@@ -33,7 +33,7 @@ function captureDownloads() {
   return { blobs, names };
 }
 
-test("CRM-17: un Excel se convierte a CSV con su primera hoja, sin perder ceros ni comillas", async () => {
+test("un Excel se convierte a CSV con su primera hoja, sin perder ceros ni comillas", async () => {
   const sheet = await writeXlsxFile([
     ["Nombre", "Documento", "Notas"],
     ["Ana", { value: "0912345678", type: String }, 'dice "hola", ok'],
@@ -47,7 +47,7 @@ test("CRM-17: un Excel se convierte a CSV con su primera hoja, sin perder ceros 
   );
 });
 
-test("CRM-17: un CSV pasa sin cambios y un .xlsx dañado falla", async () => {
+test("un CSV pasa sin cambios y un .xlsx dañado falla", async () => {
   const file = new File(["Nombre\nAna"], "contactos.csv");
   expect(await asCsv(file)).toBe(file);
   await expect(asCsv(new File(["roto"], "roto.xlsx"))).rejects.toThrow();
@@ -85,7 +85,7 @@ test.each([
   ["contactos", "Contactos", CONTACT_IMPORT_FIELDS],
   ["empresas", "Empresas", COMPANY_IMPORT_FIELDS],
 ] as const)(
-  "CRM-18: las plantillas de %s traen cada campo y el mapeo se propone completo",
+  "las plantillas de %s traen cada campo y el mapeo se propone completo",
   async (noun, hoja, specs) => {
     const fields: readonly ImportFieldSpec[] = specs;
     const { blobs, names } = captureDownloads();
@@ -125,7 +125,7 @@ test.each([
   },
 );
 
-test("CRM-18: el Excel trae la hoja de datos vacía y otra de instrucciones por columna", async () => {
+test("el Excel trae la hoja de datos vacía y otra de instrucciones por columna", async () => {
   const { blobs } = captureDownloads();
   const user = userEvent.setup();
   const fields: readonly ImportFieldSpec[] = CONTACT_IMPORT_FIELDS;
@@ -171,7 +171,7 @@ test("CRM-18: el Excel trae la hoja de datos vacía y otra de instrucciones por 
   expect(rows.at(-1)?.[0]).toBe("• Regla de prueba.");
 });
 
-test("CRM-18: tipo de documento, provincia y cantón traen lista desplegable; el cantón según la provincia", async () => {
+test("tipo de documento, provincia y cantón traen lista desplegable; el cantón según la provincia", async () => {
   const { blobs } = captureDownloads();
   const user = userEvent.setup();
   const fields: readonly ImportFieldSpec[] = CONTACT_IMPORT_FIELDS;

@@ -1,6 +1,6 @@
-# CRM-19 — Diccionario de textos de la web
+# Mejora adicional — Diccionario de textos de la web
 
-**Responsable:** Zaith Manangón · **Estado:** Completo (4/4 criterios). Ticket añadido al Sprint 2 el 2026-10-05. Toca archivos de CRM-5, CRM-7, CRM-9, CRM-14 y CRM-15 (Eduardo García) solo para mover sus textos, con autorización del usuario (2026-10-05).
+**Responsable:** Zaith Manangón · **Estado:** Completa (4/4 criterios) · **Clasificación:** Entrega adicional, sin número CRM. Toca archivos de CRM-5, CRM-7, CRM-9, CRM-14 y CRM-15 (Eduardo García) solo para mover sus textos, con autorización del usuario (2026-10-05).
 
 ## Objetivo
 
@@ -8,7 +8,7 @@ Reunir en `apps/web/content/` los textos visibles de la web, que hoy están escr
 
 ## Criterios de aceptación
 
-- [x] Ningún texto visible queda escrito a mano fuera de `content/`, salvo las exclusiones de este ticket.
+- [x] Ningún texto visible queda escrito a mano fuera de `content/`, salvo las exclusiones de esta mejora.
 - [x] Cero diferencias visibles: las pruebas unitarias y las e2e pasan sin cambiar ningún texto.
 - [x] `@wave/shared` exporta los códigos de los enums de Prisma, y una prueba falla si el schema y `@wave/shared` se separan.
 - [x] `initials`, `money` y los formateadores de fecha tienen una sola copia, en `lib/format.ts`.
@@ -74,7 +74,7 @@ El plan sale de `03-diccionario-textos.md` (fuera del repo), adaptado a las ruta
 ### Exclusiones (los textos se quedan donde están)
 
 - **Mensajes de validación** de `lib/validation.ts`, `lib/password-rules.ts`, `lib/phone.ts`, `lib/ecuador.ts` y `lib/cantons.ts`: son espejo del API y los protege `test/casos-de-validacion.json`.
-- **`importar/fields.ts`:** las etiquetas de columna van junto a sus alias, que reflejan la lectura de CSV del API, y la plantilla de CRM-18 sale de ellas.
+- **`importar/fields.ts`:** las etiquetas de columna van junto a sus alias, que reflejan la lectura de CSV del API, y la plantilla de importación sale de ellas.
 - **El texto legal de `activar-cuenta/terms-consent.tsx`:** es un documento con marcado propio y existe como PDF en `public/documents/`. Sus controles (casilla, botones y avisos) sí pasaron a `ACCESO.activar.terminos`.
 - **Datos de demostración:** el tablero de `pipeline/page.tsx`, la meta del mes (`$15.9k / $23k`) y el `3` de notificaciones del shell. Los subtítulos inventados (`Quito, Ecuador · Septiembre 2026`, `248 contactos · 62 empresas`) sí se movieron a `navegacion.ts`, marcados con `// Demo`.
 
