@@ -2923,6 +2923,7 @@ select {
 
 /* Skeletons: estados de carga temporales que conservan la estructura actual. */
 .loading-region {
+  display: block;
   width: 100%;
 }
 .skeleton {
@@ -2996,7 +2997,7 @@ select {
 .skeleton-related-row .skeleton-summary:last-child { width: 82px; }
 .skeleton-form { display: grid; align-content: start; gap: 18px; }
 .skeleton-form .skeleton-button { justify-self: end; }
-.user-summary .card { display: grid; gap: 12px; }
+.user-summary--skeleton .card { display: grid; gap: 12px; }
 .skeleton-stat { width: 64px; height: 28px; }
 .skeleton-invite { min-height: 60px; display: flex; align-items: center; }
 .skeleton-import-card { display: grid; justify-items: start; gap: 18px; padding: 24px; }

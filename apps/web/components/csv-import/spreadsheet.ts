@@ -9,8 +9,22 @@ import type { ImportFieldSpec } from "./csv-header";
 
 const EXCEL = /\.xlsx$/i;
 
+function csvCellText(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return value.toString();
+  }
+  if (value instanceof Date) return value.toISOString();
+  if (value && typeof value === "object") return JSON.stringify(value) ?? "";
+  return "";
+}
+
 const csvCell = (value: unknown) => {
-  const text = value == null ? "" : String(value);
+  const text = csvCellText(value);
   return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 };
 

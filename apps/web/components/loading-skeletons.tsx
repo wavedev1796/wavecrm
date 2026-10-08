@@ -3,10 +3,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 function LoadingRegion({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div role="status" aria-label="Cargando contenido" className="loading-region">
+    <output aria-label="Cargando contenido" className="loading-region">
       <span className="sr-only">Cargando contenido</span>
       {children}
-    </div>
+    </output>
   );
 }
 
@@ -109,7 +109,7 @@ export function UsersPageSkeleton() {
   return (
     <LoadingRegion>
       <div className="users-page" aria-hidden="true">
-        <section className="user-summary">
+        <section className="user-summary user-summary--skeleton">
           {Array.from({ length: 4 }, (_, index) => (
             <Card key={index}>
               <Skeleton className="skeleton-summary" />
