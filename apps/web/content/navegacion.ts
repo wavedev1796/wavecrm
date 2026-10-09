@@ -5,7 +5,7 @@ type Cabecera = { title: string; subtitle: string };
 // Demo: dato inventado, reemplazar por datos reales.
 const PIPELINE: Cabecera = {
   title: "Pipeline de ventas",
-  subtitle: "Quito, Ecuador · Septiembre 2026",
+  subtitle: "Negocios, etapas y seguimiento comercial",
 };
 
 export const NAVEGACION = {

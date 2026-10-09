@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 type Props = Readonly<{
   dialogRef: RefObject<HTMLDialogElement | null>;
   /** Texto del botón que abre el diálogo ("Nuevo contacto"). */
-  triggerLabel: string;
+  triggerLabel?: string;
   label: string;
   closeLabel: string;
   children: React.ReactNode;
+  onClose?: () => void;
 }>;
 
 /** Alta en un diálogo modal: botón que lo abre, X para cerrar; Esc y un clic en el fondo también lo cierran. */
@@ -20,17 +21,21 @@ export function FormDialog({
   label,
   closeLabel,
   children,
+  onClose,
 }: Props) {
   return (
     <>
-      <Button type="button" onClick={() => dialogRef.current?.showModal()}>
-        <Plus aria-hidden />
-        {triggerLabel}
-      </Button>
+      {triggerLabel && (
+        <Button type="button" onClick={() => dialogRef.current?.showModal()}>
+          <Plus aria-hidden />
+          {triggerLabel}
+        </Button>
+      )}
       <dialog
         ref={dialogRef}
         className="contact-dialog"
         aria-label={label}
+        onClose={onClose}
         closedby="any" // NOSONAR: atributo HTML válido (tipado en @types/react) que la regla aún no conoce.
       >
         <div className="contact-dialog-panel">

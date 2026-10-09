@@ -1,7 +1,7 @@
 # Skeletons de carga
 
 **Incorporado:** 2026-10-08
-**Responsable:** Eduardo García
+**Responsable:** Eduardo Garcia
 
 ## Objetivo
 

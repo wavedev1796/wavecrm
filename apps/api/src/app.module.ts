@@ -7,6 +7,7 @@ import { ContactImportModule } from "./modules/contact-import/contact-import.mod
 import { ContactsModule } from "./modules/contacts/contacts.module";
 import { HealthModule } from "./modules/health/health.module";
 import { PrismaModule } from "./modules/prisma/prisma.module";
+import { PipelineModule } from "./modules/pipeline/pipeline.module";
 import { UsersModule } from "./modules/users/users.module";
 
 @Module({
@@ -23,6 +24,7 @@ import { UsersModule } from "./modules/users/users.module";
     CompaniesModule,
     ContactImportModule,
     CompanyImportModule,
+    PipelineModule,
   ],
 })
 export class AppModule {}

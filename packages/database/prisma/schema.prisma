@@ -61,6 +61,7 @@ model User {
   ownedCompanies     Company[]   @relation("CompanyOwner")
   ownedContacts      Contact[]   @relation("ContactOwner")
   ownedDeals         Deal[]      @relation("DealOwner")
+  dealStageChanges   DealStageHistory[]
   assignedActivities Activity[]  @relation("ActivityAssignee")
   notes              Note[]
   auditLogs          AuditLog[]
@@ -156,6 +157,8 @@ model Stage {
   pipelineId  String
   pipeline    Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
   deals       Deal[]
+  historyFrom DealStageHistory[] @relation("HistoryFromStage")
+  historyTo   DealStageHistory[] @relation("HistoryToStage")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -184,6 +187,7 @@ model Deal {
   activities    Activity[]
   quotes        Quote[]
   notes         Note[]
+  stageHistory  DealStageHistory[]
   attachments   Attachment[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -192,6 +196,21 @@ model Deal {
   @@index([companyId])
   @@index([contactId])
   @@index([ownerId, expectedClose])
+}
+
+model DealStageHistory {
+  id          String   @id @default(cuid())
+  dealId      String
+  deal        Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  fromStageId String?
+  fromStage   Stage?   @relation("HistoryFromStage", fields: [fromStageId], references: [id], onDelete: SetNull)
+  toStageId   String
+  toStage     Stage    @relation("HistoryToStage", fields: [toStageId], references: [id], onDelete: Restrict)
+  changedById String?
+  changedBy   User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedAt   DateTime @default(now())
+
+  @@index([dealId, changedAt])
 }
 
 model Activity {
