@@ -41,6 +41,15 @@ enum QuoteStatus {
   EXPIRED
 }
 
+enum LossReason {
+  PRICE
+  COMPETITOR
+  NO_BUDGET
+  NO_RESPONSE
+  BAD_TIMING
+  OTHER
+}
+
 model User {
   id                 String      @id @default(cuid())
   email              String      @unique
@@ -174,6 +183,8 @@ model Deal {
   status        DealStatus   @default(OPEN)
   expectedClose DateTime?
   closedAt      DateTime?
+  lossReason    LossReason?
+  lossDetail    String?
   pipelineId    String
   pipeline      Pipeline     @relation(fields: [pipelineId], references: [id], onDelete: Restrict)
   stageId       String
@@ -189,6 +200,7 @@ model Deal {
   notes         Note[]
   stageHistory  DealStageHistory[]
   attachments   Attachment[]
+  items         DealItem[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -211,6 +223,21 @@ model DealStageHistory {
   changedAt   DateTime @default(now())
 
   @@index([dealId, changedAt])
+}
+
+model DealItem {
+  id          String   @id @default(cuid())
+  dealId      String
+  deal        Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal  @db.Decimal(12, 2)
+  unitPrice   Decimal  @db.Decimal(14, 2)
+  taxRate     Int      @default(15)
+  position    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([dealId, position])
 }
 
 model Activity {

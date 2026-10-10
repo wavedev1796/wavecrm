@@ -17,3 +17,11 @@ export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number];
 
 export const QUOTE_STATUSES = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED'] as const;
 export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
+
+export const LOSS_REASONS = ['PRICE', 'COMPETITOR', 'NO_BUDGET', 'NO_RESPONSE', 'BAD_TIMING', 'OTHER'] as const;
+export type LossReason = (typeof LOSS_REASONS)[number];
+
+// Tarifas de IVA de Ecuador para un producto del negocio, en %. La primera es la por defecto.
+// ponytail: lista fija; si el SRI cambia la tarifa (en 2024 pasó de 12 a 15), se cambia aquí.
+export const IVA_RATES = [15, 0] as const;
+export type IvaRate = (typeof IVA_RATES)[number];

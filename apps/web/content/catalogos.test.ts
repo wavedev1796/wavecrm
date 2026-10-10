@@ -5,6 +5,7 @@ import {
   ACTIVITY_TYPES,
   DEAL_STATUSES,
   DOCUMENT_TYPES,
+  LOSS_REASONS,
   QUOTE_STATUSES,
   USER_ROLES,
 } from "@wave/shared";
@@ -27,6 +28,7 @@ test.each([
   ["ActivityStatus", ACTIVITY_STATUSES],
   ["QuoteStatus", QUOTE_STATUSES],
   ["DocumentType", DOCUMENT_TYPES],
+  ["LossReason", LOSS_REASONS],
 ])("@wave/shared repite el enum %s del schema de Prisma", (name, codes) => {
   expect([...codes]).toEqual(prismaEnum(name));
 });
