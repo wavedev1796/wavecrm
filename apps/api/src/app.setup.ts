@@ -26,10 +26,12 @@ export function configureApp(app: INestApplication) {
 /** Un mensaje por campo y en español: class-validator redacta en inglés el de campo no permitido. */
 export function validationException(errors: ValidationError[]) {
   return new BadRequestException(
-    errors.map((error) =>
-      error.constraints?.whitelistValidation
-        ? `El campo «${error.property}» no está permitido.`
-        : (Object.values(error.constraints ?? {})[0] ?? 'Solicitud inválida.'),
-    ),
+    errors.map((error) => firstMessage(error) ?? 'Solicitud inválida.'),
   );
+}
+
+/** El mensaje del campo o, en una lista de objetos (productos de un negocio), el de su primer hijo con error. */
+function firstMessage(error: ValidationError): string | undefined {
+  if (error.constraints?.whitelistValidation) return `El campo «${error.property}» no está permitido.`;
+  return Object.values(error.constraints ?? {})[0] ?? error.children?.map(firstMessage).find(Boolean);
 }

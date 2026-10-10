@@ -85,3 +85,27 @@ test("conserva los mensajes propios y oculta los errores internos", () => {
   assert.equal(internal.status, 500);
   assert.equal(internal.body.error.message, "Ocurrió un error inesperado.");
 });
+
+test("CRM-20: una fila invalida de una lista anidada responde su propio mensaje", () => {
+  const error = validationException([
+    {
+      property: "items",
+      children: [
+        {
+          property: "0",
+          children: [
+            { property: "quantity", constraints: { min: "La cantidad debe ser mayor que cero." }, children: [] },
+          ],
+        },
+      ],
+    },
+    {
+      property: "items",
+      children: [{ property: "0", children: [{ property: "color", constraints: { whitelistValidation: "x" }, children: [] }] }],
+    },
+  ]);
+  assert.deepEqual(error.getResponse().message, [
+    "La cantidad debe ser mayor que cero.",
+    "El campo «color» no está permitido.",
+  ]);
+});
