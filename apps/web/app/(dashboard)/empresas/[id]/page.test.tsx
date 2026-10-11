@@ -72,7 +72,10 @@ test("la ficha muestra contactos negocios historial y edicion", async () => {
     "href",
     "/contactos/c1",
   );
-  expect(screen.getByText("Renovacion anual")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Renovacion anual" })).toHaveAttribute(
+    "href",
+    "/pipeline/d1",
+  );
   expect(screen.getByText("Actualizó correo, cantón")).toBeInTheDocument();
   expect(screen.getByText("Editando e1")).toBeInTheDocument();
 });

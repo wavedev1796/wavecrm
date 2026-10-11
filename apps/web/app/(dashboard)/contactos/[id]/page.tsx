@@ -8,10 +8,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Info } from "@/components/detail-info";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ESTADO_NEGOCIO, TIPO_ACTIVIDAD } from "@/content/catalogos";
-import { COMUN } from "@/content/comun";
 import { CONTACTOS } from "@/content/contactos";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatDate, formatMoney, initials } from "@/lib/format";
@@ -118,7 +118,9 @@ export default async function ContactDetailPage({
               contact.deals.map((deal) => (
                 <article key={deal.id}>
                   <div>
-                    <strong>{deal.title}</strong>
+                    <Link href={`/pipeline/${deal.id}`}>
+                      <strong>{deal.title}</strong>
+                    </Link>
                     <span>
                       {deal.stage.name} · {ESTADO_NEGOCIO[deal.status]}
                     </span>
@@ -156,21 +158,6 @@ export default async function ContactDetailPage({
         </div>
         <ContactForm id={contact.id} initialValues={values} />
       </div>
-    </div>
-  );
-}
-function Info({
-  icon,
-  label,
-  value,
-}: Readonly<{ icon: React.ReactNode; label: string; value?: string | null }>) {
-  return (
-    <div>
-      <dt>
-        {icon}
-        <span>{label}</span>
-      </dt>
-      <dd>{value || COMUN.sinDato}</dd>
     </div>
   );
 }

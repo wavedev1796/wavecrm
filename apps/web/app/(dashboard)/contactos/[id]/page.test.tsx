@@ -63,7 +63,10 @@ test("CRM-14: la ficha muestra datos, negocios, actividades y edición", async (
   expect(
     screen.getByRole("heading", { name: "Ana López" }),
   ).toBeInTheDocument();
-  expect(screen.getByText("Renovación anual")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Renovación anual" })).toHaveAttribute(
+    "href",
+    "/pipeline/d1",
+  );
   expect(screen.getByText("Reunión comercial")).toBeInTheDocument();
   expect(screen.getByText("Editando c1")).toBeInTheDocument();
   expect(screen.getByText("+593 99 123 4567")).toBeInTheDocument();
