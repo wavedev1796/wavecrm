@@ -349,6 +349,45 @@
 .pipeline-delete-confirm .button {
   margin: 0 8px 8px 0;
 }
+.deal-items .table td {
+  vertical-align: top;
+}
+.deal-items-qty {
+  width: 96px;
+}
+.deal-items-money {
+  width: 140px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.deal-items-tax {
+  width: 96px;
+}
+.deal-totals {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: end;
+  gap: 4px 24px;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.deal-totals dt {
+  color: var(--wave-muted-strong);
+}
+.deal-totals dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+}
+.deal-totals .deal-total {
+  font-weight: 800;
+}
+.deal-items-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
 @media (max-width: 640px) {
   .pipeline-toolbar {
     align-items: stretch;
