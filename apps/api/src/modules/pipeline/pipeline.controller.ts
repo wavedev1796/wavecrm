@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -17,11 +18,13 @@ import {
   CreateDealDto,
   CreatePipelineDto,
   CreateStageDto,
+  LoseDealDto,
   MoveDealDto,
   SaveDealItemsDto,
   UpdateDealDto,
   UpdatePipelineDto,
   UpdateStageDto,
+  WinDealDto,
 } from "./pipeline.dto";
 import { PipelineService } from "./pipeline.service";
 
@@ -85,6 +88,26 @@ export class PipelineController {
   }
   @Get("deals/:id/history") history(@Param("id") id: string) {
     return this.service.history(id);
+  }
+  @Post("deals/:id/win") @HttpCode(200) win(
+    @Param("id") id: string,
+    @Body() dto: WinDealDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.winDeal(id, dto.closedAt, user.sub);
+  }
+  @Post("deals/:id/lose") @HttpCode(200) lose(
+    @Param("id") id: string,
+    @Body() dto: LoseDealDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.loseDeal(id, dto, user.sub);
+  }
+  @Post("deals/:id/reopen") @HttpCode(200) reopen(
+    @Param("id") id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.reopenDeal(id, user.sub);
   }
   @Get("deals/:id") getDeal(@Param("id") id: string): Promise<unknown> {
     return this.service.findDeal(id);

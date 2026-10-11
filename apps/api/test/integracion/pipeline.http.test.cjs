@@ -244,6 +244,9 @@ test("ambas rutas de movimiento registran historial, reabren y evitan duplicados
   assert.equal(moved.status, 200);
   assert.equal(moved.body.status, "WON");
   assert.ok(moved.body.closedAt);
+  const quote = await api.prisma.quote.findFirst({ where: { dealId: deal } });
+  assert.match(quote.number, /^COT-\d{6}$/);
+  assert.equal(quote.status, "DRAFT");
   await call("/deals/" + deal + "/move", {
     method: "PATCH",
     body: { stageId: won },
@@ -256,6 +259,7 @@ test("ambas rutas de movimiento registran historial, reabren y evitan duplicados
   assert.equal(reopened.status, 200);
   assert.equal(reopened.body.status, "OPEN");
   assert.equal(reopened.body.closedAt, null);
+  assert.equal(await api.prisma.quote.count({ where: { dealId: deal } }), 0);
   assert.equal(reopened.body.owner.id, other.id);
   const history = (await call("/deals/" + deal + "/history")).body;
   assert.equal(history.length, 3);
@@ -266,6 +270,71 @@ test("ambas rutas de movimiento registran historial, reabren y evitan duplicados
       .status,
     400,
   );
+});
+test("CRM-21: ganar, perder y reabrir con motivo, cotizacion y auditoria", async () => {
+  const future = new Date(Date.now() + 3 * 864e5).toISOString();
+  const path = "/deals/" + deal;
+  assert.equal(
+    (await call(path + "/win", { method: "POST", body: { closedAt: future } })).status,
+    400,
+  );
+  const wonDeal = await call(path + "/win", {
+    method: "POST",
+    body: { closedAt: "2026-10-01T00:00:00.000Z" },
+  });
+  assert.equal(wonDeal.status, 200, JSON.stringify(wonDeal.body));
+  assert.equal(wonDeal.body.status, "WON");
+  assert.equal(wonDeal.body.stage.id, won);
+  assert.equal(wonDeal.body.closedAt, "2026-10-01T00:00:00.000Z");
+  const [quote] = wonDeal.body.quotes;
+  assert.deepEqual(
+    [quote.status, quote.subtotal, quote.tax, quote.total],
+    ["DRAFT", "120.55", "15.08", "135.63"],
+  );
+  assert.equal(
+    (await call(path + "/items", { method: "PUT", body: { items: [] } })).status,
+    409,
+  );
+  assert.equal(
+    (await call(path + "/lose", { method: "POST", body: { lossReason: "PRICE" } })).status,
+    409,
+  );
+  const reopened = await call(path + "/reopen", { method: "POST" });
+  assert.equal(reopened.status, 200);
+  assert.equal(reopened.body.status, "OPEN");
+  assert.equal(reopened.body.stage.id, stage);
+  assert.equal(reopened.body.quotes.length, 0);
+  for (const body of [{}, { lossReason: "OTHER" }, { lossReason: "CARO" }]) {
+    const rejected = await call(path + "/lose", { method: "POST", body });
+    assert.equal(rejected.status, 400, JSON.stringify(rejected.body));
+  }
+  const lost = await call(path + "/lose", {
+    method: "POST",
+    body: { lossReason: "OTHER", lossDetail: "Cerro el local" },
+  });
+  assert.equal(lost.status, 200);
+  assert.deepEqual(
+    [lost.body.status, lost.body.lossReason, lost.body.lossDetail, lost.body.stage.id],
+    ["LOST", "OTHER", "Cerro el local", stage],
+  );
+  assert.ok(lost.body.closedAt);
+  const open = await call(path + "/reopen", { method: "POST" });
+  assert.deepEqual([open.body.status, open.body.lossReason], ["OPEN", null]);
+  assert.deepEqual(
+    open.body.closures.map((c) => c.action).slice(0, 4),
+    ["REOPENED", "LOST", "REOPENED", "WON"],
+  );
+  const direct = await call("/deals", {
+    method: "POST",
+    body: {
+      title: "Directo a ganado",
+      value: 1,
+      pipelineId: pipeline,
+      stageId: won,
+      companyId: company.id,
+    },
+  });
+  assert.equal(direct.status, 400);
 });
 test("lectura, paginacion, metricas decimales y conflictos de borrado", async () => {
   const list = await call("/deals?pipelineId=" + pipeline + "&limit=1");

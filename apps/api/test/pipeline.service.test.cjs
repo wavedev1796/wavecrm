@@ -131,6 +131,7 @@ test("CRM-18: mover negocio guarda etapa anterior, destino y responsable", async
     toStageId: "stage-b",
     changedById: "user-1",
   });
+  assert.equal(calls.quotes[0].number, "COT-000001");
 });
 
 test("CRM-18: rechaza mover el negocio a una etapa de otro pipeline", async () => {
@@ -192,6 +193,126 @@ test("CRM-20: con productos el monto no se edita a mano", async () => {
   const { prisma } = mockPrisma();
   await assert.rejects(
     service(prisma).updateDeal("deal-1", { value: 10 }, "user-1"),
+    BadRequestException,
+  );
+});
+
+test("CRM-21: ganar exige productos y no crea cotizacion sin ellos", async () => {
+  const { prisma, calls } = mockPrisma({ items: [] });
+  await assert.rejects(
+    service(prisma).winDeal("deal-1", undefined, "user-1"),
+    BadRequestException,
+  );
+  assert.equal(calls.quotes.length, 0);
+});
+
+test("CRM-21: ganar crea la cotizacion con IVA por tarifa, pasa a 100 % y audita", async () => {
+  const { prisma, deal, calls } = mockPrisma({
+    items: [item(2, 10, 0), item(1, 100, 15)],
+    quotes: [{ number: "COT-000041", status: "ACCEPTED", dealId: "otro" }],
+  });
+  await service(prisma).winDeal(
+    "deal-1",
+    new Date("2026-10-01T00:00:00.000Z"),
+    "user-1",
+  );
+  const quote = calls.quotes.at(-1);
+  assert.equal(quote.number, "COT-000042");
+  assert.equal(quote.status, undefined); // DRAFT por defecto en el schema
+  assert.deepEqual(
+    [quote.subtotal, quote.tax, quote.total].map((d) => d.toFixed(2)),
+    ["120.00", "15.00", "135.00"],
+  );
+  assert.equal(deal.status, "WON");
+  assert.equal(deal.stageId, "stage-b");
+  assert.equal(deal.closedAt.toISOString(), "2026-10-01T00:00:00.000Z");
+  assert.deepEqual(calls.history[0], {
+    dealId: "deal-1",
+    fromStageId: "stage-a",
+    toStageId: "stage-b",
+    changedById: "user-1",
+  });
+  assert.equal(calls.audit[0].action, "WON");
+  assert.equal(calls.audit[0].changes.quoteNumber, "COT-000042");
+});
+
+test("CRM-21: la fecha de ganado no puede ser futura", async () => {
+  const { prisma } = mockPrisma();
+  const tomorrow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+  await assert.rejects(
+    service(prisma).winDeal("deal-1", tomorrow, "user-1"),
+    BadRequestException,
+  );
+});
+
+test("CRM-21: perder guarda motivo y fecha sin mover la etapa; solo desde abierto", async () => {
+  const { prisma, deal, calls } = mockPrisma();
+  await service(prisma).loseDeal("deal-1", { lossReason: "PRICE" }, "user-1");
+  assert.equal(deal.status, "LOST");
+  assert.equal(deal.lossReason, "PRICE");
+  assert.equal(deal.lossDetail, null);
+  assert.equal(deal.stageId, "stage-a");
+  assert.ok(deal.closedAt instanceof Date);
+  assert.equal(calls.audit[0].action, "LOST");
+  const won = mockPrisma({ status: "WON", stageId: "stage-b" });
+  await assert.rejects(
+    service(won.prisma).loseDeal("deal-1", { lossReason: "PRICE" }, "user-1"),
+    ConflictException,
+  );
+});
+
+test("CRM-21: reabrir un ganado borra su borrador y vuelve a una etapa abierta", async () => {
+  const { prisma, deal, calls } = mockPrisma({
+    status: "WON",
+    stageId: "stage-b",
+    quotes: [{ number: "COT-000001", status: "DRAFT" }],
+  });
+  await service(prisma).reopenDeal("deal-1", "user-1");
+  assert.equal(deal.status, "OPEN");
+  assert.equal(deal.closedAt, null);
+  assert.equal(deal.stageId, "stage-a");
+  assert.equal(calls.quotes.length, 0);
+  assert.equal(calls.audit[0].action, "REOPENED");
+  assert.deepEqual(calls.audit[0].changes.deletedQuotes, ["COT-000001"]);
+});
+
+test("CRM-21: no se reabre un ganado cuya cotizacion ya salio de borrador", async () => {
+  const { prisma } = mockPrisma({
+    status: "WON",
+    stageId: "stage-b",
+    quotes: [{ number: "COT-000001", status: "SENT" }],
+  });
+  await assert.rejects(
+    service(prisma).reopenDeal("deal-1", "user-1"),
+    ConflictException,
+  );
+});
+
+test("CRM-21: sacar un ganado de la etapa de 100 % lo reabre por el mismo camino", async () => {
+  const { prisma, deal, calls } = mockPrisma({
+    status: "WON",
+    stageId: "stage-b",
+    quotes: [{ number: "COT-000001", status: "DRAFT" }],
+  });
+  await service(prisma).moveDeal("deal-1", "stage-a", "user-1");
+  assert.equal(deal.status, "OPEN");
+  assert.equal(calls.quotes.length, 0);
+  assert.equal(calls.audit[0].action, "REOPENED");
+});
+
+test("CRM-21: no se crea un negocio directamente en una etapa de 100 %", async () => {
+  const { prisma } = mockPrisma();
+  await assert.rejects(
+    service(prisma).createDeal(
+      {
+        pipelineId: "pipe-1",
+        stageId: "stage-b",
+        title: "Directo",
+        value: 50,
+        companyId: "company-1",
+      },
+      "user-1",
+    ),
     BadRequestException,
   );
 });

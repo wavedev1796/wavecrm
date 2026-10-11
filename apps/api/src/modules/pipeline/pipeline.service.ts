@@ -12,11 +12,18 @@ import {
   CreateStageDto,
   DealItemDto,
   ListDealsDto,
+  LoseDealDto,
   UpdateDealDto,
   UpdatePipelineDto,
   UpdateStageDto,
 } from "./pipeline.dto";
-import { dealTotals, MAX_DEAL_VALUE } from "./deal-rules";
+import {
+  dealTotals,
+  ecuadorToday,
+  MAX_DEAL_VALUE,
+  nextQuoteNumber,
+  toDay,
+} from "./deal-rules";
 
 const dealInclude = {
   stage: true,
@@ -61,6 +68,7 @@ const dealDetailInclude = {
   },
 } satisfies Prisma.DealInclude;
 type Tx = Prisma.TransactionClient;
+type DealWithStage = Prisma.DealGetPayload<{ include: { stage: true } }>;
 
 @Injectable()
 export class PipelineService {
@@ -267,21 +275,17 @@ export class PipelineService {
           "Asocia el negocio a un contacto o una empresa.",
         );
       const stage = await this.requireStage(tx, dto.stageId, dto.pipelineId);
+      if (stage.probability === 100)
+        throw new BadRequestException(
+          "Crea el negocio en otra etapa y gánalo desde su ficha.",
+        );
       const ownerId = dto.ownerId || actorId;
       await this.requireOwner(tx, ownerId);
-      const status = dto.status ?? (stage.probability === 100 ? "WON" : "OPEN");
       const deal = await tx.deal.create({
-        data: {
-          ...dto,
-          ownerId,
-          status,
-          closedAt: status === "OPEN" ? null : new Date(),
-        },
+        data: { ...dto, ownerId },
         include: dealInclude,
       });
-      await tx.dealStageHistory.create({
-        data: { dealId: deal.id, toStageId: stage.id, changedById: actorId },
-      });
+      await this.recordMove(tx, deal.id, null, stage.id, actorId);
       return deal;
     });
   }
@@ -315,26 +319,12 @@ export class PipelineService {
       );
       if (dto.ownerId !== undefined) await this.requireOwner(tx, dto.ownerId);
       const moved = current.stageId !== stageId;
-      let stageStatus = current.status;
-      if (moved) stageStatus = stage.probability === 100 ? "WON" : "OPEN";
-      const status = dto.status ?? stageStatus;
-      const closedAt =
-        status === "OPEN" ? null : (current.closedAt ?? new Date());
-      const result = await tx.deal.update({
-        where: { id },
-        data: { ...dto, status, closedAt },
-        include: dealInclude,
-      });
-      if (moved)
-        await tx.dealStageHistory.create({
-          data: {
-            dealId: id,
-            fromStageId: current.stageId,
-            toStageId: stageId,
-            changedById: actorId,
-          },
-        });
-      return result;
+      const closing = moved
+        ? await this.stageClosing(tx, current, stage.probability, actorId)
+        : {};
+      await tx.deal.update({ where: { id }, data: { ...dto, ...closing } });
+      if (moved) await this.recordMove(tx, id, current.stageId, stageId, actorId);
+      return tx.deal.findUniqueOrThrow({ where: { id }, include: dealInclude });
     });
   }
   async deleteDeal(id: string) {
@@ -366,6 +356,70 @@ export class PipelineService {
       // Sin productos el monto vuelve a escribirse a mano y conserva el último valor.
       if (items.length)
         await tx.deal.update({ where: { id }, data: { value: subtotal } });
+      return this.detail(tx, id);
+    });
+  }
+  winDeal(id: string, closedAt: Date | undefined, actorId: string) {
+    return this.write(async (tx) => {
+      const deal = await this.requireDeal(tx, id);
+      if (deal.status === "WON")
+        throw new ConflictException("Este negocio ya está ganado.");
+      const day = closedAt ? toDay(closedAt) : ecuadorToday();
+      if (day > ecuadorToday())
+        throw new BadRequestException("La fecha de ganado no puede ser futura.");
+      const data = await this.winData(tx, deal, actorId, day);
+      const target =
+        deal.stage.probability === 100
+          ? null
+          : await tx.stage.findFirst({
+              where: { pipelineId: deal.pipelineId, probability: 100 },
+              orderBy: { position: "asc" },
+            });
+      await tx.deal.update({
+        where: { id },
+        data: { ...data, ...(target && { stageId: target.id }) },
+      });
+      if (target) await this.recordMove(tx, id, deal.stageId, target.id, actorId);
+      return this.detail(tx, id);
+    });
+  }
+  loseDeal(id: string, dto: LoseDealDto, actorId: string) {
+    return this.write(async (tx) => {
+      const deal = await this.requireDeal(tx, id);
+      if (deal.status !== "OPEN")
+        throw new ConflictException(
+          "Reabre el negocio antes de marcarlo como perdido.",
+        );
+      const lossDetail = dto.lossDetail ?? null;
+      await this.audit(tx, id, "LOST", actorId, {
+        lossReason: dto.lossReason,
+        lossDetail,
+      });
+      await tx.deal.update({
+        where: { id },
+        data: {
+          status: "LOST",
+          closedAt: ecuadorToday(),
+          lossReason: dto.lossReason,
+          lossDetail,
+        },
+      });
+      return this.detail(tx, id);
+    });
+  }
+  reopenDeal(id: string, actorId: string) {
+    return this.write(async (tx) => {
+      const deal = await this.requireDeal(tx, id);
+      if (deal.status === "OPEN")
+        throw new ConflictException("Este negocio ya está abierto.");
+      const data = await this.reopenData(tx, deal, actorId);
+      const stageId =
+        deal.stage.probability === 100
+          ? await this.originStage(tx, deal)
+          : deal.stageId;
+      await tx.deal.update({ where: { id }, data: { ...data, stageId } });
+      if (stageId !== deal.stageId)
+        await this.recordMove(tx, id, deal.stageId, stageId, actorId);
       return this.detail(tx, id);
     });
   }
@@ -406,6 +460,125 @@ export class PipelineService {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
     return { ...deal, closures };
+  }
+  /** Mover de etapa también cierra: llegar a 100 % es ganar; salir de ahí o mover un perdido es reabrir. */
+  private async stageClosing(
+    tx: Tx,
+    deal: DealWithStage,
+    probability: number,
+    actorId: string,
+  ) {
+    if (probability === 100)
+      return deal.status === "WON"
+        ? {}
+        : this.winData(tx, deal, actorId, ecuadorToday());
+    return deal.status === "OPEN" ? {} : this.reopenData(tx, deal, actorId);
+  }
+  /** Ganar: exige productos y crea la cotización en borrador con sus totales. */
+  private async winData(
+    tx: Tx,
+    deal: Pick<DealWithStage, "id">,
+    actorId: string,
+    closedAt: Date,
+  ) {
+    const items = await tx.dealItem.findMany({ where: { dealId: deal.id } });
+    if (!items.length)
+      throw new BadRequestException(
+        "Agrega sus productos en la ficha antes de ganarlo.",
+      );
+    const { subtotal, tax, total } = dealTotals(items);
+    const last = await tx.quote.findFirst({
+      where: { number: { startsWith: "COT-" } },
+      orderBy: { number: "desc" },
+      select: { number: true },
+    });
+    const number = nextQuoteNumber(last?.number);
+    await tx.quote.create({
+      data: { number, dealId: deal.id, subtotal, tax, total },
+    });
+    await this.audit(tx, deal.id, "WON", actorId, {
+      quoteNumber: number,
+      closedAt: closedAt.toISOString(),
+    });
+    return {
+      status: "WON",
+      closedAt,
+      lossReason: null,
+      lossDetail: null,
+    } as const;
+  }
+  /** Reabrir: un ganado pierde su cotización, solo si sigue en borrador. */
+  private async reopenData(
+    tx: Tx,
+    deal: Pick<DealWithStage, "id" | "status">,
+    actorId: string,
+  ) {
+    const quotes =
+      deal.status === "WON"
+        ? await tx.quote.findMany({
+            where: { dealId: deal.id },
+            select: { number: true, status: true },
+          })
+        : [];
+    if (quotes.some((quote) => quote.status !== "DRAFT"))
+      throw new ConflictException(
+        "Su cotización ya salió de borrador; el negocio no se puede reabrir.",
+      );
+    if (quotes.length) await tx.quote.deleteMany({ where: { dealId: deal.id } });
+    await this.audit(tx, deal.id, "REOPENED", actorId, {
+      from: deal.status,
+      deletedQuotes: quotes.map((quote) => quote.number),
+    });
+    return {
+      status: "OPEN",
+      closedAt: null,
+      lossReason: null,
+      lossDetail: null,
+    } as const;
+  }
+  /** Etapa a la que vuelve un ganado al reabrirse: de donde vino o la última abierta del pipeline. */
+  private async originStage(
+    tx: Tx,
+    deal: Pick<DealWithStage, "id" | "stageId" | "pipelineId">,
+  ) {
+    const last = await tx.dealStageHistory.findFirst({
+      where: {
+        dealId: deal.id,
+        toStageId: deal.stageId,
+        fromStage: {
+          is: { pipelineId: deal.pipelineId, probability: { lt: 100 } },
+        },
+      },
+      orderBy: [{ changedAt: "desc" }, { id: "desc" }],
+    });
+    if (last?.fromStageId) return last.fromStageId;
+    const open = await tx.stage.findFirst({
+      where: { pipelineId: deal.pipelineId, probability: { lt: 100 } },
+      orderBy: { position: "desc" },
+    });
+    return open?.id ?? deal.stageId;
+  }
+  private recordMove(
+    tx: Tx,
+    dealId: string,
+    fromStageId: string | null,
+    toStageId: string,
+    actorId: string,
+  ) {
+    return tx.dealStageHistory.create({
+      data: { dealId, fromStageId, toStageId, changedById: actorId },
+    });
+  }
+  private audit(
+    tx: Tx,
+    dealId: string,
+    action: "WON" | "LOST" | "REOPENED",
+    userId: string,
+    changes: Prisma.InputJsonObject,
+  ) {
+    return tx.auditLog.create({
+      data: { action, entityType: "Deal", entityId: dealId, changes, userId },
+    });
   }
   private async requireStage(tx: Tx, id: string, pipelineId: string) {
     const stage = await tx.stage.findUnique({ where: { id } });

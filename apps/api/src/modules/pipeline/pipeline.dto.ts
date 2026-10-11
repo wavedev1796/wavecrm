@@ -2,7 +2,12 @@ import { applyDecorators } from "@nestjs/common";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
-import { IVA_RATES, type IvaRate } from "@wave/shared";
+import {
+  IVA_RATES,
+  LOSS_REASONS,
+  type IvaRate,
+  type LossReason,
+} from "@wave/shared";
 import {
   ArrayMaxSize,
   IsArray,
@@ -102,16 +107,30 @@ export class CreateDealDto {
   @isoDate()
   @IsDate({ message: "Ingresa una fecha valida." })
   expectedClose?: Date | null;
-  @ApiPropertyOptional({ enum: ["OPEN", "WON", "LOST"] })
-  @IsOptional()
-  @IsIn(["OPEN", "WON", "LOST"])
-  status?: "OPEN" | "WON" | "LOST";
 }
 export class UpdateDealDto extends PartialType(CreateDealDto, {
   skipNullProperties: false,
 }) {}
 export class MoveDealDto {
   @ApiProperty() @text("la etapa") stageId!: string;
+}
+export class WinDealDto {
+  @ApiPropertyOptional({ example: "2026-10-10T00:00:00.000Z" })
+  @IsOptional()
+  @isoDate()
+  @IsDate({ message: "Ingresa una fecha de ganado valida." })
+  closedAt?: Date;
+}
+export class LoseDealDto {
+  @ApiProperty({ enum: LOSS_REASONS })
+  @IsIn([...LOSS_REASONS], { message: "Elige el motivo de la perdida." })
+  lossReason!: LossReason;
+  @ApiPropertyOptional()
+  @ValidateIf(
+    (dto: LoseDealDto) => dto.lossReason === "OTHER" || dto.lossDetail != null,
+  )
+  @text("el detalle del motivo", 500, 2)
+  lossDetail?: string;
 }
 export class DealItemDto {
   @ApiProperty({ example: "Pagina web corporativa" })
