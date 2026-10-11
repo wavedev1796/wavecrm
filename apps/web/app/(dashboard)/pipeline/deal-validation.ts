@@ -1,5 +1,22 @@
-import { PIPELINE } from "@/content/pipeline";
-import type { DealFormState, DealValues } from "./types";
+import { NEGOCIO, PIPELINE } from "@/content/pipeline";
+import type {
+  DealFormState,
+  DealValues,
+  ItemErrors,
+  ItemValues,
+} from "./types";
+
+/** Fecha AAAA-MM-DD que existe en el calendario (31 de febrero no). */
+export function isDay(value: string) {
+  const date = new Date(value + "T00:00:00.000Z");
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(date.getTime()) &&
+    date.toISOString().slice(0, 10) === value
+  );
+}
+export const decimal = (value: string) => value.trim().replace(",", ".");
+
 export function validateDeal(values: DealValues): DealFormState["fieldErrors"] {
   const errors: DealFormState["fieldErrors"] = {};
   if (values.title.length < 2 || values.title.length > 160)
@@ -13,16 +30,29 @@ export function validateDeal(values: DealValues): DealFormState["fieldErrors"] {
   if (!values.stageId) errors.stageId = "Elige una etapa.";
   if (!values.contactId && !values.companyId)
     errors.contactId = PIPELINE.linked;
-  if (values.expectedClose) {
-    const date = new Date(values.expectedClose + "T00:00:00.000Z");
-    if (
-      !/^\d{4}-\d{2}-\d{2}$/.test(values.expectedClose) ||
-      Number.isNaN(date.getTime()) ||
-      date.toISOString().slice(0, 10) !== values.expectedClose
-    )
-      errors.expectedClose = PIPELINE.dateInvalid;
-  }
+  if (values.expectedClose && !isDay(values.expectedClose))
+    errors.expectedClose = PIPELINE.dateInvalid;
+  // El estado sale de este chequeo en la Task 8, junto con DealForm y el tablero que aún lo usan.
   if (values.status && !["OPEN", "WON", "LOST"].includes(values.status))
     errors.status = "Elige un estado valido.";
   return errors;
+}
+
+/** Mismas reglas que DealItemDto del API, para marcar cada celda antes de enviar. */
+export function validateItems(rows: readonly ItemValues[]): ItemErrors | null {
+  const errors: ItemErrors = {};
+  const texto = NEGOCIO.productos.errores;
+  rows.forEach((row, index) => {
+    const description = row.description.trim();
+    const quantity = decimal(row.quantity);
+    const rowErrors: ItemErrors[number] = {};
+    if (description.length < 2 || description.length > 200)
+      rowErrors.description = texto.descripcion;
+    if (!/^\d{1,6}(\.\d{1,2})?$/.test(quantity) || Number(quantity) === 0)
+      rowErrors.quantity = texto.cantidad;
+    if (!/^\d{1,12}(\.\d{1,2})?$/.test(decimal(row.unitPrice)))
+      rowErrors.unitPrice = texto.precio;
+    if (Object.keys(rowErrors).length) errors[index] = rowErrors;
+  });
+  return Object.keys(errors).length ? errors : null;
 }

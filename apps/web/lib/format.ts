@@ -27,3 +27,9 @@ export const formatDateTime = (value: string) =>
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+
+/** Día de calendario guardado a las 00:00 UTC (cierre estimado, fecha de ganado): se muestra sin correr de zona. */
+export const formatDay = (value: string) =>
+  new Intl.DateTimeFormat(LOCALE, { dateStyle: "medium", timeZone: "UTC" }).format(
+    new Date(value),
+  );

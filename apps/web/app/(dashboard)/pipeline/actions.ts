@@ -2,13 +2,24 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { authenticatedApi, apiError } from "@/lib/authenticated-api";
-import { PIPELINE } from "@/content/pipeline";
-import { validateDeal } from "./deal-validation";
+import { ACTIVITY_TYPES, LOSS_REASONS } from "@wave/shared";
+import { NEGOCIO, PIPELINE } from "@/content/pipeline";
 import {
+  decimal,
+  isDay,
+  validateDeal,
+  validateItems,
+} from "./deal-validation";
+import {
+  emptyActivity,
   emptyDeal,
+  type ActivityFormState,
+  type ActivityValues,
   type DealFormState,
   type DealValues,
   type HistoryItem,
+  type ItemErrors,
+  type ItemValues,
 } from "./types";
 
 function refresh() {
@@ -51,6 +62,7 @@ export async function saveDeal(
     values[key] = typeof value === "string" ? value.trim() : "";
   }
   values.value = values.value.replace(",", ".");
+  const locked = form.get("valueLocked") === "1";
   const fieldErrors = validateDeal(values);
   if (Object.keys(fieldErrors).length) return { values, fieldErrors };
   const id = formText(form, "id");
@@ -59,7 +71,7 @@ export async function saveDeal(
     id ? "PATCH" : "POST",
     {
       title: values.title,
-      value: Number(values.value),
+      ...(!locked && { value: Number(values.value) }),
       pipelineId: values.pipelineId,
       stageId: values.stageId,
       contactId: values.contactId || null,
@@ -68,7 +80,6 @@ export async function saveDeal(
       expectedClose: values.expectedClose
         ? values.expectedClose + "T00:00:00.000Z"
         : null,
-      ...(values.status && { status: values.status }),
     },
   );
   if (result.error)
@@ -108,6 +119,103 @@ export async function dealHistoryAction(
     data: result.data as HistoryItem[] | undefined,
   };
 }
+const dealPath = (id: string, rest = "") =>
+  "/deals/" + encodeURIComponent(id) + rest;
+
+export async function saveDealItemsAction(
+  dealId: string,
+  rows: ItemValues[],
+): Promise<{ error?: string; rowErrors?: ItemErrors }> {
+  const rowErrors = validateItems(rows);
+  if (rowErrors) return { rowErrors };
+  return request(dealPath(dealId, "/items"), "PUT", {
+    items: rows.map((row) => ({
+      description: row.description.trim(),
+      quantity: Number(decimal(row.quantity)),
+      unitPrice: Number(decimal(row.unitPrice)),
+      taxRate: Number(row.taxRate),
+    })),
+  });
+}
+export async function winDealAction(dealId: string, day: string) {
+  if (!isDay(day)) return { error: PIPELINE.dateInvalid };
+  return request(dealPath(dealId, "/win"), "POST", {
+    closedAt: day + "T00:00:00.000Z",
+  });
+}
+export async function loseDealAction(
+  dealId: string,
+  lossReason: string,
+  lossDetail: string,
+): Promise<{
+  error?: string;
+  fieldErrors?: { lossReason?: string; lossDetail?: string };
+}> {
+  const detail = lossDetail.trim();
+  const texto = NEGOCIO.perder;
+  if (!(LOSS_REASONS as readonly string[]).includes(lossReason))
+    return { fieldErrors: { lossReason: texto.motivoRequerido } };
+  const needsDetail = lossReason === "OTHER" || detail.length > 0;
+  if (needsDetail && (detail.length < 2 || detail.length > 500))
+    return { fieldErrors: { lossDetail: texto.detalleRequerido } };
+  return request(dealPath(dealId, "/lose"), "POST", {
+    lossReason,
+    ...(detail && { lossDetail: detail }),
+  });
+}
+export async function reopenDealAction(dealId: string) {
+  return request(dealPath(dealId, "/reopen"), "POST");
+}
+export async function createActivityAction(
+  dealId: string,
+  _state: ActivityFormState,
+  form: FormData,
+): Promise<ActivityFormState> {
+  const values = { ...emptyActivity };
+  for (const key of Object.keys(values) as (keyof ActivityValues)[])
+    values[key] = formText(form, key);
+  const texto = NEGOCIO.actividad;
+  const fieldErrors: ActivityFormState["fieldErrors"] = {};
+  if (!(ACTIVITY_TYPES as readonly string[]).includes(values.type))
+    fieldErrors.type = texto.tipoRequerido;
+  if (values.subject.length < 2 || values.subject.length > 160)
+    fieldErrors.subject = texto.asuntoRequerido;
+  if (values.dueAt && !isDay(values.dueAt))
+    fieldErrors.dueAt = PIPELINE.dateInvalid;
+  if (values.description.length > 1000)
+    fieldErrors.description = texto.notaLarga;
+  if (Object.keys(fieldErrors).length) return { values, fieldErrors };
+  const result = await request(dealPath(dealId, "/activities"), "POST", {
+    type: values.type,
+    subject: values.subject,
+    ...(values.dueAt && { dueAt: values.dueAt + "T00:00:00.000Z" }),
+    ...(values.description && { description: values.description }),
+  });
+  if (result.error)
+    return {
+      values,
+      fieldErrors: {},
+      feedback: { tone: "error", message: result.error },
+    };
+  return {
+    values: emptyActivity,
+    fieldErrors: {},
+    feedback: { tone: "success", message: texto.registrada },
+  };
+}
+export async function completeActivityAction(
+  dealId: string,
+  activityId: string,
+) {
+  return request(
+    dealPath(
+      dealId,
+      "/activities/" + encodeURIComponent(activityId) + "/complete",
+    ),
+    "PATCH",
+  );
+}
+
 type ConfigurationOperation =
   | "createPipeline"
   | "updatePipeline"

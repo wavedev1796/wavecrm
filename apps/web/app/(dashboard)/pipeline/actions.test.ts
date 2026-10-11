@@ -1,6 +1,13 @@
 import { expect, test, vi } from "vitest";
 import { authenticatedApi } from "@/lib/authenticated-api";
-import { saveDeal, moveDealAction, configurePipelineAction } from "./actions";
+import {
+  saveDeal,
+  moveDealAction,
+  configurePipelineAction,
+  saveDealItemsAction,
+  winDealAction,
+  loseDealAction,
+} from "./actions";
 import { emptyDeal } from "./types";
 vi.mock("@/lib/authenticated-api", () => ({
   authenticatedApi: vi.fn(),
@@ -91,4 +98,44 @@ test("configuracion rechaza un archivo en el nombre sin convertirlo a texto", as
   const result = await configurePipelineAction("createPipeline", "", data);
   expect(result.error).toMatch(/nombre/);
   expect(api).not.toHaveBeenCalled();
+});
+
+test("el formulario ya no envia estado y omite el monto calculado por productos", async () => {
+  api.mockResolvedValue(Response.json({ id: "deal-1" }));
+  await saveDeal(initial, form({ id: "deal-1", valueLocked: "1" }));
+  const body = JSON.parse(String(api.mock.calls[0]?.[1]?.body));
+  expect(body).not.toHaveProperty("status");
+  expect(body).not.toHaveProperty("value");
+});
+test("los productos se validan por fila antes de llamar al API", async () => {
+  const result = await saveDealItemsAction("d1", [
+    { description: "W", quantity: "0", unitPrice: "1,005", taxRate: "15" },
+  ]);
+  expect(result.rowErrors?.[0]).toEqual({
+    description: expect.any(String),
+    quantity: expect.any(String),
+    unitPrice: expect.any(String),
+  });
+  expect(api).not.toHaveBeenCalled();
+});
+test("los productos viajan como numeros con coma o punto decimal", async () => {
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  await saveDealItemsAction("d1", [
+    { description: " Vinos ", quantity: "1,5", unitPrice: "100.25", taxRate: "0" },
+  ]);
+  expect(api).toHaveBeenCalledWith("/deals/d1/items", expect.objectContaining({ method: "PUT" }));
+  expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body))).toEqual({
+    items: [{ description: "Vinos", quantity: 1.5, unitPrice: 100.25, taxRate: 0 }],
+  });
+});
+test("ganar envia el dia elegido a las 00:00 UTC y perder exige detalle con Otro", async () => {
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  await winDealAction("d1", "2026-10-10");
+  expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body))).toEqual({
+    closedAt: "2026-10-10T00:00:00.000Z",
+  });
+  expect((await winDealAction("d1", "10/10/2026")).error).toBeTruthy();
+  const lost = await loseDealAction("d1", "OTHER", " ");
+  expect(lost.fieldErrors?.lossDetail).toBeTruthy();
+  expect(api).toHaveBeenCalledTimes(1);
 });
