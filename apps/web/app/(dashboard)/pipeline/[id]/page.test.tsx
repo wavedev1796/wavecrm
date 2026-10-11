@@ -22,8 +22,9 @@ vi.mock("../actions", () => ({
 const api = vi.mocked(authenticatedApi);
 
 test("la ficha abierta muestra valor, productos, empresa enlazada y botones de cierre", async () => {
-  api.mockResolvedValue(Response.json(baseDeal));
-  render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
+  api.mockResolvedValue(Response.json({ ...baseDeal, stage: { ...baseDeal.stage, color: "#2f8f5b" } }));
+  const { container } = render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
+  expect(container.querySelector(".deal-stage-dot")).toHaveStyle({ background: "#2f8f5b" });
   expect(api).toHaveBeenCalledWith("/deals/d1");
   expect(screen.getByRole("heading", { name: "Cuenta Andina" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Comercial Andina" })).toHaveAttribute("href", "/empresas/e1");

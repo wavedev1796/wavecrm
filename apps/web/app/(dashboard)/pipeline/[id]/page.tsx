@@ -65,7 +65,10 @@ export default async function DealPage({
         </div>
         <div className="contact-tags">
           <Badge tone={TONO[deal.status]}>{ESTADO_NEGOCIO[deal.status]}</Badge>
-          <Badge tone="neutral">{deal.stage.name}</Badge>
+          <Badge tone="neutral">
+            <i className="deal-stage-dot" style={{ background: deal.stage.color ?? "var(--wave-blue)" }} aria-hidden />
+            {deal.stage.name}
+          </Badge>
         </div>
         <DealActions deal={deal} {...options} />
       </section>

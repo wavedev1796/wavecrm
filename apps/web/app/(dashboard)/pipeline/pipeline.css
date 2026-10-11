@@ -481,3 +481,10 @@
 .deal-profile .deal-actions {
   flex-basis: 100%;
 }
+.deal-stage-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
