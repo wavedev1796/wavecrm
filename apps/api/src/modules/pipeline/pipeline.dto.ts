@@ -94,7 +94,7 @@ export class CreateDealDto {
     { message: "Ingresa un monto valido con hasta dos decimales." },
   )
   @Min(0)
-  @Max(999999999999.99, { message: "El precio máximo es 999999999999.99." })
+  @Max(999999999999.99)
   value!: number;
   @ApiProperty() @text("el pipeline") pipelineId!: string;
   @ApiProperty() @text("la etapa") stageId!: string;
