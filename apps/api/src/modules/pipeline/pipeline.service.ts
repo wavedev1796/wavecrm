@@ -633,6 +633,7 @@ export class PipelineService {
     try {
       return await this.prisma.$transaction(operation, {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        timeout: 15000, // ganar encadena ~10 consultas: con los 5 s por defecto caduca contra Neon
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
