@@ -83,12 +83,29 @@ test("crear desde una columna abre el modal con esa etapa y controles Wave", asy
     "Contacto",
     "Empresa",
     "Responsable",
-    "Estado",
   ])
     expect(within(modal).getByLabelText(label, { exact: true })).toHaveClass(
       "select-control",
     );
   expect(within(modal).getByLabelText("Monto (USD)")).toHaveClass("input");
+  expect(within(modal).queryByLabelText("Estado", { exact: true })).toBeNull();
+});
+test("el titulo de la tarjeta abre la ficha del negocio", () => {
+  view();
+  expect(screen.getByRole("link", { name: "Cuenta Andina" })).toHaveAttribute(
+    "href",
+    "/pipeline/d1",
+  );
+});
+test("con productos el monto se ve pero no se edita ni se envia", async () => {
+  const user = userEvent.setup();
+  stages[0]!.deals[0] = { ...deal, _count: { items: 2 } };
+  view();
+  await user.click(screen.getByRole("button", { name: "Editar" }));
+  const modal = screen.getByRole("dialog", { name: "Editar negocio" });
+  expect(within(modal).getByLabelText("Monto (USD)")).toHaveAttribute("readonly");
+  expect(within(modal).getByText("Se calcula con los productos de la ficha.")).toBeInTheDocument();
+  stages[0]!.deals[0] = deal;
 });
 test("un movimiento fallido muestra el error y conserva la etapa visible", async () => {
   vi.mocked(moveDealAction).mockResolvedValue({ error: "No se pudo guardar." });

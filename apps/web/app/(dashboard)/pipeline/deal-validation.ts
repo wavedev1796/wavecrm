@@ -32,9 +32,6 @@ export function validateDeal(values: DealValues): DealFormState["fieldErrors"] {
     errors.contactId = PIPELINE.linked;
   if (values.expectedClose && !isDay(values.expectedClose))
     errors.expectedClose = PIPELINE.dateInvalid;
-  // El estado sale de este chequeo en la Task 8, junto con DealForm y el tablero que aún lo usan.
-  if (values.status && !["OPEN", "WON", "LOST"].includes(values.status))
-    errors.status = "Elige un estado valido.";
   return errors;
 }
 

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -15,19 +16,14 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
-import { formatMoney } from "@/lib/format";
+import { formatDay, formatMoney } from "@/lib/format";
+import { ESTADO_NEGOCIO } from "@/content/catalogos";
 import { PIPELINE } from "@/content/pipeline";
 import { deleteDealAction, moveDealAction } from "./actions";
 import { DealForm } from "./deal-form";
 import { DealHistory } from "./deal-history";
 import { PipelineSettings } from "./pipeline-settings";
-import {
-  STATUS_LABEL,
-  type Board,
-  type Deal,
-  type Option,
-  type Pipeline,
-} from "./types";
+import type { Board, Deal, Option, Pipeline } from "./types";
 
 type Props = Board & {
   pipelines: Pipeline[];
@@ -38,11 +34,6 @@ type Props = Board & {
 type Editor =
   | { kind: "new"; stageId: string }
   | { kind: "edit" | "history" | "delete"; deal: Deal };
-const closeDate = (value: string) =>
-  new Intl.DateTimeFormat("es-EC", {
-    dateStyle: "medium",
-    timeZone: "UTC",
-  }).format(new Date(value));
 
 export function PipelineBoard({
   pipeline,
@@ -252,13 +243,9 @@ export function PipelineBoard({
                   }}
                 >
                   <div className="deal-card-heading">
-                    <button
-                      type="button"
-                      className="deal-title"
-                      onClick={() => setEditor({ kind: "edit", deal })}
-                    >
+                    <Link className="deal-title" href={"/pipeline/" + deal.id}>
                       {deal.title}
-                    </button>
+                    </Link>
                     <GripVertical
                       aria-label="Arrastrar tarjeta"
                       className="deal-grip"
@@ -279,7 +266,7 @@ export function PipelineBoard({
                         "deal-status deal-status--" + deal.status.toLowerCase()
                       }
                     >
-                      {STATUS_LABEL[deal.status]}
+                      {ESTADO_NEGOCIO[deal.status]}
                     </span>
                   </div>
                   <div className="deal-meta">
@@ -290,7 +277,7 @@ export function PipelineBoard({
                     <span>
                       <CalendarDays aria-hidden />
                       {deal.expectedClose
-                        ? closeDate(deal.expectedClose)
+                        ? formatDay(deal.expectedClose)
                         : "Sin fecha de cierre"}
                     </span>
                   </div>

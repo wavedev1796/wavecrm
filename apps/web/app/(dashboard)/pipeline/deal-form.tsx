@@ -12,7 +12,6 @@ import { PIPELINE } from "@/content/pipeline";
 import { saveDeal } from "./actions";
 import {
   emptyDeal,
-  STATUS_LABEL,
   type Deal,
   type DealFormState,
   type DealValues,
@@ -57,7 +56,6 @@ export function DealForm({
         companyId: deal.companyId ?? "",
         ownerId: deal.ownerId ?? "",
         expectedClose: deal.expectedClose?.slice(0, 10) ?? "",
-        status: deal.status,
       }),
     },
   };
@@ -69,7 +67,7 @@ export function DealForm({
     initial.values.pipelineId,
   );
   const [selectedStage, setSelectedStage] = useState(initial.values.stageId);
-  const [status, setStatus] = useState(initial.values.status);
+  const locked = Boolean(deal?._count?.items);
   const stages = pipelines.find((p) => p.id === selectedPipeline)?.stages ?? [];
   const saveLabel = deal ? PIPELINE.save : PIPELINE.create;
   useEffect(() => {
@@ -136,12 +134,20 @@ export function DealForm({
             <Input
               {...props("value")}
               required
+              readOnly={locked}
               inputMode="decimal"
               type="text"
               defaultValue={state.values.value}
               placeholder="0.00"
+              {...(locked && { "aria-describedby": "deal-value-hint" })}
             />
+            {locked && (
+              <p id="deal-value-hint" className="field-hint">
+                {PIPELINE.valueFromItems}
+              </p>
+            )}
           </Field>
+          {locked && <input type="hidden" name="valueLocked" value="1" />}
           <Field {...field("expectedClose", "Fecha estimada de cierre")}>
             <Input
               {...props("expectedClose")}
@@ -160,7 +166,6 @@ export function DealForm({
                   pipelines.find((p) => p.id === event.target.value)?.stages[0]
                     ?.id ?? "",
                 );
-                setStatus("");
               }}
             >
               {pipelines.map((p) => (
@@ -177,7 +182,6 @@ export function DealForm({
               required
               onChange={(event) => {
                 setSelectedStage(event.target.value);
-                setStatus("");
               }}
             >
               <option value="">Selecciona una etapa</option>
@@ -223,20 +227,6 @@ export function DealForm({
               {options(users, deal?.owner).map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field {...field("status", "Estado")}>
-            <Select
-              {...props("status")}
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-            >
-              <option value="">Segun la etapa</option>
-              {Object.entries(STATUS_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
                 </option>
               ))}
             </Select>

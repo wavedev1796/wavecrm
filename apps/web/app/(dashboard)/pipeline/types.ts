@@ -56,8 +56,7 @@ export type DealValues = Record<
   | "contactId"
   | "companyId"
   | "ownerId"
-  | "expectedClose"
-  | "status",
+  | "expectedClose",
   string
 >;
 export type DealFormState = {
@@ -75,13 +74,7 @@ export const emptyDeal: DealValues = {
   companyId: "",
   ownerId: "",
   expectedClose: "",
-  status: "",
 };
-export const STATUS_LABEL = {
-  OPEN: "Abierto",
-  WON: "Ganado",
-  LOST: "Perdido",
-} as const;
 
 export type DealItem = {
   id: string;
