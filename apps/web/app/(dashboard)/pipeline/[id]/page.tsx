@@ -74,7 +74,13 @@ export default async function DealPage({
       </section>
       <div className="contact-detail-grid">
         <div className="contact-detail-main">
-          <DealItems dealId={deal.id} items={deal.items} locked={deal.status === "WON"} />
+          {/* key: DealItems guarda las filas en su estado; al ganar, reabrir o guardar debe volver a leer lo del servidor. */}
+          <DealItems
+            key={deal.status + ":" + deal.items.map((item) => item.id).join(",")}
+            dealId={deal.id}
+            items={deal.items}
+            locked={deal.status === "WON"}
+          />
           <DealTimeline deal={deal} />
         </div>
         <div className="contact-detail-main">

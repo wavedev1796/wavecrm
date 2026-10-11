@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { baseDeal } from "../deal-fixture";
@@ -56,4 +57,22 @@ test("un perdido muestra su motivo y detalle", async () => {
   render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
   expect(screen.getByText("Otro")).toBeInTheDocument();
   expect(screen.getByText("Cerro el local")).toBeInTheDocument();
+});
+
+test("al ganar, la tabla de productos vuelve a leer lo del servidor y no conserva filas editadas", async () => {
+  api.mockResolvedValue(Response.json(baseDeal));
+  const { rerender } = render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText("Descripción del producto 1"), " editado sin guardar");
+  api.mockResolvedValue(
+    Response.json({
+      ...baseDeal,
+      status: "WON",
+      closedAt: "2026-10-05T00:00:00.000Z",
+      items: baseDeal.items.map((item) => ({ ...item, id: item.id + "-guardado" })),
+    }),
+  );
+  rerender(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
+  expect(screen.queryByText(/editado sin guardar/)).toBeNull();
+  expect(screen.getByText("Chocolates")).toBeInTheDocument();
 });
