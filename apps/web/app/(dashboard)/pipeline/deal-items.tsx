@@ -133,7 +133,10 @@ export function DealItems({
                       type="button"
                       className="icon-button"
                       aria-label={texto.quitar(index + 1)}
-                      onClick={() => setRows(rows.filter((other) => other.key !== row.key))}
+                      onClick={() => {
+                        setRows(rows.filter((other) => other.key !== row.key));
+                        setErrors({}); // los errores van por posición: al quitar una fila saltarían a otra
+                      }}
                     >
                       <Trash2 aria-hidden />
                     </button>

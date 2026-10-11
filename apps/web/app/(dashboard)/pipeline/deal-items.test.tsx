@@ -58,3 +58,24 @@ test("un negocio ganado muestra sus productos sin poder editarlos", () => {
   expect(screen.queryByRole("textbox")).toBeNull();
   expect(screen.queryByRole("button", { name: "Guardar productos" })).toBeNull();
 });
+
+test("quitar una fila limpia los errores para que no salten a otra fila", async () => {
+  save.mockResolvedValue({ rowErrors: { 1: { quantity: "Ingresa una cantidad mayor que 0, con hasta dos decimales." } } });
+  const user = userEvent.setup();
+  render(
+    <DealItems
+      dealId="d1"
+      items={[
+        { id: "i1", description: "Web", quantity: "1", unitPrice: "10", taxRate: 15 },
+        { id: "i2", description: "Hosting", quantity: "0", unitPrice: "10", taxRate: 15 },
+        { id: "i3", description: "Soporte", quantity: "1", unitPrice: "10", taxRate: 15 },
+      ]}
+      locked={false}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Guardar productos" }));
+  expect(await screen.findByText(/cantidad mayor que 0/)).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Quitar producto 1" }));
+  expect(screen.queryByText(/cantidad mayor que 0/)).toBeNull();
+  expect(screen.getByLabelText("Cantidad del producto 1")).not.toHaveAttribute("aria-invalid", "true");
+});
