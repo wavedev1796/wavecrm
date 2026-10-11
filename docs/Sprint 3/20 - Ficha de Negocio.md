@@ -46,7 +46,7 @@ El ticket no trae criterios escritos; salen de los del tablero: detalle con valo
 - `deal-items.tsx` e `item-totals.ts`: tabla editable de productos con subtotal por fila, subtotal, IVA y total, y errores por celda con las mismas reglas del API.
 - `deal-timeline.tsx`: actividades, cambios de etapa y cierres ordenados por fecha descendente; formulario *Registrar actividad* y botón *Completar*.
 - `deal-actions.tsx`: botones y diálogos *Ganar*, *Perder* y *Reabrir* (ver CRM-21).
-- `actions.ts` y `data.ts`: server actions `saveDealItems`, `createActivity` y `completeActivity` (más las de cierre), y la lectura de datos compartida con la página.
+- `actions.ts` y `data.ts`: server actions `saveDealItemsAction`, `createActivityAction` y `completeActivityAction` (más las de cierre), y la lectura de datos compartida con la página.
 - `types.ts`, `deal-validation.ts`, `deal-fixture.ts` y `pipeline.css`: tipos de la ficha, validación del formulario, datos base de las pruebas y estilos.
 - `apps/web/components/detail-info.tsx`: `Info` compartido.
 - `apps/web/app/(dashboard)/empresas/[id]/page.tsx` y `apps/web/app/(dashboard)/contactos/[id]/page.tsx`: el título de cada negocio enlaza a su ficha y usan el `Info` compartido.
@@ -85,4 +85,4 @@ El ticket no trae criterios escritos; salen de los del tablero: detalle con valo
 - La migración `20261010120000_deal_items_close` está aplicada solo en `pruebas`; `development` espera el OK del usuario. `pruebas` tiene además una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`).
 - Los mensajes "Productos guardados." y "Actividad registrada." siguen visibles después de ganar, perder o reabrir.
 - La columna de dinero de la tabla (112 px) puede cortar montos muy grandes.
-- Los mensajes nuevos de los DTO van sin tildes ("valida").
+- Revisión visual de la cabecera a 390 px en el preview con el usuario.

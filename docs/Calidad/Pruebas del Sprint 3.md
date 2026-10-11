@@ -51,5 +51,4 @@ CRM-20 y CRM-21 se verificaron con `pnpm dev` apagado y la integracion con `pnpm
 - Las pruebas que crean datos usan exclusivamente `pruebas`, validada por `assertTestDatabase`, y eliminan sus registros al terminar.
 - Playwright inicia sus propios servidores en 4101/3101 y usa `.next-pipeline-test`; ese directorio generado queda excluido de Git, ESLint y Vitest.
 - Ganar contra Neon encadena unas diez consultas; las transacciones del pipeline admiten 15 s (el valor por defecto de Prisma, 5 s, caducaba).
-- El build de Next.js avisa de un `autoprefixer` en `pipeline.css` (`align-items: start`); no falla.
 - No se ejecutaron cambios ni pruebas contra produccion.

@@ -50,7 +50,7 @@ El ticket no trae criterios escritos; salen de los del tablero: motivo de pérdi
 - Reabrir un ganado solo si su cotización sigue en borrador; entonces se elimina y el negocio vuelve a la etapa de la que venía. Con una cotización ya enviada responde `409`.
 - Motivo de pérdida con lista fija (`PRICE`, `COMPETITOR`, `NO_BUDGET`, `NO_RESPONSE`, `BAD_TIMING`, `OTHER`) más un detalle, obligatorio solo con "Otro" (máximo 500).
 - `closedAt` es un día guardado a las 00:00 UTC, como `expectedClose`, y se muestra con `timeZone: "UTC"`. "Hoy" es el día de Ecuador (UTC-5) y la fecha de ganado no puede ser futura.
-- Los cierres se registran en `AuditLog` (`WON`, `LOST`, `REOPENED`).
+- Los cierres se registran en `AuditLog` (`WON`, `LOST`, `REOPENED`). La auditoría `REOPENED` guarda `deletedQuotes` (arreglo) en lugar del `deletedQuote?` del diseño, porque un negocio puede tener más de una cotización en borrador.
 - Billing/ERP queda fuera del CRM: el enganche es la cotización en borrador.
 - Las escrituras del pipeline admiten 15 s de transacción (commit `068b741`). Ganar encadena unas diez consultas y, contra Neon, superaba los 5 s por defecto de Prisma y respondía `500` ("Transaction already closed"). El cambio afecta a todas las escrituras del módulo, solo amplía el margen. Deuda: reducir las consultas de `winDeal`.
 - **Coordinación con CRM-18 y CRM-19.** `status` sale de `CreateDealDto` y `UpdateDealDto`; mover a una etapa de 100 % gana y sacar un ganado de ahí lo reabre. Detalle en los bloques fechados de [CRM-18](18%20-%20API%20Negocios%20y%20cambio%20de%20etapa.md) y [CRM-19](19%20-%20Tablero%20Kanban.md).
@@ -74,7 +74,5 @@ El ticket no trae criterios escritos; salen de los del tablero: motivo de pérdi
 
 - Aplicar la migración `20261010120000_deal_items_close` en `development` cuando el usuario dé el OK. `pruebas` tiene una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`); conviene averiguar su origen.
 - Reducir las consultas de `winDeal` para volver al tiempo de transacción por defecto.
-- "Hoy" del diálogo *Ganar* sale de la zona horaria del navegador, no de America/Guayaquil.
 - El número de cotización de un borrador eliminado puede reutilizarse.
-- Los mensajes nuevos de los DTO van sin tildes ("valida", "perdida").
 - Los mensajes de éxito de acciones anteriores siguen visibles después de ganar, perder o reabrir.
