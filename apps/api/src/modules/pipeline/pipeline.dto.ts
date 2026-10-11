@@ -3,8 +3,10 @@ import { PaginationDto } from "../../common/dto/pagination.dto";
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
 import {
+  ACTIVITY_TYPES,
   IVA_RATES,
   LOSS_REASONS,
+  type ActivityType,
   type IvaRate,
   type LossReason,
 } from "@wave/shared";
@@ -158,6 +160,23 @@ export class DealItemDto {
   @numeric()
   @IsIn([...IVA_RATES], { message: "Elige IVA 15 % o 0 %." })
   taxRate!: IvaRate;
+}
+export class CreateDealActivityDto {
+  @ApiProperty({ enum: ACTIVITY_TYPES })
+  @IsIn([...ACTIVITY_TYPES], { message: "Elige el tipo de actividad." })
+  type!: ActivityType;
+  @ApiProperty({ example: "Llamar para confirmar la propuesta" })
+  @text("el asunto", 160, 2)
+  subject!: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @isoDate()
+  @IsDate({ message: "Ingresa una fecha valida." })
+  dueAt?: Date;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @text("la nota", 1000)
+  description?: string;
 }
 export class SaveDealItemsDto {
   @ApiProperty({ type: [DealItemDto] })

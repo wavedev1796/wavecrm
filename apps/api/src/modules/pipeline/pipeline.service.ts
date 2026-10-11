@@ -7,6 +7,7 @@ import {
 import { Prisma } from "@wave/database";
 import { PrismaService } from "../prisma/prisma.service";
 import {
+  CreateDealActivityDto,
   CreateDealDto,
   CreatePipelineDto,
   CreateStageDto,
@@ -437,6 +438,37 @@ export class PipelineService {
         changedBy: { select: { id: true, name: true } },
       },
       orderBy: [{ changedAt: "desc" }, { id: "desc" }],
+    });
+  }
+  createActivity(dealId: string, dto: CreateDealActivityDto, actorId: string) {
+    return this.write(async (tx) => {
+      const deal = await this.requireDeal(tx, dealId);
+      // Con el contacto del negocio, la actividad aparece también en la ficha del contacto.
+      return tx.activity.create({
+        data: {
+          ...dto,
+          dealId,
+          contactId: deal.contactId,
+          companyId: deal.companyId,
+          assigneeId: actorId,
+        },
+        include: { assignee: { select: { id: true, name: true } } },
+      });
+    });
+  }
+  completeActivity(dealId: string, activityId: string) {
+    return this.write(async (tx) => {
+      const activity = await tx.activity.findFirst({
+        where: { id: activityId, dealId },
+      });
+      if (!activity) throw new NotFoundException("Actividad no encontrada.");
+      if (activity.status !== "PENDING")
+        throw new ConflictException("La actividad ya no está pendiente.");
+      return tx.activity.update({
+        where: { id: activityId },
+        data: { status: "COMPLETED", completedAt: new Date() },
+        include: { assignee: { select: { id: true, name: true } } },
+      });
     });
   }
   private async requireDeal(tx: Tx, id: string) {

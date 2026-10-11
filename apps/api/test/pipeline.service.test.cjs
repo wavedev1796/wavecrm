@@ -316,3 +316,20 @@ test("CRM-21: no se crea un negocio directamente en una etapa de 100 %", async (
     BadRequestException,
   );
 });
+
+test("CRM-20: la actividad del negocio copia contacto y empresa y la asigna a quien la crea", async () => {
+  const { prisma } = mockPrisma();
+  const created = await service(prisma).createActivity(
+    "deal-1",
+    { type: "CALL", subject: "Llamar al cliente" },
+    "user-1",
+  );
+  assert.deepEqual(
+    [created.dealId, created.companyId, created.contactId, created.assigneeId],
+    ["deal-1", "company-1", null, "user-1"],
+  );
+  await assert.rejects(
+    service(prisma).completeActivity("deal-1", "ajena"),
+    NotFoundException,
+  );
+});

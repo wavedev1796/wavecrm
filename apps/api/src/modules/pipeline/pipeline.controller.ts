@@ -15,6 +15,7 @@ import { CurrentUser } from "../auth/auth.decorators";
 import type { JwtPayload } from "../auth/auth.service";
 import {
   ListDealsDto,
+  CreateDealActivityDto,
   CreateDealDto,
   CreatePipelineDto,
   CreateStageDto,
@@ -88,6 +89,19 @@ export class PipelineController {
   }
   @Get("deals/:id/history") history(@Param("id") id: string) {
     return this.service.history(id);
+  }
+  @Post("deals/:id/activities") createActivity(
+    @Param("id") id: string,
+    @Body() dto: CreateDealActivityDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.createActivity(id, dto, user.sub);
+  }
+  @Patch("deals/:id/activities/:activityId/complete") completeActivity(
+    @Param("id") id: string,
+    @Param("activityId") activityId: string,
+  ): Promise<unknown> {
+    return this.service.completeActivity(id, activityId);
   }
   @Post("deals/:id/win") @HttpCode(200) win(
     @Param("id") id: string,

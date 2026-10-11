@@ -336,6 +336,29 @@ test("CRM-21: ganar, perder y reabrir con motivo, cotizacion y auditoria", async
   });
   assert.equal(direct.status, 400);
 });
+test("CRM-20: registra y completa actividades del negocio una sola vez", async () => {
+  const path = "/deals/" + deal + "/activities";
+  assert.equal(
+    (await call(path, { method: "POST", body: { type: "FAX", subject: "x" } })).status,
+    400,
+  );
+  const created = await call(path, {
+    method: "POST",
+    body: { type: "CALL", subject: "Llamar al cliente", dueAt: "2026-10-12T00:00:00.000Z" },
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  assert.equal(created.body.companyId, company.id);
+  assert.equal(created.body.assignee.id, user.id);
+  const done = await call(path + "/" + created.body.id + "/complete", { method: "PATCH" });
+  assert.equal(done.status, 200);
+  assert.equal(done.body.status, "COMPLETED");
+  assert.equal(
+    (await call(path + "/" + created.body.id + "/complete", { method: "PATCH" })).status,
+    409,
+  );
+  const detail = await call("/deals/" + deal);
+  assert.equal(detail.body.activities[0].subject, "Llamar al cliente");
+});
 test("lectura, paginacion, metricas decimales y conflictos de borrado", async () => {
   const list = await call("/deals?pipelineId=" + pipeline + "&limit=1");
   assert.equal(list.status, 200);
