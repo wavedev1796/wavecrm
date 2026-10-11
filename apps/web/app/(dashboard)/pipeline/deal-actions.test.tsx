@@ -31,6 +31,20 @@ test("ganar muestra el total de la cotizacion y envia la fecha elegida", async (
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Negocio ganado."));
 });
 
+test("la fecha de ganado propuesta es el día de Ecuador aunque en UTC ya sea el siguiente", async () => {
+  // 03:00 UTC del 6 de octubre son las 22:00 del 5 en Ecuador.
+  vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-06T03:00:00Z") });
+  try {
+    view(baseDeal);
+    await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).click(screen.getByRole("button", { name: "Ganar" }));
+    const date = within(screen.getByRole("dialog", { name: "Ganar negocio" })).getByLabelText("Fecha de ganado");
+    expect(date).toHaveValue("2026-10-05");
+    expect(date).toHaveAttribute("max", "2026-10-05");
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 test("perder con Otro pide detalle antes de cerrar el dialogo", async () => {
   vi.mocked(loseDealAction).mockResolvedValue({
     fieldErrors: { lossDetail: "Cuenta el motivo (entre 2 y 500 caracteres)." },

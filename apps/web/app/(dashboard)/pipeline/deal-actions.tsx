@@ -115,7 +115,7 @@ function Footer({ pending, onCancel, label, disabled = false }: Readonly<{ pendi
 
 function WinForm({ deal, onCancel, onDone }: Readonly<{ deal: DealDetail; onCancel: () => void; onDone: Done }>) {
   const texto = NEGOCIO.ganar;
-  const today = new Date().toLocaleDateString("en-CA"); // AAAA-MM-DD en la zona del navegador
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guayaquil" }).format(new Date()); // AAAA-MM-DD, día de Ecuador
   const [day, setDay] = useState(today);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
