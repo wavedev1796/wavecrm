@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Package, Plus, Trash2 } from "lucide-react";
 import { IVA_RATES } from "@wave/shared";
@@ -19,10 +19,8 @@ import type { DealItem, ItemErrors, ItemValues } from "./types";
 
 type Row = ItemValues & { key: string };
 const texto = NEGOCIO.productos;
-// ponytail: contador del módulo como clave de React; solo tiene que ser única en esta pestaña.
-let lastKey = 0;
-const toRow = (item?: DealItem): Row => ({
-  key: String(++lastKey),
+const toRow = (key: string, item?: DealItem): Row => ({
+  key,
   description: item?.description ?? "",
   quantity: item ? String(item.quantity) : "",
   unitPrice: item ? String(item.unitPrice) : "",
@@ -35,7 +33,10 @@ export function DealItems({
   locked,
 }: Readonly<{ dealId: string; items: DealItem[]; locked: boolean }>) {
   const router = useRouter();
-  const [rows, setRows] = useState(() => items.map(toRow));
+  // ponytail: las filas guardadas usan su id y las nuevas un contador por instancia, así servidor y navegador coinciden.
+  const prefix = useId();
+  const nextKey = useRef(0);
+  const [rows, setRows] = useState(() => items.map((item) => toRow(item.id, item)));
   const [errors, setErrors] = useState<ItemErrors>({});
   const [feedback, setFeedback] = useState<{ tone: "error" | "success"; message: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -57,7 +58,7 @@ export function DealItems({
       }
     });
   const cell = (row: Row, index: number, field: "description" | "quantity" | "unitPrice", label: string) => {
-    const id = "item-" + row.key + "-" + field;
+    const id = prefix + "-" + row.key + "-" + field;
     const error = errors[index]?.[field];
     return (
       <>
@@ -161,7 +162,7 @@ export function DealItems({
             variant="secondary"
             disabled={pending || rows.length >= 100}
             title={rows.length >= 100 ? texto.maximo : undefined}
-            onClick={() => setRows([...rows, toRow()])}
+            onClick={() => setRows([...rows, toRow("new-" + ++nextKey.current)])}
           >
             <Plus aria-hidden />
             {texto.agregar}
