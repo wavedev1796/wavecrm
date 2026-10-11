@@ -71,3 +71,21 @@ Mostrar el pipeline real en un tablero por etapas y permitir crear negocios y mo
 
 - 16 pruebas web del pipeline aprobadas, incluidas las seis operaciones de configuracion y el rechazo de un archivo en el nombre.
 - El nuevo analisis de SonarQube requiere autenticacion: el servidor local responde 401 y este proceso no dispone de `SONAR_TOKEN`. El estado final del Quality Gate queda pendiente de ese analisis.
+
+## Cierre ganado/perdido y ficha (2026-10-10)
+
+Bloque añadido por Zaith Manangón (CRM-20 y CRM-21), con autorización del usuario.
+
+### Implementación
+
+- `pipeline-board.tsx`: el título de la tarjeta enlaza a `/pipeline/[id]`, la ficha del negocio; *Editar* sigue abriendo el modal. Los errores de ganar o reabrir al arrastrar salen en el aviso del tablero.
+- `deal-form.tsx` y `deal-validation.ts`: el formulario pierde el selector *Estado* y el monto queda de solo lectura, con la ayuda "Se calcula con los productos", cuando el negocio tiene productos (no se envía).
+- `types.ts`: se quitan `STATUS_LABEL` y `status` de los valores del formulario.
+
+### Decisiones
+
+- **Coordinación con CRM-20/21.** Un solo camino al cierre para que todo negocio ganado tenga cotización y todo perdido, motivo. Arrastrar a una etapa de 100 % gana el negocio, y para ganar hacen falta productos.
+
+### Validación
+
+- Pruebas ajustadas: `pipeline-board.test.tsx`, `actions.test.ts` y `e2e/pipeline.spec.ts` (sin *Estado*; el arrastre y el recorrido del tablero siguen funcionando con el título convertido en enlace). Resultado del 2026-10-10: 233 pruebas web y 3 de navegador aprobadas.

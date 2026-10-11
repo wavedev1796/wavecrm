@@ -82,3 +82,22 @@ Exponer la administracion de pipelines, etapas y negocios, el movimiento de etap
 ### Validacion
 
 - 104 pruebas unitarias del API aprobadas tras los cambios.
+
+## Cierre ganado/perdido y ficha (2026-10-10)
+
+Bloque añadido por Zaith Manangón (CRM-20 y CRM-21), con autorización del usuario.
+
+### Implementación
+
+- `status` sale de `CreateDealDto` y `UpdateDealDto`: el API lo rechaza como campo no permitido. Mover a una etapa de 100 % (por `PATCH /deals/:id` o `PATCH /deals/:id/move`) gana el negocio, exige productos y crea la cotización; sacar un ganado de ahí lo reabre. El alta directa en una etapa de 100 % se rechaza.
+- `PATCH /deals/:id` con `value` en un negocio con productos responde `400` ("El monto se calcula con los productos."). `GET /deals/:id` amplía su respuesta y el tablero suma `_count.items` a cada tarjeta.
+- Endpoints nuevos en el mismo módulo: ver [CRM-20](20%20-%20Ficha%20de%20Negocio.md) y [CRM-21](21%20-%20Cierre%20ganado-perdido.md).
+- `apps/api/src/modules/pipeline/pipeline.service.ts`: las transacciones de `write()` admiten 15 s (ganar encadena unas diez consultas).
+
+### Decisiones
+
+- **Coordinación con CRM-20/21.** Un solo camino al cierre para que todo negocio ganado tenga cotización y todo perdido, motivo. Esto reemplaza la decisión "una etapa con probabilidad 100 marca el negocio como ganado" de este ticket.
+
+### Validación
+
+- Pruebas ajustadas al nuevo camino de cierre: `apps/api/test/pipeline.service.test.cjs` y `apps/api/test/integracion/pipeline.http.test.cjs`. Resultado del 2026-10-10: 123 pruebas del API y 10 HTTP contra `pruebas` aprobadas.
