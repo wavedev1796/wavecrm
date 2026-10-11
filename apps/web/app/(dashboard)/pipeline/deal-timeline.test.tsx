@@ -1,0 +1,60 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { expect, test, vi } from "vitest";
+import { completeActivityAction } from "./actions";
+import { baseDeal } from "./deal-fixture";
+import { DealTimeline } from "./deal-timeline";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock("./actions", () => ({
+  createActivityAction: vi.fn(),
+  completeActivityAction: vi.fn(),
+}));
+
+const deal = {
+  ...baseDeal,
+  activities: [
+    {
+      id: "a1",
+      type: "CALL" as const,
+      status: "PENDING" as const,
+      subject: "Llamar a Maria",
+      description: null,
+      dueAt: "2026-10-12T00:00:00.000Z",
+      completedAt: null,
+      createdAt: "2026-10-03T12:00:00.000Z",
+      assignee: { id: "u1", name: "Zaith" },
+    },
+  ],
+  stageHistory: [
+    {
+      id: "h1",
+      changedAt: "2026-10-01T15:00:00.000Z",
+      fromStage: null,
+      toStage: { id: "s1", name: "Propuesta" },
+      changedBy: { id: "u1", name: "Zaith" },
+    },
+  ],
+  closures: [
+    {
+      id: "c1",
+      action: "LOST" as const,
+      changes: { lossReason: "PRICE" as const, lossDetail: null },
+      createdAt: "2026-10-05T12:00:00.000Z",
+      user: { id: "u1", name: "Zaith" },
+    },
+  ],
+};
+
+test("mezcla actividades, etapas y cierres del mas reciente al mas antiguo", async () => {
+  vi.mocked(completeActivityAction).mockResolvedValue({ data: {} });
+  const user = userEvent.setup();
+  render(<DealTimeline deal={deal} />);
+  const items = screen.getAllByRole("listitem").map((li) => li.textContent);
+  expect(items[0]).toMatch(/Llamada · Llamar a Maria/);
+  expect(items[1]).toMatch(/Perdido · Precio/);
+  expect(items[2]).toMatch(/Creado en Propuesta/);
+  await user.click(screen.getByRole("button", { name: "Completar Llamar a Maria" }));
+  expect(completeActivityAction).toHaveBeenCalledWith("d1", "a1");
+  expect(screen.getByLabelText("Asunto")).toBeInTheDocument();
+});
