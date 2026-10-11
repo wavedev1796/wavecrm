@@ -417,3 +417,16 @@
     padding: 24px 18px;
   }
 }
+
+.deal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.deal-textarea {
+  height: auto;
+  min-height: 88px;
+  padding-block: 10px;
+  resize: vertical;
+}
