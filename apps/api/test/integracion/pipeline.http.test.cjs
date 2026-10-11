@@ -211,6 +211,12 @@ test("CRM-20: productos recalculan el valor y rechazan filas invalidas sin guard
     assert.equal(rejected.status, 400, JSON.stringify(rejected.body));
     assert.ok(!/Solicitud inválida/.test(JSON.stringify(rejected.body)));
   }
+  const tooPricey = await call("/deals/" + deal + "/items", {
+    method: "PUT",
+    body: { items: [{ ...items[0], unitPrice: 1e12 }] },
+  });
+  assert.equal(tooPricey.status, 400);
+  assert.match(JSON.stringify(tooPricey.body), /El precio máximo es/);
   assert.equal(await api.prisma.dealItem.count({ where: { dealId: deal } }), 0);
   const saved = await call("/deals/" + deal + "/items", {
     method: "PUT",

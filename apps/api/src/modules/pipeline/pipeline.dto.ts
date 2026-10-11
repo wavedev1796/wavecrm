@@ -94,7 +94,7 @@ export class CreateDealDto {
     { message: "Ingresa un monto valido con hasta dos decimales." },
   )
   @Min(0)
-  @Max(999999999999.99)
+  @Max(999999999999.99, { message: "El precio máximo es 999999999999.99." })
   value!: number;
   @ApiProperty() @text("el pipeline") pipelineId!: string;
   @ApiProperty() @text("la etapa") stageId!: string;
@@ -120,12 +120,12 @@ export class WinDealDto {
   @ApiPropertyOptional({ example: "2026-10-10T00:00:00.000Z" })
   @IsOptional()
   @isoDate()
-  @IsDate({ message: "Ingresa una fecha de ganado valida." })
+  @IsDate({ message: "Ingresa una fecha de ganado válida." })
   closedAt?: Date;
 }
 export class LoseDealDto {
   @ApiProperty({ enum: LOSS_REASONS })
-  @IsIn([...LOSS_REASONS], { message: "Elige el motivo de la perdida." })
+  @IsIn([...LOSS_REASONS], { message: "Elige el motivo de la pérdida." })
   lossReason!: LossReason;
   @ApiPropertyOptional()
   @ValidateIf(
@@ -136,7 +136,7 @@ export class LoseDealDto {
 }
 export class DealItemDto {
   @ApiProperty({ example: "Pagina web corporativa" })
-  @text("la descripcion del producto", 200, 2)
+  @text("la descripción del producto", 200, 2)
   description!: string;
   @ApiProperty({ example: 1 })
   @numeric()
@@ -145,16 +145,16 @@ export class DealItemDto {
     { message: "Ingresa una cantidad con hasta dos decimales." },
   )
   @Min(0.01, { message: "La cantidad debe ser mayor que cero." })
-  @Max(999999.99, { message: "La cantidad maxima es 999999.99." })
+  @Max(999999.99, { message: "La cantidad máxima es 999999.99." })
   quantity!: number;
   @ApiProperty({ example: 1400 })
   @numeric()
   @IsNumber(
     { maxDecimalPlaces: 2 },
-    { message: "Ingresa un precio valido con hasta dos decimales." },
+    { message: "Ingresa un precio válido con hasta dos decimales." },
   )
   @Min(0, { message: "El precio no puede ser negativo." })
-  @Max(999999999999.99)
+  @Max(999999999999.99, { message: "El precio máximo es 999999999999.99." })
   unitPrice!: number;
   @ApiProperty({ enum: IVA_RATES, example: 15 })
   @numeric()
@@ -171,7 +171,7 @@ export class CreateDealActivityDto {
   @ApiPropertyOptional()
   @IsOptional()
   @isoDate()
-  @IsDate({ message: "Ingresa una fecha valida." })
+  @IsDate({ message: "Ingresa una fecha válida." })
   dueAt?: Date;
   @ApiPropertyOptional()
   @IsOptional()
@@ -180,7 +180,7 @@ export class CreateDealActivityDto {
 }
 export class SaveDealItemsDto {
   @ApiProperty({ type: [DealItemDto] })
-  @IsArray({ message: "Envia la lista de productos." })
+  @IsArray({ message: "Envía la lista de productos." })
   @ArrayMaxSize(100, { message: "Un negocio admite hasta 100 productos." })
   @ValidateNested({ each: true })
   @Type(() => DealItemDto)
