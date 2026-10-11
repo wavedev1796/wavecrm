@@ -57,7 +57,7 @@ El ticket no trae criterios escritos; salen de los del tablero: motivo de pérdi
 
 ## Validación
 
-- `pnpm lint`, `pnpm test` (123 pruebas del API y 233 web) y `pnpm build` aprobados el 2026-10-10, con `pnpm dev` apagado.
+- `pnpm lint`, `pnpm test` (123 pruebas del API y 237 web) y `pnpm build` aprobados el 2026-10-10, con `pnpm dev` apagado.
 - Integración HTTP contra `pruebas`: 10 pruebas aprobadas. La de este ticket recorre ganar, perder y reabrir con cotización, motivo y auditoría, y los rechazos sin escrituras parciales.
 - API (`pipeline.service.test.cjs`): ganar sin productos, cotización con IVA por tarifa y correlativo, paso a la etapa de 100 %, fecha futura rechazada, perder (solo desde abierto) y reabrir (borrador eliminado, cotización enviada con `409`), arrastre dentro y fuera de 100 % y alta directa en 100 % rechazada. `deal-rules.test.cjs` (5): totales, número de cotización y día de Ecuador.
 - Web: `deal-actions.test.tsx` (3) y `[id]/page.test.tsx` (3) para la ficha abierta, ganada y perdida; `pipeline-board.test.tsx` y `actions.test.ts` para el tablero sin *Estado* y las acciones de cierre.

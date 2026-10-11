@@ -7,7 +7,7 @@
 | Capa | Resultado |
 | --- | --- |
 | Unitarias API (incluye compilacion Nest) | 123 aprobadas |
-| Web (Vitest) | 233 aprobadas (68 archivos) |
+| Web (Vitest) | 237 aprobadas (68 archivos) |
 | Integracion HTTP del pipeline contra pruebas | 10 aprobadas |
 | Navegador del pipeline (Playwright) | 3 aprobadas |
 | ESLint API y web | Sin errores |

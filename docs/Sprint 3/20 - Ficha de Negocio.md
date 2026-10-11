@@ -66,7 +66,7 @@ El ticket no trae criterios escritos; salen de los del tablero: detalle con valo
 ## Validación
 
 - `pnpm lint`: sin errores en `shared`, `database`, `api` y `web`.
-- `pnpm test`: 123 pruebas unitarias del API y 233 pruebas web (68 archivos) aprobadas. Antes del ticket eran 104 y 208.
+- `pnpm test`: 123 pruebas unitarias del API y 237 pruebas web (68 archivos) aprobadas. Antes del ticket eran 104 y 208.
 - `pnpm build`: aprobado (`/pipeline/[id]` aparece en la salida de Next.js). Se compiló con `pnpm dev` apagado.
 - Integración HTTP contra `pruebas` (`apps/api/test/integracion/pipeline.http.test.cjs`): 10 pruebas aprobadas (eran 7). Las de este ticket: productos con recálculo y filas inválidas sin guardar, y actividades registradas y completadas una sola vez.
 - API (`pipeline.service.test.cjs`, `deal-rules.test.cjs`, `app.setup.test.cjs`): recálculo y bloqueo de productos, valor a mano sin productos, el monto no se edita a mano con productos, actividad con contacto y empresa del negocio, y mensaje de una fila inválida en una lista anidada.

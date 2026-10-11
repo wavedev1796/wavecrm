@@ -42,5 +42,5 @@ Configurar el embudo comercial, administrar negocios desde la API y moverlos en 
 
 - Ficha `/pipeline/[id]` con productos (cantidad, precio e IVA 15 % o 0 % por fila), contacto y empresa, y línea de tiempo de actividades, etapas y cierres.
 - Ganar crea la cotización `COT-000001` en borrador; perder exige motivo; reabrir deshace el cierre. La facturación queda fuera del CRM.
-- Revisión del 2026-10-10: 123 pruebas unitarias API, 233 pruebas web, 10 pruebas HTTP del pipeline y 3 pruebas de navegador aprobadas; lint y build sin errores.
+- Revisión del 2026-10-10: 123 pruebas unitarias API, 237 pruebas web, 10 pruebas HTTP del pipeline y 3 pruebas de navegador aprobadas; lint y build sin errores.
 - La migración `20261010120000_deal_items_close` está aplicada en `pruebas`; `development` pendiente del OK del usuario.
