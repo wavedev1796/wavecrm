@@ -10,11 +10,13 @@ import {
   CreateDealDto,
   CreatePipelineDto,
   CreateStageDto,
+  DealItemDto,
   ListDealsDto,
   UpdateDealDto,
   UpdatePipelineDto,
   UpdateStageDto,
 } from "./pipeline.dto";
+import { dealTotals, MAX_DEAL_VALUE } from "./deal-rules";
 
 const dealInclude = {
   stage: true,
@@ -22,6 +24,41 @@ const dealInclude = {
   contact: { select: { id: true, firstName: true, lastName: true } },
   company: { select: { id: true, name: true } },
   owner: { select: { id: true, name: true } },
+  _count: { select: { items: true } },
+} satisfies Prisma.DealInclude;
+const dealDetailInclude = {
+  ...dealInclude,
+  contact: {
+    select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+  },
+  company: {
+    select: { id: true, name: true, taxId: true, email: true, phone: true },
+  },
+  items: { orderBy: { position: "asc" } },
+  quotes: {
+    select: {
+      id: true,
+      number: true,
+      status: true,
+      subtotal: true,
+      tax: true,
+      total: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  },
+  activities: {
+    include: { assignee: { select: { id: true, name: true } } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+  },
+  stageHistory: {
+    include: {
+      fromStage: { select: { id: true, name: true } },
+      toStage: { select: { id: true, name: true } },
+      changedBy: { select: { id: true, name: true } },
+    },
+    orderBy: [{ changedAt: "desc" }, { id: "desc" }],
+  },
 } satisfies Prisma.DealInclude;
 type Tx = Prisma.TransactionClient;
 
@@ -252,9 +289,13 @@ export class PipelineService {
     return this.write(async (tx) => {
       const current = await tx.deal.findUnique({
         where: { id },
-        include: dealInclude,
+        include: { stage: true, _count: { select: { items: true } } },
       });
       if (!current) throw new NotFoundException("Negocio no encontrado.");
+      if (dto.value !== undefined && current._count.items)
+        throw new BadRequestException(
+          "El monto se calcula con los productos. Cámbialos en la ficha del negocio.",
+        );
       // Los negocios antiguos sin vinculo pueden moverse; una edicion de sus relaciones debe dejarlos completos.
       if (dto.contactId !== undefined || dto.companyId !== undefined) {
         const contactId =
@@ -303,19 +344,37 @@ export class PipelineService {
       await tx.deal.delete({ where: { id } });
     });
   }
-  async findDeal(id: string) {
-    const deal = await this.prisma.deal.findUnique({
-      where: { id },
-      include: dealInclude,
+  findDeal(id: string) {
+    return this.prisma.$transaction((tx) => this.detail(tx, id), {
+      isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
     });
-    if (!deal) throw new NotFoundException("Negocio no encontrado.");
-    return deal;
+  }
+  saveItems(id: string, items: DealItemDto[]) {
+    return this.write(async (tx) => {
+      const deal = await this.requireDeal(tx, id);
+      if (deal.status === "WON")
+        throw new ConflictException("Reabre el negocio para cambiar sus productos.");
+      const { subtotal } = dealTotals(items);
+      if (subtotal.greaterThan(MAX_DEAL_VALUE))
+        throw new BadRequestException(
+          "El subtotal de los productos supera el máximo de 999999999999.99.",
+        );
+      await tx.dealItem.deleteMany({ where: { dealId: id } });
+      await tx.dealItem.createMany({
+        data: items.map((item, position) => ({ ...item, dealId: id, position })),
+      });
+      // Sin productos el monto vuelve a escribirse a mano y conserva el último valor.
+      if (items.length)
+        await tx.deal.update({ where: { id }, data: { value: subtotal } });
+      return this.detail(tx, id);
+    });
   }
   moveDeal(id: string, stageId: string, actorId: string) {
     return this.updateDeal(id, { stageId }, actorId);
   }
   async history(id: string) {
-    await this.findDeal(id);
+    if (!(await this.prisma.deal.count({ where: { id } })))
+      throw new NotFoundException("Negocio no encontrado.");
     return this.prisma.dealStageHistory.findMany({
       where: { dealId: id },
       include: {
@@ -325,6 +384,28 @@ export class PipelineService {
       },
       orderBy: [{ changedAt: "desc" }, { id: "desc" }],
     });
+  }
+  private async requireDeal(tx: Tx, id: string) {
+    const deal = await tx.deal.findUnique({ where: { id }, include: { stage: true } });
+    if (!deal) throw new NotFoundException("Negocio no encontrado.");
+    return deal;
+  }
+  /** Ficha completa: negocio, productos, cotizaciones, actividades, historial y cierres (AuditLog). */
+  private async detail(tx: Tx, id: string) {
+    const deal = await tx.deal.findUnique({ where: { id }, include: dealDetailInclude });
+    if (!deal) throw new NotFoundException("Negocio no encontrado.");
+    const closures = await tx.auditLog.findMany({
+      where: { entityType: "Deal", entityId: id },
+      select: {
+        id: true,
+        action: true,
+        changes: true,
+        createdAt: true,
+        user: { select: { id: true, name: true } },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    return { ...deal, closures };
   }
   private async requireStage(tx: Tx, id: string, pipelineId: string) {
     const stage = await tx.stage.findUnique({ where: { id } });

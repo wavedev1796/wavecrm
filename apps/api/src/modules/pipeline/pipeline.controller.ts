@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
@@ -17,6 +18,7 @@ import {
   CreatePipelineDto,
   CreateStageDto,
   MoveDealDto,
+  SaveDealItemsDto,
   UpdateDealDto,
   UpdatePipelineDto,
   UpdateStageDto,
@@ -74,6 +76,12 @@ export class PipelineController {
     @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
     return this.service.createDeal(dto, user.sub);
+  }
+  @Put("deals/:id/items") saveItems(
+    @Param("id") id: string,
+    @Body() dto: SaveDealItemsDto,
+  ): Promise<unknown> {
+    return this.service.saveItems(id, dto.items);
   }
   @Get("deals/:id/history") history(@Param("id") id: string) {
     return this.service.history(id);

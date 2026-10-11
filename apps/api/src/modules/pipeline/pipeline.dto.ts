@@ -1,8 +1,11 @@
 import { applyDecorators } from "@nestjs/common";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
+import { Transform, Type } from "class-transformer";
+import { IVA_RATES, type IvaRate } from "@wave/shared";
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsDate,
   IsIn,
@@ -15,6 +18,7 @@ import {
   Max,
   Min,
   ValidateIf,
+  ValidateNested,
   isISO8601,
 } from "class-validator";
 
@@ -32,6 +36,12 @@ const text = (label: string, max = 100, min = 1) =>
 const numeric = () =>
   Transform(({ value }: { value: unknown }) =>
     typeof value === "string" && value.trim() ? Number(value) : value,
+  );
+const isoDate = () =>
+  Transform(({ value }: { value: unknown }) =>
+    typeof value === "string" && isISO8601(value, { strict: true })
+      ? new Date(value)
+      : value,
   );
 
 export class CreatePipelineDto {
@@ -89,7 +99,7 @@ export class CreateDealDto {
     string | null;
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }: { value: unknown }) => typeof value === "string" && isISO8601(value, { strict: true }) ? new Date(value) : value)
+  @isoDate()
   @IsDate({ message: "Ingresa una fecha valida." })
   expectedClose?: Date | null;
   @ApiPropertyOptional({ enum: ["OPEN", "WON", "LOST"] })
@@ -102,6 +112,41 @@ export class UpdateDealDto extends PartialType(CreateDealDto, {
 }) {}
 export class MoveDealDto {
   @ApiProperty() @text("la etapa") stageId!: string;
+}
+export class DealItemDto {
+  @ApiProperty({ example: "Pagina web corporativa" })
+  @text("la descripcion del producto", 200, 2)
+  description!: string;
+  @ApiProperty({ example: 1 })
+  @numeric()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: "Ingresa una cantidad con hasta dos decimales." },
+  )
+  @Min(0.01, { message: "La cantidad debe ser mayor que cero." })
+  @Max(999999.99, { message: "La cantidad maxima es 999999.99." })
+  quantity!: number;
+  @ApiProperty({ example: 1400 })
+  @numeric()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: "Ingresa un precio valido con hasta dos decimales." },
+  )
+  @Min(0, { message: "El precio no puede ser negativo." })
+  @Max(999999999999.99)
+  unitPrice!: number;
+  @ApiProperty({ enum: IVA_RATES, example: 15 })
+  @numeric()
+  @IsIn([...IVA_RATES], { message: "Elige IVA 15 % o 0 %." })
+  taxRate!: IvaRate;
+}
+export class SaveDealItemsDto {
+  @ApiProperty({ type: [DealItemDto] })
+  @IsArray({ message: "Envia la lista de productos." })
+  @ArrayMaxSize(100, { message: "Un negocio admite hasta 100 productos." })
+  @ValidateNested({ each: true })
+  @Type(() => DealItemDto)
+  items!: DealItemDto[];
 }
 export class ListDealsDto extends PaginationDto {
   @ApiPropertyOptional() @IsOptional() @text("el pipeline") pipelineId?: string;

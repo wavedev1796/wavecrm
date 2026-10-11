@@ -41,6 +41,16 @@ before(async () => {
 });
 after(async () => {
   if (!api) return;
+  const dealIds = (
+    await api.prisma.deal.findMany({
+      where: { pipelineId: { in: pipelines } },
+      select: { id: true },
+    })
+  ).map((d) => d.id);
+  if (deal) dealIds.push(deal);
+  await api.prisma.auditLog.deleteMany({
+    where: { entityType: "Deal", entityId: { in: dealIds } },
+  });
   for (const id of pipelines) {
     await api.prisma.deal.deleteMany({ where: { pipelineId: id } });
   }
@@ -181,6 +191,50 @@ test("rechaza fechas, montos, relaciones y responsables invalidos sin altas parc
     await api.prisma.deal.count({ where: { pipelineId: pipeline } }),
     1,
   );
+});
+test("CRM-20: productos recalculan el valor y rechazan filas invalidas sin guardar", async () => {
+  const items = [
+    { description: "Pagina web", quantity: 1, unitPrice: 100.55, taxRate: 15 },
+    { description: "Hosting", quantity: 2, unitPrice: 10, taxRate: 0 },
+  ];
+  for (const bad of [
+    [{ ...items[0], quantity: 0 }],
+    [{ ...items[0], taxRate: 12 }],
+    [{ ...items[0], description: " " }],
+    [{ ...items[0], color: "rojo" }],
+    Array.from({ length: 101 }, () => items[1]),
+  ]) {
+    const rejected = await call("/deals/" + deal + "/items", {
+      method: "PUT",
+      body: { items: bad },
+    });
+    assert.equal(rejected.status, 400, JSON.stringify(rejected.body));
+    assert.ok(!/Solicitud inválida/.test(JSON.stringify(rejected.body)));
+  }
+  assert.equal(await api.prisma.dealItem.count({ where: { dealId: deal } }), 0);
+  const saved = await call("/deals/" + deal + "/items", {
+    method: "PUT",
+    body: { items },
+  });
+  assert.equal(saved.status, 200, JSON.stringify(saved.body));
+  assert.equal(saved.body.value, "120.55");
+  assert.deepEqual(
+    saved.body.items.map((i) => [i.description, i.quantity, i.position]),
+    [
+      ["Pagina web", "1", 0],
+      ["Hosting", "2", 1],
+    ],
+  );
+  const manual = await call("/deals/" + deal, {
+    method: "PATCH",
+    body: { value: 5 },
+  });
+  assert.equal(manual.status, 400);
+  const board = await call("/deals/board?pipelineId=" + pipeline);
+  const card = board.body.stages
+    .flatMap((s) => s.deals)
+    .find((d) => d.id === deal);
+  assert.equal(card._count.items, 2);
 });
 test("ambas rutas de movimiento registran historial, reabren y evitan duplicados", async () => {
   const moved = await call("/deals/" + deal + "/move", {
