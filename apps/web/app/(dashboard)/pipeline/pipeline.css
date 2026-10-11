@@ -474,3 +474,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+.deal-profile {
+  flex-wrap: wrap;
+}
+.deal-profile .deal-actions {
+  flex-basis: 100%;
+}
