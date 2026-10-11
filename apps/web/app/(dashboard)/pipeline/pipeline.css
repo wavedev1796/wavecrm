@@ -349,19 +349,31 @@
 .pipeline-delete-confirm .button {
   margin: 0 8px 8px 0;
 }
+/* El texto sr-only de la columna Acciones es absoluto: sin esto escapa del scroll y ensancha la página. */
+.deal-items .table-scroll {
+  position: relative;
+}
+.deal-items .table th,
+.deal-items .table td {
+  padding-inline: 10px;
+}
 .deal-items .table td {
   vertical-align: top;
 }
 .deal-items-qty {
-  width: 96px;
+  width: 80px;
 }
 .deal-items-money {
-  width: 140px;
+  width: 112px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 .deal-items-tax {
   width: 96px;
+}
+/* En una columna el grid usa 1fr (mínimo auto): sin esto la tabla ensancha la página. */
+.deal-profile ~ .contact-detail-grid > * {
+  min-width: 0;
 }
 .deal-totals {
   display: grid;
