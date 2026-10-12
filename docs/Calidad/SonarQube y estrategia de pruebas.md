@@ -61,6 +61,18 @@ El detalle prueba por prueba, con el paso a paso para ejecutarlas, está en [Pru
 
 Los dominios que aún no existen (empresas, contactos, negocios, cotizaciones, actividades, etc.) no tienen módulo en el API: se crean con sus pruebas cuando se implementan.
 
+## Dónde vive cada prueba
+
+| Ruta | Qué contiene |
+| --- | --- |
+| `apps/api/test/unitarias/<módulo>/` | `node:test` sin red, espejo de `src/modules/` y `src/common/` (`app.setup.test.cjs` en la raíz, como `src/app.setup.ts`). `prisma-falso.cjs` es el Prisma en memoria de contactos y empresas |
+| `apps/api/test/integracion/` | API real por HTTP contra la rama `pruebas` de Neon |
+| `apps/web/**/*.test.ts(x)` | Vitest junto al archivo que prueban. Los datos de prueba se llaman `*-fixture.ts`; no cuentan como código ni como cobertura |
+| `test/` | Casos de validación y datos compartidos por API, web y e2e |
+| `test/e2e/` | Playwright: flujos de navegador |
+
+Desde el 2026-10-12 las rutas son estas. Los catálogos de los Sprints 1 y 2 y sus tickets citan las anteriores: `apps/api/test/<archivo>.test.cjs` está ahora en `apps/api/test/unitarias/<módulo>/`, y `e2e/` en `test/e2e/`. `contacts-companies.service.test.cjs` se partió en `contacts/contacts.service.test.cjs` y `companies/companies.service.test.cjs`.
+
 ## Orden recomendado
 
 1. pnpm.cmd lint

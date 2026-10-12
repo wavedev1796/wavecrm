@@ -62,3 +62,14 @@ CRM-20 y CRM-21 se verificaron con `pnpm dev` apagado y la integracion con `pnpm
 | `pnpm build` | Aprobado |
 
 Alcance: cada `loading.tsx` anuncia solo su texto; el resumen y la tabla de contactos y empresas se prueban aparte de la página (filas, enlaces, paginación, vacío y error); la página, la consulta y sus acciones. Medidas del esqueleto contra la página real en `pnpm dev`: ver [Esqueletos de carga](../Sprint%203/Esqueletos%20de%20carga.md).
+
+## Cobertura y orden de pruebas (2026-10-12)
+
+| Capa | Resultado |
+| --- | --- |
+| API unitarias (`apps/api/test/unitarias/`) | 174 aprobadas · 99,7 % de líneas y 94,6 % de ramas |
+| Web (Vitest, con cobertura) | 278 aprobadas (73 archivos) · 97,4 % de líneas y 88,5 % de ramas |
+| E2E (`test/e2e/`) | 25 listadas en 6 archivos (`playwright test --list`); no se ejecutaron |
+| ESLint API y web, `pnpm build` | Sin errores |
+
+Alcance: DTO del pipeline, de auth y de los filtros de listados; caminos de error de usuarios, correo, contactos y empresas; configuración del pipeline, arrastre y borrado del tablero, y todas las acciones del pipeline. Detalle en [Cobertura y orden de pruebas](../Sprint%203/Cobertura%20y%20orden%20de%20pruebas.md).

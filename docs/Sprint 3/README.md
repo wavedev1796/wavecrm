@@ -19,6 +19,7 @@ Configurar el embudo comercial, administrar negocios desde la API y moverlos en 
 | — | [Estructura de components/ de apps/web](Estructura de components de apps-web.md) | Zaith Manangón | Completo (5/5 criterios) |
 | — | [Estilos globales por partes](Estilos globales por partes.md) | Zaith Manangón | Completo (5/5 criterios) |
 | — | [Esqueletos de carga](Esqueletos de carga.md) | Zaith Manangón | Completo (5/5 criterios) |
+| — | [Cobertura y orden de pruebas](Cobertura y orden de pruebas.md) | Zaith Manangón | Completo (5/5 criterios) |
 
 ## Decisiones
 
