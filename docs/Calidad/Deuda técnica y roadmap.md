@@ -146,4 +146,4 @@ Verificado contra el código de `ZaithManangon-Dev` después de integrar `Eduard
 
 ## SonarQube Cloud en CI (2026-10-11)
 
-Resuelve de las secciones 5 y 6: SonarQube en CI (push a `ZaithManangon-Dev`, con Quality Gate), `sonar.cpd.exclusions` para las reglas espejo web/API, `concurrency` en el workflow y `coverage/` como artefacto del run. Siguen abiertos: integración y e2e en CI, y el Quality Gate propio. Detalle en [SonarQube Cloud en CI](../Sprint%203/SonarQube%20Cloud%20en%20CI.md).
+Resuelve de las secciones 5 y 6: SonarQube en CI (push a `ZaithManangon-Dev`, con Quality Gate), `sonar.cpd.exclusions` para las reglas espejo web/API, `concurrency` en el workflow y `coverage/` como artefacto del run. Siguen abiertos: integración y e2e en CI, y el Quality Gate propio. Ese mismo día la integración entró al CI, contra la rama `pruebas` y en los push a `ZaithManangon-Dev`; quedan e2e y el gate propio. Detalle en [SonarQube Cloud en CI](../Sprint%203/SonarQube%20Cloud%20en%20CI.md).

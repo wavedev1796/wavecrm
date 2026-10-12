@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Alert } from "@/components/ui/alert";
+import { COMUN } from "@/content/comun";
 import { formatDateTime } from "@/lib/format";
 import { dealHistoryAction } from "./actions";
 import type { HistoryItem } from "./types";
@@ -11,9 +12,12 @@ export function DealHistory({ id }: Readonly<{ id: string }>) {
   } | null>(null);
   useEffect(() => {
     let current = true;
-    dealHistoryAction(id).then((value) => {
+    const show = (value: NonNullable<typeof result>) => {
       if (current) setResult(value);
-    });
+    };
+    dealHistoryAction(id).then(show, () =>
+      show({ error: COMUN.errores.conexion }),
+    );
     return () => {
       current = false;
     };

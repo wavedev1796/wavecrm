@@ -38,6 +38,17 @@ jobs:
       # integración quedan fuera: necesitan la rama `pruebas` de Neon.
       - run: pnpm test:coverage:ci
 
+      - name: Pruebas de integración (rama pruebas de Neon)
+        # Crean y borran datos: solo en la rama principal, para que los push simultáneos
+        # a las dos ramas no corran dos baterías a la vez sobre la misma base.
+        if: github.event_name == 'push' && github.ref_name == env.SONAR_MAIN_BRANCH
+        run: node --test --test-concurrency=1 apps/api/test/integracion/*.test.cjs
+        env:
+          DATABASE_URL: ${{ secrets.NEON_PRUEBAS_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.NEON_PRUEBAS_DIRECT_URL }}
+          # Desechable: los tokens solo viven mientras dura el run.
+          JWT_SECRET: ci-${{ github.run_id }}
+
       - name: Análisis de SonarQube Cloud
         # Solo los push a la rama principal: el plan Free analiza esa rama, y el equipo no usa PR.
         if: github.event_name == 'push' && github.ref_name == env.SONAR_MAIN_BRANCH

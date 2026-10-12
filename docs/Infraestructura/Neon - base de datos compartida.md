@@ -93,7 +93,8 @@ Conclusión: el desfase entre ramas es silencioso con los comandos seguros y des
    - _Aditivas_ (tablas nuevas, columnas opcionales): se pueden aplicar desde la rama personal, porque el código del otro sigue funcionando.
    - _Destructivas_ (borrar o renombrar columnas, quitar valores de un enum, como hizo CRM-6): solo cuando ambas ramas ya tienen el código que deja de usar lo viejo, es decir, tras subirse a `ZaithManangon-Dev` y `EduardoGarcia-Dev`.
 5. **Tras cada pull o merge que traiga migraciones:** `pnpm db:generate`, y `pnpm db:migrate:deploy` si hay pendientes.
-6. **Como `migrate status` no detecta migraciones ajenas**, ante un error raro se compara el SQL Editor de Neon (`select migration_name from _prisma_migrations order by migration_name;`) con `packages/database/prisma/migrations`.
+6. **Primero `pruebas`, después `development` (desde el 2026-10-11).** El código nuevo y sus migraciones se prueban en la rama `pruebas` (`.env.test.local`). Ya comprobado, la migración se aplica en `development`. Si `pruebas` se rompe, se restaura desde `development`, su rama padre, que conserva la versión anterior. El CI corre la integración contra `pruebas`, nunca contra `development`.
+7. **Como `migrate status` no detecta migraciones ajenas**, ante un error raro se compara el SQL Editor de Neon (`select migration_name from _prisma_migrations order by migration_name;`) con `packages/database/prisma/migrations`.
 
 ## Decisiones
 
