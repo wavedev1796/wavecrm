@@ -369,7 +369,7 @@
   font-variant-numeric: tabular-nums;
 }
 .deal-items-tax {
-  width: 96px;
+  width: 116px;
 }
 /* En una columna el grid usa 1fr (mínimo auto): sin esto la tabla ensancha la página. */
 .deal-profile ~ .contact-detail-grid > * {
@@ -492,6 +492,13 @@
 }
 .deal-profile .deal-actions {
   flex-basis: 100%;
+}
+/* El valor es el dato principal del negocio: no hereda el gris pequeño de .contact-profile p. */
+.deal-profile .deal-profile-value {
+  color: var(--wave-ink);
+  font-size: 1.125rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 .deal-stage-dot {
   display: inline-block;

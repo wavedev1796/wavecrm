@@ -61,7 +61,7 @@ export default async function DealPage({
         <div>
           <span>{NEGOCIO.etiqueta}</span>
           <h2>{deal.title}</h2>
-          <p>{formatMoney(deal.value, deal.currency)}</p>
+          <p className="deal-profile-value">{formatMoney(deal.value, deal.currency)}</p>
         </div>
         <div className="contact-tags">
           <Badge tone={TONO[deal.status]}>{ESTADO_NEGOCIO[deal.status]}</Badge>
@@ -72,15 +72,16 @@ export default async function DealPage({
         </div>
         <DealActions deal={deal} {...options} />
       </section>
+      {/* Productos a todo el ancho: en la columna principal la descripción quedaba en ~100 px.
+          key: DealItems guarda las filas en su estado; al ganar, reabrir o guardar debe volver a leer lo del servidor. */}
+      <DealItems
+        key={deal.status + ":" + deal.items.map((item) => item.id).join(",")}
+        dealId={deal.id}
+        items={deal.items}
+        locked={deal.status === "WON"}
+      />
       <div className="contact-detail-grid">
         <div className="contact-detail-main">
-          {/* key: DealItems guarda las filas en su estado; al ganar, reabrir o guardar debe volver a leer lo del servidor. */}
-          <DealItems
-            key={deal.status + ":" + deal.items.map((item) => item.id).join(",")}
-            dealId={deal.id}
-            items={deal.items}
-            locked={deal.status === "WON"}
-          />
           <DealTimeline deal={deal} />
         </div>
         <div className="contact-detail-main">
