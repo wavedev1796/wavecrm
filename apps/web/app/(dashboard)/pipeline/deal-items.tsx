@@ -76,7 +76,7 @@ export function DealItems({
     );
   };
   return (
-    <Card className="contact-related deal-items">
+    <Card className={"contact-related deal-items" + (locked ? "" : " deal-items--editable")}>
       <h3>
         <Package aria-hidden />
         {texto.titulo} <Badge tone="blue">{rows.length}</Badge>
@@ -93,7 +93,7 @@ export function DealItems({
               <th>{texto.iva}</th>
               <th className="deal-items-money">{texto.subtotalFila}</th>
               {!locked && (
-                <th>
+                <th className="deal-items-remove">
                   <span className="sr-only">{texto.acciones}</span>
                 </th>
               )}
@@ -128,7 +128,7 @@ export function DealItems({
                 </td>
                 <td className="deal-items-money">{formatMoney(lineTotal(row))}</td>
                 {!locked && (
-                  <td>
+                  <td className="deal-items-remove">
                     <button
                       type="button"
                       className="icon-button"

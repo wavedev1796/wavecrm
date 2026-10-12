@@ -375,13 +375,22 @@
 .deal-profile ~ .contact-detail-grid > * {
   min-width: 0;
 }
+.deal-items-remove {
+  width: 60px; /* botón de 40px + 10px de padding por lado */
+}
+/* Los totales terminan donde termina el texto del subtotal de cada fila: el padding de la celda (10px)
+   y, si se puede editar, la columna de quitar (60px). */
 .deal-totals {
   display: grid;
   grid-template-columns: auto auto;
   justify-content: end;
-  gap: 4px 24px;
-  margin: 0;
+  gap: 10px 24px;
+  margin: 16px 0 20px;
+  padding-inline-end: 10px;
   font-variant-numeric: tabular-nums;
+}
+.deal-items--editable .deal-totals {
+  padding-inline-end: 70px;
 }
 .deal-totals dt {
   color: var(--wave-muted-strong);

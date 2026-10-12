@@ -88,6 +88,8 @@ El ticket no trae criterios escritos; salen de los del tablero: detalle con valo
 - `apps/web/app/(dashboard)/pipeline/pipeline.css`: `.deal-profile-value` (1.125rem / 800, tinta, números tabulares) y columna de IVA de 116 px.
 - `apps/web/app/(dashboard)/pipeline/activity-actions.tsx` (nuevo): `ActivityForm` y `CompleteButton`, las únicas partes cliente del timeline. `deal-timeline.tsx` deja de ser `"use client"`.
 - `apps/api/src/modules/pipeline/pipeline.service.ts`: `findDeal` admite 15 s en su transacción de lectura.
+- `apps/web/app/globals.css`: el ícono del avatar de las fichas (negocio, contacto y empresa) vuelve a blanco y 1rem. La regla `.contact-profile span` lo pintaba gris y pequeño porque el avatar también es un `span`.
+- `deal-items.tsx` y `pipeline.css`: la columna de quitar mide 60 px, y los totales tienen más aire (16 px sobre ellos, 20 px bajo ellos, 10 px entre filas). Terminan en el mismo borde que el texto del subtotal de cada fila, no en el del botón Guardar.
 
 ### Decisiones
 
