@@ -143,3 +143,7 @@ Verificado contra el código de `ZaithManangon-Dev` después de integrar `Eduard
 | Importación de contactos limitada | `apps/api/src/modules/contact-import/` | Desde el 2026-10-01 acepta cédula, RUC y pasaporte (obligatorios). Sigue sin actualizar contactos existentes y sin `AuditLog`. |
 | Auditoría parcial | `companies.service.ts` | Crear y editar empresas se registra en `AuditLog`; contactos e importaciones no. |
 | Errores de multer reconocidos por su texto | `apps/api/src/common/filters/global-exception.filter.ts` | Si busboy cambia el texto, el mensaje vuelve a salir en inglés. Lo detectan las pruebas de `app.setup`. |
+
+## SonarQube Cloud en CI (2026-10-11)
+
+Resuelve de las secciones 5 y 6: SonarQube en CI (push a `ZaithManangon-Dev`, con Quality Gate), `sonar.cpd.exclusions` para las reglas espejo web/API, `concurrency` en el workflow y `coverage/` como artefacto del run. Siguen abiertos: integración y e2e en CI, y el Quality Gate propio. Detalle en [SonarQube Cloud en CI](../Sprint%203/SonarQube%20Cloud%20en%20CI.md).

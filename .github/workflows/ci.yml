@@ -5,11 +5,23 @@ on:
   push:
     branches: [main, develop, ZaithManangon-Dev, EduardoGarcia-Dev]
 
+# Un push nuevo a la misma rama o al mismo PR cancela el run anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     runs-on: ubuntu-latest
+    env:
+      # Rama principal del proyecto en SonarQube Cloud. No es develop: no hay permiso sobre ella.
+      # EduardoGarcia-Dev tiene el mismo código, así que basta con analizar esta.
+      SONAR_MAIN_BRANCH: ZaithManangon-Dev
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Sonar necesita el historial completo para el blame y el código nuevo.
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 11.19.0
@@ -22,4 +34,28 @@ jobs:
       # build va antes que test: @wave/database se consume desde dist/ y en un
       # runner limpio esa carpeta no existe hasta compilarla.
       - run: pnpm build
-      - run: pnpm test
+      # Mismas unitarias que `pnpm test`, pero con LCOV para Sonar. Las de
+      # integración quedan fuera: necesitan la rama `pruebas` de Neon.
+      - run: pnpm test:coverage:ci
+
+      - name: Análisis de SonarQube Cloud
+        # Solo los push a la rama principal: el plan Free analiza esa rama, y el equipo no usa PR.
+        if: github.event_name == 'push' && github.ref_name == env.SONAR_MAIN_BRANCH
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # Organización y clave de SonarQube Cloud. Van aquí y no en
+          # sonar-project.properties para que el SonarQube local siga igual.
+          args: >
+            -Dsonar.organization=wavedev0911
+            -Dsonar.projectKey=wavedev0911_wavecrm
+            -Dsonar.qualitygate.wait=true
+
+      - name: Guardar cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7

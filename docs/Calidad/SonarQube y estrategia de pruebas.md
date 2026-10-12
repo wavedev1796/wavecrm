@@ -72,3 +72,12 @@ Los dominios que aún no existen (empresas, contactos, negocios, cotizaciones, a
 7. pnpm.cmd sonar:scan
 
 Las pruebas que crean o borran datos corren contra la rama `pruebas` de Neon (`.env.test.local`), nunca contra `development` ni Docker compartido. La guardia `assertTestDatabase` de `test/datos-de-prueba.cjs` lo impide.
+
+## SonarQube Cloud en CI
+
+- El CI corre `pnpm test:coverage:ci` en cada push y PR, y guarda `coverage/` como artefacto del run durante 7 días.
+- Solo los push a `ZaithManangon-Dev` se analizan en SonarQube Cloud (organización `wavedev0911`, proyecto `wavedev0911_wavecrm`). El plan Free analiza solo la rama principal, y `EduardoGarcia-Dev` tiene el mismo código.
+- La cobertura del CI sale solo de las unitarias: las de integración necesitan Neon. Por eso puede quedar por debajo de la local.
+- El CI espera el Quality Gate (`sonar.qualitygate.wait=true`). Si el gate sale en rojo, el check `quality` también queda en rojo.
+- El token vive en el secret `SONAR_TOKEN` del repositorio. Organización y clave van por argumentos en `ci.yml`.
+- El SonarQube local no cambia: `pnpm sonar:scan` y la clave `WaveCRM` de `sonar-project.properties` siguen igual.

@@ -15,6 +15,8 @@
     "test:coverage": "pnpm test:coverage:api && pnpm test:coverage:web",
     "test:coverage:api": "pnpm --filter @wave/shared build && pnpm --filter @wave/api build && dotenv -e .env.test.local -- c8 --reporter=lcov --reporter=text-summary --reports-dir=coverage/api --include=apps/api/dist/**/*.js --exclude=apps/api/dist/main.js node --test --test-concurrency=1 apps/api/test/*.test.cjs apps/api/test/integracion/*.test.cjs",
     "test:coverage:web": "pnpm --filter @wave/web test:coverage",
+    "test:coverage:ci": "pnpm test:coverage:api:unit && pnpm test:coverage:web",
+    "test:coverage:api:unit": "c8 --reporter=lcov --reporter=text-summary --reports-dir=coverage/api --include=apps/api/dist/**/*.js --exclude=apps/api/dist/main.js node --test --test-concurrency=1 apps/api/test/*.test.cjs",
     "test:quality": "pnpm lint && pnpm test && pnpm build",
     "sonar:scan": "pnpm test:coverage && sonar -Dsonar.host.url=http://localhost:9000 -Dsonar.qualitygate.wait=true",
     "format": "prettier --write .",
