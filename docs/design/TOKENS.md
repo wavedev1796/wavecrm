@@ -1,6 +1,6 @@
 # Tokens visuales de Wave CRM
 
-La fuente de verdad ejecutable vive en `apps/web/app/globals.css`. La guía visual original está en `docs/design/crm-wave-styleguide.html`.
+La fuente de verdad ejecutable vive en `apps/web/styles/01-tokens.css`; el resto de estilos, en `apps/web/styles/`, importados en orden por `apps/web/app/globals.css`. La guía visual original está en `docs/design/crm-wave-styleguide.html`.
 
 ## Color
 
