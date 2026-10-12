@@ -1,0 +1,126 @@
+.data-card {
+  overflow: hidden;
+}
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--wave-line);
+}
+.table-toolbar > div {
+  display: flex;
+  gap: 9px;
+}
+.table-search {
+  width: min(360px, 100%);
+}
+.table-search .input {
+  padding-left: 39px;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+.table th {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--wave-line);
+  color: var(--wave-faint);
+  text-align: left;
+  font-size: 0.67rem;
+  font-weight: 750;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--wave-line);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.table tbody tr {
+  transition: background 0.15s ease;
+}
+.table tbody tr:hover {
+  background: #fafaf7;
+}
+.contact-cell {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.contact-cell strong,
+.contact-cell small {
+  display: block;
+}
+.contact-cell strong {
+  font-size: 0.8rem;
+}
+.contact-cell small {
+  color: var(--wave-faint);
+  font-size: 0.68rem;
+}
+.table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  color: var(--wave-muted);
+  font-size: 0.75rem;
+}
+.table-footer > div {
+  display: flex;
+  gap: 8px;
+}
+.table-footer .button {
+  min-height: 34px;
+  padding: 6px 11px;
+  font-size: 0.72rem;
+}
+.table-footer .button[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 450px;
+  padding: 40px;
+  text-align: center;
+}
+.empty-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  color: white;
+  background: var(--wave-blue);
+  font-size: 1.3rem;
+  font-weight: 800;
+  box-shadow: 0 3px 10px rgb(47 111 143 / 28%);
+}
+.empty-state h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+.empty-state p {
+  max-width: 450px;
+  margin: 8px 0 22px;
+  color: var(--wave-muted);
+  font-size: 0.86rem;
+}
+.sidebar-backdrop {
+  display: none;
+}
+

@@ -1,0 +1,32 @@
+.card {
+  border: 1px solid var(--wave-line);
+  border-radius: 14px;
+  background: white;
+  box-shadow: var(--shadow-sm);
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.badge--blue {
+  color: var(--wave-blue-dark);
+  background: var(--wave-blue-soft);
+}
+.badge--success {
+  color: var(--wave-success);
+  background: var(--wave-success-soft);
+}
+.badge--warning {
+  color: var(--wave-warning);
+  background: var(--wave-warning-soft);
+}
+.badge--neutral {
+  color: var(--wave-muted-strong);
+  background: #f0efe8;
+}
+

@@ -1,0 +1,137 @@
+.page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+.page-actions > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.page-actions p {
+  margin: 0;
+  color: var(--wave-faint);
+  font-size: 0.75rem;
+}
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  position: relative;
+  min-height: 128px;
+  padding: 20px;
+  overflow: hidden;
+}
+.kpi-card > span {
+  display: block;
+  color: var(--wave-muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.kpi-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-card small {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 8px;
+  color: var(--wave-success);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+.kpi-card small svg {
+  width: 14px;
+}
+.kpi-card--accent {
+  color: white;
+  border-color: var(--wave-ink);
+  background: var(--wave-ink);
+  box-shadow: var(--shadow-md);
+}
+.kpi-card--accent::after {
+  content: "";
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  right: -45px;
+  bottom: -65px;
+  border: 22px solid rgb(47 111 143 / 38%);
+  border-radius: 50%;
+}
+.kpi-card--accent > span,
+.kpi-card--accent small {
+  color: #b9b8b0;
+}
+.pipeline-column > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5px 9px;
+}
+.pipeline-column h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.pipeline-column h2 i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.pipeline-column header > span {
+  color: var(--wave-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.deal-card {
+  margin-bottom: 10px;
+  padding: 15px;
+  transition:
+    border-color 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.deal-card:hover {
+  border-color: var(--wave-blue-line);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgb(40 40 30 / 7%);
+}
+.add-deal {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 9px;
+  border: 1px dashed transparent;
+  border-radius: 10px;
+  color: var(--wave-faint);
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.add-deal:hover {
+  color: var(--wave-blue);
+  border-color: var(--wave-blue-line);
+  background: var(--wave-blue-soft);
+}
+.add-deal svg {
+  width: 15px;
+}
+

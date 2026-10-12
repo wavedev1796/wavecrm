@@ -1,0 +1,289 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 15px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.button svg {
+  width: 17px;
+  height: 17px;
+}
+.button--primary {
+  color: white;
+  background: var(--wave-blue);
+  box-shadow: 0 1px 2px rgb(47 111 143 / 30%);
+}
+.button--primary:hover {
+  background: var(--wave-blue-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgb(47 111 143 / 20%);
+}
+.button--primary:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+.button--secondary {
+  color: var(--wave-text);
+  background: white;
+  border-color: var(--wave-line-strong);
+}
+.button--secondary:hover {
+  border-color: var(--wave-blue-line);
+  color: var(--wave-blue-dark);
+  background: var(--wave-blue-soft);
+}
+.button--ghost {
+  color: var(--wave-muted);
+  background: transparent;
+}
+.button--ghost:hover {
+  color: var(--wave-text);
+  background: var(--wave-cream);
+}
+.button:disabled {
+  color: var(--wave-faint);
+  background: #f1f0eb;
+  border-color: var(--wave-line);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.72;
+}
+.input,
+.select-control {
+  height: 40px;
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--wave-line-strong);
+  border-radius: 10px;
+  color: var(--wave-text);
+  background: white;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.2;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.select-control {
+  min-width: 0;
+  padding: 9px 38px 9px 12px;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--wave-muted-strong) 50%),
+    linear-gradient(135deg, var(--wave-muted-strong) 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) 50%,
+    calc(100% - 12px) 50%;
+  background-repeat: no-repeat;
+  background-size: 5px 5px, 5px 5px;
+  cursor: pointer;
+  line-height: 20px;
+  text-overflow: ellipsis;
+}
+.select-control option {
+  color: var(--wave-text);
+  background-color: var(--wave-white);
+  font-family: "Plus Jakarta Sans Variable", "Segoe UI", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.select-control option:checked {
+  color: var(--wave-white);
+  background-color: var(--wave-blue);
+}
+@supports (appearance: base-select) {
+  .select-control,
+  .select-control::picker(select) {
+    appearance: base-select;
+  }
+  /* base-select partiría el texto largo en dos líneas y lo pasaría bajo la flecha: una línea, cortada en el borde del contenido. */
+  .select-control {
+    align-items: center;
+    white-space: nowrap;
+    overflow: clip;
+    overflow-clip-margin: content-box;
+  }
+  /* Sin tope, las listas largas (países, provincias, cantones) ocupan toda la pantalla. */
+  .select-control::picker(select) {
+    max-block-size: min(18rem, 50dvh);
+    overflow-y: auto;
+    margin-top: 6px;
+    padding: 6px;
+    border: 1px solid var(--wave-line-strong);
+    border-radius: 12px;
+    background: var(--wave-white);
+    box-shadow: var(--shadow-md);
+  }
+  .select-control option {
+    min-height: 38px;
+    padding: 9px 12px;
+    border-radius: 8px;
+  }
+  .select-control option:hover,
+  .select-control option:focus-visible {
+    color: var(--wave-blue-dark);
+    background: var(--wave-blue-soft);
+  }
+  .select-control option:focus-visible {
+    outline: 2px solid var(--wave-blue-line);
+    outline-offset: -2px;
+  }
+  .select-control option:checked {
+    color: var(--wave-blue-dark);
+    background: var(--wave-blue-soft);
+  }
+  .select-control option::checkmark,
+  .select-control::picker-icon {
+    display: none;
+  }
+}
+.input::placeholder {
+  color: var(--wave-faint);
+}
+.input:hover,
+.select-control:hover {
+  border-color: #c8c7bf;
+}
+.input:focus,
+.select-control:focus {
+  border-color: var(--wave-blue);
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--wave-blue-soft);
+}
+.input:disabled,
+.select-control:disabled {
+  background-color: #f1f0eb;
+  cursor: not-allowed;
+}
+.select-control:disabled {
+  color: var(--wave-muted);
+  opacity: 1;
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.button-spinner {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.button--primary[aria-busy="true"] {
+  color: white;
+  background: var(--wave-blue);
+  border-color: transparent;
+  opacity: 0.88;
+  cursor: progress;
+}
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0 0 16px;
+  padding: 11px 13px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.45;
+  animation: rise-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.alert svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+.alert--error {
+  color: var(--wave-danger);
+  border-color: #f1d4d4;
+  background: var(--wave-danger-soft);
+}
+.alert--success {
+  color: var(--wave-success-strong);
+  border-color: #cfe8d9;
+  background: var(--wave-success-soft);
+}
+.alert--note {
+  color: var(--wave-muted-strong);
+  border-color: var(--wave-line-strong);
+  background: var(--wave-cream);
+}
+.alert--note b {
+  color: #8a6212;
+}
+.password-field {
+  position: relative;
+}
+.password-field .input {
+  padding-right: 48px;
+}
+.password-field .input::-ms-reveal {
+  display: none;
+}
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: var(--wave-muted-strong);
+  background: transparent;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+.password-toggle:hover {
+  color: var(--wave-blue-dark);
+  background: var(--wave-blue-soft);
+}
+.password-toggle[aria-pressed="true"] {
+  color: var(--wave-blue);
+}
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+select {
+  height: 40px;
+  padding: 0 34px 0 12px;
+  border: 1px solid var(--wave-line-strong);
+  border-radius: 10px;
+  color: var(--wave-text);
+  background: white;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
