@@ -68,13 +68,9 @@ export function PipelineBoard({
     router.refresh();
   };
   const deals = stages.flatMap((stage) => stage.deals);
-  const total =
-    deals.reduce((sum, deal) => sum + Math.round(Number(deal.value) * 100), 0) /
-    100;
-  const won =
-    deals
-      .filter((deal) => deal.status === "WON")
-      .reduce((sum, deal) => sum + Math.round(Number(deal.value) * 100), 0) /
+  const wonDeals = deals.filter((deal) => deal.status === "WON");
+  const sum = (list: Deal[]) =>
+    list.reduce((cents, deal) => cents + Math.round(Number(deal.value) * 100), 0) /
     100;
   function move(deal: Deal, stageId: string) {
     if (pending || deal.stageId === stageId) return;
@@ -154,14 +150,14 @@ export function PipelineBoard({
         </Card>
         <Card className="kpi-card">
           <span>Valor del pipeline</span>
-          <strong>{formatMoney(total)}</strong>
+          <strong>{formatMoney(sum(deals))}</strong>
           <small>Todos los montos en USD</small>
         </Card>
         <Card className="kpi-card kpi-card--accent">
           <span>Valor ganado</span>
-          <strong>{formatMoney(won)}</strong>
+          <strong>{formatMoney(sum(wonDeals))}</strong>
           <small>
-            {deals.filter((deal) => deal.status === "WON").length} negocios
+            {wonDeals.length} negocios
             ganados
           </small>
         </Card>
@@ -176,7 +172,7 @@ export function PipelineBoard({
         </Alert>
       )}
       <section
-        className="pipeline-board pipeline-board--live"
+        className="pipeline-board"
         aria-label="Tablero del pipeline"
         aria-busy={pending}
       >

@@ -15,7 +15,7 @@ export default function PipelineLoading() {
           </div>
         ))}
       </div>
-      <div className="pipeline-board pipeline-board--live" aria-hidden>
+      <div className="pipeline-board" aria-hidden>
         {[0, 1, 2, 3].map((n) => (
           <div className="pipeline-column" key={n}>
             <Skeleton className="skeleton-heading" />

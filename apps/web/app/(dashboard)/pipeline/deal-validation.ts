@@ -21,10 +21,8 @@ export function validateDeal(values: DealValues): DealFormState["fieldErrors"] {
   const errors: DealFormState["fieldErrors"] = {};
   if (values.title.length < 2 || values.title.length > 160)
     errors.title = PIPELINE.titleRequired;
-  if (
-    !/^\d{1,12}(\.\d{1,2})?$/.test(values.value) ||
-    Number(values.value) > 999999999999.99
-  )
+  // El regex ya limita el monto a 999999999999.99, el máximo de Decimal(14,2).
+  if (!/^\d{1,12}(\.\d{1,2})?$/.test(values.value))
     errors.value = PIPELINE.amountInvalid;
   if (!values.pipelineId) errors.pipelineId = "Elige un pipeline.";
   if (!values.stageId) errors.stageId = "Elige una etapa.";

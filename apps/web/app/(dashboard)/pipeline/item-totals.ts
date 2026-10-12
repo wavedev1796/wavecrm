@@ -1,3 +1,5 @@
+import { decimal } from "./deal-validation";
+
 type Line = {
   quantity: string | number;
   unitPrice: string | number;
@@ -7,7 +9,7 @@ type Line = {
 // ponytail: centavos en enteros solo para mostrar mientras se edita; el valor que se guarda
 // lo calcula el API con Decimal (deal-rules.ts) y las dos reglas son las mismas.
 const cents = (value: string | number) => {
-  const number = Number(String(value).trim().replace(",", "."));
+  const number = Number(decimal(String(value)));
   return Number.isFinite(number) ? Math.round(number * 100) : 0;
 };
 const lineCents = (line: Line) =>

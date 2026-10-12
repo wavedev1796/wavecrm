@@ -740,13 +740,6 @@ select {
 .kpi-card--accent small {
   color: #b9b8b0;
 }
-.pipeline-board {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(220px, 1fr));
-  gap: 14px;
-  overflow-x: auto;
-  padding-bottom: 12px;
-}
 .pipeline-column > header {
   display: flex;
   align-items: center;
@@ -783,41 +776,6 @@ select {
   border-color: var(--wave-blue-line);
   transform: translateY(-2px);
   box-shadow: 0 8px 22px rgb(40 40 30 / 7%);
-}
-.deal-card strong,
-.deal-card small {
-  display: block;
-}
-.deal-card strong {
-  font-size: 0.8rem;
-}
-.deal-card small {
-  margin-top: 3px;
-  color: var(--wave-faint);
-  font-size: 0.67rem;
-}
-.deal-card footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 17px;
-}
-.deal-card footer b {
-  color: var(--wave-blue);
-  font-size: 0.9rem;
-  font-variant-numeric: tabular-nums;
-}
-.deal-card--featured {
-  color: white;
-  border-color: var(--wave-ink);
-  background: var(--wave-ink);
-  box-shadow: var(--shadow-md);
-}
-.deal-card--featured small {
-  color: #9d9c93;
-}
-.deal-card--featured footer b {
-  color: #7fb8cf;
 }
 .add-deal {
   display: flex;
@@ -1939,9 +1897,6 @@ select {
   }
   .global-search .input {
     width: 210px;
-  }
-  .pipeline-board {
-    grid-template-columns: repeat(4, 245px);
   }
   .user-form {
     grid-template-columns: 1fr 1fr;

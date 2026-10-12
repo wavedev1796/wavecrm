@@ -106,6 +106,34 @@ El ticket no trae criterios escritos; salen de los del tablero: detalle con valo
 - `vitest run "app/(dashboard)/pipeline"`: 36 pruebas aprobadas; ESLint de web y API sin errores.
 - Migraciones en `development` (con OK del usuario): `migrate deploy` aplicó `20261001120000_contact_document_required`, `20261007120000_contact_phone_or_email` (Sprint 2, nunca desplegadas ahí) y `20261010120000_deal_items_close`. Antes se comprobó en solo lectura que su único contacto cumplía las dos restricciones.
 
+## Recorte de código del Sprint 3 (2026-10-11)
+
+Auditoría de sobreingeniería (ponytail-review) sobre todo el diff del Sprint 3. Con OK del usuario, el recorte también toca archivos de Eduardo (CRM-17/18/19): `page.tsx`, `pipeline-board.tsx`, `pipeline-settings.tsx`, `loading.tsx`, `pipeline.css`, `globals.css` y la configuración de Playwright aislada.
+
+### Implementación
+
+- `apps/web/app/(dashboard)/pipeline/actions.ts`: todas las rutas de negocio pasan por `dealPath`; `dealHistoryAction` devuelve `request()` tipado en vez de volver a armar `{ error, data }`.
+- `apps/web/app/(dashboard)/pipeline/page.tsx`: usa `dealFormOptions()` de `data.ts` en vez de repetir las cuatro consultas de opciones.
+- `apps/web/app/(dashboard)/pipeline/pipeline-board.tsx`: una sola suma en centavos (`sum`) y un solo filtro de ganados (`wonDeals`).
+- `apps/web/app/(dashboard)/pipeline/pipeline-settings.tsx`: los colores de etapa viven en `COLORS`; el selector y la comprobación de "Color actual" salen de esa lista.
+- `apps/web/app/(dashboard)/pipeline/deal-validation.ts`: fuera el `Number(value) > 999999999999.99`, que nunca se cumplía (el regex ya limita a 12 enteros y 2 decimales).
+- `apps/web/app/(dashboard)/pipeline/item-totals.ts`: normaliza con `decimal()` de `deal-validation.ts` en vez de repetir `trim().replace(",", ".")`.
+- `apps/web/app/(dashboard)/pipeline/pipeline.css`, `loading.tsx` y `apps/web/app/globals.css`: el modificador `.pipeline-board--live` pasa a ser `.pipeline-board`; se borran de `globals.css` la regla del tablero de la maqueta (y su ajuste a 1024 px) y `.deal-card strong|small|footer|--featured`, que ninguna pantalla usa.
+- `apps/api/src/modules/pipeline/pipeline.service.ts`: `deleteDeal` y `deleteStage` ya no buscan el registro antes de borrarlo; si no existe, el `delete` lanza P2025 y `write()` responde 404. `apps/api/test/pipeline-config.service.test.cjs` simula ese P2025 en el mock.
+- Borrados: `playwright.pipeline.config.ts`, `test/pipeline-db-status.cjs`, `distDir` de `apps/web/next.config.ts`, `.next-pipeline-test` en `tsconfig.json` y `.gitignore`, `packages/database/.sprint3-deploy/` en `.gitignore`; ESLint y Vitest vuelven a ignorar solo `.next/**`.
+
+### Decisiones
+
+- **La e2e del pipeline corre con la config principal:** `pnpm test:e2e e2e/pipeline.spec.ts`. La config aislada (puertos 4101/3101 y otra carpeta de Next) solo servía para correrla con los servidores de desarrollo encendidos.
+- **404 por P2025 al borrar:** el mensaje de un negocio o etapa inexistente pasa a ser el genérico "El registro ya no existe.".
+- Los endpoints `PATCH /deals/:id/move`, `GET /deals` y `GET /deals/:id/history` repiten capacidades de otros, pero son contrato de CRM-18 y se conservan.
+
+### Validación
+
+- `pnpm lint` y `pnpm build` sin errores; Vitest de la web: 241 pruebas aprobadas; unitarias del API: 138 aprobadas; integración HTTP del pipeline contra `pruebas`: 10 aprobadas.
+- Preview en `development` a 1024 px y 375 px: tablero en columnas con desplazamiento horizontal propio, sin desborde de la página, KPIs correctos (3.200 + 4.200 = 7.400) y selector de color de la etapa con su valor actual.
+- `pnpm test:e2e e2e/pipeline.spec.ts` con la config principal: 3 pruebas aprobadas (2,6 min).
+
 ## Pendientes
 
 - Las dos bases tienen una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`).

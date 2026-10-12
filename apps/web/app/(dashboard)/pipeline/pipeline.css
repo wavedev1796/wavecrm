@@ -45,8 +45,9 @@
 .pipeline-board-caption p {
   margin: 0;
 }
-.pipeline-board--live {
-  grid-template-columns: none;
+.pipeline-board {
+  display: grid;
+  overflow-x: auto;
   grid-auto-flow: column;
   grid-auto-columns: minmax(280px, 1fr);
   align-items: start;
@@ -54,7 +55,7 @@
   max-width: 100%;
   padding: 2px 2px 14px;
 }
-.pipeline-board--live .pipeline-column {
+.pipeline-board .pipeline-column {
   min-height: 320px;
   min-width: 0;
   border: 1px solid var(--wave-line);
@@ -65,14 +66,14 @@
     border-color 0.15s,
     background 0.15s;
 }
-.pipeline-board--live .pipeline-column--over {
+.pipeline-board .pipeline-column--over {
   border-color: var(--wave-blue);
   background: var(--wave-blue-soft);
 }
-.pipeline-board--live .pipeline-column > header {
+.pipeline-board .pipeline-column > header {
   gap: 8px;
 }
-.pipeline-board--live .pipeline-column h2 {
+.pipeline-board .pipeline-column h2 {
   overflow-wrap: anywhere;
 }
 .pipeline-stage-summary {
@@ -95,15 +96,15 @@
   display: grid;
   gap: 12px;
 }
-.pipeline-board--live .deal-card {
+.pipeline-board .deal-card {
   padding: 14px;
   margin: 0;
   cursor: grab;
 }
-.pipeline-board--live .deal-card:active {
+.pipeline-board .deal-card:active {
   cursor: grabbing;
 }
-.pipeline-board--live .deal-card--dragging {
+.pipeline-board .deal-card--dragging {
   opacity: 0.45;
 }
 .deal-card-heading {
@@ -243,7 +244,7 @@
 .pipeline-stage-empty span {
   font-size: 0.68rem;
 }
-.pipeline-board--live .add-deal {
+.pipeline-board .add-deal {
   color: var(--wave-blue-dark);
   min-height: 44px;
   width: 100%;
@@ -429,7 +430,7 @@
     flex: 1;
     font-size: 0.75rem;
   }
-  .pipeline-board--live {
+  .pipeline-board {
     grid-auto-columns: minmax(275px, 85vw);
   }
   .pipeline-board-caption {

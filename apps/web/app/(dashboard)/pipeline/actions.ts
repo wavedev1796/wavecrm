@@ -22,6 +22,9 @@ import {
   type ItemValues,
 } from "./types";
 
+const dealPath = (id: string, rest = "") =>
+  "/deals/" + encodeURIComponent(id) + rest;
+
 function refresh() {
   for (const path of ["/pipeline", "/contactos", "/empresas"])
     revalidatePath(path, "layout");
@@ -67,7 +70,7 @@ export async function saveDeal(
   if (Object.keys(fieldErrors).length) return { values, fieldErrors };
   const id = formText(form, "id");
   const result = await request(
-    id ? "/deals/" + encodeURIComponent(id) : "/deals",
+    id ? dealPath(id) : "/deals",
     id ? "PATCH" : "POST",
     {
       title: values.title,
@@ -100,28 +103,17 @@ export async function saveDeal(
   };
 }
 export async function moveDealAction(dealId: string, stageId: string) {
-  return request("/deals/" + encodeURIComponent(dealId) + "/move", "PATCH", {
-    stageId,
-  });
+  return request(dealPath(dealId, "/move"), "PATCH", { stageId });
 }
 export async function deleteDealAction(dealId: string) {
-  return request("/deals/" + encodeURIComponent(dealId), "DELETE");
+  return request(dealPath(dealId), "DELETE");
 }
-export async function dealHistoryAction(
-  id: string,
-): Promise<{ error?: string; data?: HistoryItem[] }> {
-  const result = await request(
-    "/deals/" + encodeURIComponent(id) + "/history",
-    "GET",
-  );
-  return {
-    error: result.error,
-    data: result.data as HistoryItem[] | undefined,
-  };
+export async function dealHistoryAction(id: string) {
+  return request(dealPath(id, "/history"), "GET") as Promise<{
+    error?: string;
+    data?: HistoryItem[];
+  }>;
 }
-const dealPath = (id: string, rest = "") =>
-  "/deals/" + encodeURIComponent(id) + rest;
-
 export async function saveDealItemsAction(
   dealId: string,
   rows: ItemValues[],

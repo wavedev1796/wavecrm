@@ -1,7 +1,6 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  distDir: process.env.WAVE_NEXT_DIST_DIR ?? '.next',
   poweredByHeader: false,
   // El CSV de contactos llega por server action: 1 MB de archivo más la envoltura multipart.
   experimental: { serverActions: { bodySizeLimit: '2mb' } },

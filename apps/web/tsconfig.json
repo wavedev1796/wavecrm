@@ -21,8 +21,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "next-env.d.ts",
-    ".next-pipeline-test/types/**/*.ts"
+    "next-env.d.ts"
   ],
   "exclude": [
     "node_modules"

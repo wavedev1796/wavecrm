@@ -11,6 +11,14 @@ import { Alert } from "@/components/ui/alert";
 import { configurePipelineAction } from "./actions";
 import type { Pipeline } from "./types";
 
+const COLORS = [
+  ["#2f6f8f", "Azul Wave"],
+  ["#6F9FD8", "Celeste"],
+  ["#E0B15A", "Amarillo"],
+  ["#2f8f5b", "Verde"],
+  ["#C9C7BC", "Gris"],
+] as const;
+
 export function PipelineSettings({
   pipelines,
   pipelineId,
@@ -246,20 +254,14 @@ export function PipelineSettings({
                           defaultValue={stage?.color ?? "#2f6f8f"}
                         >
                           {stage?.color &&
-                            ![
-                              "#2f6f8f",
-                              "#6F9FD8",
-                              "#E0B15A",
-                              "#2f8f5b",
-                              "#C9C7BC",
-                            ].includes(stage.color) && (
+                            !COLORS.some(([hex]) => hex === stage.color) && (
                               <option value={stage.color}>Color actual</option>
                             )}
-                          <option value="#2f6f8f">Azul Wave</option>
-                          <option value="#6F9FD8">Celeste</option>
-                          <option value="#E0B15A">Amarillo</option>
-                          <option value="#2f8f5b">Verde</option>
-                          <option value="#C9C7BC">Gris</option>
+                          {COLORS.map(([hex, name]) => (
+                            <option key={hex} value={hex}>
+                              {name}
+                            </option>
+                          ))}
                         </Select>
                       </Field>
                     </div>

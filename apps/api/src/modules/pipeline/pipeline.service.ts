@@ -184,8 +184,7 @@ export class PipelineService {
   }
   deleteStage(id: string) {
     return this.write(async (tx) => {
-      if (!(await tx.stage.findUnique({ where: { id } })))
-        throw new NotFoundException("Etapa no encontrada.");
+      // Si no existe, los conteos dan 0 y el delete lanza P2025: write() responde 404.
       if (await tx.deal.count({ where: { stageId: id } }))
         throw new ConflictException(
           "Mueve sus negocios antes de eliminar la etapa.",
@@ -329,11 +328,8 @@ export class PipelineService {
     });
   }
   async deleteDeal(id: string) {
-    await this.write(async (tx) => {
-      if (!(await tx.deal.findUnique({ where: { id } })))
-        throw new NotFoundException("Negocio no encontrado.");
-      await tx.deal.delete({ where: { id } });
-    });
+    // Si no existe, el delete lanza P2025 y write() responde 404.
+    await this.write((tx) => tx.deal.delete({ where: { id } }));
   }
   findDeal(id: string) {
     return this.prisma.$transaction((tx) => this.detail(tx, id), {

@@ -4,8 +4,8 @@ import { unstable_rethrow } from "next/navigation";
 import { Alert } from "@/components/ui/alert";
 import { PipelineBoard } from "./pipeline-board";
 import { PipelineSettings } from "./pipeline-settings";
-import { allOptions, get } from "./data";
-import type { Board, Option, Pipeline } from "./types";
+import { dealFormOptions, get } from "./data";
+import type { Board } from "./types";
 
 export default async function PipelinePage({
   searchParams,
@@ -14,7 +14,8 @@ export default async function PipelinePage({
 }>) {
   try {
     const params = await searchParams;
-    const pipelines = await get<Pipeline[]>("/pipelines");
+    const options = await dealFormOptions();
+    const { pipelines } = options;
     if (!pipelines.length)
       return (
         <div className="pipeline-page">
@@ -28,22 +29,10 @@ export default async function PipelinePage({
       params?.pipelineId ??
       pipelines.find((p) => p.isDefault)?.id ??
       pipelines[0]!.id;
-    const [board, contacts, companies, users] = await Promise.all([
-      get<Board>("/deals/board?pipelineId=" + encodeURIComponent(id)),
-      allOptions("/contacts", true),
-      allOptions("/companies"),
-      get<Option[]>("/pipeline/owners"),
-    ]);
-    return (
-      <PipelineBoard
-        key={board.pipeline.id}
-        {...board}
-        pipelines={pipelines}
-        contacts={contacts}
-        companies={companies}
-        users={users}
-      />
+    const board = await get<Board>(
+      "/deals/board?pipelineId=" + encodeURIComponent(id),
     );
+    return <PipelineBoard key={board.pipeline.id} {...board} {...options} />;
   } catch (error) {
     unstable_rethrow(error);
     return (

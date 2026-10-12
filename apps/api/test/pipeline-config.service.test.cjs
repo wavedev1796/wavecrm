@@ -15,6 +15,13 @@ const {
   PipelineController,
 } = require("../dist/modules/pipeline/pipeline.controller.js");
 
+/** Un delete de un registro que no existe: Prisma lanza P2025. */
+const missing = {
+  delete: () => {
+    throw new Prisma.PrismaClientKnownRequestError("x", { code: "P2025", clientVersion: "6" });
+  },
+};
+
 /** Prisma de mentira: cada modelo responde lo que el test le pase y registra las llamadas. */
 function mockPrisma(models = {}) {
   const calls = [];
@@ -157,17 +164,16 @@ test("mover una etapa a una posición ocupada intercambia las dos", async () => 
 });
 
 test("eliminar etapa exige que no tenga negocios ni historial", async () => {
-  await assert.rejects(mockPrisma().service.deleteStage("s1"), NotFoundException);
-  const stage = { stage: { findUnique: { id: "s1" } } };
+  await assert.rejects(mockPrisma({ stage: missing }).service.deleteStage("s1"), NotFoundException);
   await assert.rejects(
-    mockPrisma({ ...stage, deal: { count: 1 } }).service.deleteStage("s1"),
+    mockPrisma({ deal: { count: 1 } }).service.deleteStage("s1"),
     /Mueve sus negocios/,
   );
   await assert.rejects(
-    mockPrisma({ ...stage, deal: { count: 0 }, dealStageHistory: { count: 2 } }).service.deleteStage("s1"),
+    mockPrisma({ deal: { count: 0 }, dealStageHistory: { count: 2 } }).service.deleteStage("s1"),
     /conserva historial/,
   );
-  const ok = mockPrisma({ ...stage, deal: { count: 0 }, dealStageHistory: { count: 0 } });
+  const ok = mockPrisma({ deal: { count: 0 }, dealStageHistory: { count: 0 } });
   await ok.service.deleteStage("s1");
   assert.equal(ok.called("stage.delete").length, 1);
 });
@@ -224,7 +230,7 @@ test("editar negocio: 404 y no deja el negocio sin contacto ni empresa", async (
 });
 
 test("eliminar, ver ficha e historial de un negocio", async () => {
-  await assert.rejects(mockPrisma().service.deleteDeal("d1"), NotFoundException);
+  await assert.rejects(mockPrisma({ deal: missing }).service.deleteDeal("d1"), NotFoundException);
   await assert.rejects(mockPrisma().service.findDeal("d1"), NotFoundException);
   await assert.rejects(mockPrisma({ deal: { count: 0 } }).service.history("d1"), NotFoundException);
 
