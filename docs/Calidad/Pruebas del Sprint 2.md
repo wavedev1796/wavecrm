@@ -73,7 +73,7 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | `apps/web/app/(dashboard)/contactos/importar/page.test.tsx` | Web | 1 | Instrucciones y `accept` del archivo |
 | `apps/web/lib/authenticated-api.test.ts` | Web | 1 de 5 | Un `FormData` viaja sin `Content-Type` JSON |
 | `apps/web/app/(dashboard)/paginas.test.tsx` | Web | (aserción) | Enlace "Importar CSV" en `/contactos` |
-| `apps/web/components/app-shell.test.tsx` | Web | 1 de 5 | Una subruta (`/contactos/importar`) marca su sección en el menú y muestra su título |
+| `apps/web/components/layout/app-shell.test.tsx` | Web | 1 de 5 | Una subruta (`/contactos/importar`) marca su sección en el menú y muestra su título |
 | Revisión visual (navegador, rama `pruebas`) | Manual | — | 1280 y 375 px: sin scroll horizontal, mapeo en una columna en móvil, reporte de errores legible, éxito con enlace |
 | `e2e/contactos.spec.ts` | Navegador | 1 | Error por fila y luego importación correcta |
 
@@ -89,15 +89,15 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | `apps/api/test/integracion/company-import.http.test.cjs` | Integración | 2 | CSV de Excel (Windows-1252 y `;`) crea empresas normalizadas; reimportar da `422`; mapeo sin RUC `400`, archivo grande `413`, sin sesión `401` |
 | `apps/web/lib/phone.test.ts`, `lib/ecuador.test.ts` | Web | 2, +1 | La web cumple los casos de teléfono y de "documento"; países, edición y formato |
 | `apps/web/lib/list-params.test.ts`, `lib/validation.test.ts` | Web | 2, +2 | URL y consulta del listado; reglas de empresa y campos opcionales compartidos |
-| `apps/web/components/live-search.test.tsx` | Web | 2 | Espera 300 ms tras la última tecla, conserva los filtros y vuelve a la página 1; se sincroniza si la URL cambia por fuera |
-| `apps/web/components/phone-field.test.tsx` | Web | 3 | Ecuador por defecto; país guardado al editar; **el HTML del servidor no trae nombres de país** (hidratación) |
+| `apps/web/components/data/live-search.test.tsx` | Web | 2 | Espera 300 ms tras la última tecla, conserva los filtros y vuelve a la página 1; se sincroniza si la URL cambia por fuera |
+| `apps/web/components/form/phone-field.test.tsx` | Web | 3 | Ecuador por defecto; país guardado al editar; **el HTML del servidor no trae nombres de país** (hidratación) |
 | `apps/web/app/(dashboard)/contactos/contact-form.test.tsx` | Web | +2 | Sin errores al escribir ni al salir del campo; el número aparece al elegir el tipo; al guardar, error en su campo, foco en el primero y se borra al editar |
 | `apps/web/app/(dashboard)/contactos/company-field.test.tsx` | Web | 3 | Sugerencias por nombre o RUC y `companyId`; empresa conservada al editar; **sesión vencida durante la búsqueda** |
 | `apps/web/app/(dashboard)/contactos/actions.test.ts` | Web | +3 | Teléfono en E.164 según el país; pasaporte normalizado y `409` junto al documento; fallos del API y de conexión |
 | `apps/web/app/(dashboard)/empresas/*.test.ts(x)` | Web | 10 | Listado, vacío y error; Añadir empresa (errores al guardar, `409` al RUC, cierre y aviso); importación |
 | `e2e/contactos.spec.ts` | Navegador | +2 | La tabla se filtra al escribir; contacto con pasaporte y teléfono de Colombia |
 | `e2e/empresas.spec.ts` | Navegador | 2 | Añadir empresa y encontrarla con el buscador; importar con errores y luego corregido |
-| `apps/web/components/location-fields.test.tsx`, `apps/web/lib/cantons.test.ts` | Web | 5 | Selector provincia-cantón, limpieza al cambiar provincia y catálogo oficial vigente |
+| `apps/web/components/form/location-fields.test.tsx`, `apps/web/lib/cantons.test.ts` | Web | 5 | Selector provincia-cantón, limpieza al cambiar provincia y catálogo oficial vigente |
 | `e2e/contactos.spec.ts` | Navegador | +1 | Modal de contacto y acciones visibles a 375 × 667 px; selector dependiente operativo |
 | `apps/web/app/(dashboard)/usuarios/page.test.tsx` | Web | +1 | Estructura de tabla adaptable y etiquetas de las tarjetas móviles |
 | `e2e/usuarios.spec.ts` | Navegador | +1 | Tarjetas de usuarios y diálogo de edición dentro del viewport móvil |
@@ -173,3 +173,5 @@ Otros juegos, con 8 empresas, 10 contactos y archivos con un error por fila, se 
 - Codificaciones distintas de UTF-8 y Windows-1252 no se reconocen.
 - Los RUC de sociedades recientes podrían no cumplir el módulo 11. Está sin confirmar, y relajarlo es una línea de `isRuc`.
 - Ninguna importación actualiza registros existentes, y la de contactos no crea empresas (se importan antes, en `/empresas/importar`).
+
+Rutas actualizadas el 2026-10-12 por la reorganización de apps/web/components.

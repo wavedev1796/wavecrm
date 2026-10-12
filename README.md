@@ -41,11 +41,14 @@ Si PowerShell indica que `corepack` no existe, reinstala Node.js 22 LTS marcando
 ```text
 apps/
   web/        Next.js App Router y sistema visual
+    components/  ui/ primitivas, form/ campos, data/ listados y fichas, layout/ shell y esqueletos, csv-import/
   api/        NestJS, Swagger y convenciones HTTP
 packages/
   database/   Prisma, migraciones y seed
 docs/design/  tokens y guía visual original
 ```
+
+En `apps/web`, nada fuera de `app/` importa desde `app/`: lo compartido va en `components/`, `content/` o `lib/`, y ESLint lo impone.
 
 La documentación funcional se organiza por sprint. Consulta [Sprint 0](docs/Sprint%200/README.md).
 

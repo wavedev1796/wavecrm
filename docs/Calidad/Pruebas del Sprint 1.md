@@ -112,7 +112,7 @@ Las e2e no aportan cobertura a SonarQube; su evidencia es el reporte de Playwrig
 
 | Archivo | Tipo | Pruebas | Qué verifica |
 | --- | --- | --- | --- |
-| `apps/web/components/app-shell.test.tsx` | Web | 4 | Navegación por rol, página actual, valores por defecto y menú móvil |
+| `apps/web/components/layout/app-shell.test.tsx` | Web | 4 | Navegación por rol, página actual, valores por defecto y menú móvil |
 | `apps/web/components/ui/*.test.tsx` | Web | 7 | `Alert`, `Button`, `Input`, `Badge`, `Card`, `Table`, `PasswordInput` y `FieldError` |
 | `apps/web/app/(dashboard)/paginas.test.tsx` + layouts | Web | 5 | Pipeline, contactos, secciones del próximo sprint, layouts y raíz |
 | `apps/api/test/app.setup.test.cjs` | Unitaria | 4 | Campo no permitido, JSON roto, cuerpo grande (413) y errores internos |
@@ -153,3 +153,5 @@ Las mismas reglas se aplican en la web y en el API, y ambas se prueban con `test
 - El límite de intentos es por cuenta o por enlace. Frenar pruebas masivas contra muchas cuentas desde un mismo equipo requiere que la web reenvíe la IP real del cliente (Sprint 2).
 - Las e2e usan tokens de invitación y de recuperación fijados en la base: el envío del correo se prueba aparte, en `mailer.service.test.cjs`.
 - Al restablecer la contraseña, la sesión que estaba abierta muere cuando vence su access token, como máximo 15 minutos después. La revocación inmediata del refresh sí se verifica en integración.
+
+Rutas actualizadas el 2026-10-12 por la reorganización de apps/web/components.

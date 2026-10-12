@@ -16,6 +16,7 @@ Configurar el embudo comercial, administrar negocios desde la API y moverlos en 
 | CRM-20 | [Ficha de Negocio](20 - Ficha de Negocio.md) | Zaith Manangón | Completo (4/4 criterios) |
 | CRM-21 | [Cierre ganado/perdido](21 - Cierre ganado-perdido.md) | Zaith Manangón | Completo (3/3 criterios) |
 | — | [SonarQube Cloud en CI](SonarQube Cloud en CI.md) | Zaith Manangón | Completo (5/5 criterios) |
+| — | [Estructura de components/ de apps/web](Estructura de components de apps-web.md) | Zaith Manangón | Completo (5/5 criterios) |
 
 ## Decisiones
 
