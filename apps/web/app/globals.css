@@ -1624,6 +1624,11 @@ select {
   color: var(--wave-muted);
   font-size: 0.74rem;
 }
+/* El avatar también es un span: sin esto heredaba el gris pequeño de arriba y el icono se perdía sobre el azul. */
+.contact-profile .contact-profile-avatar {
+  color: white;
+  font-size: 1rem;
+}
 .contact-profile h2 {
   margin: 2px 0;
   font-size: 1.3rem;
