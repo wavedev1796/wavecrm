@@ -126,7 +126,7 @@ export function DealItems({
                     </Select>
                   )}
                 </td>
-                <td className="deal-items-money">{formatMoney(lineTotal(row))}</td>
+                <td className="deal-items-money deal-items-line">{formatMoney(lineTotal(row))}</td>
                 {!locked && (
                   <td className="deal-items-remove">
                     <button

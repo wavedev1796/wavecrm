@@ -90,6 +90,7 @@ El ticket no trae criterios escritos; salen de los del tablero: detalle con valo
 - `apps/api/src/modules/pipeline/pipeline.service.ts`: `findDeal` admite 15 s en su transacción de lectura.
 - `apps/web/app/globals.css`: el ícono del avatar de las fichas (negocio, contacto y empresa) vuelve a blanco y 1rem. La regla `.contact-profile span` lo pintaba gris y pequeño porque el avatar también es un `span`.
 - `deal-items.tsx` y `pipeline.css`: la columna de quitar mide 60 px, y los totales tienen más aire (16 px sobre ellos, 20 px bajo ellos, 10 px entre filas). Terminan en el mismo borde que el texto del subtotal de cada fila, no en el del botón Guardar.
+- `deal-items.tsx` y `pipeline.css`, segunda vuelta: el encabezado *Subtotal* se alinea a la derecha (`.table th` lo dejaba a la izquierda), el subtotal de la fila se centra con los campos (`.deal-items-line`, altura de línea de 40 px) y la fila de botones usa el mismo padding que los totales. Encabezado, subtotal de la fila, totales y botón Guardar terminan en el mismo borde, y *Agregar producto* empieza donde empieza la descripción.
 
 ### Decisiones
 
@@ -106,7 +107,7 @@ El ticket no trae criterios escritos; salen de los del tablero: detalle con valo
 
 ## Pendientes
 
-- La migración `20261010120000_deal_items_close` está aplicada solo en `pruebas`; `development` espera el OK del usuario. `pruebas` tiene además una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`).
+- La migración `20261010120000_deal_items_close` está aplicada solo en `pruebas`. En `development` (2026-10-11) faltan además `20261001120000_contact_document_required` y `20261007120000_contact_phone_or_email` del Sprint 2, y `migrate deploy` aplica las tres; espera el OK del usuario para las tres. Su único contacto cumple las dos restricciones. Las dos bases tienen una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`).
 - Los mensajes "Productos guardados." y "Actividad registrada." siguen visibles después de ganar, perder o reabrir.
 - La columna de dinero de la tabla (112 px) puede cortar montos de más de 10 cifras.
 - El tablero (`board`, CRM-18) usa la misma transacción de lectura con 5 s por defecto; no falló en la revisión, pero tiene el mismo riesgo contra Neon.

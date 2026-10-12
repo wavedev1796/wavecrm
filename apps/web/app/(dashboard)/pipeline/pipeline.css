@@ -363,10 +363,14 @@
 .deal-items-qty {
   width: 80px;
 }
-.deal-items-money {
+.deal-items .table .deal-items-money {
   width: 112px;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+/* El subtotal de la fila es texto junto a campos de 40px: con esta altura de línea queda centrado con ellos. */
+.deal-items--editable .deal-items-line {
+  line-height: 40px;
 }
 .deal-items-tax {
   width: 116px;
@@ -378,19 +382,23 @@
 .deal-items-remove {
   width: 60px; /* botón de 40px + 10px de padding por lado */
 }
-/* Los totales terminan donde termina el texto del subtotal de cada fila: el padding de la celda (10px)
+/* Totales y botones siguen el texto de la tabla, no el borde de la tarjeta: el padding de la celda (10px)
    y, si se puede editar, la columna de quitar (60px). */
+.deal-totals,
+.deal-items-actions {
+  padding-inline: 10px;
+}
+.deal-items--editable .deal-totals,
+.deal-items--editable .deal-items-actions {
+  padding-inline-end: 70px;
+}
 .deal-totals {
   display: grid;
   grid-template-columns: auto auto;
   justify-content: end;
   gap: 10px 24px;
   margin: 16px 0 20px;
-  padding-inline-end: 10px;
   font-variant-numeric: tabular-nums;
-}
-.deal-items--editable .deal-totals {
-  padding-inline-end: 70px;
 }
 .deal-totals dt {
   color: var(--wave-muted-strong);
