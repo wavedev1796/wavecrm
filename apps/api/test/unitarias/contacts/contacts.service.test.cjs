@@ -8,10 +8,8 @@ const {
 const { Prisma } = require("@wave/database");
 const {
   ContactsService,
-} = require("../dist/modules/contacts/contacts.service.js");
-const {
-  CompaniesService,
-} = require("../dist/modules/companies/companies.service.js");
+} = require("../../../dist/modules/contacts/contacts.service.js");
+const { prismaFor } = require("../prisma-falso.cjs");
 
 const contact = {
   id: "contact-1",
@@ -21,29 +19,6 @@ const contact = {
   email: null,
   tags: ["cliente"],
 };
-const company = { id: "company-1", name: "Wave Comercial", tags: ["cliente"] };
-
-function prismaFor(model, row) {
-  const prisma = {
-    [model]: {
-      findMany: async () => [row],
-      count: async () => 1,
-      findUnique: async () => row,
-      create: async ({ data }) => ({ ...row, ...data }),
-      update: async ({ data }) => ({ ...row, ...data }),
-      delete: async () => row,
-    },
-    auditLog: {
-      findMany: async () => [],
-      create: async ({ data }) => data,
-    },
-  };
-  prisma.$transaction = async (operation) =>
-    typeof operation === "function"
-      ? operation(prisma)
-      : Promise.all(operation);
-  return prisma;
-}
 
 test("CRM-13: contactos aplica búsqueda, filtros y paginación", async () => {
   const prisma = prismaFor("contact", contact);
@@ -75,52 +50,25 @@ test("CRM-13: contactos aplica búsqueda, filtros y paginación", async () => {
   });
 });
 
-test("CRM-13: empresas busca por nombre, razón social o RUC", async () => {
-  const prisma = prismaFor("company", company);
-  let args;
-  prisma.company.findMany = async (received) => {
-    args = received;
-    return [company];
-  };
-  await new CompaniesService(prisma).list({
-    page: 1,
-    limit: 20,
-    search: "179123",
-  });
-  assert.equal(args.where.OR[0].name.contains, "179123");
-  assert.equal(args.where.OR[1].legalName.contains, "179123");
-  assert.equal(args.where.OR[2].taxId.contains, "179123");
-});
-
-test("CRM-13: el creador queda como responsable por defecto", async () => {
-  const contactPrisma = prismaFor("contact", contact);
-  const companyPrisma = prismaFor("company", company);
-  const createdContact = await new ContactsService(contactPrisma).create(
+test("CRM-13: el creador queda como responsable del contacto por defecto", async () => {
+  const created = await new ContactsService(prismaFor("contact", contact)).create(
     { firstName: "Ana", lastName: "López", phone: "+593991234567" },
     "user-1",
   );
-  const createdCompany = await new CompaniesService(companyPrisma).create(
-    { name: "Wave Comercial" },
-    "user-1",
-  );
-  assert.equal(createdContact.ownerId, "user-1");
-  assert.equal(createdCompany.ownerId, "user-1");
+  assert.equal(created.ownerId, "user-1");
 });
 
-test("CRM-13: traduce cédula y RUC duplicados a 409", async () => {
-  const duplicate = () => {
+test("CRM-13: traduce la cédula duplicada a 409", async () => {
+  const prisma = prismaFor("contact", contact);
+  prisma.contact.create = () => {
     throw new Prisma.PrismaClientKnownRequestError("duplicado", {
       code: "P2002",
       clientVersion: "6",
     });
   };
-  const contactPrisma = prismaFor("contact", contact);
-  const companyPrisma = prismaFor("company", company);
-  contactPrisma.contact.create = duplicate;
-  companyPrisma.company.create = duplicate;
 
   await assert.rejects(
-    new ContactsService(contactPrisma).create(
+    new ContactsService(prisma).create(
       { firstName: "Ana", lastName: "López", email: "ana@empresa.ec" },
       "user-1",
     ),
@@ -128,29 +76,50 @@ test("CRM-13: traduce cédula y RUC duplicados a 409", async () => {
       error instanceof ConflictException &&
       error.message === "Ya existe un contacto con ese documento.",
   );
-  await assert.rejects(
-    new CompaniesService(companyPrisma).create(
-      { name: "Wave Comercial" },
-      "user-1",
-    ),
-    (error) =>
-      error instanceof ConflictException &&
-      error.message === "Ya existe una empresa con ese RUC.",
-  );
 });
 
-test("CRM-13: consultar, editar o borrar un recurso inexistente responde 404", async () => {
-  const contactPrisma = prismaFor("contact", null);
-  const companyPrisma = prismaFor("company", null);
-  const contacts = new ContactsService(contactPrisma);
-  const companies = new CompaniesService(companyPrisma);
+test("CRM-13: consultar o editar un contacto inexistente responde 404", async () => {
+  const contacts = new ContactsService(prismaFor("contact", null));
 
   await assert.rejects(contacts.findOne("missing"), NotFoundException);
   await assert.rejects(
     contacts.update("missing", { city: "Quito" }),
     NotFoundException,
   );
-  await assert.rejects(companies.remove("missing"), NotFoundException);
+});
+
+test("la ficha devuelve el contacto y borrarlo usa su id", async () => {
+  const prisma = prismaFor("contact", contact);
+  let deleted;
+  prisma.contact.delete = async (args) => {
+    deleted = args;
+    return contact;
+  };
+  const contacts = new ContactsService(prisma);
+
+  assert.equal((await contacts.findOne("contact-1")).firstName, "Ana");
+  await contacts.remove("contact-1");
+  assert.deepEqual(deleted, { where: { id: "contact-1" } });
+});
+
+test("una empresa o responsable inexistente responde 404 y otros errores se propagan", async () => {
+  const failWith = (error) => {
+    const prisma = prismaFor("contact", contact);
+    prisma.contact.update = async () => {
+      throw error;
+    };
+    return new ContactsService(prisma).update("contact-1", { city: "Quito" });
+  };
+
+  await assert.rejects(
+    failWith(
+      new Prisma.PrismaClientKnownRequestError("fk", { code: "P2003", clientVersion: "6" }),
+    ),
+    (error) =>
+      error instanceof NotFoundException &&
+      error.message === "La empresa o el responsable indicado no existe.",
+  );
+  await assert.rejects(failWith(new Error("caída")), /caída/);
 });
 
 test("tipo y número de documento cambian juntos en un PATCH", async () => {
@@ -211,42 +180,4 @@ test("la búsqueda por documento ignora mayúsculas (pasaportes)", async () => {
     contains: "ab123",
     mode: "insensitive",
   });
-});
-
-test("la ficha de empresa incluye contactos negocios e historial", async () => {
-  const prisma = prismaFor("company", company);
-  prisma.auditLog.findMany = async () => [
-    { id: "log-1", action: "CREATE", user: { id: "user-1", name: "Ana" } },
-  ];
-  let companyQuery;
-  prisma.company.findUnique = async (args) => {
-    companyQuery = args;
-    return { ...company, contacts: [], deals: [] };
-  };
-
-  const result = await new CompaniesService(prisma).findOne("company-1");
-
-  assert.ok(companyQuery.include.contacts);
-  assert.ok(companyQuery.include.deals);
-  assert.equal(result.history[0].action, "CREATE");
-});
-
-test("editar una empresa registra los campos cambiados", async () => {
-  const prisma = prismaFor("company", company);
-  let audit;
-  prisma.auditLog.create = async ({ data }) => {
-    audit = data;
-    return data;
-  };
-
-  await new CompaniesService(prisma).update(
-    "company-1",
-    { name: "Wave Ecuador", city: "Quito" },
-    "user-1",
-  );
-
-  assert.equal(audit.action, "UPDATE");
-  assert.equal(audit.entityId, "company-1");
-  assert.equal(audit.userId, "user-1");
-  assert.deepEqual(audit.changes.fields, ["name", "city"]);
 });

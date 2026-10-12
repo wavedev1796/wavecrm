@@ -8,8 +8,8 @@ const {
   UnauthorizedException,
 } = require("@nestjs/common");
 const argon2 = require("argon2");
-const { AuthService } = require("../dist/modules/auth/auth.service.js");
-const { hashToken } = require("../dist/common/tokens.js");
+const { AuthService } = require("../../../dist/modules/auth/auth.service.js");
+const { hashToken } = require("../../../dist/common/tokens.js");
 
 const baseUser = {
   id: "user-1",

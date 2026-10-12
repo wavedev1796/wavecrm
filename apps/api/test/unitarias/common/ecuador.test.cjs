@@ -6,7 +6,7 @@ const {
   isRuc,
   normalizeDigits,
   officialProvince,
-} = require("../dist/common/ecuador.js");
+} = require("../../../dist/common/ecuador.js");
 
 test("cédula: provincia 01–24 o 30, tercer dígito menor que 6 y módulo 10", () => {
   for (const valid of ["1712345675", "0102030400", "3012345678", "0912345675", "1103040505"]) {

@@ -2,12 +2,12 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { plainToInstance } = require("class-transformer");
 const { validate } = require("class-validator");
-const casos = require("../../../test/casos-de-validacion.json");
-const { LoginDto, RefreshTokenDto } = require("../dist/modules/auth/auth.dto.js");
-const { ActivateInvitationDto, CreateUserDto, ListUsersDto } = require("../dist/modules/users/users.dto.js");
-const { ContactImportRowDto } = require("../dist/modules/contact-import/contact-import.dto.js");
-const { CreateContactDto, UpdateContactDto } = require("../dist/modules/contacts/contacts.dto.js");
-const { CreateCompanyDto, UpdateCompanyDto } = require("../dist/modules/companies/companies.dto.js");
+const casos = require("../../../../../test/casos-de-validacion.json");
+const { LoginDto, RefreshTokenDto } = require("../../../dist/modules/auth/auth.dto.js");
+const { ActivateInvitationDto, CreateUserDto, ListUsersDto } = require("../../../dist/modules/users/users.dto.js");
+const { ContactImportRowDto } = require("../../../dist/modules/contact-import/contact-import.dto.js");
+const { CreateContactDto, UpdateContactDto } = require("../../../dist/modules/contacts/contacts.dto.js");
+const { CreateCompanyDto, UpdateCompanyDto } = require("../../../dist/modules/companies/companies.dto.js");
 
 /** Primer mensaje del campo, con las mismas opciones que el ValidationPipe global. */
 async function firstError(Dto, body, property) {

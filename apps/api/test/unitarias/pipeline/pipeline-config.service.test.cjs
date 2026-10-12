@@ -10,10 +10,10 @@ const {
 const { Prisma } = require("@wave/database");
 const {
   PipelineService,
-} = require("../dist/modules/pipeline/pipeline.service.js");
+} = require("../../../dist/modules/pipeline/pipeline.service.js");
 const {
   PipelineController,
-} = require("../dist/modules/pipeline/pipeline.controller.js");
+} = require("../../../dist/modules/pipeline/pipeline.controller.js");
 
 /** Un delete de un registro que no existe: Prisma lanza P2025. */
 const missing = {

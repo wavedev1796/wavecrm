@@ -4,7 +4,7 @@ const {
   dealTotals,
   ecuadorToday,
   nextQuoteNumber,
-} = require("../dist/modules/pipeline/deal-rules.js");
+} = require("../../../dist/modules/pipeline/deal-rules.js");
 
 const money = (t) => [t.subtotal, t.tax, t.total].map((d) => d.toFixed(2));
 

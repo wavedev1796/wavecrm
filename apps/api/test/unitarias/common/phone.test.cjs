@@ -1,7 +1,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const casos = require("../../../test/casos-de-validacion.json");
-const { PHONE_INVALID, normalizePhone } = require("../dist/common/phone.js");
+const casos = require("../../../../../test/casos-de-validacion.json");
+const { PHONE_INVALID, normalizePhone } = require("../../../dist/common/phone.js");
 
 test("cumple los casos compartidos de teléfono", () => {
   for (const { valor, pais, error } of casos.telefono) {

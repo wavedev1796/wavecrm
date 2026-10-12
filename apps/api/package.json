@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
-    "test": "nest build && node --test test/*.test.cjs",
+    "test": "nest build && node --test \"test/unitarias/**/*.test.cjs\"",
     "test:integration": "nest build && node --test --test-concurrency=1 test/integracion/*.test.cjs",
     "start:prod": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\""

@@ -5,7 +5,7 @@ const nodemailerApi = nodemailer.default ?? nodemailer;
 const { ServiceUnavailableException } = require("@nestjs/common");
 const {
   MailerService,
-} = require("../dist/modules/mailer/mailer.service.js");
+} = require("../../../dist/modules/mailer/mailer.service.js");
 
 function config(values) {
   return { get: (key) => values[key] };
@@ -99,4 +99,73 @@ test("en producción exige una configuración SMTP", async () => {
     mailer.sendInvitation({ email: "ana@empresa.ec", name: "Ana" }, "token"),
     ServiceUnavailableException,
   );
+});
+
+function withTransport(t, sendMail) {
+  let options;
+  const original = nodemailerApi.createTransport;
+  nodemailerApi.createTransport = (value) => {
+    options = value;
+    return { sendMail };
+  };
+  t.after(() => {
+    nodemailerApi.createTransport = original;
+  });
+  return () => options;
+}
+
+test("sin SMTP fuera de producción, el enlace de recuperación se escribe en consola", async (t) => {
+  const logged = [];
+  t.mock.method(console, "info", (line) => logged.push(line));
+  await new MailerService(config({})).sendPasswordReset(
+    { email: "ana@empresa.ec", name: "Ana" },
+    "abc",
+  );
+  assert.deepEqual(logged, [
+    "[Wave CRM] Recupera tu contraseña de Wave CRM · ana@empresa.ec: http://localhost:3000/restablecer-contrasena?token=abc",
+  ]);
+});
+
+test("el puerto 587 por defecto no usa TLS directo y un fallo de envío responde 503", async (t) => {
+  const options = withTransport(t, async () => {
+    throw new Error("ECONNREFUSED");
+  });
+  await assert.rejects(
+    new MailerService(config({ SMTP_HOST: "smtp.example.com" })).sendPasswordReset(
+      { email: "ana@empresa.ec", name: "Ana" },
+      "token",
+    ),
+    (error) => error instanceof ServiceUnavailableException && error.message === "No se pudo enviar el correo.",
+  );
+  assert.equal(options().port, 587);
+  assert.equal(options().secure, false);
+});
+
+test("un puerto o SMTP_SECURE inválidos se rechazan antes de conectar", async () => {
+  for (const [values, message] of [
+    [{ SMTP_PORT: "70000" }, "El puerto SMTP no es válido."],
+    [{ SMTP_PORT: "abc" }, "El puerto SMTP no es válido."],
+    [{ SMTP_SECURE: "sí" }, "SMTP_SECURE debe ser true o false."],
+  ]) {
+    await assert.rejects(
+      new MailerService(config({ SMTP_HOST: "smtp.example.com", ...values })).sendInvitation(
+        { email: "ana@empresa.ec", name: "Ana" },
+        "token",
+      ),
+      (error) => error instanceof ServiceUnavailableException && error.message === message,
+    );
+  }
+});
+
+test("SMTP_SECURE vacío decide por el puerto y el HTML escapa comillas y &", async (t) => {
+  let message;
+  const options = withTransport(t, async (value) => {
+    message = value;
+  });
+  await new MailerService(
+    config({ SMTP_HOST: "smtp.example.com", SMTP_PORT: "465", SMTP_SECURE: "" }),
+  ).sendInvitation({ email: "ana@empresa.ec", name: `O'Neil & "Ana"` }, "token");
+  assert.equal(options().secure, true);
+  assert.match(message.html, /O&#39;Neil &amp; &quot;Ana&quot;/);
+  assert.equal(message.from, "Wave CRM <no-reply@example.com>");
 });

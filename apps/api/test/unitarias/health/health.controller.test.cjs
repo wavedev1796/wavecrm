@@ -1,6 +1,6 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { HealthController } = require("../dist/modules/health/health.controller.js");
+const { HealthController } = require("../../../dist/modules/health/health.controller.js");
 
 test("healthcheck informa que la API está disponible", () => {
   const before = Date.now();

@@ -5,7 +5,7 @@ const {
   JwtAuthGuard,
   RolesGuard,
   throttleKey,
-} = require("../dist/modules/auth/auth.guards.js");
+} = require("../../../dist/modules/auth/auth.guards.js");
 
 function context(request = { headers: {} }) {
   return {

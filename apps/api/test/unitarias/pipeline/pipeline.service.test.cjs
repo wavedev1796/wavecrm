@@ -7,7 +7,7 @@ const {
 } = require("@nestjs/common");
 const {
   PipelineService,
-} = require("../dist/modules/pipeline/pipeline.service.js");
+} = require("../../../dist/modules/pipeline/pipeline.service.js");
 
 const item = (quantity, unitPrice, taxRate) => ({ quantity, unitPrice, taxRate });
 

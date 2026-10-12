@@ -1,12 +1,11 @@
-import { render, screen, within, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { PipelineBoard } from "./pipeline-board";
-import { moveDealAction } from "./actions";
+import { dealHistoryAction, deleteDealAction, moveDealAction } from "./actions";
 import type { Deal, Stage } from "./types";
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-}));
+const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("./actions", () => ({
   moveDealAction: vi.fn(),
   saveDeal: vi.fn(),
@@ -52,11 +51,11 @@ const stages: Stage[] = [
     deals: [],
   },
 ];
-function view() {
+function view(boardStages = stages) {
   render(
     <PipelineBoard
       pipeline={{ id: "p1", name: "Ventas", isDefault: true }}
-      stages={stages}
+      stages={boardStages}
       pipelines={[{ id: "p1", name: "Ventas", isDefault: true, stages }]}
       contacts={[{ id: "c1", name: "Ana Paz" }]}
       companies={[]}
@@ -136,4 +135,106 @@ test("el selector accesible solicita el mismo movimiento que el arrastre", async
       "Cuenta Andina se movio a Ganado.",
     ),
   );
+});
+
+test("arrastrar una tarjeta a otra columna la mueve; soltarla en su columna no hace nada", async () => {
+  vi.mocked(moveDealAction).mockResolvedValue({ data: {} });
+  view();
+  const card = screen.getByRole("article", { name: "Negocio Cuenta Andina" });
+  const target = screen.getByRole("region", { name: "Etapa Ganado" });
+  const dataTransfer = { setData: vi.fn(), dropEffect: "", effectAllowed: "" };
+
+  fireEvent.dragStart(card, { dataTransfer });
+  expect(card).toHaveClass("deal-card--dragging");
+  fireEvent.dragOver(target, { dataTransfer });
+  expect(target).toHaveClass("pipeline-column--over");
+  fireEvent.dragLeave(target, { relatedTarget: document.body });
+  expect(target).not.toHaveClass("pipeline-column--over");
+  fireEvent.dragOver(target, { dataTransfer });
+  fireEvent.drop(target, { dataTransfer });
+
+  await waitFor(() => expect(router.refresh).toHaveBeenCalled());
+  expect(moveDealAction).toHaveBeenCalledWith("d1", "s2");
+  expect(dataTransfer.setData).toHaveBeenCalledWith("text/plain", "d1");
+
+  fireEvent.dragStart(card, { dataTransfer });
+  fireEvent.dragEnd(card);
+  expect(card).not.toHaveClass("deal-card--dragging");
+  fireEvent.drop(screen.getByRole("region", { name: "Etapa Inicial" }), { dataTransfer });
+  expect(moveDealAction).toHaveBeenCalledTimes(1);
+});
+
+test("cambiar de pipeline navega con su id", async () => {
+  const user = userEvent.setup();
+  render(
+    <PipelineBoard
+      pipeline={{ id: "p1", name: "Ventas", isDefault: true }}
+      stages={stages}
+      pipelines={[
+        { id: "p1", name: "Ventas", isDefault: true, stages },
+        { id: "p 2", name: "Alianzas", isDefault: false, stages: [] },
+      ]}
+      contacts={[]}
+      companies={[]}
+      users={[]}
+    />,
+  );
+  expect(screen.getByRole("option", { name: "Ventas · Principal" })).toBeInTheDocument();
+  await user.selectOptions(screen.getByLabelText("Pipeline de ventas"), "p 2");
+  expect(router.push).toHaveBeenCalledWith("/pipeline?pipelineId=p%202");
+});
+
+test("sin etapas avisa que hay que configurarlas y no deja crear negocios", () => {
+  view([]);
+  expect(screen.getByText(/Agrega una etapa en Configurar pipeline/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Nuevo negocio" })).toBeDisabled();
+  expect(screen.getByText("0 negocios en este pipeline")).toBeInTheDocument();
+});
+
+test("una tarjeta ganada sin contacto, responsable ni fecha muestra sus textos de respaldo", () => {
+  const won: Deal = {
+    ...deal,
+    status: "WON",
+    contact: null,
+    owner: null,
+    expectedClose: null,
+    company: { id: "co1", name: "Andina S.A." },
+  };
+  view([{ ...stages[0]!, deals: [won] }, stages[1]!]);
+  const card = screen.getByRole("article", { name: "Negocio Cuenta Andina" });
+  for (const text of ["Andina S.A.", "Sin contacto", "Sin responsable", "Sin fecha de cierre"])
+    expect(within(card).getByText(text)).toBeInTheDocument();
+  expect(screen.getByText("1 negocios ganados")).toBeInTheDocument();
+});
+
+test("el historial se abre en el modal y se cierra", async () => {
+  vi.mocked(dealHistoryAction).mockResolvedValue({ data: [] });
+  const user = userEvent.setup();
+  view();
+  await user.click(screen.getByRole("button", { name: "Historial" }));
+  const modal = screen.getByRole("dialog", { name: "Historial del negocio" });
+  expect(dealHistoryAction).toHaveBeenCalledWith("d1");
+  await user.click(within(modal).getByRole("button", { name: "Cerrar" }));
+  expect(modal).not.toHaveAttribute("open");
+});
+
+test("eliminar un negocio muestra el error del API o confirma y refresca", async () => {
+  vi.mocked(deleteDealAction).mockResolvedValueOnce({ error: "Tiene una cotización." });
+  vi.mocked(deleteDealAction).mockResolvedValueOnce({});
+  const user = userEvent.setup();
+  view();
+  await user.click(screen.getByRole("button", { name: "Eliminar Cuenta Andina" }));
+  const modal = screen.getByRole("dialog", { name: "Eliminar negocio" });
+  await user.click(within(modal).getByRole("button", { name: "Eliminar negocio" }));
+  await waitFor(() => expect(within(modal).getByRole("alert")).toHaveTextContent("Tiene una cotización."));
+  await waitFor(() => expect(screen.queryByText("Guardando cambio...")).toBeNull());
+
+  await user.click(within(modal).getByRole("button", { name: "Eliminar negocio" }));
+  await waitFor(() => expect(screen.getByText("Negocio eliminado.")).toBeInTheDocument());
+  expect(router.refresh).toHaveBeenCalled();
+  expect(modal).not.toHaveAttribute("open");
+
+  await user.click(screen.getByRole("button", { name: "Eliminar Cuenta Andina" }));
+  await user.click(within(modal).getByRole("button", { name: "Cancelar" }));
+  expect(modal).not.toHaveAttribute("open");
 });

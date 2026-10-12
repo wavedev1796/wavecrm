@@ -5,7 +5,7 @@ import { assertTestDatabase } from './test/datos-de-prueba.cjs';
 assertTestDatabase();
 
 export default defineConfig({
-  testDir: 'e2e',
+  testDir: 'test/e2e',
   // Un solo worker: los specs comparten los servidores de desarrollo y la base de pruebas.
   workers: 1,
   retries: 0,

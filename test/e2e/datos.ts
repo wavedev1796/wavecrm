@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { prisma } from '@wave/database';
-import * as datos from '../test/datos-de-prueba.cjs';
+import * as datos from '../datos-de-prueba.cjs';
 
 type UserOptions = { role?: 'ADMIN' | 'VENDEDOR'; active?: boolean; name?: string; pending?: boolean };
 

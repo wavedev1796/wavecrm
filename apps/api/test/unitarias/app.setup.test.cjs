@@ -6,8 +6,8 @@ const {
   NotFoundException,
   UnprocessableEntityException,
 } = require("@nestjs/common");
-const { validationException } = require("../dist/app.setup.js");
-const { GlobalExceptionFilter } = require("../dist/common/filters/global-exception.filter.js");
+const { configureApp, validationException } = require("../../dist/app.setup.js");
+const { GlobalExceptionFilter } = require("../../dist/common/filters/global-exception.filter.js");
 
 function respond(exception) {
   const sent = {};
@@ -36,6 +36,39 @@ test("un campo no permitido se explica en español y se conserva el resto de men
   assert.deepEqual(error.getResponse().message, [
     "El campo «rol» no está permitido.",
     "Escribe un correo válido, por ejemplo nombre@empresa.ec.",
+  ]);
+});
+
+test("configureApp aplica prefijo, helmet, CORS por variable, validación y filtro global", () => {
+  const calls = {};
+  const app = {
+    setGlobalPrefix: (prefix) => (calls.prefix = prefix),
+    use: (middleware) => (calls.middleware = middleware),
+    enableCors: (options) => (calls.cors = options),
+    useGlobalPipes: (pipe) => (calls.pipe = pipe),
+    useGlobalFilters: (filter) => (calls.filter = filter),
+  };
+  const previous = process.env.CORS_ORIGIN;
+  try {
+    process.env.CORS_ORIGIN = "https://a.ec, https://b.ec";
+    configureApp(app);
+    assert.deepEqual(calls.cors.origin, ["https://a.ec", "https://b.ec"]);
+    delete process.env.CORS_ORIGIN;
+    configureApp(app);
+    assert.deepEqual(calls.cors.origin, ["http://localhost:3000"]);
+  } finally {
+    if (previous === undefined) delete process.env.CORS_ORIGIN;
+    else process.env.CORS_ORIGIN = previous;
+  }
+  assert.equal(calls.prefix, "api/v1");
+  assert.equal(typeof calls.middleware, "function");
+  assert.equal(calls.pipe.validatorOptions.forbidNonWhitelisted, true);
+  assert.ok(calls.filter instanceof GlobalExceptionFilter);
+});
+
+test("un error de validación sin mensaje usa el genérico", () => {
+  assert.deepEqual(validationException([{ property: "x", children: [] }]).getResponse().message, [
+    "Solicitud inválida.",
   ]);
 });
 
