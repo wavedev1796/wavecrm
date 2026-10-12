@@ -338,6 +338,7 @@ export class PipelineService {
   findDeal(id: string) {
     return this.prisma.$transaction((tx) => this.detail(tx, id), {
       isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+      timeout: 15000, // la ficha lee negocio, productos, cotizaciones, actividades, historial y cierres: con 5 s caduca contra Neon
     });
   }
   saveItems(id: string, items: DealItemDto[]) {
