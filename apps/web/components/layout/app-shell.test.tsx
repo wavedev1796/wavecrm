@@ -5,13 +5,13 @@ import { expect, test, vi } from 'vitest';
 import { AppShell } from './app-shell';
 
 vi.mock('next/navigation', () => ({ usePathname: vi.fn() }));
-vi.mock('@/app/(auth)/actions', () => ({ logout: vi.fn() }));
+const logout = vi.fn();
 const pathname = vi.mocked(usePathname);
 
 test('un administrador ve Usuarios, la página actual marcada y su título', () => {
   pathname.mockReturnValue('/usuarios');
   render(
-    <AppShell user={{ name: 'Ana López', email: 'ana@wave.ec', role: 'ADMIN' }}>
+    <AppShell user={{ name: 'Ana López', email: 'ana@wave.ec', role: 'ADMIN' }} logoutAction={logout}>
       <p>Contenido</p>
     </AppShell>,
   );
@@ -27,7 +27,7 @@ test('un administrador ve Usuarios, la página actual marcada y su título', () 
 test('un vendedor no ve Usuarios', () => {
   pathname.mockReturnValue('/contactos');
   render(
-    <AppShell user={{ name: 'Luis', email: 'luis@wave.ec', role: 'VENDEDOR' }}>
+    <AppShell user={{ name: 'Luis', email: 'luis@wave.ec', role: 'VENDEDOR' }} logoutAction={logout}>
       <p>Contenido</p>
     </AppShell>,
   );
@@ -39,7 +39,7 @@ test('un vendedor no ve Usuarios', () => {
 test('una subruta marca su sección en el menú', () => {
   pathname.mockReturnValue('/contactos/importar');
   render(
-    <AppShell user={null}>
+    <AppShell user={null} logoutAction={logout}>
       <p>Contenido</p>
     </AppShell>,
   );
@@ -50,7 +50,7 @@ test('una subruta marca su sección en el menú', () => {
 test('sin datos de la persona y en una ruta desconocida usa valores seguros', () => {
   pathname.mockReturnValue('/desconocida');
   render(
-    <AppShell user={null}>
+    <AppShell user={null} logoutAction={logout}>
       <p>Contenido</p>
     </AppShell>,
   );
@@ -62,7 +62,7 @@ test('sin datos de la persona y en una ruta desconocida usa valores seguros', ()
 test('el menú móvil se abre y se cierra, y el cierre de sesión es un envío de formulario', async () => {
   pathname.mockReturnValue('/pipeline');
   render(
-    <AppShell user={null}>
+    <AppShell user={null} logoutAction={logout}>
       <p>Contenido</p>
     </AppShell>,
   );

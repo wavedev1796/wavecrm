@@ -1,6 +1,6 @@
 import { Filter, X } from "lucide-react";
 import Link from "next/link";
-import { LiveSearch } from "@/components/live-search";
+import { LiveSearch } from "./live-search";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";

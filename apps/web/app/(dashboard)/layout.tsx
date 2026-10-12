@@ -1,5 +1,6 @@
 import type { UserRole } from "@wave/shared";
-import { AppShell } from "@/components/app-shell";
+import { logout } from "@/app/(auth)/actions";
+import { AppShell } from "@/components/layout/app-shell";
 import { authenticatedApi } from "@/lib/authenticated-api";
 
 type CurrentUser = {
@@ -16,5 +17,9 @@ export default async function DashboardLayout({
 }>) {
   const response = await authenticatedApi("/auth/me");
   const user = response.ok ? ((await response.json()) as CurrentUser) : null;
-  return <AppShell user={user}>{children}</AppShell>;
+  return (
+    <AppShell user={user} logoutAction={logout}>
+      {children}
+    </AppShell>
+  );
 }

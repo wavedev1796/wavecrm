@@ -3,8 +3,8 @@ import { useEffect, useRef, useState, useTransition, type FormEvent } from "reac
 import { useRouter } from "next/navigation";
 import { Pencil, RotateCcw, ThumbsDown, Trophy } from "lucide-react";
 import { LOSS_REASONS } from "@wave/shared";
-import { FormDialog } from "@/components/form-dialog";
-import { Field } from "@/components/form-field";
+import { FormDialog } from "@/components/form/form-dialog";
+import { Field } from "@/components/form/form-field";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { invalidProps } from "@/components/ui/field-error";

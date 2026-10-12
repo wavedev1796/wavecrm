@@ -2,14 +2,14 @@
 
 import { Building2, Check } from "lucide-react";
 import { useActionState, useEffect } from "react";
-import { Field } from "@/components/form-field";
-import { LocationFields } from "@/components/location-fields";
-import { PhoneField } from "@/components/phone-field";
+import { Field } from "@/components/form/form-field";
+import { LocationFields } from "@/components/form/location-fields";
+import { PhoneField } from "@/components/form/phone-field";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
-import { useFieldErrors } from "@/components/use-field-errors";
+import { useFieldErrors } from "@/components/form/use-field-errors";
 import { EMPRESAS } from "@/content/empresas";
 import { saveCompany } from "./actions";
 import {

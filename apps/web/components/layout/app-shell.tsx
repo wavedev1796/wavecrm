@@ -22,8 +22,7 @@ import { ROL_USUARIO } from "@/content/catalogos";
 import { MARCA } from "@/content/comun";
 import { NAVEGACION } from "@/content/navegacion";
 import { initials } from "@/lib/format";
-import { logout } from "@/app/(auth)/actions";
-import { Input } from "./ui/input";
+import { Input } from "@/components/ui/input";
 
 const navItems = [
   { href: "/pipeline", label: NAVEGACION.menu.pipeline, icon: LayoutDashboard },
@@ -51,9 +50,12 @@ function headerForPath(pathname: string) {
 export function AppShell({
   children,
   user,
+  logoutAction,
 }: Readonly<{
   children: React.ReactNode;
   user: ShellUser;
+  /** Server action de cierre de sesión; la pasa el layout para que el shell no dependa de app/. */
+  logoutAction: () => Promise<void>;
 }>) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -112,7 +114,7 @@ export function AppShell({
           </div>
         </div>
 
-        <form className="profile-card" action={logout}>
+        <form className="profile-card" action={logoutAction}>
           <span className="avatar">{initials(user?.name) || MARCA.inicial}</span>
           <span>
             <strong>{user?.name ?? NAVEGACION.shell.usuario}</strong>

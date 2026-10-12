@@ -13,7 +13,7 @@ import {
   UserRound,
   Workflow,
 } from "lucide-react";
-import { Info } from "@/components/detail-info";
+import { Info } from "@/components/data/detail-info";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";

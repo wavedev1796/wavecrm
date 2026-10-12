@@ -2,8 +2,8 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Settings2 } from "lucide-react";
-import { FormDialog } from "@/components/form-dialog";
-import { Field } from "@/components/form-field";
+import { FormDialog } from "@/components/form/form-dialog";
+import { Field } from "@/components/form/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";

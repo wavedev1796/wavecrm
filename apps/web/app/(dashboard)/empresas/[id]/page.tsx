@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Info } from "@/components/detail-info";
+import { Info } from "@/components/data/detail-info";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ESTADO_NEGOCIO } from "@/content/catalogos";

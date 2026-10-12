@@ -11,7 +11,7 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
-import { FormDialog } from "@/components/form-dialog";
+import { FormDialog } from "@/components/form/form-dialog";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Alert } from "@/components/ui/alert";

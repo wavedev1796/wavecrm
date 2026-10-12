@@ -1,13 +1,13 @@
 "use client";
 import { useActionState, useEffect, useState } from "react";
 import { BriefcaseBusiness, Check } from "lucide-react";
-import { Field } from "@/components/form-field";
+import { Field } from "@/components/form/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { invalidProps } from "@/components/ui/field-error";
-import { useFieldErrors } from "@/components/use-field-errors";
+import { useFieldErrors } from "@/components/form/use-field-errors";
 import { PIPELINE } from "@/content/pipeline";
 import { saveDeal } from "./actions";
 import {

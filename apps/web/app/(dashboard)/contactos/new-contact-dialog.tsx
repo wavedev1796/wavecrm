@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { FormDialog } from "@/components/form-dialog";
+import { FormDialog } from "@/components/form/form-dialog";
 import { CONTACTOS } from "@/content/contactos";
 import { ContactForm } from "./contact-form";
 

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
-import { FormDialog } from "@/components/form-dialog";
+import { FormDialog } from "@/components/form/form-dialog";
 import { EMPRESAS } from "@/content/empresas";
 import { CompanyForm } from "./company-form";
 

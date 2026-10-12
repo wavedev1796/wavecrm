@@ -1,6 +1,6 @@
 "use client";
 
-import { NewPasswordForm } from "@/components/new-password-form";
+import { NewPasswordForm } from "@/components/form/new-password-form";
 import { ACCESO } from "@/content/acceso";
 import { resetPassword } from "./actions";
 

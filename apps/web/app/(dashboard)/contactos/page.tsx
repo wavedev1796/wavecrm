@@ -1,9 +1,9 @@
 import { UsersRound } from "lucide-react";
 import Link from "next/link";
-import { ListFilters } from "@/components/list-filters";
-import { ListHeader } from "@/components/list-header";
-import { Pagination } from "@/components/pagination";
-import { TagList } from "@/components/tag-list";
+import { ListFilters } from "@/components/data/list-filters";
+import { ListHeader } from "@/components/data/list-header";
+import { Pagination } from "@/components/data/pagination";
+import { TagList } from "@/components/data/tag-list";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { Table } from "@/components/ui/table";

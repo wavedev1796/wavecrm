@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Field } from "@/components/form-field";
+import { Field } from "./form-field";
 import { invalidProps } from "@/components/ui/field-error";
 import { Select } from "@/components/ui/select";
 import { COMUN } from "@/content/comun";
