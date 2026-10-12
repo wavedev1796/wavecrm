@@ -80,9 +80,31 @@ El ticket no trae criterios escritos; salen de los del tablero: detalle con valo
 2. Agregar dos productos, uno con IVA 15 % y otro 0 %, y guardar: el valor del negocio es el subtotal.
 3. Registrar una actividad y completarla; aparece en la línea de tiempo y en la ficha del contacto.
 
+## Revisión visual en el preview (2026-10-11)
+
+### Implementación
+
+- `apps/web/app/(dashboard)/pipeline/[id]/page.tsx`: la tarjeta de Productos sale de la columna principal y ocupa todo el ancho debajo de la cabecera; debajo quedan el timeline y los datos del negocio. El valor del negocio en la cabecera lleva la clase `deal-profile-value`.
+- `apps/web/app/(dashboard)/pipeline/pipeline.css`: `.deal-profile-value` (1.125rem / 800, tinta, números tabulares) y columna de IVA de 116 px.
+- `apps/web/app/(dashboard)/pipeline/activity-actions.tsx` (nuevo): `ActivityForm` y `CompleteButton`, las únicas partes cliente del timeline. `deal-timeline.tsx` deja de ser `"use client"`.
+- `apps/api/src/modules/pipeline/pipeline.service.ts`: `findDeal` admite 15 s en su transacción de lectura.
+
+### Decisiones
+
+- **Productos a todo el ancho** (pedido del usuario; la spec los ponía en la columna principal). A 1334 px la descripción quedaba en ~100 px y el selector de IVA cortaba "15 %"; ahora la descripción mide ~400 px.
+- **Valor destacado** (pedido del usuario): es el dato principal del negocio y heredaba el gris pequeño de `.contact-profile p`.
+- **Timeline en el servidor:** el servidor (ICU de Node) y Chrome escriben "p. m." con espacios distintos, y la línea de tiempo, renderizada también en el cliente, fallaba al hidratar. Ahora las fechas se formatean una sola vez, en el servidor.
+- **15 s en `findDeal`:** la ficha lee seis consultas en una transacción RepeatableRead; contra Neon a veces pasaba de los 5 s por defecto y la página mostraba "No pudimos cargar el negocio". Es el mismo criterio que el de `write()` (CRM-21).
+
+### Validación
+
+- Preview contra `pruebas` con sesión del usuario, a 1334 px y 390 px: cabecera con botones completa, sin desborde horizontal, sin errores de hidratación en la consola ni en el indicador de Next.
+- Tabla con 12 × 125.430,75: subtotal 1.505.169,00, IVA 225.775,35 y total 1.730.944,35. Diálogo Ganar sin productos: aviso y botón deshabilitado, fecha propuesta = hoy de Ecuador. Diálogo Perder: seis motivos y ayuda de "Otro".
+- `vitest run "app/(dashboard)/pipeline"`: 36 pruebas aprobadas; ESLint de web y API sin errores.
+
 ## Pendientes
 
 - La migración `20261010120000_deal_items_close` está aplicada solo en `pruebas`; `development` espera el OK del usuario. `pruebas` tiene además una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`).
 - Los mensajes "Productos guardados." y "Actividad registrada." siguen visibles después de ganar, perder o reabrir.
-- La columna de dinero de la tabla (112 px) puede cortar montos muy grandes.
-- Revisión visual de la cabecera a 390 px en el preview con el usuario.
+- La columna de dinero de la tabla (112 px) puede cortar montos de más de 10 cifras.
+- El tablero (`board`, CRM-18) usa la misma transacción de lectura con 5 s por defecto; no falló en la revisión, pero tiene el mismo riesgo contra Neon.
