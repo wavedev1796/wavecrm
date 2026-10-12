@@ -19,3 +19,11 @@ Mostrar una representacion visual de la estructura mientras se cargan los datos 
 
 - `apps/web/components/loading-skeletons.test.tsx`: verifica anuncio accesible de carga y estructura de listado, ficha y usuarios.
 - Verificacion estatica y suite de pruebas web ejecutadas al integrar esta mejora.
+
+## Cierre de la tarea 04 (2026-10-12)
+
+Bloque añadido por Zaith Manangón, con autorización del usuario.
+
+### Implementación
+
+Los esqueletos anuncian su propio texto desde `content/`, usan el marcado real para medir lo mismo que el contenido y aparecen también al buscar, filtrar o paginar; los listados pasaron al grupo `(listado)`. `TOKENS.md` documenta el estado y su movimiento. Detalle: [Esqueletos de carga](../Sprint%203/Esqueletos%20de%20carga.md).

@@ -83,3 +83,11 @@ Bloque anadido por Zaith Manangon, con autorizacion del usuario, junto con los [
 ### Validacion
 
 - `company-form.test.tsx` (+1): los dos son los unicos obligatorios y llevan la marca.
+
+## Esqueletos de carga (2026-10-12)
+
+Bloque añadido por Zaith Manangón, con autorización del usuario.
+
+### Implementación
+
+El listado pasó a `app/(dashboard)/empresas/(listado)/page.tsx`, con su `loading.tsx`; el resumen y la tabla cargan dentro de un `Suspense` por consulta, así que el esqueleto aparece también al buscar, filtrar o paginar. La ficha anuncia su propio texto de carga. La URL no cambia. Detalle: [Esqueletos de carga](../Sprint%203/Esqueletos%20de%20carga.md).

@@ -43,6 +43,7 @@ El logotipo vive en `apps/web/public/logo-wave.svg` (wordmark horizontal, propor
 - Sombras bajas para separar superficies, nunca como decoración dominante.
 - Transiciones funcionales de `160ms`; se desactivan con `prefers-reduced-motion`.
 - Excepción, pantallas de acceso (`/login`, `/activar-cuenta`, `/recuperar-contrasena`): entrada escalonada de 200–280 ms con `cubic-bezier(.16, 1, .3, 1)`, hover y focus a 200 ms y flotación de 6 s en la tarjeta "Vista de ejemplo". Todo se desactiva con `prefers-reduced-motion`.
+- Excepción, esqueletos de carga: brillo blanco al 66 % que cruza el bloque en bucle de 1,5 s (`ease-in-out`). Se desactiva con `prefers-reduced-motion` (queda el bloque fijo).
 - Panel de marca de acceso: gradiente de 155° `#2F6F8F → #22536B → #172A33`; texto secundario en blanco al 90 %.
 
 ## Estados
@@ -52,6 +53,7 @@ El logotipo vive en `apps/web/public/logo-wave.svg` (wordmark horizontal, propor
 - Focus visible: anillo exterior azul.
 - Disabled: opacidad al 50 %, cursor bloqueado y sin sombra.
 - Error: borde y texto de ayuda rojo.
+- Cargando: esqueleto con la forma y las medidas del contenido real (`apps/web/components/layout/loading-skeletons.tsx`, estilos en `styles/14-skeleton.css`). Bloques en `--wave-line` con radio `8px`; avatares circulares; botones e inputs con el alto y el radio `10px` del control real. Los bloques de texto van dentro del elemento real (`<td>`, `<strong>`, `<h2>`…) y miden `0.75em`, así la línea conserva su alto. Solo se anuncia «Cargando …» al lector de pantalla; los bloques llevan `aria-hidden`.
 
 ## Controles de formulario
 

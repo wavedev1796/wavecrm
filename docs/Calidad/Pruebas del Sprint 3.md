@@ -52,3 +52,13 @@ CRM-20 y CRM-21 se verificaron con `pnpm dev` apagado y la integracion con `pnpm
 - Playwright inicia sus propios servidores en 4101/3101 y usa `.next-pipeline-test`; ese directorio generado queda excluido de Git, ESLint y Vitest.
 - Ganar contra Neon encadena unas diez consultas; las transacciones del pipeline admiten 15 s (el valor por defecto de Prisma, 5 s, caducaba).
 - No se ejecutaron cambios ni pruebas contra produccion.
+
+## Esqueletos de carga (2026-10-12)
+
+| Capa | Resultado |
+| --- | --- |
+| Web (Vitest, con cobertura) | 258 aprobadas (72 archivos) |
+| ESLint API y web | Sin errores |
+| `pnpm build` | Aprobado |
+
+Alcance: cada `loading.tsx` anuncia solo su texto; el resumen y la tabla de contactos y empresas se prueban aparte de la página (filas, enlaces, paginación, vacío y error); la página, la consulta y sus acciones. Medidas del esqueleto contra la página real en `pnpm dev`: ver [Esqueletos de carga](../Sprint%203/Esqueletos%20de%20carga.md).

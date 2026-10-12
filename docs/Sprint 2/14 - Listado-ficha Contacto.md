@@ -87,3 +87,11 @@ Bloque anadido por Zaith Manangon, con autorizacion del usuario, como parte del 
 ### Validacion
 
 - `contact-form.test.tsx`, `company-field.test.tsx` y `actions.test.ts`: documento obligatorio, empresa opcional con su ayuda y un contacto sin empresa se guarda sin vinculo. `e2e/contactos.spec.ts`: guardar vacio marca tambien el numero de documento.
+
+## Esqueletos de carga (2026-10-12)
+
+Bloque añadido por Zaith Manangón, con autorización del usuario.
+
+### Implementación
+
+El listado pasó a `app/(dashboard)/contactos/(listado)/page.tsx`, con su `loading.tsx`; el resumen y la tabla cargan dentro de un `Suspense` por consulta, así que el esqueleto aparece también al buscar, filtrar o paginar. La ficha anuncia su propio texto de carga. La URL no cambia. Detalle: [Esqueletos de carga](../Sprint%203/Esqueletos%20de%20carga.md).
