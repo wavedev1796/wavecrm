@@ -1,6 +1,6 @@
 # SonarQube Cloud en CI
 
-**Responsable:** Zaith Manangón · **Estado:** En curso
+**Responsable:** Zaith Manangón · **Estado:** Completo (5/5 criterios)
 
 ## Objetivo
 
@@ -82,9 +82,6 @@ JWT_SECRET=ci-local dotenv -e .env.test.local -- node --test --test-concurrency=
 ```
 
 - `pipeline.service.ts` pasa de 443/659 a 653/655 líneas cubiertas, y `pipeline.controller.ts` a 146/146. `spreadsheet.ts` entra a la medición con 71/72.
-- Estimación con las líneas nuevas que reportó SonarQube: las sin cubrir bajan de 442 a unas 134 de 1584, alrededor del 91 %.
-
-## Pendientes
-
-- Crear en GitHub los secrets `NEON_PRUEBAS_DATABASE_URL` y `NEON_PRUEBAS_DIRECT_URL` con las cadenas de `.env.test.local`. Sin ellos falla el paso de integración.
-- Run del push a `ZaithManangon-Dev` con el Quality Gate en verde. Con eso el estado pasa a `Completo (5/5 criterios)`.
+- Secrets `NEON_PRUEBAS_DATABASE_URL` y `NEON_PRUEBAS_DIRECT_URL` creados por el usuario con `gh secret set` desde la cuenta colaboradora `wavedev0911`. En un repo de cuenta personal basta con ser colaborador, no hace falta la cuenta dueña.
+- [Run de `ZaithManangon-Dev`](https://github.com/wavedev1796/wavecrm/actions/runs/38207516205), commit `288104c`, relanzado después de crear los secrets: todos los pasos en verde. Integración: 52/52 contra `pruebas`. **Quality Gate: Passed**, con cobertura del código nuevo en 83,8 %, confiabilidad A, duplicación en 0,1 % y hotspots revisados al 100 %.
+- La estimación previa del 91 % salió de los datos del primer análisis. El valor medido por SonarQube es 83,8 %.
