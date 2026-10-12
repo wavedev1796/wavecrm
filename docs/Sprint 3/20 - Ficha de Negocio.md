@@ -104,10 +104,11 @@ El ticket no trae criterios escritos; salen de los del tablero: detalle con valo
 - Preview contra `pruebas` con sesión del usuario, a 1334 px y 390 px: cabecera con botones completa, sin desborde horizontal, sin errores de hidratación en la consola ni en el indicador de Next.
 - Tabla con 12 × 125.430,75: subtotal 1.505.169,00, IVA 225.775,35 y total 1.730.944,35. Diálogo Ganar sin productos: aviso y botón deshabilitado, fecha propuesta = hoy de Ecuador. Diálogo Perder: seis motivos y ayuda de "Otro".
 - `vitest run "app/(dashboard)/pipeline"`: 36 pruebas aprobadas; ESLint de web y API sin errores.
+- Migraciones en `development` (con OK del usuario): `migrate deploy` aplicó `20261001120000_contact_document_required`, `20261007120000_contact_phone_or_email` (Sprint 2, nunca desplegadas ahí) y `20261010120000_deal_items_close`. Antes se comprobó en solo lectura que su único contacto cumplía las dos restricciones.
 
 ## Pendientes
 
-- La migración `20261010120000_deal_items_close` está aplicada solo en `pruebas`. En `development` (2026-10-11) faltan además `20261001120000_contact_document_required` y `20261007120000_contact_phone_or_email` del Sprint 2, y `migrate deploy` aplica las tres; espera el OK del usuario para las tres. Su único contacto cumple las dos restricciones. Las dos bases tienen una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`).
+- Las dos bases tienen una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`).
 - Los mensajes "Productos guardados." y "Actividad registrada." siguen visibles después de ganar, perder o reabrir.
 - La columna de dinero de la tabla (112 px) puede cortar montos de más de 10 cifras.
 - El tablero (`board`, CRM-18) usa la misma transacción de lectura con 5 s por defecto; no falló en la revisión, pero tiene el mismo riesgo contra Neon.

@@ -62,7 +62,7 @@ El ticket no trae criterios escritos; salen de los del tablero: motivo de pérdi
 - API (`pipeline.service.test.cjs`): ganar sin productos, cotización con IVA por tarifa y correlativo, paso a la etapa de 100 %, fecha futura rechazada, perder (solo desde abierto) y reabrir (borrador eliminado, cotización enviada con `409`), arrastre dentro y fuera de 100 % y alta directa en 100 % rechazada. `deal-rules.test.cjs` (5): totales, número de cotización y día de Ecuador.
 - Web: `deal-actions.test.tsx` (3) y `[id]/page.test.tsx` (3) para la ficha abierta, ganada y perdida; `pipeline-board.test.tsx` y `actions.test.ts` para el tablero sin *Estado* y las acciones de cierre.
 - Navegador (`e2e/pipeline.spec.ts`): 3 pruebas aprobadas. La tercera arma productos, gana con la cotización `COT-000001`, reabre y pierde con motivo, y comprueba que no hay desborde a 390 px.
-- La migración está aplicada en `pruebas`. Falta `development`.
+- La migración está aplicada en `pruebas` y, desde el 2026-10-11, en `development` (ver CRM-20).
 
 ### Cómo probarlo a mano
 
@@ -72,7 +72,7 @@ El ticket no trae criterios escritos; salen de los del tablero: motivo de pérdi
 
 ## Pendientes
 
-- Aplicar la migración `20261010120000_deal_items_close` en `development` cuando el usuario dé el OK. `pruebas` tiene una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`); conviene averiguar su origen.
+- `pruebas` y `development` tienen una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`); conviene averiguar su origen.
 - Reducir las consultas de `winDeal` para volver al tiempo de transacción por defecto.
 - El número de cotización de un borrador eliminado puede reutilizarse.
 - Los mensajes de éxito de acciones anteriores siguen visibles después de ganar, perder o reabrir.
