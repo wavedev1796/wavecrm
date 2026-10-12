@@ -1,5 +1,6 @@
 import { DetailPageSkeleton } from "@/components/layout/loading-skeletons";
+import { EMPRESAS } from "@/content/empresas";
 
 export default function CompanyDetailLoading() {
-  return <DetailPageSkeleton />;
+  return <DetailPageSkeleton label={EMPRESAS.ficha.cargando} />;
 }

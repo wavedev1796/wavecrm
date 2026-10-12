@@ -23,6 +23,7 @@ const ETIQUETAS = {
 };
 
 export const IMPORTACION = {
+  cargando: "Cargando importación…",
   intro:
     "Sube la hoja de Excel (.xlsx) o un CSV, elige qué columna corresponde a cada dato e impórtala. Si empiezas de cero, descarga la plantilla.",
   reglasComunes: [

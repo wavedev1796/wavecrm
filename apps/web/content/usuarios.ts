@@ -5,6 +5,7 @@ export type EstadoUsuario = "active" | "inactive" | "pending";
 
 export const USUARIOS = {
   errorCarga: "No pudimos cargar los usuarios. Recarga la página.",
+  cargando: "Cargando usuarios…",
   resumen: {
     etiqueta: "Resumen de usuarios",
     total: "Total",

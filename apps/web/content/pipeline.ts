@@ -25,6 +25,7 @@ export const NEGOCIO = {
   volver: "Volver al pipeline",
   etiqueta: "Negocio",
   errorCarga: "No pudimos cargar el negocio. Intenta de nuevo en un momento.",
+  cargando: "Cargando negocio…",
   datos: "Datos del negocio",
   campos: {
     contacto: "Contacto",

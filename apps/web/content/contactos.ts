@@ -14,11 +14,13 @@ export const CONTACTOS = {
     columnas: ["Contacto", "Empresa", "Provincia", "Etiquetas", "Responsable"],
     sinResultados: "No hay contactos que coincidan con los filtros.",
     errorCarga: "No pudimos cargar los contactos. Recarga la página.",
+    cargando: "Cargando contactos…",
     paginacion: "Paginación de contactos",
     sinAsignar: "Sin asignar",
   },
   ficha: {
     errorCarga: "No pudimos cargar el contacto.",
+    cargando: "Cargando contacto…",
     volver: "← Volver a contactos",
     etiqueta: "Ficha de contacto",
     sinCargo: "Sin cargo",

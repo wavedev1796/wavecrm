@@ -5,7 +5,7 @@ import { COMUN } from "@/content/comun";
 type Props = Readonly<{
   icon: React.ReactNode;
   title: string;
-  summary: string;
+  summary: React.ReactNode;
   importHref: string;
   children: React.ReactNode;
 }>;

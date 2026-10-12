@@ -1,16 +1,6 @@
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ImportPageSkeleton } from "@/components/layout/loading-skeletons";
+import { IMPORTACION } from "@/content/importacion";
 
 export default function CompanyImportLoading() {
-  return (
-    <output aria-label="Cargando importación" className="loading-region">
-      <span className="sr-only">Cargando importación</span>
-      <Card className="skeleton-import-card" aria-hidden="true">
-        <Skeleton className="skeleton-heading" />
-        <Skeleton className="skeleton-summary" />
-        <Skeleton className="skeleton-dropzone" />
-        <Skeleton className="skeleton-button" />
-      </Card>
-    </output>
-  );
+  return <ImportPageSkeleton label={IMPORTACION.cargando} />;
 }

@@ -1,73 +1,154 @@
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table } from "@/components/ui/table";
 
-function LoadingRegion({ children }: Readonly<{ children: React.ReactNode }>) {
+/** Lo único que oye el lector de pantalla es `label`; los bloques son decorativos. */
+function LoadingRegion({
+  label,
+  children,
+}: Readonly<{ label: string; children: React.ReactNode }>) {
   return (
-    <output aria-label="Cargando contenido" className="loading-region">
-      <span className="sr-only">Cargando contenido</span>
+    <output aria-label={label} className="loading-region">
+      <span className="sr-only">{label}</span>
       {children}
     </output>
   );
 }
 
-export function ListPageSkeleton({ columns = 5 }: Readonly<{ columns?: number }>) {
+type TableProps = Readonly<{
+  /** Mismos encabezados que la tabla real, para que las columnas no salten. */
+  columns: readonly string[];
+  label: string;
+  rows?: number;
+  /** La primera columna lleva avatar, como en contactos y usuarios. */
+  withAvatar?: boolean;
+  className?: string;
+}>;
+
+/**
+ * Tabla y paginación de un listado mientras llegan los datos. Los bloques van dentro de
+ * <strong>, <small> y <td> reales: heredan su alto de línea y la fila mide lo mismo que la real.
+ */
+export function TableSkeleton({
+  columns,
+  label,
+  rows = 10,
+  withAvatar = false,
+  className,
+}: TableProps) {
   return (
-    <LoadingRegion>
-      <div className="contacts-page" aria-hidden="true">
-        <Card className="data-card">
-          <div className="skeleton-list-header">
-            <div className="skeleton-title-group">
-              <Skeleton className="skeleton-icon" />
-              <div>
-                <Skeleton className="skeleton-heading" />
-                <Skeleton className="skeleton-summary" />
-              </div>
-            </div>
-            <div className="skeleton-actions">
-              <Skeleton className="skeleton-button" />
-              <Skeleton className="skeleton-button skeleton-button--short" />
-            </div>
-          </div>
-          <div className="skeleton-filters">
-            <Skeleton className="skeleton-control skeleton-control--wide" />
-            <Skeleton className="skeleton-control" />
-            <Skeleton className="skeleton-button skeleton-button--short" />
-          </div>
-          <div className="skeleton-table" style={{ "--skeleton-columns": columns } as React.CSSProperties}>
-            <div className="skeleton-table-row skeleton-table-head">
-              {Array.from({ length: columns }, (_, index) => (
-                <Skeleton key={`head-${index}`} className="skeleton-cell" />
-              ))}
-            </div>
-            {Array.from({ length: 5 }, (_, row) => (
-              <div className="skeleton-table-row" key={`row-${row}`}>
-                {Array.from({ length: columns }, (_, column) => (
-                  <Skeleton key={`cell-${row}-${column}`} className="skeleton-cell" />
-                ))}
-              </div>
+    <LoadingRegion label={label}>
+      <Table aria-hidden="true" className={className}>
+        <thead>
+          <tr>
+            {columns.map((column) => (
+              <th key={column}>{column}</th>
             ))}
-          </div>
-          <div className="skeleton-pagination">
-            <Skeleton className="skeleton-summary" />
-            <Skeleton className="skeleton-button" />
-          </div>
-        </Card>
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: rows }, (_, row) => (
+            <tr key={row}>
+              {columns.map((column, index) => (
+                <td key={column}>
+                  {index === 0 ? (
+                    <span className="contact-cell">
+                      {withAvatar && <Skeleton className="skeleton-avatar skeleton-avatar--sm" />}
+                      <span>
+                        <strong>
+                          <Skeleton className="skeleton-text" />
+                        </strong>
+                        <small>
+                          <Skeleton className="skeleton-text skeleton-text--short" />
+                        </small>
+                      </span>
+                    </span>
+                  ) : (
+                    <Skeleton className="skeleton-text skeleton-text--short" />
+                  )}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <div className="table-footer" aria-hidden="true">
+        <span>
+          <Skeleton className="skeleton-text" />
+        </span>
+        <div>
+          <Skeleton className="skeleton-page-button" />
+          <Skeleton className="skeleton-page-button" />
+        </div>
       </div>
     </LoadingRegion>
   );
 }
 
-export function DetailPageSkeleton() {
+type ListProps = Readonly<{
+  columns: readonly string[];
+  label: string;
+  withAvatar?: boolean;
+}>;
+
+/** Directorio completo (cabecera, filtros y tabla) con las clases del contenido real. */
+export function ListPageSkeleton({ columns, label, withAvatar }: ListProps) {
   return (
-    <LoadingRegion>
+    <div className="contacts-page">
+      <Card className="data-card">
+        <header className="contact-list-header" aria-hidden="true">
+          <div className="contact-list-title">
+            <Skeleton className="skeleton-icon" />
+            <div>
+              <span>
+                <Skeleton className="skeleton-text skeleton-text--short" />
+              </span>
+              <h2>
+                <Skeleton className="skeleton-text skeleton-text--wide" />
+              </h2>
+              <p>
+                <Skeleton className="skeleton-text" />
+              </p>
+            </div>
+          </div>
+          <div className="contact-list-actions">
+            <Skeleton className="skeleton-button" />
+            <Skeleton className="skeleton-button" />
+          </div>
+        </header>
+        <div className="contact-filter-panel" aria-hidden="true">
+          <Skeleton className="skeleton-search" />
+          <div className="contact-filter-fields">
+            <Skeleton className="skeleton-field skeleton-field--select" />
+            <Skeleton className="skeleton-field skeleton-field--input" />
+            <Skeleton className="skeleton-field skeleton-field--button" />
+          </div>
+        </div>
+        <TableSkeleton columns={columns} label={label} withAvatar={withAvatar} />
+      </Card>
+    </div>
+  );
+}
+
+export function DetailPageSkeleton({ label }: Readonly<{ label: string }>) {
+  return (
+    <LoadingRegion label={label}>
       <div className="contact-detail-page" aria-hidden="true">
-        <Skeleton className="skeleton-back-link" />
-        <section className="contact-profile card skeleton-profile">
+        <span className="back-link">
+          <Skeleton className="skeleton-text" />
+        </span>
+        <section className="contact-profile card">
           <Skeleton className="skeleton-avatar" />
           <div>
-            <Skeleton className="skeleton-summary" />
-            <Skeleton className="skeleton-heading" />
-            <Skeleton className="skeleton-summary" />
+            <span>
+              <Skeleton className="skeleton-text skeleton-text--short" />
+            </span>
+            <h2>
+              <Skeleton className="skeleton-text skeleton-text--wide" />
+            </h2>
+            <p>
+              <Skeleton className="skeleton-text" />
+            </p>
           </div>
           <Skeleton className="skeleton-tag" />
         </section>
@@ -105,42 +186,52 @@ export function DetailPageSkeleton() {
   );
 }
 
-export function UsersPageSkeleton() {
+export function ImportPageSkeleton({ label }: Readonly<{ label: string }>) {
   return (
-    <LoadingRegion>
-      <div className="users-page" aria-hidden="true">
-        <section className="user-summary user-summary--skeleton">
-          {Array.from({ length: 4 }, (_, index) => (
-            <Card key={index}>
-              <Skeleton className="skeleton-summary" />
-              <Skeleton className="skeleton-stat" />
-            </Card>
-          ))}
-        </section>
-        <Card className="skeleton-invite">
-          <Skeleton className="skeleton-heading" />
-        </Card>
-        <Card className="data-card users-data-card">
-          <div className="skeleton-filters">
-            <Skeleton className="skeleton-control skeleton-control--wide" />
-            <Skeleton className="skeleton-control" />
-            <Skeleton className="skeleton-button skeleton-button--short" />
-          </div>
-          <div className="skeleton-table" style={{ "--skeleton-columns": 5 } as React.CSSProperties}>
-            {Array.from({ length: 6 }, (_, row) => (
-              <div className="skeleton-table-row" key={row}>
-                {Array.from({ length: 5 }, (_, column) => (
-                  <Skeleton className="skeleton-cell" key={`${row}-${column}`} />
-                ))}
-              </div>
-            ))}
-          </div>
-          <div className="skeleton-pagination">
-            <Skeleton className="skeleton-summary" />
-            <Skeleton className="skeleton-button" />
-          </div>
-        </Card>
-      </div>
+    <LoadingRegion label={label}>
+      <Card className="skeleton-import-card" aria-hidden="true">
+        <Skeleton className="skeleton-heading" />
+        <Skeleton className="skeleton-summary" />
+        <Skeleton className="skeleton-dropzone" />
+        <Skeleton className="skeleton-button" />
+      </Card>
     </LoadingRegion>
+  );
+}
+
+export function UsersPageSkeleton({
+  columns,
+  label,
+}: Readonly<{ columns: readonly string[]; label: string }>) {
+  return (
+    <div className="users-page">
+      <section className="user-summary" aria-hidden="true">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Card key={index}>
+            <span>
+              <Skeleton className="skeleton-text skeleton-text--short" />
+            </span>
+            <strong>
+              <Skeleton className="skeleton-text skeleton-text--short" />
+            </strong>
+          </Card>
+        ))}
+      </section>
+      <Card className="invite-panel" aria-hidden="true">
+        <div className="skeleton-invite">
+          <Skeleton className="skeleton-text skeleton-text--wide" />
+        </div>
+      </Card>
+      <Card className="data-card users-data-card">
+        <div className="table-toolbar users-toolbar" aria-hidden="true">
+          <Skeleton className="skeleton-search" />
+          <div>
+            <Skeleton className="skeleton-field skeleton-field--select" />
+            <Skeleton className="skeleton-field skeleton-field--button" />
+          </div>
+        </div>
+        <TableSkeleton columns={columns} label={label} withAvatar className="users-table" />
+      </Card>
+    </div>
   );
 }
