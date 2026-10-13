@@ -4,8 +4,8 @@ import userEvent from "@testing-library/user-event";
 import readXlsxFile from "read-excel-file/browser";
 import writeXlsxFile from "write-excel-file/browser";
 import { afterEach, expect, test, vi } from "vitest";
-import { CONTACT_IMPORT_FIELDS } from "@/app/(dashboard)/contactos/importar/fields";
-import { COMPANY_IMPORT_FIELDS } from "@/app/(dashboard)/empresas/importar/fields";
+import { CONTACT_IMPORT_FIELDS } from "@/features/contactos/importar/fields";
+import { COMPANY_IMPORT_FIELDS } from "@/features/empresas/importar/fields";
 import {
   guessMapping,
   readCsvHeader,

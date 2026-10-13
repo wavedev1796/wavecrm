@@ -68,3 +68,9 @@ pnpm --filter @wave/web test        # 241/241 en 69 archivos
 
 - `comparar-css.mjs` y `dividir-css.mjs` son los scripts de la tarea 05; se corrieron fuera del repositorio. El único cambio al script de corte es el ancla 14.
 - En `pnpm dev`, `/login` carga 576 reglas sin ningún `@import` sin resolver, con reglas de tokens, shell, controles, tablas, usuarios, directorio y esqueletos, y los tokens aplicados. Sin errores en la consola.
+
+## Reubicacion del CSS del pipeline (2026-10-13)
+
+### Implementacion
+
+`pipeline.css` paso de `app/(dashboard)/pipeline/` a `styles/pipeline.css` durante la [reorganizacion de carpetas](Estructura%20de%20carpetas%20de%20apps-web.md). Sigue importado solo por las rutas del pipeline. Los 14 tramos globales y el orden de `app/globals.css` no cambiaron.

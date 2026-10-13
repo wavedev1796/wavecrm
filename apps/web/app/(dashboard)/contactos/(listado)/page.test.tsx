@@ -5,9 +5,9 @@ import ContactsPage from "./page";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
-vi.mock("../actions", () => ({ saveContact: vi.fn(), searchCompanies: vi.fn() }));
+vi.mock("../../../../features/contactos/actions", () => ({ saveContact: vi.fn(), searchCompanies: vi.fn() }));
 // Los componentes async no se resuelven dentro de <Suspense> en jsdom: se prueban aparte.
-vi.mock("./contacts-results", () => ({
+vi.mock("../../../../features/contactos/contacts-results", () => ({
   ContactsSummary: ({ query }: { query: string }) => `resumen ${query}`,
   ContactsResults: ({ query }: { query: string }) => <p>resultados {query}</p>,
 }));

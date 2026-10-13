@@ -16,9 +16,9 @@ Mostrar el pipeline real en un tablero por etapas y permitir crear negocios y mo
 ## Implementacion
 
 - `apps/web/app/(dashboard)/pipeline/page.tsx`: carga el tablero y catalogos del API.
-- `apps/web/app/(dashboard)/pipeline/pipeline-board.tsx`: tablero cliente con tarjetas arrastrables y formulario de alta.
-- `apps/web/app/(dashboard)/pipeline/actions.ts`: acciones autenticadas de movimiento y creacion.
-- `apps/web/app/(dashboard)/pipeline/pipeline.css`: estilos del tablero y configuracion; formularios reutilizan los estilos globales de Contactos.
+- `apps/web/features/pipeline/pipeline-board.tsx`: tablero cliente con tarjetas arrastrables y formulario de alta.
+- `apps/web/features/pipeline/actions.ts`: acciones autenticadas de movimiento y creacion.
+- `apps/web/styles/pipeline.css`: estilos del tablero y configuracion; formularios reutilizan los estilos globales de Contactos.
 
 ## Decisiones
 

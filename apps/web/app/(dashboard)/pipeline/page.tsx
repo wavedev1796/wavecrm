@@ -1,11 +1,11 @@
 import Link from "next/link";
-import "./pipeline.css";
+import "../../../styles/pipeline.css";
 import { unstable_rethrow } from "next/navigation";
 import { Alert } from "@/components/ui/alert";
-import { PipelineBoard } from "./pipeline-board";
-import { PipelineSettings } from "./pipeline-settings";
-import { dealFormOptions, get } from "./data";
-import type { Board } from "./types";
+import { PipelineBoard } from "../../../features/pipeline/pipeline-board";
+import { PipelineSettings } from "../../../features/pipeline/pipeline-settings";
+import { dealFormOptions, get } from "../../../features/pipeline/data";
+import type { Board } from "../../../features/pipeline/types";
 
 export default async function PipelinePage({
   searchParams,

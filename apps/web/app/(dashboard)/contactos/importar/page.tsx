@@ -1,7 +1,7 @@
-import { ImportPage } from "@/components/csv-import/import-page";
+import { ImportPage } from "@/features/importacion-csv/import-page";
 import { IMPORTACION } from "@/content/importacion";
-import { importContacts } from "./actions";
-import { CONTACT_IMPORT_FIELDS } from "./fields";
+import { importContacts } from "../../../../features/contactos/importar/actions";
+import { CONTACT_IMPORT_FIELDS } from "../../../../features/contactos/importar/fields";
 
 export default function ImportContactsPage() {
   return (

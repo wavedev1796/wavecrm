@@ -1,7 +1,7 @@
-import { ImportPage } from "@/components/csv-import/import-page";
+import { ImportPage } from "@/features/importacion-csv/import-page";
 import { IMPORTACION } from "@/content/importacion";
-import { importCompanies } from "./actions";
-import { COMPANY_IMPORT_FIELDS } from "./fields";
+import { importCompanies } from "../../../../features/empresas/importar/actions";
+import { COMPANY_IMPORT_FIELDS } from "../../../../features/empresas/importar/fields";
 
 export default function ImportCompaniesPage() {
   return (

@@ -72,10 +72,10 @@ Añadido por Zaith Manangón como parte de la calidad del Sprint 1. Solo se aña
 
 | Prueba | Tipo | Archivo |
 | --- | --- | --- |
-| Acciones: validación, normalización, motivo del API, acciones de fila y sesión vencida | Web | `apps/web/app/(dashboard)/usuarios/actions.test.ts` |
-| Formulario de invitar: error por campo, rechazo del API y éxito que vacía el formulario | Web | `apps/web/app/(dashboard)/usuarios/invite-user-form.test.tsx` |
-| Diálogo de editar: datos actuales, error que no lo cierra y éxito que sí | Web | `apps/web/app/(dashboard)/usuarios/edit-user-dialog.test.tsx` |
-| Acción de fila: envía el id y anuncia el resultado | Web | `apps/web/app/(dashboard)/usuarios/row-action.test.tsx` |
+| Acciones: validación, normalización, motivo del API, acciones de fila y sesión vencida | Web | `apps/web/features/usuarios/actions.test.ts` |
+| Formulario de invitar: error por campo, rechazo del API y éxito que vacía el formulario | Web | `apps/web/features/usuarios/invite-user-form.test.tsx` |
+| Diálogo de editar: datos actuales, error que no lo cierra y éxito que sí | Web | `apps/web/features/usuarios/edit-user-dialog.test.tsx` |
+| Acción de fila: envía el id y anuncia el resultado | Web | `apps/web/features/usuarios/row-action.test.tsx` |
 | Página: acceso solo de administrador, acciones por estado, filtros, error de carga y mensajes de la URL ignorados | Web | `apps/web/app/(dashboard)/usuarios/page.test.tsx` |
 | Roles, invitación y duplicados, filtros, edición, desactivar/reactivar, reenviar y eliminar, contra Neon | Integración | `apps/api/test/integracion/users.http.test.cjs` |
 | Invitar, duplicado, cuenta desactivada, reactivar, editar y mensajes falsos por URL | E2E | `e2e/usuarios.spec.ts` |

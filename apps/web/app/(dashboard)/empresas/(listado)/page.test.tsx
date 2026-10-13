@@ -5,9 +5,9 @@ import CompaniesPage from "./page";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
-vi.mock("../actions", () => ({ saveCompany: vi.fn() }));
+vi.mock("../../../../features/empresas/actions", () => ({ saveCompany: vi.fn() }));
 // Los componentes async no se resuelven dentro de <Suspense> en jsdom: se prueban aparte.
-vi.mock("./companies-results", () => ({
+vi.mock("../../../../features/empresas/companies-results", () => ({
   CompaniesSummary: ({ query }: { query: string }) => `resumen ${query}`,
   CompaniesResults: ({ query }: { query: string }) => <p>resultados {query}</p>,
 }));

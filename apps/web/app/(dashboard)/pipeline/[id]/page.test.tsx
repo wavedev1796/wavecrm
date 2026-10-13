@@ -2,16 +2,16 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { authenticatedApi } from "@/lib/authenticated-api";
-import { baseDeal } from "../deal-fixture";
+import { baseDeal } from "../../../../features/pipeline/deal-fixture";
 import DealPage from "./page";
 
 vi.mock("@/lib/authenticated-api", () => ({ authenticatedApi: vi.fn(), apiError: async () => "x" }));
 vi.mock("next/navigation", () => ({ notFound: vi.fn(), unstable_rethrow: vi.fn(), useRouter: () => ({ refresh: vi.fn() }) }));
-vi.mock("../data", () => ({
+vi.mock("../../../../features/pipeline/data", () => ({
   dealFormOptions: async () => ({ pipelines: [], contacts: [], companies: [], users: [] }),
 }));
 // Todas las acciones que importan los componentes de la ficha (ActivityForm hace .bind al renderizar).
-vi.mock("../actions", () => ({
+vi.mock("../../../../features/pipeline/actions", () => ({
   saveDeal: vi.fn(),
   saveDealItemsAction: vi.fn(),
   winDealAction: vi.fn(),

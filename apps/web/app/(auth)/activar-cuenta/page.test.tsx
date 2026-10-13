@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import ActivateAccountPage from './page';
 
-vi.mock('./actions', () => ({ activateAccount: vi.fn() }));
+vi.mock('../../../features/auth/activar-cuenta/actions', () => ({ activateAccount: vi.fn() }));
 
 const fetchMock = vi.fn();
 beforeEach(() => vi.stubGlobal('fetch', fetchMock));

@@ -7,8 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CONTACTOS } from "@/content/contactos";
 import { listQuery } from "@/lib/list-params";
-import { NewContactDialog } from "../new-contact-dialog";
-import { ContactsResults, ContactsSummary } from "./contacts-results";
+import { NewContactDialog } from "../../../../features/contactos/new-contact-dialog";
+import { ContactsResults, ContactsSummary } from "../../../../features/contactos/contacts-results";
 
 type PageProps = Readonly<{
   searchParams: Promise<{

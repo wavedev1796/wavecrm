@@ -5,7 +5,7 @@ import ContactDetailPage from "./page";
 
 vi.mock("@/lib/authenticated-api", () => ({ authenticatedApi: vi.fn() }));
 vi.mock("next/navigation", () => ({ notFound: vi.fn() }));
-vi.mock("../contact-form", () => ({
+vi.mock("../../../../features/contactos/contact-form", () => ({
   ContactForm: ({ id }: { id: string }) => <div>Editando {id}</div>,
 }));
 const api = vi.mocked(authenticatedApi);

@@ -41,7 +41,11 @@ Si PowerShell indica que `corepack` no existe, reinstala Node.js 22 LTS marcando
 ```text
 apps/
   web/        Next.js App Router y sistema visual
-    components/  ui/ primitivas, form/ campos, data/ listados y fichas, layout/ shell y esqueletos, csv-import/
+    app/         rutas y archivos especiales de Next; globals.css importa los estilos globales
+    features/    auth/, contactos/, empresas/, usuarios/, pipeline/ e importacion-csv/
+    components/  ui/ primitivas, form/ campos, data/ listados y fichas, layout/ shell y esqueletos
+    content/     textos visibles de la interfaz
+    lib/         infraestructura y validacion compartida
     styles/      CSS global en 14 tramos en orden de cascada (01-tokens.css a 14-skeleton.css), importados por app/globals.css
   api/        NestJS, Swagger y convenciones HTTP
 packages/
@@ -49,7 +53,7 @@ packages/
 docs/design/  tokens y guía visual original
 ```
 
-En `apps/web`, nada fuera de `app/` importa desde `app/`: lo compartido va en `components/`, `content/` o `lib/`, y ESLint lo impone.
+En `apps/web`, las dependencias siguen `app/` → `features/` → `components/`, `content/` y `lib/`. ESLint impide que el codigo compartido importe desde `app/` o `features/` en sentido contrario.
 
 Estilos: un ajuste a un componente existente va en el tramo de `apps/web/styles/` donde ya viven sus reglas. Los estilos de un componente nuevo van en un archivo nuevo al final (`15-nombre.css`), importado al final de `app/globals.css`.
 

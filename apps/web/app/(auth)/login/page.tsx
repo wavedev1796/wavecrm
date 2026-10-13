@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Alert } from "@/components/ui/alert";
 import { ACCESO } from "@/content/acceso";
-import { LoginForm } from "./login-form";
+import { LoginForm } from "../../../features/auth/login/login-form";
 
 export const metadata: Metadata = { title: ACCESO.login.titulo };
 

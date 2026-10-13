@@ -96,8 +96,8 @@ Añadido por Zaith Manangón como parte de la calidad del Sprint 1. Solo se aña
 | Prueba | Tipo | Archivo |
 | --- | --- | --- |
 | Reglas de contraseña: longitud, mayúscula, minúscula, número, símbolo y confirmación | Web | `apps/web/lib/password-rules.test.ts` |
-| Server action de activación: validación previa, token codificado, motivo del API y fallo de red | Web | `apps/web/app/(auth)/activar-cuenta/actions.test.ts` |
-| Formulario: 5 reglas en vivo, aviso de desajuste y errores del servidor | Web | `apps/web/app/(auth)/activar-cuenta/activation-form.test.tsx` |
+| Server action de activación: validación previa, token codificado, motivo del API y fallo de red | Web | `apps/web/features/auth/activar-cuenta/actions.test.ts` |
+| Formulario: 5 reglas en vivo, aviso de desajuste y errores del servidor | Web | `apps/web/features/auth/activar-cuenta/activation-form.test.tsx` |
 | Página de invitación: sin token, invitación válida y vencida | Web | `apps/web/app/(auth)/activar-cuenta/page.test.tsx` |
 | Invitación enmascarada y activación con las reglas, contra Neon | Integración | `apps/api/test/integracion/users.http.test.cjs` |
 | Activación completa desde el navegador | E2E | `e2e/usuarios.spec.ts` |

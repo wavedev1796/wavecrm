@@ -5,29 +5,30 @@ import { TagList } from "@/components/data/tag-list";
 import { Alert } from "@/components/ui/alert";
 import { Table } from "@/components/ui/table";
 import { COMUN } from "@/content/comun";
-import { EMPRESAS } from "@/content/empresas";
+import { CONTACTOS } from "@/content/contactos";
 import { authenticatedApi } from "@/lib/authenticated-api";
+import { initials } from "@/lib/format";
 import type { ListParams } from "@/lib/list-params";
-import type { Company, CompanyList } from "../types";
+import type { Contact, ContactList } from "./types";
 
 /** Una sola llamada al API por render, aunque la pidan el resumen y la tabla. */
-const getCompanies = cache(async (query: string): Promise<CompanyList | null> => {
-  const response = await authenticatedApi(`/companies?${query}`);
-  return response.ok ? ((await response.json()) as CompanyList) : null;
+const getContacts = cache(async (query: string): Promise<ContactList | null> => {
+  const response = await authenticatedApi(`/contacts?${query}`);
+  return response.ok ? ((await response.json()) as ContactList) : null;
 });
 
-export async function CompaniesSummary({ query }: Readonly<{ query: string }>) {
-  const result = await getCompanies(query);
-  const texto = EMPRESAS.listado;
+export async function ContactsSummary({ query }: Readonly<{ query: string }>) {
+  const result = await getContacts(query);
+  const texto = CONTACTOS.listado;
   return result ? texto.total(result.meta.total) : texto.resumenSinDatos;
 }
 
-export async function CompaniesResults({
+export async function ContactsResults({
   query,
   params,
 }: Readonly<{ query: string; params: ListParams }>) {
-  const result = await getCompanies(query);
-  const texto = EMPRESAS.listado;
+  const result = await getContacts(query);
+  const texto = CONTACTOS.listado;
   if (!result) {
     return (
       <div className="data-card-alert">
@@ -35,7 +36,7 @@ export async function CompaniesResults({
       </div>
     );
   }
-  const companies = result.data;
+  const contacts = result.data;
   return (
     <>
       <Table>
@@ -47,10 +48,10 @@ export async function CompaniesResults({
           </tr>
         </thead>
         <tbody>
-          {companies.map((company) => (
-            <CompanyRow key={company.id} company={company} />
+          {contacts.map((contact) => (
+            <ContactRow key={contact.id} contact={contact} />
           ))}
-          {!companies.length && (
+          {!contacts.length && (
             <tr>
               <td colSpan={texto.columnas.length} className="empty-table">
                 {texto.sinResultados}
@@ -60,34 +61,38 @@ export async function CompaniesResults({
         </tbody>
       </Table>
       <Pagination
-        basePath="/empresas"
+        basePath="/contactos"
         params={params}
         meta={result.meta}
-        shown={companies.length}
+        shown={contacts.length}
         label={texto.paginacion}
       />
     </>
   );
 }
 
-function CompanyRow({ company }: Readonly<{ company: Company }>) {
+function ContactRow({ contact }: Readonly<{ contact: Contact }>) {
+  const name = `${contact.firstName} ${contact.lastName}`;
   return (
     <tr>
       <td>
-        <Link className="contact-cell contact-link" href={`/empresas/${company.id}`}>
+        <Link
+          className="contact-cell contact-link"
+          href={`/contactos/${contact.id}`}
+        >
+          <span className="avatar">{initials(name)}</span>
           <span>
-            <strong>{company.name}</strong>
-            {company.legalName && <small>{company.legalName}</small>}
+            <strong>{name}</strong>
+            <small>{contact.email ?? contact.documentId}</small>
           </span>
         </Link>
       </td>
-      <td>{company.taxId ?? COMUN.sinDato}</td>
-      <td>{company.province ?? COMUN.sinDato}</td>
+      <td>{contact.company?.name ?? COMUN.sinDato}</td>
+      <td>{contact.province ?? COMUN.sinDato}</td>
       <td>
-        <TagList tags={company.tags} />
+        <TagList tags={contact.tags} />
       </td>
-      <td>{company._count.contacts}</td>
-      <td>{company.owner?.name ?? EMPRESAS.listado.sinAsignar}</td>
+      <td>{contact.owner?.name ?? CONTACTOS.listado.sinAsignar}</td>
     </tr>
   );
 }

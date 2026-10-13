@@ -2,7 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { ACCESO } from "@/content/acceso";
 import { API_URL } from "@/lib/api";
-import { ActivationForm } from "./activation-form";
+import { ActivationForm } from "../../../features/auth/activar-cuenta/activation-form";
 
 type Props = Readonly<{ searchParams: Promise<{ token?: string }> }>;
 

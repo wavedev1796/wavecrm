@@ -67,9 +67,9 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | `apps/api/test/contact-import.service.test.cjs` | Unitaria | 6 | Importación normalizada con empresa y responsable, **todo o nada**, reporte ordenado, cédula repetida o registrada, empresa inexistente, singular, 13 rechazos de archivo/mapeo, `P2002` → 409 |
 | `apps/api/test/app.setup.test.cjs` | Unitaria | 1 de 5 (+3 textos) | `errors` en el cuerpo de error; textos de multer en español |
 | `apps/api/test/integracion/contact-import.http.test.cjs` | Integración | 4 | CSV de Excel real, reimportación, fila inválida sin escritura, 400/401/413 |
-| `apps/web/components/csv-import/csv-header.test.ts` (antes en `contactos/importar/`) | Web | 4 | Cabecera con `,`/`;`, comillas, BOM y Windows-1252; alias de columnas de contactos y de empresas |
-| `apps/web/app/(dashboard)/contactos/importar/actions.test.ts` | Web | 4 | Sin archivo, reenvío de solo archivo y mapeo, singular/plural, reporte 422, 400, red y sesión vencida |
-| `apps/web/components/csv-import/import-form.test.tsx` (antes en `contactos/importar/`) | Web | 3 | Columnas propuestas, mapeo enviado, éxito con enlace, tabla de errores, **archivo de más de 1 MB o sin cabecera avisado antes de enviar**, vuelta a "elige el archivo" tras enviar conservando el mapeo manual |
+| `apps/web/features/importacion-csv/csv-header.test.ts` (antes en `contactos/importar/`) | Web | 4 | Cabecera con `,`/`;`, comillas, BOM y Windows-1252; alias de columnas de contactos y de empresas |
+| `apps/web/features/contactos/importar/actions.test.ts` | Web | 4 | Sin archivo, reenvío de solo archivo y mapeo, singular/plural, reporte 422, 400, red y sesión vencida |
+| `apps/web/features/importacion-csv/import-form.test.tsx` (antes en `contactos/importar/`) | Web | 3 | Columnas propuestas, mapeo enviado, éxito con enlace, tabla de errores, **archivo de más de 1 MB o sin cabecera avisado antes de enviar**, vuelta a "elige el archivo" tras enviar conservando el mapeo manual |
 | `apps/web/app/(dashboard)/contactos/importar/page.test.tsx` | Web | 1 | Instrucciones y `accept` del archivo |
 | `apps/web/lib/authenticated-api.test.ts` | Web | 1 de 5 | Un `FormData` viaja sin `Content-Type` JSON |
 | `apps/web/app/(dashboard)/paginas.test.tsx` | Web | (aserción) | Enlace "Importar CSV" en `/contactos` |
@@ -91,9 +91,9 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | `apps/web/lib/list-params.test.ts`, `lib/validation.test.ts` | Web | 2, +2 | URL y consulta del listado; reglas de empresa y campos opcionales compartidos |
 | `apps/web/components/data/live-search.test.tsx` | Web | 2 | Espera 300 ms tras la última tecla, conserva los filtros y vuelve a la página 1; se sincroniza si la URL cambia por fuera |
 | `apps/web/components/form/phone-field.test.tsx` | Web | 3 | Ecuador por defecto; país guardado al editar; **el HTML del servidor no trae nombres de país** (hidratación) |
-| `apps/web/app/(dashboard)/contactos/contact-form.test.tsx` | Web | +2 | Sin errores al escribir ni al salir del campo; el número aparece al elegir el tipo; al guardar, error en su campo, foco en el primero y se borra al editar |
-| `apps/web/app/(dashboard)/contactos/company-field.test.tsx` | Web | 3 | Sugerencias por nombre o RUC y `companyId`; empresa conservada al editar; **sesión vencida durante la búsqueda** |
-| `apps/web/app/(dashboard)/contactos/actions.test.ts` | Web | +3 | Teléfono en E.164 según el país; pasaporte normalizado y `409` junto al documento; fallos del API y de conexión |
+| `apps/web/features/contactos/contact-form.test.tsx` | Web | +2 | Sin errores al escribir ni al salir del campo; el número aparece al elegir el tipo; al guardar, error en su campo, foco en el primero y se borra al editar |
+| `apps/web/features/contactos/company-field.test.tsx` | Web | 3 | Sugerencias por nombre o RUC y `companyId`; empresa conservada al editar; **sesión vencida durante la búsqueda** |
+| `apps/web/features/contactos/actions.test.ts` | Web | +3 | Teléfono en E.164 según el país; pasaporte normalizado y `409` junto al documento; fallos del API y de conexión |
 | `apps/web/app/(dashboard)/empresas/*.test.ts(x)` | Web | 10 | Listado, vacío y error; Añadir empresa (errores al guardar, `409` al RUC, cierre y aviso); importación |
 | `e2e/contactos.spec.ts` | Navegador | +2 | La tabla se filtra al escribir; contacto con pasaporte y teléfono de Colombia |
 | `e2e/empresas.spec.ts` | Navegador | 2 | Añadir empresa y encontrarla con el buscador; importar con errores y luego corregido |
@@ -105,9 +105,9 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 | `apps/api/test/validation.test.cjs` (2026-10-01) | Unitaria | +1 | Documento obligatorio al crear y al editar; el tipo acepta su nombre ("Cédula", "pasaporte") |
 | `apps/api/test/contact-import.service.test.cjs`, `contact-import.http.test.cjs` (2026-10-01) | Unitaria e integración | = | Importación con tipo y número obligatorios: cédula, RUC y pasaporte, errores por columna y unicidad del documento |
 | `apps/api/test/integracion/documentos.http.test.cjs` (2026-10-01) | Integración | = | Alta sin documento, `PATCH` que intenta vaciarlo y `NOT NULL` en la base (`23502`) |
-| `apps/web/app/(dashboard)/contactos/actions.test.ts`, `company-field.test.tsx` (2026-10-01) | Web | +3 | Documento obligatorio; empresa opcional con su ayuda; un contacto sin empresa se guarda sin vínculo |
+| `apps/web/features/contactos/actions.test.ts`, `company-field.test.tsx` (2026-10-01) | Web | +3 | Documento obligatorio; empresa opcional con su ayuda; un contacto sin empresa se guarda sin vínculo |
 | Revisión visual (2026-10-01, rama `development`) | Manual | — | 1024 y 375 px: selects con la piel de los inputs, `*` y ayuda visibles, errores al guardar vacío |
-| `apps/web/app/(dashboard)/empresas/company-form.test.tsx` (2026-10-01) | Web | +1 | Nombre comercial y RUC son los únicos obligatorios y llevan su marca |
+| `apps/web/features/empresas/company-form.test.tsx` (2026-10-01) | Web | +1 | Nombre comercial y RUC son los únicos obligatorios y llevan su marca |
 | Revisión visual de la barra de filtros (2026-10-01) | Manual | — | Contactos y Empresas de 1440 a 375 px, con **Limpiar** visible: sin desborde |
 | Revisión visual de los selects (2026-10-03) | Manual | — | 1024 y 375 px: prefijo largo en una línea, listas de países y provincias con tope y desplazamiento, foco de teclado azul, cantón deshabilitado con flecha |
 
@@ -115,13 +115,13 @@ pnpm exec dotenv -e .env.test.local -- pnpm --filter @wave/database run migrate:
 
 | Archivo | Tipo | Pruebas | Qué verifica |
 | --- | --- | --- | --- |
-| `apps/web/components/csv-import/spreadsheet.test.tsx` | Web | 5 | Un `.xlsx` se convierte a CSV (cero inicial de texto, RUC numérico, comillas); un CSV pasa igual y un `.xlsx` dañado falla; plantillas de contactos y empresas en `.xlsx` y CSV (BOM y `;`) con el mapeo propuesto completo; el Excel trae la hoja de datos solo con la cabecera y la hoja **Instrucciones** con cada columna, su ayuda y un ejemplo (2026-10-07) |
-| `apps/web/components/csv-import/spreadsheet.test.tsx` (listas, 2026-10-07) | Web | +1 | Hoja **Listas** oculta con tipos de documento, provincias y cantones; validación de lista en tipo de documento, provincia y cantón (según la provincia de la fila), después del formato condicional |
+| `apps/web/features/importacion-csv/spreadsheet.test.tsx` | Web | 5 | Un `.xlsx` se convierte a CSV (cero inicial de texto, RUC numérico, comillas); un CSV pasa igual y un `.xlsx` dañado falla; plantillas de contactos y empresas en `.xlsx` y CSV (BOM y `;`) con el mapeo propuesto completo; el Excel trae la hoja de datos solo con la cabecera y la hoja **Instrucciones** con cada columna, su ayuda y un ejemplo (2026-10-07) |
+| `apps/web/features/importacion-csv/spreadsheet.test.tsx` (listas, 2026-10-07) | Web | +1 | Hoja **Listas** oculta con tipos de documento, provincias y cantones; validación de lista en tipo de documento, provincia y cantón (según la provincia de la fila), después del formato condicional |
 | `contacts-companies.service.test.cjs`, `contact-import.service.test.cjs` (teléfono o correo, 2026-10-07) | Unitaria | +2 | Contacto sin teléfono ni correo al crear, al vaciar el único medio en un `PATCH` y al importar; mapeo sin ninguna de las dos columnas; error en la columna del correo cuando es la única |
 | `apps/api/test/integracion/documentos.http.test.cjs` (teléfono o correo, 2026-10-07) | Integración | +1 | `400` al crear sin ninguno y al vaciar el correo, `200` al cambiarlo por teléfono, `CHECK` de la base (`23514`) |
-| `apps/web/app/(dashboard)/contactos/actions.test.ts` (teléfono o correo, 2026-10-07) | Web | +1 | Sin teléfono ni correo no llama al API; con solo el correo, sí |
+| `apps/web/features/contactos/actions.test.ts` (teléfono o correo, 2026-10-07) | Web | +1 | Sin teléfono ni correo no llama al API; con solo el correo, sí |
 | Revisión de las listas en Excel de escritorio (2026-10-07) | Manual | — | Tipo de documento, provincia y cantón dependiente aceptan y rechazan lo esperado; **Listas** oculta; los dos archivos abren sin reparar |
-| `apps/web/components/csv-import/import-form.test.tsx` | Web | +1 | Un `.xlsx` propone el mapeo, se envía como CSV y un `.xlsx` dañado muestra su aviso |
+| `apps/web/features/importacion-csv/import-form.test.tsx` | Web | +1 | Un `.xlsx` propone el mapeo, se envía como CSV y un `.xlsx` dañado muestra su aviso |
 | `apps/web/content/catalogos.test.ts` | Web | 6 | Cada lista de `@wave/shared` repite su `enum` del schema de Prisma |
 | `apps/web/lib/format.test.ts` | Web | 2 | Iniciales, dinero y fechas en `es-EC` |
 | Revisión visual (2026-10-05, rama `pruebas`) | Manual | — | Importar un `.xlsx` con una cédula inválida: mapeo propuesto, fila 2 rechazada y nada guardado |

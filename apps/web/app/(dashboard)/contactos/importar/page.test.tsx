@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import ImportContactsPage from "./page";
 
-vi.mock("./actions", () => ({ importContacts: vi.fn() }));
+vi.mock("../../../../features/contactos/importar/actions", () => ({ importContacts: vi.fn() }));
 
 test("explica el formato del archivo y la regla de todo o nada", () => {
   render(<ImportContactsPage />);

@@ -26,11 +26,11 @@ import {
   deleteUser,
   reactivateUser,
   resendInvitation,
-} from "./actions";
-import { EditUserDialog } from "./edit-user-dialog";
-import { InviteUserForm } from "./invite-user-form";
-import { RowAction } from "./row-action";
-import { UsersFeedbackProvider } from "./users-feedback";
+} from "../../../features/usuarios/actions";
+import { EditUserDialog } from "../../../features/usuarios/edit-user-dialog";
+import { InviteUserForm } from "../../../features/usuarios/invite-user-form";
+import { RowAction } from "../../../features/usuarios/row-action";
+import { UsersFeedbackProvider } from "../../../features/usuarios/users-feedback";
 
 type User = {
   id: string;

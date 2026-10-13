@@ -56,8 +56,8 @@ El primer análisis falló el gate por dos condiciones del código nuevo, que es
 
 ### Implementación
 
-- `apps/web/app/(dashboard)/pipeline/deal-history.tsx`: la promesa de `dealHistoryAction` maneja el rechazo (regla `typescript:S9383`). Antes, un fallo de red dejaba el historial en "Cargando…" para siempre; ahora muestra `COMUN.errores.conexion`.
-- `apps/web/app/(dashboard)/pipeline/deal-history.test.tsx` (nuevo): historial con movimientos, vacío, error del API y fallo de red.
+- `apps/web/features/pipeline/deal-history.tsx`: la promesa de `dealHistoryAction` maneja el rechazo (regla `typescript:S9383`). Antes, un fallo de red dejaba el historial en "Cargando…" para siempre; ahora muestra `COMUN.errores.conexion`.
+- `apps/web/features/pipeline/deal-history.test.tsx` (nuevo): historial con movimientos, vacío, error del API y fallo de red.
 - `apps/api/test/pipeline-config.service.test.cjs` (nuevo, 15 pruebas): pipelines, etapas (incluido el intercambio de posición), listado paginado, tablero inexistente, crear, editar y borrar negocios, ficha, historial, completar actividades, traducción de errores de Prisma (`P2002`, `P2003`, `P2025`, `P2034`) y delegación de las 22 rutas del controlador.
 - `apps/web/vitest.config.ts`: la cobertura mide `components/**/*.{ts,tsx}`. Antes medía solo `.tsx`, así que `components/csv-import/spreadsheet.ts` salía en SonarQube con 0 % aunque tiene pruebas.
 - `.github/workflows/ci.yml`: paso *Pruebas de integración (rama pruebas de Neon)*, solo en push a `ZaithManangon-Dev`, con los secrets `NEON_PRUEBAS_DATABASE_URL` y `NEON_PRUEBAS_DIRECT_URL`, y `JWT_SECRET` desechable por run.

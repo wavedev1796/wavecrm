@@ -17,6 +17,7 @@ Configurar el embudo comercial, administrar negocios desde la API y moverlos en 
 | CRM-21 | [Cierre ganado/perdido](21 - Cierre ganado-perdido.md) | Zaith Manangón | Completo (3/3 criterios) |
 | — | [SonarQube Cloud en CI](SonarQube Cloud en CI.md) | Zaith Manangón | Completo (5/5 criterios) |
 | — | [Estructura de components/ de apps/web](Estructura de components de apps-web.md) | Zaith Manangón | Completo (5/5 criterios) |
+| — | [Estructura de carpetas de apps/web](Estructura de carpetas de apps-web.md) | Eduardo Garcia | Completo (5/5 criterios) |
 | — | [Estilos globales por partes](Estilos globales por partes.md) | Zaith Manangón | Completo (5/5 criterios) |
 | — | [Esqueletos de carga](Esqueletos de carga.md) | Zaith Manangón | Completo (5/5 criterios) |
 | — | [Cobertura y orden de pruebas](Cobertura y orden de pruebas.md) | Zaith Manangón | Completo (5/5 criterios) |

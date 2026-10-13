@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import { CONTACT_IMPORT_FIELDS } from "@/app/(dashboard)/contactos/importar/fields";
-import type { ImportState } from "@/lib/csv-import";
+import { CONTACT_IMPORT_FIELDS } from "@/features/contactos/importar/fields";
+import type { ImportState } from "@/features/importacion-csv/csv-import";
 import writeXlsxFile from "write-excel-file/browser";
 import { ImportForm } from "./import-form";
 

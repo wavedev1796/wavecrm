@@ -1,4 +1,4 @@
-import "../pipeline.css";
+import "../../../../styles/pipeline.css";
 import Link from "next/link";
 import { notFound, unstable_rethrow } from "next/navigation";
 import {
@@ -22,11 +22,11 @@ import { NEGOCIO } from "@/content/pipeline";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatDateTime, formatDay, formatMoney } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
-import { dealFormOptions } from "../data";
-import { DealActions } from "../deal-actions";
-import { DealItems } from "../deal-items";
-import { DealTimeline } from "../deal-timeline";
-import type { DealDetail } from "../types";
+import { dealFormOptions } from "../../../../features/pipeline/data";
+import { DealActions } from "../../../../features/pipeline/deal-actions";
+import { DealItems } from "../../../../features/pipeline/deal-items";
+import { DealTimeline } from "../../../../features/pipeline/deal-timeline";
+import type { DealDetail } from "../../../../features/pipeline/types";
 
 const TONO = { OPEN: "neutral", WON: "success", LOST: "warning" } as const;
 
