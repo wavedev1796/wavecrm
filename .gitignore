@@ -1,6 +1,8 @@
 node_modules/
 .next/
+apps/web/.next-pipeline-test/
 dist/
+packages/database/.sprint3-deploy/
 coverage/
 .turbo/
 .env
