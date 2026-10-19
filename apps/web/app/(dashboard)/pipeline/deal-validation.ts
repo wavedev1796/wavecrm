@@ -16,6 +16,11 @@ export function isDay(value: string) {
   );
 }
 export const decimal = (value: string) => value.trim().replace(",", ".");
+/** Hoy en Ecuador como AAAA-MM-DD (UTC-5, sin horario de verano), igual que ecuadorToday() del API. */
+export const todayEcuador = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guayaquil" }).format(new Date());
+/** Monto de 0 a 999999999999.99 con hasta dos decimales, con punto o coma. */
+export const isAmount = (value: string) => /^\d{1,12}(\.\d{1,2})?$/.test(decimal(value));
 
 export function validateDeal(values: DealValues): DealFormState["fieldErrors"] {
   const errors: DealFormState["fieldErrors"] = {};

@@ -2,16 +2,18 @@ import { expect, test, vi } from "vitest";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import {
   saveDeal,
-  moveDealAction,
   configurePipelineAction,
   saveDealItemsAction,
-  winDealAction,
-  loseDealAction,
   deleteDealAction,
   dealHistoryAction,
-  reopenDealAction,
   createActivityAction,
   completeActivityAction,
+  previewTransitionAction,
+  completeTransitionAction,
+  loadColumnAction,
+  qualifyDealAction,
+  createQuoteAction,
+  acceptQuoteAction,
 } from "./actions";
 import { emptyActivity, emptyDeal } from "./types";
 vi.mock("@/lib/authenticated-api", () => ({
@@ -22,6 +24,14 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ unstable_rethrow: vi.fn() }));
 const api = vi.mocked(authenticatedApi);
 const initial = { values: emptyDeal, fieldErrors: {} };
+const fields = (values: Record<string, string>) => {
+  const data = new FormData();
+  for (const [key, value] of Object.entries(values)) data.set(key, value);
+  return data;
+};
+/** Ruta, método y cuerpo de cada llamada al API, en orden. */
+const calls = () =>
+  api.mock.calls.map(([path, init]) => [path, init?.method, init?.body ? JSON.parse(String(init.body)) : undefined]);
 const form = (extra: Record<string, string> = {}) => {
   const result = new FormData();
   for (const [key, value] of Object.entries({
@@ -69,7 +79,7 @@ test("conserva los datos cuando el API rechaza el alta", async () => {
 });
 test("explica una desconexion al mover en vez de dejar una promesa rechazada", async () => {
   api.mockRejectedValue(new Error("offline"));
-  const result = await moveDealAction("d1", "s2");
+  const result = await completeTransitionAction("d1", "s2", "s1", new FormData());
   expect(result.error).toMatch(/conectar/);
 });
 
@@ -144,26 +154,111 @@ test("los productos viajan como numeros con coma o punto decimal", async () => {
     items: [{ description: "Vinos", quantity: 1.5, unitPrice: 100.25, taxRate: 0 }],
   });
 });
-test("ganar envia el dia elegido a las 00:00 UTC y perder exige detalle con Otro", async () => {
+test("ganar, perder y reabrir van a su ruta con la etapa vista y el dia a las 00:00 UTC", async () => {
   api.mockResolvedValue(Response.json({ id: "d1" }));
-  await winDealAction("d1", "2026-10-10");
-  expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body))).toEqual({
-    closedAt: "2026-10-10T00:00:00.000Z",
+  await completeTransitionAction("d1", "WON", "s3", fields({ closedAt: "2026-10-10" }));
+  await completeTransitionAction("d1", "LOST", "s1", fields({ lossReason: "PRICE" }));
+  await completeTransitionAction("d1", "REOPEN", "s4", fields({ reason: " El cliente anuló la orden " }));
+  expect(calls()).toEqual([
+    ["/deals/d1/win", "POST", { closedAt: "2026-10-10T00:00:00.000Z", fromStageId: "s3" }],
+    ["/deals/d1/lose", "POST", { lossReason: "PRICE", fromStageId: "s1" }],
+    ["/deals/d1/reopen", "POST", { reason: "El cliente anuló la orden" }],
+  ]);
+  expect((await completeTransitionAction("d1", "WON", "s3", fields({ closedAt: "10/10/2026" }))).error).toBeTruthy();
+  expect(api).toHaveBeenCalledTimes(3);
+});
+
+test("completar una transicion encadena los datos y termina moviendo con la etapa vista", async () => {
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  const result = await completeTransitionAction(
+    "d1",
+    "s2",
+    "s1",
+    fields({
+      contactId: "c1",
+      need: " Tienda en línea ",
+      budget: "5000,50",
+      expectedClose: "2026-11-30",
+      interactionType: "CALL",
+      interactionSubject: "Primera llamada",
+      interactionDay: "2026-10-01",
+      nextType: "MEETING",
+      nextSubject: "Demo",
+      nextDay: "2026-10-25",
+      validUntil: "2026-11-30",
+      sentAt: "2026-10-18",
+      quoteId: "q 1",
+      acceptedAt: "2026-10-18",
+      acceptanceNote: "Orden de compra",
+      reason: "Revisar",
+    }),
+  );
+  expect(result).toEqual({ done: true });
+  expect(calls()).toEqual([
+    [
+      "/deals/d1",
+      "PATCH",
+      { contactId: "c1", need: "Tienda en línea", budget: 5000.5, expectedClose: "2026-11-30T00:00:00.000Z" },
+    ],
+    ["/deals/d1/activities", "POST", { type: "CALL", subject: "Primera llamada", completedAt: "2026-10-01T00:00:00.000Z" }],
+    ["/deals/d1/activities", "POST", { type: "MEETING", subject: "Demo", dueAt: "2026-10-25T00:00:00.000Z" }],
+    ["/deals/d1/quotes", "POST", { validUntil: "2026-11-30T00:00:00.000Z", sentAt: "2026-10-18T00:00:00.000Z" }],
+    ["/deals/d1/quotes/q%201/accept", "POST", { acceptedAt: "2026-10-18T00:00:00.000Z", acceptanceNote: "Orden de compra" }],
+    ["/deals/d1/move", "PATCH", { stageId: "s2", fromStageId: "s1", reason: "Revisar" }],
+  ]);
+});
+
+test("un 422 devuelve los pendientes y un paso previo que falla corta la cadena", async () => {
+  const pending = [{ code: "NEED", message: "Documenta la necesidad del cliente." }];
+  api.mockResolvedValueOnce(Response.json({ error: { message: "Faltan datos.", errors: pending } }, { status: 422 }));
+  expect(await completeTransitionAction("d1", "s2", "s1", new FormData())).toEqual({
+    error: "La referencia ya no existe.",
+    pending,
   });
-  expect((await winDealAction("d1", "10/10/2026")).error).toBeTruthy();
-  const lost = await loseDealAction("d1", "OTHER", " ");
-  expect(lost.fieldErrors?.lossDetail).toBeTruthy();
-  expect(api).toHaveBeenCalledTimes(1);
+  api.mockResolvedValueOnce(new Response("", { status: 400 }));
+  const result = await completeTransitionAction("d1", "s2", "s1", fields({ need: "Web" }));
+  expect(result.error).toBe("La referencia ya no existe.");
+  expect(api).toHaveBeenCalledTimes(2);
+});
+
+test("la transicion valida fechas, presupuesto y motivos antes de llamar al API", async () => {
+  for (const values of [
+    { budget: "1.001" },
+    { nextDay: "2026-02-31", nextSubject: "Demo", nextType: "CALL" },
+    { reason: "x" },
+  ] as Record<string, string>[])
+    expect((await completeTransitionAction("d1", "s2", "s1", fields(values))).error).toBeTruthy();
+  expect((await completeTransitionAction("d1", "LOST", "s1", fields({ lossReason: "OTHER" }))).error).toMatch(/motivo/);
+  expect((await completeTransitionAction("d1", "LOST", "s1", fields({ lossReason: "CAPRICHO" }))).error).toBeTruthy();
+  expect(api).not.toHaveBeenCalled();
+});
+
+test("la consulta previa, ver mas y la ficha usan sus rutas", async () => {
+  api.mockResolvedValue(Response.json({ pending: [], quote: null, items: 0 }));
+  expect((await previewTransitionAction("d1", "s 2")).data).toEqual({ pending: [], quote: null, items: 0 });
+  await loadColumnAction("p1", "LOST", 2);
+  await qualifyDealAction("d1", fields({ need: " Web ", solution: "", budget: "", budgetNote: "Sin definir", decisionMaker: "Gerente" }));
+  await createQuoteAction("d1", fields({ validUntil: "2026-11-30", sentAt: "" }));
+  await acceptQuoteAction("d1", "q1", fields({ acceptedAt: "2026-10-18", acceptanceNote: " Correo " }));
+  expect(calls()).toEqual([
+    ["/deals/d1/transition?to=s%202", "GET", undefined],
+    ["/deals/board?pipelineId=p1&column=LOST&page=2", "GET", undefined],
+    ["/deals/d1", "PATCH", { need: "Web", solution: null, budget: null, budgetNote: "Sin definir", decisionMaker: "Gerente" }],
+    ["/deals/d1/quotes", "POST", { validUntil: "2026-11-30T00:00:00.000Z" }],
+    ["/deals/d1/quotes/q1/accept", "POST", { acceptedAt: "2026-10-18T00:00:00.000Z", acceptanceNote: "Correo" }],
+  ]);
+  expect((await qualifyDealAction("d1", fields({ budget: "abc" }))).fieldErrors?.budget).toBeTruthy();
+  expect((await createQuoteAction("d1", fields({ validUntil: "" }))).error).toBeTruthy();
+  expect((await acceptQuoteAction("d1", "q1", fields({ acceptedAt: "2026-10-18", acceptanceNote: "" }))).error).toBeTruthy();
+  expect(api).toHaveBeenCalledTimes(5);
 });
 
 test("borrar, reabrir y completar usan su ruta y un 204 no trae datos", async () => {
   api.mockImplementation(async () => new Response(null, { status: 204 }));
   expect(await deleteDealAction("d 1")).toEqual({ data: undefined });
-  await reopenDealAction("d1");
   await completeActivityAction("d1", "a/1");
   expect(api.mock.calls.map(([path, init]) => [path, init?.method])).toEqual([
     ["/deals/d%201", "DELETE"],
-    ["/deals/d1/reopen", "POST"],
     ["/deals/d1/activities/a%2F1/complete", "PATCH"],
   ]);
 });
@@ -186,15 +281,16 @@ test("editar un negocio usa PATCH, envia el responsable y avisa que se actualizo
   expect(result.feedback).toEqual({ tone: "success", message: expect.any(String) });
 });
 
-test("perder valida el motivo, el largo del detalle y lo envia recortado", async () => {
+test("perder valida el largo del detalle y lo envia recortado", async () => {
   api.mockResolvedValue(Response.json({ id: "d1" }));
-  expect((await loseDealAction("d1", "CAPRICHO", "")).fieldErrors?.lossReason).toBeTruthy();
-  expect((await loseDealAction("d1", "PRICE", "x".repeat(501))).fieldErrors?.lossDetail).toBeTruthy();
-  await loseDealAction("d1", "PRICE", "");
-  await loseDealAction("d1", "OTHER", "  Cambio de proveedor ");
-  expect(api.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))).toEqual([
-    { lossReason: "PRICE" },
-    { lossReason: "OTHER", lossDetail: "Cambio de proveedor" },
+  const lose = (detail: string) =>
+    completeTransitionAction("d1", "LOST", "s1", fields({ lossReason: detail ? "OTHER" : "PRICE", lossDetail: detail }));
+  expect((await lose("x".repeat(501))).error).toBeTruthy();
+  await lose("");
+  await lose("  Cambio de proveedor ");
+  expect(calls().map(([, , body]) => body)).toEqual([
+    { lossReason: "PRICE", fromStageId: "s1" },
+    { lossReason: "OTHER", lossDetail: "Cambio de proveedor", fromStageId: "s1" },
   ]);
 });
 
@@ -213,6 +309,18 @@ test("una actividad invalida explica cada campo sin llamar al API", async () => 
   );
   expect(Object.keys(result.fieldErrors).sort()).toEqual(["description", "dueAt", "subject", "type"]);
   expect(api).not.toHaveBeenCalled();
+});
+
+test("una actividad ya realizada se envia como completada en su fecha o en la de hoy", async () => {
+  api.mockResolvedValue(Response.json({ id: "a1" }));
+  await createActivityAction("d1", activityState, activity({ type: "CALL", subject: "Llamada", dueAt: "2026-10-01", done: "on" }));
+  expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body))).toEqual({
+    type: "CALL",
+    subject: "Llamada",
+    completedAt: "2026-10-01T00:00:00.000Z",
+  });
+  await createActivityAction("d1", activityState, activity({ type: "CALL", subject: "Llamada", done: "on" }));
+  expect(JSON.parse(String(api.mock.calls[1]?.[1]?.body)).completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T00:00:00.000Z$/);
 });
 
 test("registrar una actividad limpia el formulario y omite fecha y nota vacias", async () => {

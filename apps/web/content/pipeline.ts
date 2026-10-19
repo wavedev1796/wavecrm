@@ -21,6 +21,48 @@ export const PIPELINE = {
   valueFromItems: "Se calcula con los productos de la ficha.",
 } as const;
 
+export const TRANSICION = {
+  titulo: "Cambiar de etapa",
+  revisando: "Revisando los requisitos…",
+  intro: (negocio: string, destino: string) =>
+    `Para pasar ${negocio} a ${destino} falta completar:`,
+  confirmar: "Guardar y continuar",
+  cancelar: "Cancelar",
+  hecho: (negocio: string, destino: string) => `${negocio} pasó a ${destino}.`,
+  abrirFicha: "Abrir la ficha",
+  destinos: { WON: "Ganado", LOST: "Perdido", REOPEN: "Abierto" },
+  campos: {
+    contacto: "Contacto",
+    responsable: "Responsable",
+    necesidad: "Necesidad del cliente",
+    solucion: "Solución de interés",
+    presupuesto: "Presupuesto (USD)",
+    justificacion: "Si aún no se conoce, por qué",
+    cierreEstimado: "Fecha estimada de cierre",
+    tipoInteraccion: "Tipo de interacción",
+    asuntoInteraccion: "Qué se habló",
+    realizadaEl: "Realizada el",
+    tipoActividad: "Tipo de actividad",
+    asuntoActividad: "Asunto de la próxima actividad",
+    programadaPara: "Programada para",
+    vigencia: "Vigente hasta",
+    enviadaEl: "Enviada el",
+    aceptadaEl: "Aceptada el",
+    evidencia: "Evidencia de aceptación",
+    evidenciaAyuda: "Por ejemplo: orden de compra 55 recibida por correo.",
+    cierreReal: "Fecha real de cierre",
+    motivoPerdida: "Motivo de la pérdida",
+    detalle: "Detalle",
+    motivo: "Motivo del cambio",
+    elegir: "Selecciona una opción",
+  },
+  errores: {
+    presupuesto: "Ingresa un presupuesto con hasta dos decimales, por ejemplo 5000 o 5000,50.",
+    motivo: "Cuenta el motivo del cambio (entre 2 y 500 caracteres).",
+    evidencia: "Describe la evidencia de aceptación (entre 2 y 500 caracteres).",
+  },
+} as const;
+
 export const NEGOCIO = {
   volver: "Volver al pipeline",
   etiqueta: "Negocio",

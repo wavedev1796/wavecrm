@@ -4,6 +4,8 @@ import type {
   DealStatus,
   LossReason,
   QuoteStatus,
+  StageRequirement,
+  TransitionCheck,
 } from "@wave/shared";
 
 export type Option = { id: string; name: string };
@@ -30,9 +32,20 @@ export type Stage = {
   color: string | null;
   position: number;
   probability: number;
+  requirements?: StageRequirement[];
   count: number;
   value: string | number;
   deals: Deal[];
+};
+/** Columna del tablero: cantidad y valor de todos sus negocios, con la primera página de tarjetas. */
+export type Column = { count: number; value: string | number; deals: Deal[] };
+export type Metrics = Record<"open" | "won" | "lost", { count: number; value: string }>;
+/** Lo que falta para un cambio de etapa (códigos de @wave/shared, mensaje del API). */
+export type Pending = { code: TransitionCheck; message: string };
+export type Preview = {
+  pending: Pending[];
+  quote: { id: string; number: string; status: QuoteStatus } | null;
+  items: number;
 };
 export type Pipeline = {
   id: string;
@@ -40,13 +53,19 @@ export type Pipeline = {
   isDefault: boolean;
   stages: Stage[];
 };
-export type Board = { pipeline: Omit<Pipeline, "stages">; stages: Stage[] };
+export type Board = {
+  pipeline: Omit<Pipeline, "stages">;
+  stages: Stage[];
+  lost: Column;
+  metrics: Metrics;
+};
 export type HistoryItem = {
   id: string;
   changedAt: string;
   fromStage: Option | null;
   toStage: Option;
   changedBy: Option | null;
+  reason?: string | null;
 };
 export type DealValues = Record<
   | "title"
@@ -102,6 +121,10 @@ export type Quote = {
   tax: string;
   total: string;
   createdAt: string;
+  sentAt?: string | null;
+  validUntil?: string | null;
+  acceptedAt?: string | null;
+  acceptanceNote?: string | null;
 };
 export type Closure = {
   id: string;
@@ -111,6 +134,7 @@ export type Closure = {
     lossReason?: LossReason;
     lossDetail?: string | null;
     from?: DealStatus;
+    reason?: string | null;
   } | null;
   createdAt: string;
   user: Option | null;
@@ -119,6 +143,11 @@ export type DealDetail = Omit<Deal, "contact" | "company"> & {
   closedAt: string | null;
   lossReason: LossReason | null;
   lossDetail: string | null;
+  need?: string | null;
+  solution?: string | null;
+  budget?: string | null;
+  budgetNote?: string | null;
+  decisionMaker?: string | null;
   createdAt: string;
   pipeline: Option;
   stage: { id: string; name: string; color: string | null; probability: number };
@@ -146,7 +175,7 @@ export type ItemErrors = Record<
   number,
   Partial<Record<"description" | "quantity" | "unitPrice" | "taxRate", string>>
 >;
-export type ActivityValues = Record<"type" | "subject" | "dueAt" | "description", string>;
+export type ActivityValues = Record<"type" | "subject" | "dueAt" | "description" | "done", string>;
 export type ActivityFormState = {
   values: ActivityValues;
   fieldErrors: Partial<Record<keyof ActivityValues, string>>;
@@ -157,4 +186,5 @@ export const emptyActivity: ActivityValues = {
   subject: "",
   dueAt: "",
   description: "",
+  done: "",
 };
