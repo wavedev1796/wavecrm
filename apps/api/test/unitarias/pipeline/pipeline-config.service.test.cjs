@@ -297,7 +297,8 @@ test("el controlador delega cada ruta en el servicio con el usuario del token", 
   c.createStage("p1", { name: "E" }, user);
   c.updateStage("s1", { name: "F" }, user);
   c.deleteStage("s1");
-  c.board("p1");
+  c.board({ pipelineId: "p1" });
+  c.board({ pipelineId: "p1", column: "LOST", page: 2 });
   c.listDeals({ page: 1 });
   c.createDeal({ title: "N" }, user);
   c.saveItems("d1", { items: [] }, user);
@@ -316,7 +317,7 @@ test("el controlador delega cada ruta en el servicio con el usuario del token", 
     calls.map(([name]) => name),
     [
       "listOwners", "listPipelines", "createPipeline", "updatePipeline", "deletePipeline",
-      "createStage", "updateStage", "deleteStage", "board", "listDeals", "createDeal",
+      "createStage", "updateStage", "deleteStage", "board", "boardColumn", "listDeals", "createDeal",
       "saveItems", "previewTransition", "history", "createActivity", "completeActivity",
       "transition", "transition", "transition", "findDeal", "transition", "updateDeal", "deleteDeal",
     ],
@@ -333,4 +334,71 @@ test("el controlador delega cada ruta en el servicio con el usuario del token", 
     ],
   );
   assert.deepEqual(calls.find(([n]) => n === "previewTransition"), ["previewTransition", "d1", "s2", actor]);
+  assert.deepEqual(calls.find(([n]) => n === "board"), ["board", "p1"]);
+  assert.deepEqual(calls.find(([n]) => n === "boardColumn"), ["boardColumn", "p1", "LOST", 2]);
+});
+
+const boardStages = [
+  { id: "s1", name: "Contactado", position: 1, probability: 10 },
+  { id: "s2", name: "Ganado", position: 2, probability: 100 },
+];
+
+test("el tablero trae 10 tarjetas por columna con la cantidad y el valor de todas", async () => {
+  const { service, called } = mockPrisma({
+    pipeline: { findUnique: { id: "p1", name: "Ventas" } },
+    stage: { findMany: boardStages },
+    deal: {
+      groupBy: [
+        { stageId: "s1", status: "OPEN", _count: { _all: 12 }, _sum: { value: new Prisma.Decimal("1200.10") } },
+        { stageId: "s2", status: "WON", _count: { _all: 1 }, _sum: { value: new Prisma.Decimal("50") } },
+        { stageId: "s1", status: "LOST", _count: { _all: 2 }, _sum: { value: new Prisma.Decimal("999") } },
+      ],
+      findMany: ({ where }) => [{ id: where.stageId ?? where.status }],
+    },
+  });
+  const board = await service.board("p1");
+  assert.deepEqual(
+    board.stages.map((s) => [s.id, s.count, s.value, s.deals]),
+    [
+      ["s1", 12, "1200.10", [{ id: "s1" }]],
+      ["s2", 1, "50.00", [{ id: "s2" }]],
+    ],
+  );
+  assert.deepEqual(board.lost, { count: 2, value: "999.00", deals: [{ id: "LOST" }] });
+  const pages = called("deal.findMany");
+  assert.deepEqual(pages[0].where, { pipelineId: "p1", stageId: "s1", status: { not: "LOST" } });
+  assert.deepEqual([pages[0].skip, pages[0].take], [0, 10]);
+  assert.deepEqual(pages.at(-1).where, { pipelineId: "p1", status: "LOST" });
+});
+
+test("los perdidos van a su columna y no suman al valor abierto ni al ganado", async () => {
+  const { service } = mockPrisma({
+    pipeline: { findUnique: { id: "p1" } },
+    stage: { findMany: boardStages },
+    deal: {
+      groupBy: [
+        { stageId: "s1", status: "OPEN", _count: { _all: 3 }, _sum: { value: new Prisma.Decimal("300") } },
+        { stageId: "s1", status: "LOST", _count: { _all: 1 }, _sum: { value: new Prisma.Decimal("999") } },
+      ],
+      findMany: [],
+    },
+  });
+  const { metrics, stages } = await service.board("p1");
+  assert.deepEqual(metrics, {
+    open: { count: 3, value: "300.00" },
+    won: { count: 0, value: "0.00" },
+    lost: { count: 1, value: "999.00" },
+  });
+  assert.equal(stages[0].value, "300.00");
+});
+
+test("ver más pide la página siguiente de una columna con el mismo filtro y orden", async () => {
+  const { service, called } = mockPrisma({ deal: { findMany: [{ id: "d11" }] } });
+  assert.deepEqual(await service.boardColumn("p1", "LOST", 2), { deals: [{ id: "d11" }], page: 2 });
+  const query = called("deal.findMany")[0];
+  assert.deepEqual(query.where, { pipelineId: "p1", status: "LOST" });
+  assert.deepEqual([query.skip, query.take], [10, 10]);
+  assert.deepEqual(query.orderBy, [{ updatedAt: "desc" }, { id: "asc" }]);
+  await service.boardColumn("p1", "s1", 1);
+  assert.deepEqual(called("deal.findMany")[1].where, { pipelineId: "p1", stageId: "s1", status: { not: "LOST" } });
 });

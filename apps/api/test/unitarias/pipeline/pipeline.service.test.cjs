@@ -179,14 +179,6 @@ const ready = {
   activities: [{ status: "PENDING", type: "CALL", dueAt: day("2999-01-01") }],
 };
 
-test("CRM-18: tablero agrupa negocios y calcula el valor por etapa", async () => {
-  const { prisma } = mockPrisma();
-  const board = await service(prisma).board();
-  assert.equal(board.stages[0].count, 1);
-  assert.equal(board.stages[0].value, "100.00");
-  assert.equal(board.stages[1].value, "0.00");
-});
-
 test("avanzar con los requisitos cumplidos guarda etapa anterior, destino y usuario", async () => {
   const { prisma, state } = mockPrisma({ deal: { need: ready.need }, activities: ready.activities });
   const result = await service(prisma).transition("deal-1", "stage-n", { fromStageId: "stage-a" }, vendedor);

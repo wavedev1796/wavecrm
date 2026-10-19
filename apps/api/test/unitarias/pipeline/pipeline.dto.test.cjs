@@ -4,6 +4,7 @@ const { plainToInstance } = require("class-transformer");
 const { validate } = require("class-validator");
 const {
   AcceptQuoteDto,
+  BoardQueryDto,
   CreateQuoteDto,
   CreateDealActivityDto,
   CreateDealDto,
@@ -204,4 +205,14 @@ test("una actividad puede registrarse como ya realizada y una etapa elige sus re
     assert.deepEqual(await errors(CreateStageDto, { ...stage, requirements }), {
       requirements: "Elige requisitos válidos y sin repetir.",
     });
+});
+
+test("el tablero acepta columna y página; la columna exige el pipeline", async () => {
+  assert.deepEqual(await errors(BoardQueryDto, {}), {});
+  assert.deepEqual(await errors(BoardQueryDto, { pipelineId: "p1", column: "LOST", page: "2" }), {});
+  assert.equal(plainToInstance(BoardQueryDto, { page: "2" }).page, 2);
+  assert.deepEqual(await errors(BoardQueryDto, { column: "LOST" }), { pipelineId: "Ingresa el pipeline." });
+  assert.deepEqual(await errors(BoardQueryDto, { pipelineId: "p1", column: "s1", page: "0" }), {
+    page: "La página debe ser un número entero mayor que 0.",
+  });
 });

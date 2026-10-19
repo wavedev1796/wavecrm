@@ -15,6 +15,7 @@ import { CurrentUser } from "../auth/auth.decorators";
 import type { JwtPayload } from "../auth/auth.service";
 import {
   AcceptQuoteDto,
+  BoardQueryDto,
   CreateQuoteDto,
   ListDealsDto,
   CreateDealActivityDto,
@@ -75,10 +76,10 @@ export class PipelineController {
   @Delete("stages/:id") deleteStage(@Param("id") id: string) {
     return this.service.deleteStage(id);
   }
-  @Get("deals/board") board(
-    @Query("pipelineId") pipelineId?: string,
-  ): Promise<unknown> {
-    return this.service.board(pipelineId);
+  @Get("deals/board") board(@Query() query: BoardQueryDto): Promise<unknown> {
+    return query.column && query.pipelineId
+      ? this.service.boardColumn(query.pipelineId, query.column, query.page)
+      : this.service.board(query.pipelineId);
   }
   @Get("deals") listDeals(@Query() query: ListDealsDto): Promise<unknown> {
     return this.service.listDeals(query);

@@ -23,6 +23,8 @@ import {
   UpdateStageDto,
 } from "./pipeline.dto";
 import {
+  BOARD_PAGE,
+  dealMetrics,
   dealTotals,
   ecuadorToday,
   MAX_DEAL_VALUE,
@@ -104,6 +106,11 @@ const gateInclude = {
   },
 } satisfies Prisma.DealInclude;
 type GateDeal = Prisma.DealGetPayload<{ include: typeof gateInclude }>;
+/** Filtro único de una columna del tablero: una etapa muestra sus abiertos y ganados; LOST, los perdidos. */
+const columnWhere = (pipelineId: string, column: string): Prisma.DealWhereInput =>
+  column === "LOST"
+    ? { pipelineId, status: "LOST" }
+    : { pipelineId, stageId: column, status: { not: "LOST" } };
 const FORBIDDEN_CLOSED =
   "Solo un administrador puede reabrir o modificar un negocio cerrado.";
 
@@ -288,30 +295,60 @@ export class PipelineService {
           where: { pipelineId: pipeline.id },
           orderBy: { position: "asc" },
         });
-        const deals = await tx.deal.findMany({
+        // Cantidad y valor de cada columna y las métricas salen de todos los negocios, no de la página cargada.
+        const groups = await tx.deal.groupBy({
+          by: ["stageId", "status"],
           where: { pipelineId: pipeline.id },
-          include: dealInclude,
-          orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+          _count: { _all: true },
+          _sum: { value: true },
         });
+        const column = async (key: string, rows: typeof groups) => ({
+          count: rows.reduce((sum, row) => sum + row._count._all, 0),
+          value: rows
+            .reduce((sum, row) => sum.plus(row._sum.value ?? 0), new Prisma.Decimal(0))
+            .toFixed(2),
+          deals: await this.columnDeals(tx, pipeline.id, key, 1),
+        });
+        const columns = [];
+        for (const stage of stages)
+          columns.push({
+            ...stage,
+            ...(await column(
+              stage.id,
+              groups.filter((g) => g.stageId === stage.id && g.status !== "LOST"),
+            )),
+          });
         return {
           pipeline,
-          stages: stages.map((stage) => {
-            const items = deals.filter((deal) => deal.stageId === stage.id);
-            const value = items.reduce(
-              (sum, deal) => sum.plus(deal.value),
-              new Prisma.Decimal(0),
-            );
-            return {
-              ...stage,
-              deals: items,
-              count: items.length,
-              value: value.toFixed(2),
-            };
-          }),
+          stages: columns,
+          lost: await column(
+            "LOST",
+            groups.filter((g) => g.status === "LOST"),
+          ),
+          metrics: dealMetrics(groups),
         };
       },
-      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+        timeout: 15000, // una consulta por columna: con 5 s por defecto corre el mismo riesgo que la ficha contra Neon
+      },
     );
+  }
+  /** "Ver más": la página siguiente de una columna, con el mismo filtro y orden que el tablero. */
+  async boardColumn(pipelineId: string, column: string, page: number) {
+    return {
+      deals: await this.columnDeals(this.prisma, pipelineId, column, page),
+      page,
+    };
+  }
+  private columnDeals(tx: Tx, pipelineId: string, column: string, page: number) {
+    return tx.deal.findMany({
+      where: columnWhere(pipelineId, column),
+      include: dealInclude,
+      orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+      skip: (page - 1) * BOARD_PAGE,
+      take: BOARD_PAGE,
+    });
   }
   createDeal(dto: CreateDealDto, actorId: string) {
     return this.write(async (tx) => {

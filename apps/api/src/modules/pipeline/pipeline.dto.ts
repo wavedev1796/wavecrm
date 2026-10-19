@@ -1,6 +1,11 @@
 import { applyDecorators } from "@nestjs/common";
 import { PaginationDto } from "../../common/dto/pagination.dto";
-import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  PartialType,
+  PickType,
+} from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
 import {
   ACTIVITY_TYPES,
@@ -272,6 +277,19 @@ export class SaveDealItemsDto {
   @ValidateNested({ each: true })
   @Type(() => DealItemDto)
   items!: DealItemDto[];
+}
+export class BoardQueryDto extends PickType(PaginationDto, ["page"] as const) {
+  @ApiPropertyOptional()
+  @ValidateIf(
+    (query: BoardQueryDto) =>
+      query.column !== undefined || query.pipelineId !== undefined,
+  )
+  @text("el pipeline")
+  pipelineId?: string;
+  @ApiPropertyOptional({ description: "Id de etapa o LOST: trae solo esa columna, por páginas" })
+  @IsOptional()
+  @text("la columna")
+  column?: string;
 }
 export class ListDealsDto extends PaginationDto {
   @ApiPropertyOptional() @IsOptional() @text("el pipeline") pipelineId?: string;
