@@ -20,6 +20,11 @@ export const PIPELINE = {
   dateInvalid: "Ingresa una fecha valida.",
   valueFromItems: "Se calcula con los productos de la ficha.",
   stageLocked: "Cambia la etapa desde el tablero o la ficha.",
+  requisitos: {
+    titulo: "Requisitos para entrar a esta etapa",
+    ayuda:
+      "Se exigen también los de las etapas anteriores. Una etapa al 100 % usa las reglas fijas de cierre. Solo un administrador los cambia.",
+  },
 } as const;
 
 export const TABLERO = {
@@ -137,33 +142,46 @@ export const NEGOCIO = {
       iva: "Ingresa un IVA entero entre 0 y 100.",
     },
   },
-  ganar: {
-    titulo: "Ganar negocio",
-    fecha: "Fecha de ganado",
-    resumen: (total: string) =>
-      `Se creará una cotización en borrador por ${total} (IVA incluido) y los productos quedarán bloqueados.`,
-    sinProductos: "Agrega sus productos en la ficha antes de ganarlo.",
-    confirmar: "Ganar y crear cotización",
-    hecho: "Negocio ganado. Su cotización quedó en borrador.",
-  },
+  ganar: { titulo: "Ganar negocio" },
   perder: {
     titulo: "Perder negocio",
-    motivo: "Motivo de la pérdida",
-    elegir: "Elige un motivo",
-    detalle: "Detalle",
-    detalleAyuda: "Obligatorio si eliges Otro.",
-    confirmar: "Marcar como perdido",
     motivoRequerido: "Elige el motivo de la pérdida.",
     detalleRequerido: "Cuenta el motivo (entre 2 y 500 caracteres).",
-    hecho: "Negocio marcado como perdido.",
   },
-  reabrir: {
-    titulo: "Reabrir negocio",
-    ganado:
-      "El negocio vuelve a abierto, a la etapa de donde vino, y se elimina su cotización en borrador.",
-    perdido: "El negocio vuelve a abierto y se borra el motivo de la pérdida.",
-    confirmar: "Reabrir negocio",
-    hecho: "Negocio reabierto.",
+  reabrir: { titulo: "Reabrir negocio" },
+  calificacion: {
+    titulo: "Calificación",
+    necesidad: "Necesidad del cliente",
+    solucion: "Solución de interés",
+    presupuesto: "Presupuesto (USD)",
+    justificacion: "Si aún no se conoce, por qué",
+    decisor: "Persona decisora",
+    guardar: "Guardar calificación",
+    guardada: "Calificación guardada.",
+    vacio: "Sin dato",
+  },
+  propuestas: {
+    titulo: "Propuestas",
+    vacio: "Aún no hay propuestas. Registra la que enviaste al cliente con los productos actuales.",
+    sinProductos: "Agrega productos para registrar una propuesta.",
+    ayuda: "Si cambian los importes de los productos, la propuesta queda desactualizada y hay que registrar otra.",
+    numero: "Número",
+    estado: "Estado",
+    total: "Total",
+    enviada: "Enviada",
+    vigencia: "Vigencia",
+    aceptada: "Aceptada",
+    evidencia: "Evidencia",
+    registrarTitulo: "Registrar propuesta enviada",
+    vigenteHasta: "Vigente hasta",
+    enviadaEl: "Enviada el",
+    registrar: "Registrar propuesta",
+    registrada: "Propuesta registrada.",
+    aceptarTitulo: (numero: string) => `Aceptación de ${numero}`,
+    aceptadaEl: "Aceptada el",
+    evidenciaLabel: "Evidencia de aceptación",
+    aceptar: "Marcar aceptada",
+    aceptadaOk: "Propuesta aceptada.",
   },
   cierre: {
     titulo: "Cierre",
@@ -196,5 +214,6 @@ export const NEGOCIO = {
     asuntoRequerido: "Escribe el asunto (entre 2 y 160 caracteres).",
     tipoRequerido: "Elige el tipo de actividad.",
     notaLarga: "La nota admite hasta 1000 caracteres.",
+    hecha: "Ya se realizó",
   },
 } as const;

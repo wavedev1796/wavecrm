@@ -65,8 +65,12 @@ const dealDetailInclude = {
       tax: true,
       total: true,
       createdAt: true,
+      sentAt: true,
+      validUntil: true,
+      acceptedAt: true,
+      acceptanceNote: true,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   },
   activities: {
     include: { assignee: { select: { id: true, name: true } } },

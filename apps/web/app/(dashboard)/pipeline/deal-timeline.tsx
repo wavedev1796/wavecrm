@@ -1,7 +1,7 @@
 import { Clock3 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { ESTADO_ACTIVIDAD, MOTIVO_PERDIDA, TIPO_ACTIVIDAD } from "@/content/catalogos";
-import { NEGOCIO } from "@/content/pipeline";
+import { NEGOCIO, TABLERO } from "@/content/pipeline";
 import { formatDateTime, formatDay } from "@/lib/format";
 import { ActivityForm, CompleteButton } from "./activity-actions";
 import type { Closure, DealDetail } from "./types";
@@ -39,13 +39,14 @@ function entries(deal: DealDetail): Entry[] {
       at: move.changedAt,
       title: move.fromStage ? texto.movido(move.fromStage.name, move.toStage.name) : texto.creado(move.toStage.name),
       detail: `${who(move.changedBy)} · ${formatDateTime(move.changedAt)}`,
+      note: move.reason && TABLERO.motivo(move.reason),
     })),
     ...deal.closures.map((closure) => ({
       id: "c-" + closure.id,
       at: closure.createdAt,
       title: closureTitle(closure),
       detail: `${who(closure.user)} · ${formatDateTime(closure.createdAt)}`,
-      note: closure.changes?.lossDetail,
+      note: closure.changes?.reason ? TABLERO.motivo(closure.changes.reason) : closure.changes?.lossDetail,
     })),
   ].sort((a, b) => b.at.localeCompare(a.at));
 }

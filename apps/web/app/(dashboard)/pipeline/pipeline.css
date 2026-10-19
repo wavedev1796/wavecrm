@@ -577,3 +577,36 @@
   margin-right: 6px;
   border-radius: 50%;
 }
+
+.pipeline-requirements {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--wave-line);
+  border-radius: 10px;
+}
+.pipeline-requirements legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+.pipeline-requirements label,
+.activity-done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+}
+.deal-quote-form,
+.deal-qualification-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.deal-quote-form h4 {
+  margin: 0;
+}
+.deal-qualification dl > div {
+  display: grid;
+  gap: 2px;
+}

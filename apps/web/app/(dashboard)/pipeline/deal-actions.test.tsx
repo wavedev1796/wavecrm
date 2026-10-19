@@ -1,43 +1,44 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import { loseDealAction, reopenDealAction, winDealAction } from "./actions";
+import { completeTransitionAction, previewTransitionAction } from "./actions";
 import { DealActions } from "./deal-actions";
 import { baseDeal } from "./deal-fixture";
 import type { DealDetail } from "./types";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+const router = vi.hoisted(() => ({ refresh: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("./actions", () => ({
-  winDealAction: vi.fn(),
-  loseDealAction: vi.fn(),
-  reopenDealAction: vi.fn(),
+  previewTransitionAction: vi.fn(),
+  completeTransitionAction: vi.fn(),
   saveDeal: vi.fn(),
 }));
-const view = (deal: DealDetail) =>
-  render(<DealActions deal={deal} pipelines={[]} contacts={[]} companies={[]} users={[]} />);
+const preview = vi.mocked(previewTransitionAction);
+const view = (deal: DealDetail, canReopen = false) =>
+  render(<DealActions deal={deal} pipelines={[]} contacts={[]} companies={[]} users={[]} canReopen={canReopen} />);
+const asks = (...codes: string[]) =>
+  preview.mockResolvedValue({
+    data: { pending: codes.map((code) => ({ code, message: "Falta " + code + "." })) as never, quote: null, items: 2 },
+  });
 
-test("ganar muestra el total de la cotizacion y envia la fecha elegida", async () => {
-  vi.mocked(winDealAction).mockResolvedValue({ data: {} });
+test("ganar abre el modal de transición hacia Ganado y pide la fecha real de cierre", async () => {
+  asks("CLOSED_AT");
   const user = userEvent.setup();
   view(baseDeal);
   await user.click(screen.getByRole("button", { name: "Ganar" }));
   const dialog = screen.getByRole("dialog", { name: "Ganar negocio" });
-  expect(dialog).toHaveTextContent("135,00");
-  const date = within(dialog).getByLabelText("Fecha de ganado");
-  await user.clear(date);
-  await user.type(date, "2026-10-05");
-  await user.click(within(dialog).getByRole("button", { name: "Ganar y crear cotización" }));
-  expect(winDealAction).toHaveBeenCalledWith("d1", "2026-10-05");
-  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Negocio ganado."));
+  expect(await within(dialog).findByLabelText("Fecha real de cierre")).toBeInTheDocument();
+  expect(preview).toHaveBeenCalledWith("d1", "WON");
 });
 
-test("la fecha de ganado propuesta es el día de Ecuador aunque en UTC ya sea el siguiente", async () => {
+test("la fecha de cierre propuesta es el día de Ecuador aunque en UTC ya sea el siguiente", async () => {
+  asks("CLOSED_AT");
   // 03:00 UTC del 6 de octubre son las 22:00 del 5 en Ecuador.
   vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-06T03:00:00Z") });
   try {
     view(baseDeal);
     await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).click(screen.getByRole("button", { name: "Ganar" }));
-    const date = within(screen.getByRole("dialog", { name: "Ganar negocio" })).getByLabelText("Fecha de ganado");
+    const date = await within(screen.getByRole("dialog", { name: "Ganar negocio" })).findByLabelText("Fecha real de cierre");
     expect(date).toHaveValue("2026-10-05");
     expect(date).toHaveAttribute("max", "2026-10-05");
   } finally {
@@ -45,28 +46,37 @@ test("la fecha de ganado propuesta es el día de Ecuador aunque en UTC ya sea el
   }
 });
 
-test("perder con Otro pide detalle antes de cerrar el dialogo", async () => {
-  vi.mocked(loseDealAction).mockResolvedValue({
-    fieldErrors: { lossDetail: "Cuenta el motivo (entre 2 y 500 caracteres)." },
-  });
+test("perder abre el mismo modal hacia Perdido", async () => {
+  asks("LOSS_REASON");
   const user = userEvent.setup();
   view(baseDeal);
   await user.click(screen.getByRole("button", { name: "Perder" }));
   const dialog = screen.getByRole("dialog", { name: "Perder negocio" });
-  await user.selectOptions(within(dialog).getByLabelText("Motivo de la pérdida"), "OTHER");
-  await user.click(within(dialog).getByRole("button", { name: "Marcar como perdido" }));
-  expect(loseDealAction).toHaveBeenCalledWith("d1", "OTHER", "");
-  expect(await within(dialog).findByText(/Cuenta el motivo/)).toBeInTheDocument();
+  expect(await within(dialog).findByLabelText("Motivo de la pérdida")).toBeInTheDocument();
+  expect(preview).toHaveBeenCalledWith("d1", "LOST");
 });
 
-test("un ganado solo ofrece reabrir y avisa que se elimina el borrador", async () => {
-  vi.mocked(reopenDealAction).mockResolvedValue({ data: {} });
-  const user = userEvent.setup();
-  view({ ...baseDeal, status: "WON" });
+test("reabrir solo aparece para un ADMIN y pide el motivo", async () => {
+  const won = { ...baseDeal, status: "WON" as const };
+  const { unmount } = view(won);
+  expect(screen.queryByRole("button", { name: "Reabrir" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Ganar" })).toBeNull();
+  unmount();
+  asks("REASON");
+  const user = userEvent.setup();
+  view(won, true);
   await user.click(screen.getByRole("button", { name: "Reabrir" }));
   const dialog = screen.getByRole("dialog", { name: "Reabrir negocio" });
-  expect(dialog).toHaveTextContent("se elimina su cotización en borrador");
-  await user.click(within(dialog).getByRole("button", { name: "Reabrir negocio" }));
-  expect(reopenDealAction).toHaveBeenCalledWith("d1");
+  expect(await within(dialog).findByLabelText("Motivo del cambio")).toBeInTheDocument();
+  expect(preview).toHaveBeenCalledWith("d1", "REOPEN");
+});
+
+test("al completar el cambio avisa y refresca la ficha", async () => {
+  preview.mockResolvedValue({ data: { pending: [], quote: null, items: 2 } });
+  vi.mocked(completeTransitionAction).mockResolvedValue({ done: true });
+  const user = userEvent.setup();
+  view(baseDeal);
+  await user.click(screen.getByRole("button", { name: "Ganar" }));
+  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cuenta Andina pasó a Ganado."));
+  expect(router.refresh).toHaveBeenCalled();
 });

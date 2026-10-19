@@ -355,8 +355,13 @@ test("la configuracion exige etapas con enteros, color por defecto y pipeline pr
   const stage = activity({ name: "Propuesta", position: "1.5", probability: "40" });
   expect((await configurePipelineAction("createStage", "p1", stage)).error).toMatch(/enteros/);
 
-  await configurePipelineAction("createStage", "p1", activity({ name: "Propuesta", position: "2", probability: "40" }));
-  expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body)).color).toBe("#2f6f8f");
+  const withRequirements = activity({ name: "Propuesta", position: "2", probability: "40" });
+  withRequirements.append("requirements", "NEED");
+  withRequirements.append("requirements", "BUDGET");
+  await configurePipelineAction("createStage", "p1", withRequirements);
+  const body = JSON.parse(String(api.mock.calls[0]?.[1]?.body));
+  expect(body.color).toBe("#2f6f8f");
+  expect(body.requirements).toEqual(["NEED", "BUDGET"]);
 
   await configurePipelineAction("createPipeline", "", activity({ name: "Ventas", isDefault: "true" }));
   expect(JSON.parse(String(api.mock.calls[1]?.[1]?.body))).toEqual({ name: "Ventas", isDefault: true });

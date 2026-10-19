@@ -80,6 +80,11 @@ export function ActivityForm({ dealId }: Readonly<{ dealId: string }>) {
       <Field id="activity-description" label={t.nota} error={error("description")}>
         <Input {...props("description")} maxLength={1000} />
       </Field>
+      {/* Con la casilla, la fecha es la de la actividad hecha (la primera interacción, por ejemplo). */}
+      <label className="activity-done">
+        <input type="checkbox" name="done" defaultChecked={state.values.done === "on"} />
+        {t.hecha}
+      </label>
       <Button type="submit" loading={pending}>
         {t.guardar}
       </Button>

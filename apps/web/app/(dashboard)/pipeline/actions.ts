@@ -378,6 +378,7 @@ export async function configurePipelineAction(
         position: Number(formText(form, "position")),
         probability: Number(formText(form, "probability")),
         color: formText(form, "color") || "#2f6f8f",
+        requirements: form.getAll("requirements").filter((code) => typeof code === "string"),
       }
     : { name, ...(form.get("isDefault") === "true" && { isDefault: true }) };
   if (

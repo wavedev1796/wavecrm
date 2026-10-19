@@ -119,3 +119,14 @@ test("un error del API se muestra y cierra la confirmación", async () => {
   expect(dialog).toHaveAttribute("open");
   expect(router.refresh).not.toHaveBeenCalled();
 });
+
+test("una etapa envía los requisitos marcados para entrar a ella", async () => {
+  const { user, dialog } = await open();
+  await user.selectOptions(within(dialog).getByLabelText("Etapa a configurar"), "s2");
+  const group = within(dialog).getByRole("group", { name: "Requisitos para entrar a esta etapa" });
+  await user.click(within(group).getByRole("checkbox", { name: "Necesidad documentada" }));
+  await user.click(within(group).getByRole("checkbox", { name: "Propuesta enviada" }));
+  await user.click(within(dialog).getByRole("button", { name: "Guardar etapa" }));
+  await waitFor(() => expect(configure).toHaveBeenCalled());
+  expect((configure.mock.calls.at(-1)![2] as FormData).getAll("requirements")).toEqual(["NEED", "PROPOSAL_SENT"]);
+});

@@ -25,6 +25,8 @@ import { formatPhone } from "@/lib/phone";
 import { dealFormOptions } from "../data";
 import { DealActions } from "../deal-actions";
 import { DealItems } from "../deal-items";
+import { DealQualification } from "../deal-qualification";
+import { DealQuotes } from "../deal-quotes";
 import { DealTimeline } from "../deal-timeline";
 import type { DealDetail } from "../types";
 
@@ -34,8 +36,13 @@ export default async function DealPage({
   params,
 }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params;
-  const response = await authenticatedApi("/deals/" + encodeURIComponent(id));
+  const [response, me] = await Promise.all([
+    authenticatedApi("/deals/" + encodeURIComponent(id)),
+    authenticatedApi("/auth/me"),
+  ]);
   if (response.status === 404) notFound();
+  // Solo un ADMIN reabre o modifica un negocio cerrado; el API lo exige igual (403).
+  const canReopen = me.ok && ((await me.json()) as { role?: string }).role === "ADMIN";
   if (!response.ok) return <Alert tone="error">{NEGOCIO.errorCarga}</Alert>;
   const deal = (await response.json()) as DealDetail;
   let options;
@@ -47,7 +54,8 @@ export default async function DealPage({
   }
   const campos = NEGOCIO.campos;
   const cierre = NEGOCIO.cierre;
-  const quote = deal.quotes[0];
+  const quote = deal.quotes.find((q) => q.status === "ACCEPTED") ?? deal.quotes[0];
+  const locked = deal.status !== "OPEN";
   const contactPhone = deal.contact?.phone ?? deal.company?.phone;
   return (
     <div className="contact-detail-page">
@@ -70,7 +78,7 @@ export default async function DealPage({
             {deal.stage.name}
           </Badge>
         </div>
-        <DealActions deal={deal} {...options} />
+        <DealActions deal={deal} {...options} canReopen={canReopen} />
       </section>
       {/* Productos a todo el ancho: en la columna principal la descripción quedaba en ~100 px.
           key: DealItems guarda las filas en su estado; al ganar, reabrir o guardar debe volver a leer lo del servidor. */}
@@ -80,11 +88,13 @@ export default async function DealPage({
         items={deal.items}
         locked={deal.status === "WON"}
       />
+      <DealQuotes deal={deal} locked={locked} />
       <div className="contact-detail-grid">
         <div className="contact-detail-main">
           <DealTimeline deal={deal} />
         </div>
         <div className="contact-detail-main">
+          <DealQualification key={deal.status} deal={deal} locked={locked} />
           <Card className="contact-data-card">
             <h3>{NEGOCIO.datos}</h3>
             <dl>

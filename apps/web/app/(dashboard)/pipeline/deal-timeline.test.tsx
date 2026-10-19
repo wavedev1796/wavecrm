@@ -58,3 +58,36 @@ test("mezcla actividades, etapas y cierres del mas reciente al mas antiguo", asy
   expect(completeActivityAction).toHaveBeenCalledWith("d1", "a1");
   expect(screen.getByLabelText("Asunto")).toBeInTheDocument();
 });
+
+test("los retrocesos y reaperturas muestran su motivo; la actividad puede registrarse como realizada", () => {
+  render(
+    <DealTimeline
+      deal={{
+        ...deal,
+        activities: [],
+        stageHistory: [
+          {
+            id: "h2",
+            changedAt: "2026-10-06T15:00:00.000Z",
+            fromStage: { id: "s2", name: "Negociación" },
+            toStage: { id: "s1", name: "Contactado" },
+            changedBy: { id: "u1", name: "Zaith" },
+            reason: "El cliente pausó la compra",
+          },
+        ],
+        closures: [
+          {
+            id: "c2",
+            action: "REOPENED" as const,
+            changes: { from: "WON" as const, reason: "Anuló la orden" },
+            createdAt: "2026-10-07T12:00:00.000Z",
+            user: { id: "u2", name: "Eduardo" },
+          },
+        ],
+      }}
+    />,
+  );
+  expect(screen.getByText("Motivo: El cliente pausó la compra")).toBeInTheDocument();
+  expect(screen.getByText("Motivo: Anuló la orden")).toBeInTheDocument();
+  expect(screen.getByRole("checkbox", { name: "Ya se realizó" })).toBeInTheDocument();
+});

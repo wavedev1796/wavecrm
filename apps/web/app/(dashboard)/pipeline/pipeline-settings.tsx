@@ -2,6 +2,9 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Settings2 } from "lucide-react";
+import { STAGE_REQUIREMENTS } from "@wave/shared";
+import { REQUISITO_ETAPA } from "@/content/catalogos";
+import { PIPELINE } from "@/content/pipeline";
 import { FormDialog } from "@/components/form/form-dialog";
 import { Field } from "@/components/form/form-field";
 import { Input } from "@/components/ui/input";
@@ -265,6 +268,21 @@ export function PipelineSettings({
                         </Select>
                       </Field>
                     </div>
+                    <fieldset className="pipeline-requirements">
+                      <legend>{PIPELINE.requisitos.titulo}</legend>
+                      {STAGE_REQUIREMENTS.map((code) => (
+                        <label key={code}>
+                          <input
+                            type="checkbox"
+                            name="requirements"
+                            value={code}
+                            defaultChecked={stage?.requirements?.includes(code)}
+                          />
+                          {REQUISITO_ETAPA[code]}
+                        </label>
+                      ))}
+                      <p className="deal-form-hint">{PIPELINE.requisitos.ayuda}</p>
+                    </fieldset>
                     <p className="deal-form-hint">
                       Al editar una posicion ocupada, las dos etapas
                       intercambian su lugar. Una etapa al 100% marca como ganado
