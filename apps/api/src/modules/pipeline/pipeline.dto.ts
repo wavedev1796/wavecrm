@@ -4,10 +4,9 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
 import {
   ACTIVITY_TYPES,
-  IVA_RATES,
+  IVA_SUGGESTIONS,
   LOSS_REASONS,
   type ActivityType,
-  type IvaRate,
   type LossReason,
 } from "@wave/shared";
 import {
@@ -50,6 +49,8 @@ const isoDate = () =>
       ? new Date(value)
       : value,
   );
+
+const IVA_INVALID = "El IVA debe ser un porcentaje entero entre 0 y 100.";
 
 export class CreatePipelineDto {
   @ApiProperty({ example: "Ventas Ecuador" })
@@ -156,10 +157,12 @@ export class DealItemDto {
   @Min(0, { message: "El precio no puede ser negativo." })
   @Max(999999999999.99, { message: "El precio máximo es 999999999999.99." })
   unitPrice!: number;
-  @ApiProperty({ enum: IVA_RATES, example: 15 })
+  @ApiProperty({ example: IVA_SUGGESTIONS[0], minimum: 0, maximum: 100 })
   @numeric()
-  @IsIn([...IVA_RATES], { message: "Elige IVA 15 % o 0 %." })
-  taxRate!: IvaRate;
+  @IsInt({ message: IVA_INVALID })
+  @Min(0, { message: IVA_INVALID })
+  @Max(100, { message: IVA_INVALID })
+  taxRate!: number;
 }
 export class CreateDealActivityDto {
   @ApiProperty({ enum: ACTIVITY_TYPES })

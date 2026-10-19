@@ -112,6 +112,8 @@ test("CRM-20: los productos convierten números y explican la fila inválida", a
   const dto = plainToInstance(SaveDealItemsDto, { items: [item] });
   assert.equal(dto.items[0].quantity, 2);
   assert.equal(dto.items[0].taxRate, 15);
+  // IVA editable: cualquier entero de 0 a 100, por ejemplo la tarifa anterior de 12 %.
+  assert.deepEqual(await errors(SaveDealItemsDto, { items: [{ ...item, taxRate: "12" }] }), {});
 
   assert.deepEqual(await errors(SaveDealItemsDto, { items: Array(101).fill(item) }), {
     items: "Un negocio admite hasta 100 productos.",
@@ -121,7 +123,9 @@ test("CRM-20: los productos convierten números y explican la fila inválida", a
     ["quantity", "1000000", "La cantidad máxima es 999999.99."],
     ["unitPrice", "-1", "El precio no puede ser negativo."],
     ["unitPrice", "1.001", "Ingresa un precio válido con hasta dos decimales."],
-    ["taxRate", "12", "Elige IVA 15 % o 0 %."],
+    ["taxRate", "101", "El IVA debe ser un porcentaje entero entre 0 y 100."],
+    ["taxRate", "-1", "El IVA debe ser un porcentaje entero entre 0 y 100."],
+    ["taxRate", "12.5", "El IVA debe ser un porcentaje entero entre 0 y 100."],
   ]) {
     assert.deepEqual(await errors(SaveDealItemsDto, { items: [{ ...item, [field]: value }] }), { items: message });
   }

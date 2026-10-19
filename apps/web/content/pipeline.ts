@@ -69,6 +69,7 @@ export const NEGOCIO = {
       cantidad: "Ingresa una cantidad mayor que 0, con hasta dos decimales.",
       precio:
         "Ingresa un precio con hasta dos decimales, por ejemplo 1400 o 19,99.",
+      iva: "Ingresa un IVA entero entre 0 y 100.",
     },
   },
   ganar: {

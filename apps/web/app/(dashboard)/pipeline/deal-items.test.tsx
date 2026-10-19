@@ -18,7 +18,8 @@ test("agrega productos, muestra subtotal, IVA y total y los guarda", async () =>
   await user.type(screen.getByLabelText("Descripción del producto 1"), "Paquete de chocolates");
   await user.type(screen.getByLabelText("Cantidad del producto 1"), "2");
   await user.type(screen.getByLabelText("Precio unitario del producto 1"), "10");
-  await user.selectOptions(screen.getByLabelText("IVA del producto 1"), "0");
+  await user.clear(screen.getByLabelText("IVA del producto 1"));
+  await user.type(screen.getByLabelText("IVA del producto 1"), "0");
   await user.type(screen.getByLabelText("Descripción del producto 2"), "Paquete de vinos");
   await user.type(screen.getByLabelText("Cantidad del producto 2"), "1");
   await user.type(screen.getByLabelText("Precio unitario del producto 2"), "100");
@@ -29,6 +30,24 @@ test("agrega productos, muestra subtotal, IVA y total y los guarda", async () =>
     { description: "Paquete de vinos", quantity: "1", unitPrice: "100", taxRate: "15" },
   ]);
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Productos guardados."));
+});
+
+test("el IVA se escribe por fila, sugiere 15, 12 y 0 y recalcula el total", async () => {
+  const user = userEvent.setup();
+  render(
+    <DealItems
+      dealId="d1"
+      items={[{ id: "i1", description: "Web", quantity: "1", unitPrice: "100", taxRate: 15 }]}
+      locked={false}
+    />,
+  );
+  const iva = screen.getByLabelText("IVA del producto 1");
+  expect(iva).toHaveValue("15");
+  const list = document.getElementById(iva.getAttribute("list") ?? "");
+  expect([...(list?.querySelectorAll("option") ?? [])].map((o) => o.value)).toEqual(["15", "12", "0"]);
+  await user.clear(iva);
+  await user.type(iva, "12");
+  expect(screen.getByTestId("deal-total")).toHaveTextContent("112,00");
 });
 
 test("marca la celda con error que devuelve la validacion", async () => {

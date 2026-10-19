@@ -47,6 +47,8 @@ export function validateItems(rows: readonly ItemValues[]): ItemErrors | null {
       rowErrors.quantity = texto.cantidad;
     if (!/^\d{1,12}(\.\d{1,2})?$/.test(decimal(row.unitPrice)))
       rowErrors.unitPrice = texto.precio;
+    if (!/^\d{1,3}$/.test(row.taxRate.trim()) || Number(row.taxRate) > 100)
+      rowErrors.taxRate = texto.iva;
     if (Object.keys(rowErrors).length) errors[index] = rowErrors;
   });
   return Object.keys(errors).length ? errors : null;

@@ -144,7 +144,7 @@ export type ItemValues = {
 };
 export type ItemErrors = Record<
   number,
-  Partial<Record<"description" | "quantity" | "unitPrice", string>>
+  Partial<Record<"description" | "quantity" | "unitPrice" | "taxRate", string>>
 >;
 export type ActivityValues = Record<"type" | "subject" | "dueAt" | "description", string>;
 export type ActivityFormState = {

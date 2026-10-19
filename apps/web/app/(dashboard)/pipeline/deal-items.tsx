@@ -2,14 +2,13 @@
 import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Package, Plus, Trash2 } from "lucide-react";
-import { IVA_RATES } from "@wave/shared";
+import { IVA_SUGGESTIONS } from "@wave/shared";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Table } from "@/components/ui/table";
 import { NEGOCIO } from "@/content/pipeline";
 import { formatMoney } from "@/lib/format";
@@ -19,12 +18,14 @@ import type { DealItem, ItemErrors, ItemValues } from "./types";
 
 type Row = ItemValues & { key: string };
 const texto = NEGOCIO.productos;
+const INPUT_MODE = { description: undefined, quantity: "decimal", unitPrice: "decimal", taxRate: "numeric" } as const;
+const MAX_LENGTH = { description: 200, quantity: 16, unitPrice: 16, taxRate: 3 } as const;
 const toRow = (key: string, item?: DealItem): Row => ({
   key,
   description: item?.description ?? "",
   quantity: item ? String(item.quantity) : "",
   unitPrice: item ? String(item.unitPrice) : "",
-  taxRate: String(item?.taxRate ?? IVA_RATES[0]),
+  taxRate: String(item?.taxRate ?? IVA_SUGGESTIONS[0]),
 });
 
 export function DealItems({
@@ -57,7 +58,7 @@ export function DealItems({
         router.refresh();
       }
     });
-  const cell = (row: Row, index: number, field: "description" | "quantity" | "unitPrice", label: string) => {
+  const cell = (row: Row, index: number, field: "description" | "quantity" | "unitPrice" | "taxRate", label: string) => {
     const id = prefix + "-" + row.key + "-" + field;
     const error = errors[index]?.[field];
     return (
@@ -66,8 +67,9 @@ export function DealItems({
           id={id}
           aria-label={texto.celda(label, index + 1)}
           value={row[field]}
-          inputMode={field === "description" ? undefined : "decimal"}
-          maxLength={field === "description" ? 200 : 16}
+          inputMode={INPUT_MODE[field]}
+          maxLength={MAX_LENGTH[field]}
+          list={field === "taxRate" ? prefix + "-iva" : undefined}
           onChange={(event) => change(row.key, field, event.target.value)}
           {...invalidProps(id, error)}
         />
@@ -82,6 +84,11 @@ export function DealItems({
         {texto.titulo} <Badge tone="blue">{rows.length}</Badge>
       </h3>
       {locked && <Alert tone="note">{texto.bloqueados}</Alert>}
+      <datalist id={prefix + "-iva"}>
+        {IVA_SUGGESTIONS.map((rate) => (
+          <option key={rate} value={rate} />
+        ))}
+      </datalist>
       {feedback && <Alert tone={feedback.tone}>{feedback.message}</Alert>}
       {rows.length ? (
         <Table>
@@ -110,21 +117,7 @@ export function DealItems({
                   {locked ? formatMoney(row.unitPrice) : cell(row, index, "unitPrice", texto.precio)}
                 </td>
                 <td className="deal-items-tax">
-                  {locked ? (
-                    texto.tarifa(Number(row.taxRate))
-                  ) : (
-                    <Select
-                      aria-label={texto.celda(texto.iva, index + 1)}
-                      value={row.taxRate}
-                      onChange={(event) => change(row.key, "taxRate", event.target.value)}
-                    >
-                      {IVA_RATES.map((rate) => (
-                        <option key={rate} value={rate}>
-                          {texto.tarifa(rate)}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
+                  {locked ? texto.tarifa(Number(row.taxRate)) : cell(row, index, "taxRate", texto.iva)}
                 </td>
                 <td className="deal-items-money deal-items-line">{formatMoney(lineTotal(row))}</td>
                 {!locked && (

@@ -114,14 +114,25 @@ test("el formulario ya no envia estado y omite el monto calculado por productos"
 });
 test("los productos se validan por fila antes de llamar al API", async () => {
   const result = await saveDealItemsAction("d1", [
-    { description: "W", quantity: "0", unitPrice: "1,005", taxRate: "15" },
+    { description: "W", quantity: "0", unitPrice: "1,005", taxRate: "101" },
   ]);
   expect(result.rowErrors?.[0]).toEqual({
     description: expect.any(String),
     quantity: expect.any(String),
     unitPrice: expect.any(String),
+    taxRate: "Ingresa un IVA entero entre 0 y 100.",
   });
   expect(api).not.toHaveBeenCalled();
+});
+test("el IVA es editable: acepta 12 y rechaza decimales o vacio", async () => {
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  const row = { description: "Web", quantity: "1", unitPrice: "10" };
+  for (const taxRate of ["12,5", ""])
+    expect((await saveDealItemsAction("d1", [{ ...row, taxRate }])).rowErrors?.[0]?.taxRate).toBe(
+      "Ingresa un IVA entero entre 0 y 100.",
+    );
+  await saveDealItemsAction("d1", [{ ...row, taxRate: "12" }]);
+  expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body)).items[0].taxRate).toBe(12);
 });
 test("los productos viajan como numeros con coma o punto decimal", async () => {
   api.mockResolvedValue(Response.json({ id: "d1" }));
