@@ -6,11 +6,14 @@ import {
   ACTIVITY_TYPES,
   IVA_SUGGESTIONS,
   LOSS_REASONS,
+  STAGE_REQUIREMENTS,
   type ActivityType,
   type LossReason,
+  type StageRequirement,
 } from "@wave/shared";
 import {
   ArrayMaxSize,
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsDate,
@@ -51,6 +54,7 @@ const isoDate = () =>
   );
 
 const IVA_INVALID = "El IVA debe ser un porcentaje entero entre 0 y 100.";
+const REQUIREMENTS_INVALID = "Elige requisitos válidos y sin repetir.";
 
 export class CreatePipelineDto {
   @ApiProperty({ example: "Ventas Ecuador" })
@@ -82,6 +86,12 @@ export class CreateStageDto {
   @IsOptional()
   @Matches(/^#[0-9a-fA-F]{6}$/, { message: "Elige un color valido." })
   color?: string;
+  @ApiPropertyOptional({ enum: STAGE_REQUIREMENTS, isArray: true, description: "Requisitos para entrar a la etapa" })
+  @IsOptional()
+  @IsArray({ message: REQUIREMENTS_INVALID })
+  @ArrayUnique({ message: REQUIREMENTS_INVALID })
+  @IsIn([...STAGE_REQUIREMENTS], { each: true, message: REQUIREMENTS_INVALID })
+  requirements?: StageRequirement[];
 }
 export class UpdateStageDto extends PartialType(CreateStageDto, {
   skipNullProperties: false,
@@ -229,6 +239,31 @@ export class CreateDealActivityDto {
   @IsOptional()
   @text("la nota", 1000)
   description?: string;
+  @ApiPropertyOptional({ description: "Con fecha, la actividad se registra como ya realizada" })
+  @IsOptional()
+  @isoDate()
+  @IsDate({ message: "Ingresa una fecha válida." })
+  completedAt?: Date;
+}
+export class CreateQuoteDto {
+  @ApiProperty({ example: "2026-11-30" })
+  @isoDate()
+  @IsDate({ message: "Ingresa la vigencia de la propuesta." })
+  validUntil!: Date;
+  @ApiPropertyOptional({ description: "Por defecto, hoy" })
+  @IsOptional()
+  @isoDate()
+  @IsDate({ message: "Ingresa una fecha de envío válida." })
+  sentAt?: Date;
+}
+export class AcceptQuoteDto {
+  @ApiProperty({ example: "2026-10-20" })
+  @isoDate()
+  @IsDate({ message: "Ingresa la fecha de aceptación." })
+  acceptedAt!: Date;
+  @ApiProperty({ example: "Orden de compra 55 recibida por correo" })
+  @text("la evidencia de aceptación", 500, 2)
+  acceptanceNote!: string;
 }
 export class SaveDealItemsDto {
   @ApiProperty({ type: [DealItemDto] })

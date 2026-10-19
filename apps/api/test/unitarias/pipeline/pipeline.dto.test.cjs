@@ -3,6 +3,8 @@ const assert = require("node:assert/strict");
 const { plainToInstance } = require("class-transformer");
 const { validate } = require("class-validator");
 const {
+  AcceptQuoteDto,
+  CreateQuoteDto,
   CreateDealActivityDto,
   CreateDealDto,
   CreatePipelineDto,
@@ -176,4 +178,30 @@ test("CRM-20: una actividad valida tipo, asunto y fecha", async () => {
 test("CRM-18: el listado de negocios acepta filtros opcionales", async () => {
   assert.deepEqual(await errors(ListDealsDto, { page: "1", limit: "20", search: " web " }), {});
   assert.equal(plainToInstance(ListDealsDto, { search: " web " }).search, "web");
+});
+
+test("propuesta: vigencia obligatoria y envío opcional; aceptar exige fecha y evidencia", async () => {
+  assert.deepEqual(await errors(CreateQuoteDto, {}), { validUntil: "Ingresa la vigencia de la propuesta." });
+  assert.deepEqual(await errors(CreateQuoteDto, { validUntil: "2026-11-30", sentAt: "luego" }), {
+    sentAt: "Ingresa una fecha de envío válida.",
+  });
+  assert.ok(plainToInstance(CreateQuoteDto, { validUntil: "2026-11-30" }).validUntil instanceof Date);
+  assert.deepEqual(await errors(AcceptQuoteDto, {}), {
+    acceptedAt: "Ingresa la fecha de aceptación.",
+    acceptanceNote: "Ingresa la evidencia de aceptación.",
+  });
+  assert.deepEqual(await errors(AcceptQuoteDto, { acceptedAt: "2026-10-02", acceptanceNote: " Orden de compra 55 " }), {});
+});
+
+test("una actividad puede registrarse como ya realizada y una etapa elige sus requisitos", async () => {
+  assert.deepEqual(await errors(CreateDealActivityDto, { type: "CALL", subject: "Llamada", completedAt: "2026-10-01" }), {});
+  assert.deepEqual(await errors(CreateDealActivityDto, { type: "CALL", subject: "Llamada", completedAt: "ayer" }), {
+    completedAt: "Ingresa una fecha válida.",
+  });
+  const stage = { name: "Negociación", position: 2, probability: 45 };
+  assert.deepEqual(await errors(CreateStageDto, { ...stage, requirements: ["NEED", "BUDGET"] }), {});
+  for (const requirements of [["NEED", "NEED"], ["FAX"], "NEED"])
+    assert.deepEqual(await errors(CreateStageDto, { ...stage, requirements }), {
+      requirements: "Elige requisitos válidos y sin repetir.",
+    });
 });

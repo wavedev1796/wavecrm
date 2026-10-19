@@ -10,8 +10,10 @@ import { Prisma } from "@wave/database";
 import type { LossReason, UserRole } from "@wave/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import {
+  AcceptQuoteDto,
   CreateDealActivityDto,
   CreateDealDto,
+  CreateQuoteDto,
   CreatePipelineDto,
   CreateStageDto,
   DealItemDto,
@@ -24,6 +26,7 @@ import {
   dealTotals,
   ecuadorToday,
   MAX_DEAL_VALUE,
+  nextQuoteNumber,
   toDay,
 } from "./deal-rules";
 import {
@@ -177,17 +180,26 @@ export class PipelineService {
       await tx.pipeline.delete({ where: { id } });
     });
   }
-  createStage(pipelineId: string, dto: CreateStageDto) {
+  createStage(pipelineId: string, dto: CreateStageDto, actor: Actor) {
     return this.write(async (tx) => {
+      if (dto.requirements?.length) this.assertCanSetRequirements(actor);
       if (!(await tx.pipeline.findUnique({ where: { id: pipelineId } })))
         throw new NotFoundException("Pipeline no encontrado.");
       return tx.stage.create({ data: { ...dto, pipelineId } });
     });
   }
-  updateStage(id: string, dto: UpdateStageDto) {
+  updateStage(id: string, dto: UpdateStageDto, actor: Actor) {
     return this.write(async (tx) => {
       const stage = await tx.stage.findUnique({ where: { id } });
       if (!stage) throw new NotFoundException("Etapa no encontrada.");
+      // Guardar el nombre o el color reenvía los requisitos sin cambios: solo cambiarlos exige ADMIN.
+      const current = new Set(stage.requirements);
+      if (
+        dto.requirements &&
+        (dto.requirements.length !== current.size ||
+          dto.requirements.some((code) => !current.has(code)))
+      )
+        this.assertCanSetRequirements(actor);
       if (dto.position !== undefined && dto.position !== stage.position) {
         const other = await tx.stage.findUnique({
           where: {
@@ -395,7 +407,8 @@ export class PipelineService {
       if (deal.status === "WON")
         throw new ConflictException("Reabre el negocio para cambiar sus productos.");
       this.assertCanChange(deal, actor);
-      const { subtotal } = dealTotals(items);
+      const totals = dealTotals(items);
+      const { subtotal } = totals;
       if (subtotal.greaterThan(MAX_DEAL_VALUE))
         throw new BadRequestException(
           "El subtotal de los productos supera el máximo de 999999999999.99.",
@@ -407,7 +420,87 @@ export class PipelineService {
       // Sin productos el monto vuelve a escribirse a mano y conserva el último valor.
       if (items.length)
         await tx.deal.update({ where: { id }, data: { value: subtotal } });
+      // Una propuesta con otros importes deja de valer: queda desactualizada, nunca se borra.
+      const live = await tx.quote.findMany({
+        where: { dealId: id, status: { in: ["SENT", "ACCEPTED"] } },
+        select: { id: true, subtotal: true, tax: true, total: true },
+      });
+      const changed = live
+        .filter(
+          (quote) =>
+            !totals.subtotal.equals(quote.subtotal) ||
+            !totals.tax.equals(quote.tax) ||
+            !totals.total.equals(quote.total),
+        )
+        .map((quote) => quote.id);
+      if (changed.length)
+        await tx.quote.updateMany({
+          where: { id: { in: changed } },
+          data: { status: "SUPERSEDED" },
+        });
       return this.detail(tx, id);
+    });
+  }
+  /** Propuesta enviada: COT con los totales de los productos; la enviada o aceptada anterior queda desactualizada. */
+  createQuote(dealId: string, dto: CreateQuoteDto, actor: Actor) {
+    return this.write(async (tx) => {
+      await this.requireOpenDeal(tx, dealId, actor);
+      const items = await tx.dealItem.findMany({ where: { dealId } });
+      if (!items.length)
+        throw new BadRequestException(
+          "Agrega sus productos antes de registrar la propuesta.",
+        );
+      const today = ecuadorToday();
+      const sentAt = dto.sentAt ? toDay(dto.sentAt) : today;
+      if (sentAt > today)
+        throw new BadRequestException("La fecha de envío no puede ser futura.");
+      const validUntil = toDay(dto.validUntil);
+      if (validUntil < sentAt)
+        throw new BadRequestException(
+          "La vigencia debe ser igual o posterior a la fecha de envío.",
+        );
+      await tx.quote.updateMany({
+        where: { dealId, status: { in: ["SENT", "ACCEPTED"] } },
+        data: { status: "SUPERSEDED" },
+      });
+      const last = await tx.quote.findFirst({
+        where: { number: { startsWith: "COT-" } },
+        orderBy: { number: "desc" },
+        select: { number: true },
+      });
+      await tx.quote.create({
+        data: {
+          number: nextQuoteNumber(last?.number),
+          status: "SENT",
+          dealId,
+          sentAt,
+          validUntil,
+          ...dealTotals(items),
+        },
+      });
+      return this.detail(tx, dealId);
+    });
+  }
+  /** Aceptación con su evidencia, entre el envío y hoy y dentro de la vigencia. */
+  acceptQuote(dealId: string, quoteId: string, dto: AcceptQuoteDto, actor: Actor) {
+    return this.write(async (tx) => {
+      await this.requireOpenDeal(tx, dealId, actor);
+      const quote = await tx.quote.findFirst({ where: { id: quoteId, dealId } });
+      if (!quote) throw new NotFoundException("Propuesta no encontrada.");
+      if (quote.status !== "SENT")
+        throw new ConflictException("Solo una propuesta enviada se puede aceptar.");
+      const acceptedAt = toDay(dto.acceptedAt);
+      if (acceptedAt > ecuadorToday() || (quote.sentAt && acceptedAt < quote.sentAt))
+        throw new BadRequestException(
+          "La fecha de aceptación debe estar entre el envío y hoy.",
+        );
+      if (quote.validUntil && acceptedAt > quote.validUntil)
+        throw new ConflictException("La propuesta venció; registra una nueva.");
+      await tx.quote.update({
+        where: { id: quoteId },
+        data: { status: "ACCEPTED", acceptedAt, acceptanceNote: dto.acceptanceNote },
+      });
+      return this.detail(tx, dealId);
     });
   }
   /**
@@ -454,10 +547,16 @@ export class PipelineService {
   createActivity(dealId: string, dto: CreateDealActivityDto, actorId: string) {
     return this.write(async (tx) => {
       const deal = await this.requireDeal(tx, dealId);
+      const { completedAt, ...fields } = dto;
+      if (completedAt && toDay(completedAt) > ecuadorToday())
+        throw new BadRequestException(
+          "Una actividad ya realizada no puede tener fecha futura.",
+        );
       // Con el contacto del negocio, la actividad aparece también en la ficha del contacto.
       return tx.activity.create({
         data: {
-          ...dto,
+          ...fields,
+          ...(completedAt && { status: "COMPLETED", completedAt }),
           dealId,
           contactId: deal.contactId,
           companyId: deal.companyId,
@@ -503,6 +602,19 @@ export class PipelineService {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
     return { ...deal, closures };
+  }
+  private assertCanSetRequirements(actor: Actor) {
+    if (actor.role !== "ADMIN")
+      throw new ForbiddenException(
+        "Solo un administrador cambia los requisitos de una etapa.",
+      );
+  }
+  private async requireOpenDeal(tx: Tx, id: string, actor: Actor) {
+    const deal = await this.requireDeal(tx, id);
+    this.assertCanChange(deal, actor);
+    if (deal.status !== "OPEN")
+      throw new ConflictException("Reabre el negocio para cambiar sus propuestas.");
+    return deal;
   }
   /** Un negocio cerrado solo lo reabre o modifica un ADMIN. */
   private assertCanChange(deal: { status: string }, actor: Actor) {

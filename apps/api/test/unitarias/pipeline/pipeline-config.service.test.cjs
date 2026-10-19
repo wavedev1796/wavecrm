@@ -124,14 +124,14 @@ test("eliminar pipeline exige que no sea predeterminado, sin negocios ni histori
 
 test("crear etapa exige el pipeline y la guarda dentro de él", async () => {
   await assert.rejects(
-    mockPrisma().service.createStage("p1", { name: "Nueva" }),
+    mockPrisma().service.createStage("p1", { name: "Nueva" }, vendedor),
     NotFoundException,
   );
   const { service } = mockPrisma({
     pipeline: { findUnique: { id: "p1" } },
     stage: { create: ({ data }) => data },
   });
-  assert.deepEqual(await service.createStage("p1", { name: "Nueva", position: 3 }), {
+  assert.deepEqual(await service.createStage("p1", { name: "Nueva", position: 3 }, vendedor), {
     name: "Nueva",
     position: 3,
     pipelineId: "p1",
@@ -139,7 +139,7 @@ test("crear etapa exige el pipeline y la guarda dentro de él", async () => {
 });
 
 test("mover una etapa a una posición ocupada intercambia las dos", async () => {
-  await assert.rejects(mockPrisma().service.updateStage("s1", {}), NotFoundException);
+  await assert.rejects(mockPrisma().service.updateStage("s1", {}, vendedor), NotFoundException);
   const stages = {
     s1: { id: "s1", pipelineId: "p1", position: 1 },
     s2: { id: "s2", pipelineId: "p1", position: 2 },
@@ -154,7 +154,7 @@ test("mover una etapa a una posición ocupada intercambia las dos", async () => 
       update: ({ data }) => data,
     },
   });
-  await service.updateStage("s1", { position: 2 });
+  await service.updateStage("s1", { position: 2 }, vendedor);
   assert.deepEqual(
     called("stage.update").map(({ where, data }) => [where.id, data.position]),
     [
@@ -294,8 +294,8 @@ test("el controlador delega cada ruta en el servicio con el usuario del token", 
   c.createPipeline({ name: "P" });
   c.updatePipeline("p1", { name: "Q" });
   c.deletePipeline("p1");
-  c.createStage("p1", { name: "E" });
-  c.updateStage("s1", { name: "F" });
+  c.createStage("p1", { name: "E" }, user);
+  c.updateStage("s1", { name: "F" }, user);
   c.deleteStage("s1");
   c.board("p1");
   c.listDeals({ page: 1 });

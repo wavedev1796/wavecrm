@@ -14,6 +14,8 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { CurrentUser } from "../auth/auth.decorators";
 import type { JwtPayload } from "../auth/auth.service";
 import {
+  AcceptQuoteDto,
+  CreateQuoteDto,
   ListDealsDto,
   CreateDealActivityDto,
   CreateDealDto,
@@ -59,14 +61,16 @@ export class PipelineController {
   @Post("pipelines/:id/stages") createStage(
     @Param("id") id: string,
     @Body() dto: CreateStageDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.service.createStage(id, dto);
+    return this.service.createStage(id, dto, actor(user));
   }
   @Patch("stages/:id") updateStage(
     @Param("id") id: string,
     @Body() dto: UpdateStageDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.service.updateStage(id, dto);
+    return this.service.updateStage(id, dto, actor(user));
   }
   @Delete("stages/:id") deleteStage(@Param("id") id: string) {
     return this.service.deleteStage(id);
@@ -91,6 +95,21 @@ export class PipelineController {
     @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
     return this.service.saveItems(id, dto.items, actor(user));
+  }
+  @Post("deals/:id/quotes") createQuote(
+    @Param("id") id: string,
+    @Body() dto: CreateQuoteDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.createQuote(id, dto, actor(user));
+  }
+  @Post("deals/:id/quotes/:quoteId/accept") @HttpCode(200) acceptQuote(
+    @Param("id") id: string,
+    @Param("quoteId") quoteId: string,
+    @Body() dto: AcceptQuoteDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.acceptQuote(id, quoteId, dto, actor(user));
   }
   @Get("deals/:id/transition") previewTransition(
     @Param("id") id: string,

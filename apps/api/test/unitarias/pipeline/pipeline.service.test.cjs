@@ -63,6 +63,11 @@ function mockPrisma({
     items: [...items],
     activities: [...activities],
   };
+  const quoteMatches = (q, where = {}) =>
+    (!where.id || (where.id.in ? where.id.in.includes(q.id) : q.id === where.id)) &&
+    (!where.dealId || q.dealId === where.dealId) &&
+    (!where.status || (where.status.in ? where.status.in.includes(q.status) : q.status === where.status)) &&
+    (!where.number || q.number.startsWith(where.number.startsWith));
   const live = () => state.quotes.filter((q) => q.dealId === "deal-1" && q.status !== "SUPERSEDED");
   const full = () => ({
     ...state.deal,
@@ -84,8 +89,10 @@ function mockPrisma({
       )
       .sort((a, b) => (orderBy?.position === "desc" ? b.position - a.position : a.position - b.position));
   const prisma = {
-    pipeline: { findFirst: async () => pipeline },
+    pipeline: { findFirst: async () => pipeline, findUnique: async () => pipeline },
     stage: {
+      create: async ({ data }) => data,
+      update: async ({ where, data }) => Object.assign(stages[where.id], data),
       findMany: async ({ where }) => matching(where),
       findUnique: async ({ where }) => stages[where.id] ?? null,
       findFirst: async ({ where, orderBy }) => matching(where, orderBy)[0] ?? null,
@@ -109,15 +116,15 @@ function mockPrisma({
       },
     },
     quote: {
-      findFirst: async () => state.quotes.at(-1) ?? null,
-      findMany: async () => live(),
+      findFirst: async ({ where }) => state.quotes.filter((q) => quoteMatches(q, where)).at(-1) ?? null,
+      findMany: async ({ where }) => state.quotes.filter((q) => quoteMatches(q, where)),
       create: async ({ data }) => {
         state.quotes.push({ id: "q" + state.quotes.length, createdAt: new Date(state.quotes.length), ...data });
         return data;
       },
+      update: async ({ where, data }) => Object.assign(state.quotes.find((q) => q.id === where.id), data),
       updateMany: async ({ where, data }) => {
-        for (const q of state.quotes)
-          if (q.dealId === where.dealId && where.status.in.includes(q.status)) Object.assign(q, data);
+        for (const q of state.quotes) if (quoteMatches(q, where)) Object.assign(q, data);
       },
     },
     dealStageHistory: {
@@ -410,4 +417,105 @@ test("CRM-20: la actividad del negocio copia contacto y empresa y la asigna a qu
     ["deal-1", "company-1", "contact-1", "user-1"],
   );
   await assert.rejects(service(prisma).completeActivity("deal-1", "ajena"), NotFoundException);
+});
+
+const future = day("2999-01-31");
+
+test("registrar propuesta crea la COT enviada con los totales y desactualiza la anterior", async () => {
+  const { prisma, state } = mockPrisma({ quotes: [{ number: "COT-000004", status: "SENT", total: "115.00" }] });
+  await service(prisma).createQuote("deal-1", { validUntil: future }, vendedor);
+  assert.equal(state.quotes[0].status, "SUPERSEDED");
+  const quote = state.quotes[1];
+  assert.deepEqual(
+    [quote.number, quote.status, quote.dealId, quote.validUntil.toISOString()],
+    ["COT-000005", "SENT", "deal-1", "2999-01-31T00:00:00.000Z"],
+  );
+  assert.ok(quote.sentAt instanceof Date);
+  assert.deepEqual([quote.subtotal, quote.tax, quote.total].map((d) => d.toFixed(2)), ["100.00", "15.00", "115.00"]);
+});
+
+test("la propuesta exige productos, negocio abierto, envío no futuro y vigencia posterior al envío", async () => {
+  await assert.rejects(service(mockPrisma({ items: [] }).prisma).createQuote("deal-1", { validUntil: future }, vendedor), BadRequestException);
+  await assert.rejects(
+    service(mockPrisma({ status: "WON", stageId: "stage-g" }).prisma).createQuote("deal-1", { validUntil: future }, admin),
+    ConflictException,
+  );
+  await assert.rejects(
+    service(mockPrisma({ status: "LOST" }).prisma).createQuote("deal-1", { validUntil: future }, vendedor),
+    ForbiddenException,
+  );
+  const { prisma } = mockPrisma();
+  await assert.rejects(service(prisma).createQuote("deal-1", { validUntil: future, sentAt: future }, vendedor), /no puede ser futura/);
+  await assert.rejects(
+    service(prisma).createQuote("deal-1", { validUntil: day("2026-01-01"), sentAt: day("2026-02-01") }, vendedor),
+    /vigencia/,
+  );
+});
+
+test("aceptar una propuesta guarda fecha y evidencia, dentro de su vigencia", async () => {
+  const sent = { number: "COT-000001", status: "SENT", total: "115.00", sentAt: day("2026-10-01"), validUntil: day("2026-10-05") };
+  const vencida = mockPrisma({ quotes: [sent] });
+  await assert.rejects(
+    service(vencida.prisma).acceptQuote("deal-1", "q0", { acceptedAt: day("2026-10-10"), acceptanceNote: "Orden de compra 55" }, vendedor),
+    /venció/,
+  );
+  const { prisma, state } = mockPrisma({ quotes: [{ ...sent, validUntil: future }] });
+  await assert.rejects(
+    service(prisma).acceptQuote("deal-1", "q0", { acceptedAt: day("2026-09-30"), acceptanceNote: "Correo" }, vendedor),
+    BadRequestException,
+  );
+  await service(prisma).acceptQuote("deal-1", "q0", { acceptedAt: day("2026-10-02"), acceptanceNote: "Orden de compra 55" }, vendedor);
+  assert.deepEqual(
+    [state.quotes[0].status, state.quotes[0].acceptedAt.toISOString(), state.quotes[0].acceptanceNote],
+    ["ACCEPTED", "2026-10-02T00:00:00.000Z", "Orden de compra 55"],
+  );
+  await assert.rejects(
+    service(prisma).acceptQuote("deal-1", "q0", { acceptedAt: day("2026-10-02"), acceptanceNote: "Otra vez" }, vendedor),
+    ConflictException,
+  );
+  await assert.rejects(
+    service(prisma).acceptQuote("deal-1", "q9", { acceptedAt: day("2026-10-02"), acceptanceNote: "Ajena" }, vendedor),
+    NotFoundException,
+  );
+});
+
+test("guardar productos con los mismos importes conserva la propuesta enviada", async () => {
+  const quote = { number: "COT-000001", status: "SENT", subtotal: "100.00", tax: "15.00", total: "115.00" };
+  const { prisma, state } = mockPrisma({ quotes: [quote] });
+  await service(prisma).saveItems("deal-1", [{ description: "Web", quantity: 1, unitPrice: 100, taxRate: 15 }], vendedor);
+  assert.equal(state.quotes[0].status, "SENT");
+});
+
+test("guardar productos con otros importes deja la propuesta desactualizada, sin borrarla", async () => {
+  const quote = { number: "COT-000001", status: "ACCEPTED", subtotal: "100.00", tax: "15.00", total: "115.00" };
+  const { prisma, state } = mockPrisma({ quotes: [quote] });
+  await service(prisma).saveItems("deal-1", [{ description: "Web", quantity: 2, unitPrice: 100, taxRate: 15 }], vendedor);
+  assert.equal(state.quotes.length, 1);
+  assert.equal(state.quotes[0].status, "SUPERSEDED");
+});
+
+test("una actividad ya realizada nace completada y no admite fecha futura", async () => {
+  const { prisma } = mockPrisma();
+  const done = await service(prisma).createActivity(
+    "deal-1",
+    { type: "CALL", subject: "Primera llamada", completedAt: day("2026-10-01") },
+    "user-1",
+  );
+  assert.equal(done.status, "COMPLETED");
+  assert.equal(done.completedAt.toISOString(), "2026-10-01T00:00:00.000Z");
+  await assert.rejects(
+    service(prisma).createActivity("deal-1", { type: "CALL", subject: "Llamada", completedAt: future }, "user-1"),
+    BadRequestException,
+  );
+});
+
+test("requisitos de etapa sin cambios no exigen ADMIN; cambiarlos sí", async () => {
+  const { prisma } = mockPrisma();
+  const s = service(prisma);
+  await s.updateStage("stage-n", { name: "Negociación", requirements: ["NEXT_ACTIVITY", "NEED"] }, vendedor);
+  await assert.rejects(s.updateStage("stage-n", { requirements: ["NEED"] }, vendedor), ForbiddenException);
+  await assert.rejects(s.createStage("pipe-1", { name: "Nueva", position: 9, probability: 20, requirements: ["NEED"] }, vendedor), ForbiddenException);
+  await s.createStage("pipe-1", { name: "Nueva", position: 9, probability: 20 }, vendedor);
+  const updated = await s.updateStage("stage-n", { requirements: ["NEED"] }, admin);
+  assert.deepEqual(updated.requirements, ["NEED"]);
 });
