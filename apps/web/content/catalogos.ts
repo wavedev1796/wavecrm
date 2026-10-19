@@ -5,6 +5,7 @@ import type {
   DocumentType,
   LossReason,
   QuoteStatus,
+  StageRequirement,
   UserRole,
 } from "@wave/shared";
 
@@ -57,4 +58,17 @@ export const ESTADO_COTIZACION = {
   ACCEPTED: "Aceptada",
   REJECTED: "Rechazada",
   EXPIRED: "Vencida",
+  SUPERSEDED: "Desactualizada",
 } as const satisfies Record<QuoteStatus, string>;
+
+export const REQUISITO_ETAPA = {
+  CONTACT: "Contacto identificable",
+  OWNER: "Responsable asignado",
+  INTERACTION: "Primera interacción realizada",
+  NEED: "Necesidad documentada",
+  NEXT_ACTIVITY: "Próxima actividad con fecha",
+  SOLUTION: "Solución de interés",
+  BUDGET: "Presupuesto evaluado o justificado",
+  EXPECTED_CLOSE: "Fecha estimada de cierre",
+  PROPOSAL_SENT: "Propuesta enviada",
+} as const satisfies Record<StageRequirement, string>;

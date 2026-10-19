@@ -15,13 +15,36 @@ export type ActivityType = (typeof ACTIVITY_TYPES)[number];
 export const ACTIVITY_STATUSES = ['PENDING', 'COMPLETED', 'CANCELLED'] as const;
 export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number];
 
-export const QUOTE_STATUSES = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED'] as const;
+export const QUOTE_STATUSES = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'SUPERSEDED'] as const;
 export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
 
 export const LOSS_REASONS = ['PRICE', 'COMPETITOR', 'NO_BUDGET', 'NO_RESPONSE', 'BAD_TIMING', 'OTHER'] as const;
 export type LossReason = (typeof LOSS_REASONS)[number];
 
-// Tarifas de IVA de Ecuador para un producto del negocio, en %. La primera es la por defecto.
-// ponytail: lista fija; si el SRI cambia la tarifa (en 2024 pasó de 12 a 15), se cambia aquí.
-export const IVA_RATES = [15, 0] as const;
-export type IvaRate = (typeof IVA_RATES)[number];
+// Requisitos para entrar a una etapa (Stage.requirements). Cada etapa elige los suyos; se suman los de las anteriores.
+export const STAGE_REQUIREMENTS = [
+  'CONTACT',
+  'OWNER',
+  'INTERACTION',
+  'NEED',
+  'NEXT_ACTIVITY',
+  'SOLUTION',
+  'BUDGET',
+  'EXPECTED_CLOSE',
+  'PROPOSAL_SENT',
+] as const;
+export type StageRequirement = (typeof STAGE_REQUIREMENTS)[number];
+
+// Pendientes de un cambio de etapa: los requisitos de etapa, las condiciones fijas de cierre y los datos que pide el cambio.
+export const TRANSITION_CHECKS = [
+  ...STAGE_REQUIREMENTS,
+  'ACCEPTANCE',
+  'FINAL_AMOUNT',
+  'CLOSED_AT',
+  'LOSS_REASON',
+  'REASON',
+] as const;
+export type TransitionCheck = (typeof TRANSITION_CHECKS)[number];
+
+// IVA de un producto: entero de 0 a 100 (CHECK "DealItem_taxRate_range"). Solo sugerencias; la primera es la por defecto.
+export const IVA_SUGGESTIONS = [15, 12, 0] as const;

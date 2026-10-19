@@ -7,6 +7,7 @@ import {
   DOCUMENT_TYPES,
   LOSS_REASONS,
   QUOTE_STATUSES,
+  STAGE_REQUIREMENTS,
   USER_ROLES,
 } from "@wave/shared";
 import { expect, test } from "vitest";
@@ -29,6 +30,7 @@ test.each([
   ["QuoteStatus", QUOTE_STATUSES],
   ["DocumentType", DOCUMENT_TYPES],
   ["LossReason", LOSS_REASONS],
+  ["StageRequirement", STAGE_REQUIREMENTS],
 ])("@wave/shared repite el enum %s del schema de Prisma", (name, codes) => {
   expect([...codes]).toEqual(prismaEnum(name));
 });

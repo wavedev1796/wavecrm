@@ -41,8 +41,20 @@ async function main() {
       stages: {
         create: [
           { name: 'Contactado', position: 1, probability: 15, color: '#C9C7BC' },
-          { name: 'Negociación', position: 2, probability: 45, color: '#E0B15A' },
-          { name: 'Propuesta', position: 3, probability: 70, color: '#6F9FD8' },
+          {
+            name: 'Negociación',
+            position: 2,
+            probability: 45,
+            color: '#E0B15A',
+            requirements: ['CONTACT', 'OWNER', 'INTERACTION', 'NEED', 'NEXT_ACTIVITY'],
+          },
+          {
+            name: 'Propuesta',
+            position: 3,
+            probability: 70,
+            color: '#6F9FD8',
+            requirements: ['SOLUTION', 'BUDGET', 'PROPOSAL_SENT', 'EXPECTED_CLOSE'],
+          },
           { name: 'Ganado', position: 4, probability: 100, color: '#2F6F8F' },
         ],
       },

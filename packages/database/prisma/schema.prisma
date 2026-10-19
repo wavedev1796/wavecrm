@@ -39,6 +39,19 @@ enum QuoteStatus {
   ACCEPTED
   REJECTED
   EXPIRED
+  SUPERSEDED
+}
+
+enum StageRequirement {
+  CONTACT
+  OWNER
+  INTERACTION
+  NEED
+  NEXT_ACTIVITY
+  SOLUTION
+  BUDGET
+  EXPECTED_CLOSE
+  PROPOSAL_SENT
 }
 
 enum LossReason {
@@ -163,6 +176,8 @@ model Stage {
   position    Int
   probability Int      @default(0)
   color       String?
+  /// Requisitos para entrar a la etapa; se suman los de las etapas abiertas anteriores.
+  requirements StageRequirement[] @default([])
   pipelineId  String
   pipeline    Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
   deals       Deal[]
@@ -185,6 +200,11 @@ model Deal {
   closedAt      DateTime?
   lossReason    LossReason?
   lossDetail    String?
+  need          String?
+  solution      String?
+  budget        Decimal?     @db.Decimal(14, 2)
+  budgetNote    String?
+  decisionMaker String?
   pipelineId    String
   pipeline      Pipeline     @relation(fields: [pipelineId], references: [id], onDelete: Restrict)
   stageId       String
@@ -221,6 +241,7 @@ model DealStageHistory {
   changedById String?
   changedBy   User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
   changedAt   DateTime @default(now())
+  reason      String?
 
   @@index([dealId, changedAt])
 }
@@ -232,6 +253,7 @@ model DealItem {
   description String
   quantity    Decimal  @db.Decimal(12, 2)
   unitPrice   Decimal  @db.Decimal(14, 2)
+  /// Entero de 0 a 100: CHECK "DealItem_taxRate_range" (solo en la migración SQL).
   taxRate     Int      @default(15)
   position    Int
   createdAt   DateTime @default(now())
@@ -273,6 +295,9 @@ model Quote {
   tax       Decimal     @db.Decimal(14, 2)
   total     Decimal     @db.Decimal(14, 2)
   validUntil DateTime?
+  sentAt    DateTime?
+  acceptedAt DateTime?
+  acceptanceNote String?
   dealId    String
   deal      Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
   createdAt DateTime    @default(now())
