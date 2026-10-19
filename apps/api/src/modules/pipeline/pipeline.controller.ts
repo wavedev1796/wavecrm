@@ -21,13 +21,17 @@ import {
   CreateStageDto,
   LoseDealDto,
   MoveDealDto,
+  ReopenDealDto,
   SaveDealItemsDto,
+  TransitionQueryDto,
   UpdateDealDto,
   UpdatePipelineDto,
   UpdateStageDto,
   WinDealDto,
 } from "./pipeline.dto";
-import { PipelineService } from "./pipeline.service";
+import { PipelineService, type Actor } from "./pipeline.service";
+
+const actor = (user: JwtPayload): Actor => ({ id: user.sub, role: user.role });
 
 @ApiTags("pipeline")
 @ApiBearerAuth()
@@ -84,8 +88,16 @@ export class PipelineController {
   @Put("deals/:id/items") saveItems(
     @Param("id") id: string,
     @Body() dto: SaveDealItemsDto,
+    @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
-    return this.service.saveItems(id, dto.items);
+    return this.service.saveItems(id, dto.items, actor(user));
+  }
+  @Get("deals/:id/transition") previewTransition(
+    @Param("id") id: string,
+    @Query() query: TransitionQueryDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.previewTransition(id, query.to, actor(user));
   }
   @Get("deals/:id/history") history(@Param("id") id: string) {
     return this.service.history(id);
@@ -108,20 +120,21 @@ export class PipelineController {
     @Body() dto: WinDealDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
-    return this.service.winDeal(id, dto.closedAt, user.sub);
+    return this.service.transition(id, "WON", dto, actor(user));
   }
   @Post("deals/:id/lose") @HttpCode(200) lose(
     @Param("id") id: string,
     @Body() dto: LoseDealDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
-    return this.service.loseDeal(id, dto, user.sub);
+    return this.service.transition(id, "LOST", dto, actor(user));
   }
   @Post("deals/:id/reopen") @HttpCode(200) reopen(
     @Param("id") id: string,
+    @Body() dto: ReopenDealDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
-    return this.service.reopenDeal(id, user.sub);
+    return this.service.transition(id, "REOPEN", dto, actor(user));
   }
   @Get("deals/:id") getDeal(@Param("id") id: string): Promise<unknown> {
     return this.service.findDeal(id);
@@ -131,16 +144,20 @@ export class PipelineController {
     @Body() dto: MoveDealDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
-    return this.service.moveDeal(id, dto.stageId, user.sub);
+    const { stageId, ...input } = dto;
+    return this.service.transition(id, stageId, input, actor(user));
   }
   @Patch("deals/:id") updateDeal(
     @Param("id") id: string,
     @Body() dto: UpdateDealDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
-    return this.service.updateDeal(id, dto, user.sub);
+    return this.service.updateDeal(id, dto, actor(user));
   }
-  @Delete("deals/:id") deleteDeal(@Param("id") id: string) {
-    return this.service.deleteDeal(id);
+  @Delete("deals/:id") deleteDeal(
+    @Param("id") id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.service.deleteDeal(id, actor(user));
   }
 }

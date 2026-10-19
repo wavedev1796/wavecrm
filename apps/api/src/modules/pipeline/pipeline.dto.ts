@@ -110,21 +110,70 @@ export class CreateDealDto {
   @isoDate()
   @IsDate({ message: "Ingresa una fecha valida." })
   expectedClose?: Date | null;
+  @ApiPropertyOptional({ description: "Necesidad del cliente" })
+  @IsOptional()
+  @text("la necesidad", 2000, 2)
+  need?: string | null;
+  @ApiPropertyOptional({ description: "Solución de interés" })
+  @IsOptional()
+  @text("la solución", 2000, 2)
+  solution?: string | null;
+  @ApiPropertyOptional({ description: "Presupuesto evaluado (USD)" })
+  @IsOptional()
+  @numeric()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: "Ingresa un presupuesto válido de hasta 999999999999.99." },
+  )
+  @Min(0, { message: "Ingresa un presupuesto válido de hasta 999999999999.99." })
+  @Max(999999999999.99, {
+    message: "Ingresa un presupuesto válido de hasta 999999999999.99.",
+  })
+  budget?: number | null;
+  @ApiPropertyOptional({ description: "Por qué el presupuesto aún no se conoce" })
+  @IsOptional()
+  @text("la justificación del presupuesto", 1000, 2)
+  budgetNote?: string | null;
+  @ApiPropertyOptional({ description: "Persona decisora" })
+  @IsOptional()
+  @text("la persona decisora", 160, 2)
+  decisionMaker?: string | null;
 }
 export class UpdateDealDto extends PartialType(CreateDealDto, {
   skipNullProperties: false,
 }) {}
-export class MoveDealDto {
-  @ApiProperty() @text("la etapa") stageId!: string;
+const reason = () => text("el motivo", 500, 2);
+/** Etapa que la persona veía: si ya cambió, el API responde 409 en vez de pisar el cambio de otro. */
+class FromStageDto {
+  @ApiPropertyOptional() @IsOptional() @text("la etapa de origen") fromStageId?: string;
 }
-export class WinDealDto {
-  @ApiPropertyOptional({ example: "2026-10-10T00:00:00.000Z" })
+export class MoveDealDto extends FromStageDto {
+  @ApiProperty() @text("la etapa") stageId!: string;
+  @ApiPropertyOptional({ description: "Obligatorio al retroceder o reabrir" })
+  @IsOptional()
+  @reason()
+  reason?: string;
+  @ApiPropertyOptional({ description: "Fecha real de cierre al mover a una etapa de 100 %" })
   @IsOptional()
   @isoDate()
-  @IsDate({ message: "Ingresa una fecha de ganado válida." })
+  @IsDate({ message: "Ingresa la fecha real de cierre." })
   closedAt?: Date;
 }
-export class LoseDealDto {
+export class WinDealDto extends FromStageDto {
+  @ApiProperty({ example: "2026-10-10T00:00:00.000Z" })
+  @isoDate()
+  @IsDate({ message: "Ingresa la fecha real de cierre." })
+  closedAt!: Date;
+}
+export class ReopenDealDto {
+  @ApiProperty() @reason() reason!: string;
+}
+export class TransitionQueryDto {
+  @ApiProperty({ description: "Id de etapa, WON, LOST o REOPEN" })
+  @text("el destino")
+  to!: string;
+}
+export class LoseDealDto extends FromStageDto {
   @ApiProperty({ enum: LOSS_REASONS })
   @IsIn([...LOSS_REASONS], { message: "Elige el motivo de la pérdida." })
   lossReason!: LossReason;

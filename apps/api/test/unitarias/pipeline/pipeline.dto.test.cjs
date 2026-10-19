@@ -10,7 +10,9 @@ const {
   ListDealsDto,
   LoseDealDto,
   MoveDealDto,
+  ReopenDealDto,
   SaveDealItemsDto,
+  TransitionQueryDto,
   UpdateDealDto,
   UpdatePipelineDto,
   UpdateStageDto,
@@ -90,11 +92,12 @@ test("CRM-17: pipeline y etapa validan nombre, principal, probabilidad y color",
   );
 });
 
-test("CRM-21: ganar admite fecha opcional y perder exige motivo y detalle si es OTHER", async () => {
-  assert.deepEqual(await errors(WinDealDto, {}), {});
+test("ganar exige la fecha real de cierre y perder exige motivo y detalle si es OTHER", async () => {
+  assert.deepEqual(await errors(WinDealDto, {}), { closedAt: "Ingresa la fecha real de cierre." });
+  assert.deepEqual(await errors(WinDealDto, { closedAt: "2026-10-10", fromStageId: "s1" }), {});
   assert.ok(plainToInstance(WinDealDto, { closedAt: "2026-10-10T00:00:00.000Z" }).closedAt instanceof Date);
   assert.deepEqual(await errors(WinDealDto, { closedAt: "ayer" }), {
-    closedAt: "Ingresa una fecha de ganado válida.",
+    closedAt: "Ingresa la fecha real de cierre.",
   });
 
   assert.deepEqual(await errors(LoseDealDto, {}), { lossReason: "Elige el motivo de la pérdida." });
@@ -104,6 +107,33 @@ test("CRM-21: ganar admite fecha opcional y perder exige motivo y detalle si es 
   });
   assert.deepEqual(await errors(LoseDealDto, { lossReason: "PRICE", lossDetail: "x" }), {
     lossDetail: "Revisa el detalle del motivo: entre 2 y 500 caracteres.",
+  });
+});
+
+test("reabrir exige motivo y mover acepta motivo, etapa de origen y fecha de cierre opcionales", async () => {
+  assert.deepEqual(await errors(ReopenDealDto, {}), { reason: "Ingresa el motivo." });
+  assert.deepEqual(await errors(ReopenDealDto, { reason: "x" }), {
+    reason: "Revisa el motivo: entre 2 y 500 caracteres.",
+  });
+  assert.deepEqual(await errors(ReopenDealDto, { reason: "El cliente anuló la orden" }), {});
+  assert.deepEqual(await errors(MoveDealDto, { stageId: "s2" }), {});
+  assert.deepEqual(
+    await errors(MoveDealDto, { stageId: "s2", fromStageId: "s1", reason: "Revisar", closedAt: "2026-10-01" }),
+    {},
+  );
+  assert.deepEqual(await errors(MoveDealDto, { stageId: "s2", reason: "x".repeat(501) }), {
+    reason: "Revisa el motivo: entre 2 y 500 caracteres.",
+  });
+  assert.deepEqual(await errors(TransitionQueryDto, {}), { to: "Ingresa el destino." });
+});
+
+test("el negocio documenta necesidad, solución, presupuesto y decisor, y los vacía con null", async () => {
+  const body = { need: " Tienda ", solution: "Plan anual", budget: "5000.50", budgetNote: null, decisionMaker: "Gerente" };
+  assert.deepEqual(await errors(UpdateDealDto, body), {});
+  assert.equal(plainToInstance(UpdateDealDto, body).budget, 5000.5);
+  assert.deepEqual(await errors(UpdateDealDto, { budget: "-1", need: "x" }), {
+    need: "Revisa la necesidad: entre 2 y 2000 caracteres.",
+    budget: "Ingresa un presupuesto válido de hasta 999999999999.99.",
   });
 });
 

@@ -15,6 +15,8 @@ const {
   PipelineController,
 } = require("../../../dist/modules/pipeline/pipeline.controller.js");
 
+const vendedor = { id: "u1", role: "VENDEDOR" };
+
 /** Un delete de un registro que no existe: Prisma lanza P2025. */
 const missing = {
   delete: () => {
@@ -193,7 +195,9 @@ test("el tablero de un pipeline inexistente responde 404", async () => {
 
 test("crear negocio: responsable activo, por defecto quien lo crea, y primer movimiento", async () => {
   const dto = { pipelineId: "p1", stageId: "s1", title: "Cuenta", contactId: "c1" };
-  const stage = { stage: { findUnique: { id: "s1", pipelineId: "p1", probability: 10 } } };
+  const stage = {
+    stage: { findUnique: { id: "s1", pipelineId: "p1", probability: 10, position: 1, requirements: [] }, findMany: [] },
+  };
   await assert.rejects(
     mockPrisma(stage).service.createDeal(dto, "u1"),
     /responsable activo/,
@@ -210,40 +214,42 @@ test("crear negocio: responsable activo, por defecto quien lo crea, y primer mov
     fromStageId: null,
     toStageId: "s1",
     changedById: "u1",
+    reason: null,
   });
 });
 
 test("editar negocio: 404 y no deja el negocio sin contacto ni empresa", async () => {
   await assert.rejects(
-    mockPrisma().service.updateDeal("d1", { title: "X" }, "u1"),
+    mockPrisma().service.updateDeal("d1", { title: "X" }, vendedor),
     NotFoundException,
   );
   const { service } = mockPrisma({
     deal: {
-      findUnique: { id: "d1", contactId: "c1", companyId: null, _count: { items: 0 } },
+      findUnique: { id: "d1", status: "OPEN", contactId: "c1", companyId: null, _count: { items: 0 } },
     },
   });
   await assert.rejects(
-    service.updateDeal("d1", { contactId: null }, "u1"),
+    service.updateDeal("d1", { contactId: null }, vendedor),
     /contacto o una empresa/,
   );
 });
 
 test("eliminar, ver ficha e historial de un negocio", async () => {
-  await assert.rejects(mockPrisma({ deal: missing }).service.deleteDeal("d1"), NotFoundException);
+  await assert.rejects(mockPrisma({ deal: missing }).service.deleteDeal("d1", vendedor), NotFoundException);
   await assert.rejects(mockPrisma().service.findDeal("d1"), NotFoundException);
   await assert.rejects(mockPrisma({ deal: { count: 0 } }).service.history("d1"), NotFoundException);
 
   const { service, called } = mockPrisma({
-    deal: { findUnique: { id: "d1", title: "Cuenta" }, count: 1 },
+    deal: { findUnique: { id: "d1", title: "Cuenta", status: "OPEN" }, count: 1 },
     auditLog: { findMany: [{ action: "WON" }] },
     dealStageHistory: { findMany: [{ id: "h1" }] },
   });
-  await service.deleteDeal("d1");
+  await service.deleteDeal("d1", vendedor);
   assert.equal(called("deal.delete").length, 1);
   assert.deepEqual(await service.findDeal("d1"), {
     id: "d1",
     title: "Cuenta",
+    status: "OPEN",
     closures: [{ action: "WON" }],
   });
   assert.deepEqual(await service.history("d1"), [{ id: "h1" }]);
@@ -282,7 +288,7 @@ test("el controlador delega cada ruta en el servicio con el usuario del token", 
   const calls = [];
   const service = new Proxy({}, { get: (_, name) => (...args) => calls.push([name, ...args]) });
   const c = new PipelineController(service);
-  const user = { sub: "u1" };
+  const user = { sub: "u1", role: "VENDEDOR" };
   c.owners();
   c.pipelines();
   c.createPipeline({ name: "P" });
@@ -294,26 +300,37 @@ test("el controlador delega cada ruta en el servicio con el usuario del token", 
   c.board("p1");
   c.listDeals({ page: 1 });
   c.createDeal({ title: "N" }, user);
-  c.saveItems("d1", { items: [] });
+  c.saveItems("d1", { items: [] }, user);
+  c.previewTransition("d1", { to: "s2" }, user);
   c.history("d1");
   c.createActivity("d1", { type: "CALL" }, user);
   c.completeActivity("d1", "a1");
   c.win("d1", { closedAt: undefined }, user);
   c.lose("d1", { lossReason: "PRICE" }, user);
-  c.reopen("d1", user);
+  c.reopen("d1", { reason: "Error" }, user);
   c.getDeal("d1");
   c.moveDeal("d1", { stageId: "s2" }, user);
   c.updateDeal("d1", { title: "M" }, user);
-  c.deleteDeal("d1");
+  c.deleteDeal("d1", user);
   assert.deepEqual(
     calls.map(([name]) => name),
     [
       "listOwners", "listPipelines", "createPipeline", "updatePipeline", "deletePipeline",
       "createStage", "updateStage", "deleteStage", "board", "listDeals", "createDeal",
-      "saveItems", "history", "createActivity", "completeActivity", "winDeal", "loseDeal",
-      "reopenDeal", "findDeal", "moveDeal", "updateDeal", "deleteDeal",
+      "saveItems", "previewTransition", "history", "createActivity", "completeActivity",
+      "transition", "transition", "transition", "findDeal", "transition", "updateDeal", "deleteDeal",
     ],
   );
-  assert.deepEqual(calls.find(([n]) => n === "winDeal"), ["winDeal", "d1", undefined, "u1"]);
-  assert.deepEqual(calls.find(([n]) => n === "moveDeal"), ["moveDeal", "d1", "s2", "u1"]);
+  // Ganar, perder, reabrir y mover pasan por la misma transición, con el rol del token.
+  const actor = { id: "u1", role: "VENDEDOR" };
+  assert.deepEqual(
+    calls.filter(([n]) => n === "transition").map(([, ...args]) => args),
+    [
+      ["d1", "WON", { closedAt: undefined }, actor],
+      ["d1", "LOST", { lossReason: "PRICE" }, actor],
+      ["d1", "REOPEN", { reason: "Error" }, actor],
+      ["d1", "s2", {}, actor],
+    ],
+  );
+  assert.deepEqual(calls.find(([n]) => n === "previewTransition"), ["previewTransition", "d1", "s2", actor]);
 });

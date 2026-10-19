@@ -3,174 +3,382 @@ const assert = require("node:assert/strict");
 const {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
+  UnprocessableEntityException,
 } = require("@nestjs/common");
+const { Prisma } = require("@wave/database");
 const {
   PipelineService,
 } = require("../../../dist/modules/pipeline/pipeline.service.js");
 
 const item = (quantity, unitPrice, taxRate) => ({ quantity, unitPrice, taxRate });
+const vendedor = { id: "user-1", role: "VENDEDOR" };
+const admin = { id: "admin-1", role: "ADMIN" };
+const day = (iso) => new Date(iso + "T00:00:00.000Z");
 
+/**
+ * Prisma en memoria con lo que lee y escribe el servicio. `$transaction` copia el estado y lo
+ * restaura si la operación falla, como el ROLLBACK de la base.
+ */
 function mockPrisma({
-  items = [item(1, 120, 15)],
+  items = [item(1, 100, 15)],
   status = "OPEN",
   stageId = "stage-a",
   quotes = [],
+  activities = [],
+  deal: overrides = {},
 } = {}) {
   const pipeline = { id: "pipe-1", name: "Ventas", isDefault: true };
   const stages = {
-    "stage-a": { id: "stage-a", pipelineId: "pipe-1", name: "Nuevo", probability: 10, position: 1 },
-    "stage-b": { id: "stage-b", pipelineId: "pipe-1", name: "Ganado", probability: 100, position: 2 },
+    "stage-a": { id: "stage-a", pipelineId: "pipe-1", name: "Contactado", probability: 10, position: 1, requirements: [] },
+    "stage-n": { id: "stage-n", pipelineId: "pipe-1", name: "Negociación", probability: 50, position: 2, requirements: ["NEED", "NEXT_ACTIVITY"] },
+    "stage-g": { id: "stage-g", pipelineId: "pipe-1", name: "Ganado", probability: 100, position: 3, requirements: [] },
   };
   const deal = {
     id: "deal-1",
     title: "Contrato",
-    value: 120,
+    value: 100,
     status,
     pipelineId: "pipe-1",
     stageId,
-    contactId: null,
+    contactId: "contact-1",
     companyId: "company-1",
+    ownerId: "user-1",
+    need: null,
+    solution: null,
+    budget: null,
+    budgetNote: null,
+    expectedClose: null,
+    closedAt: null,
+    lossReason: null,
+    lossDetail: null,
+    ...overrides,
   };
-  const calls = { history: [], audit: [], quotes: [...quotes], items: [...items] };
+  const state = {
+    deal,
+    history: [],
+    audit: [],
+    quotes: quotes.map((q, index) => ({ id: "q" + index, dealId: "deal-1", createdAt: new Date(index), ...q })),
+    items: [...items],
+    activities: [...activities],
+  };
+  const live = () => state.quotes.filter((q) => q.dealId === "deal-1" && q.status !== "SUPERSEDED");
   const full = () => ({
-    ...deal,
-    stage: stages[deal.stageId],
-    _count: { items: calls.items.length },
+    ...state.deal,
+    stage: stages[state.deal.stageId],
+    items: state.items,
+    quotes: live().sort((a, b) => b.createdAt - a.createdAt).slice(0, 1),
+    _count: { items: state.items.length },
   });
+  const byPipeline = (where) => {
+    const ids = where.pipelineId?.in ?? [where.pipelineId];
+    return Object.values(stages).filter((s) => ids.includes(s.pipelineId));
+  };
   const matching = (where, orderBy) =>
-    Object.values(stages)
+    byPipeline(where)
       .filter(
         (s) =>
-          s.pipelineId === where.pipelineId &&
-          (where.probability === undefined ||
-            (typeof where.probability === "object"
-              ? s.probability < where.probability.lt
-              : s.probability === where.probability)),
+          where.probability === undefined ||
+          (typeof where.probability === "object" ? s.probability < where.probability.lt : s.probability === where.probability),
       )
-      .sort((a, b) =>
-        orderBy?.position === "desc" ? b.position - a.position : a.position - b.position,
-      );
+      .sort((a, b) => (orderBy?.position === "desc" ? b.position - a.position : a.position - b.position));
   const prisma = {
     pipeline: { findFirst: async () => pipeline },
     stage: {
-      findMany: async () => Object.values(stages),
+      findMany: async ({ where }) => matching(where),
       findUnique: async ({ where }) => stages[where.id] ?? null,
       findFirst: async ({ where, orderBy }) => matching(where, orderBy)[0] ?? null,
     },
+    user: { findFirst: async () => ({ id: "user-1" }) },
     deal: {
-      findMany: async () => [deal],
-      findUnique: async () => full(),
+      findMany: async () => [full()],
+      findUnique: async ({ where }) => (where.id === "deal-1" ? full() : null),
       findUniqueOrThrow: async () => full(),
-      update: async ({ data }) => Object.assign(deal, data),
+      create: async ({ data }) => ({ id: "deal-2", ...data }),
+      update: async ({ data }) => Object.assign(state.deal, data),
+      delete: async () => state.deal,
     },
     dealItem: {
-      findMany: async () => calls.items,
+      findMany: async () => state.items,
       deleteMany: async () => {
-        calls.items = [];
+        state.items = [];
       },
       createMany: async ({ data }) => {
-        calls.items = data;
+        state.items = data;
       },
     },
     quote: {
-      findFirst: async () => calls.quotes.at(-1) ?? null,
-      findMany: async () => calls.quotes,
+      findFirst: async () => state.quotes.at(-1) ?? null,
+      findMany: async () => live(),
       create: async ({ data }) => {
-        calls.quotes.push(data);
+        state.quotes.push({ id: "q" + state.quotes.length, createdAt: new Date(state.quotes.length), ...data });
         return data;
       },
-      deleteMany: async () => {
-        calls.quotes = [];
+      updateMany: async ({ where, data }) => {
+        for (const q of state.quotes)
+          if (q.dealId === where.dealId && where.status.in.includes(q.status)) Object.assign(q, data);
       },
     },
     dealStageHistory: {
       create: async ({ data }) => {
-        calls.history.push(data);
+        state.history.push(data);
         return data;
       },
       findFirst: async () => null,
     },
     auditLog: {
       create: async ({ data }) => {
-        calls.audit.push(data);
+        state.audit.push(data);
         return data;
       },
-      findMany: async () => calls.audit,
+      findMany: async () => state.audit,
     },
     activity: {
       create: async ({ data }) => data,
       findFirst: async () => null,
+      count: async ({ where }) =>
+        state.activities.filter(
+          (a) =>
+            a.status === where.status &&
+            (!where.type || where.type.in.includes(a.type)) &&
+            (!where.dueAt || (a.dueAt && a.dueAt >= where.dueAt.gte)),
+        ).length,
     },
   };
-  prisma.$transaction = (fn) => fn(prisma);
-  return { prisma, deal, calls };
+  prisma.$transaction = async (fn) => {
+    const snapshot = structuredClone({ ...state, deal: { ...state.deal } });
+    try {
+      return await fn(prisma);
+    } catch (error) {
+      Object.assign(state.deal, snapshot.deal);
+      for (const key of ["history", "audit", "quotes", "items"]) state[key] = snapshot[key];
+      throw error;
+    }
+  };
+  return { prisma, state };
 }
 const service = (prisma) => new PipelineService(prisma);
+const codesOf = async (promise) => {
+  const error = await promise.then(
+    () => assert.fail("debía rechazar"),
+    (e) => e,
+  );
+  assert.ok(error instanceof UnprocessableEntityException, String(error));
+  return error.getResponse().errors.map((p) => p.code);
+};
+const ready = {
+  need: "Tienda en línea",
+  activities: [{ status: "PENDING", type: "CALL", dueAt: day("2999-01-01") }],
+};
 
 test("CRM-18: tablero agrupa negocios y calcula el valor por etapa", async () => {
   const { prisma } = mockPrisma();
-  const board = await new PipelineService(prisma).board();
+  const board = await service(prisma).board();
   assert.equal(board.stages[0].count, 1);
-  assert.equal(board.stages[0].value, "120.00");
+  assert.equal(board.stages[0].value, "100.00");
   assert.equal(board.stages[1].value, "0.00");
 });
 
-test("CRM-18: mover negocio guarda etapa anterior, destino y responsable", async () => {
-  const { prisma, calls } = mockPrisma();
-  const result = await new PipelineService(prisma).moveDeal(
-    "deal-1",
-    "stage-b",
-    "user-1",
-  );
-  assert.equal(result.stageId, "stage-b");
-  assert.equal(result.status, "WON");
-  assert.deepEqual(calls.history[0], {
-    dealId: "deal-1",
-    fromStageId: "stage-a",
-    toStageId: "stage-b",
-    changedById: "user-1",
-  });
-  assert.equal(calls.quotes[0].number, "COT-000001");
+test("avanzar con los requisitos cumplidos guarda etapa anterior, destino y usuario", async () => {
+  const { prisma, state } = mockPrisma({ deal: { need: ready.need }, activities: ready.activities });
+  const result = await service(prisma).transition("deal-1", "stage-n", { fromStageId: "stage-a" }, vendedor);
+  assert.equal(result.stageId, "stage-n");
+  assert.deepEqual(state.history, [
+    { dealId: "deal-1", fromStageId: "stage-a", toStageId: "stage-n", changedById: "user-1", reason: null },
+  ]);
 });
 
-test("CRM-18: rechaza mover el negocio a una etapa de otro pipeline", async () => {
-  const { prisma } = mockPrisma();
-  prisma.stage.findUnique = async () => ({
-    id: "foreign",
-    pipelineId: "another-pipeline",
-  });
+test("avanzar sin requisitos responde 422 con los códigos y no escribe nada", async () => {
+  const { prisma, state } = mockPrisma();
+  assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "stage-n", {}, vendedor)), [
+    "NEED",
+    "NEXT_ACTIVITY",
+  ]);
+  assert.equal(state.deal.stageId, "stage-a");
+  assert.equal(state.history.length, 0);
+});
+
+test("retroceder exige motivo y lo guarda en el historial sin borrar datos", async () => {
+  const { prisma, state } = mockPrisma({ stageId: "stage-n", deal: { need: ready.need } });
+  assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "stage-a", {}, vendedor)), ["REASON"]);
+  await service(prisma).transition("deal-1", "stage-a", { reason: "El cliente pausó la compra" }, vendedor);
+  assert.equal(state.deal.stageId, "stage-a");
+  assert.equal(state.deal.need, "Tienda en línea");
+  assert.equal(state.history[0].reason, "El cliente pausó la compra");
+});
+
+test("una etapa vista desactualizada responde 409", async () => {
+  const { prisma, state } = mockPrisma({ stageId: "stage-n" });
   await assert.rejects(
-    new PipelineService(prisma).moveDeal("deal-1", "foreign", "user-1"),
-    BadRequestException,
+    service(prisma).transition("deal-1", "stage-a", { fromStageId: "stage-a", reason: "Volver" }, vendedor),
+    ConflictException,
   );
+  assert.equal(state.history.length, 0);
+});
+
+test("dos cambios simultáneos: la transacción serializable que pierde responde 409", async () => {
+  const { prisma } = mockPrisma();
+  prisma.$transaction = async () => {
+    throw new Prisma.PrismaClientKnownRequestError("conflicto", { code: "P2034", clientVersion: "6" });
+  };
+  await assert.rejects(service(prisma).transition("deal-1", "stage-n", {}, vendedor), ConflictException);
+});
+
+test("si falla el historial, el negocio no cambia de etapa", async () => {
+  const { prisma, state } = mockPrisma({ deal: { need: ready.need }, activities: ready.activities });
+  prisma.dealStageHistory.create = async () => {
+    throw new Error("disco lleno");
+  };
+  await assert.rejects(service(prisma).transition("deal-1", "stage-n", {}, vendedor), /disco lleno/);
+  assert.equal(state.deal.stageId, "stage-a");
+});
+
+test("ganar exige la propuesta aceptada y no crea otra cotización", async () => {
+  const { prisma, state } = mockPrisma({ stageId: "stage-n", deal: { need: ready.need }, quotes: [{ number: "COT-000007", status: "SENT", total: "115.00" }] });
+  assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "WON", { closedAt: day("2026-10-01") }, vendedor)), ["ACCEPTANCE"]);
+  state.quotes[0].status = "ACCEPTED";
+  await service(prisma).transition("deal-1", "WON", { closedAt: day("2026-10-01") }, vendedor);
+  assert.equal(state.quotes.length, 1);
+  assert.equal(state.deal.status, "WON");
+  assert.equal(state.deal.stageId, "stage-g");
+  assert.equal(state.deal.closedAt.toISOString(), "2026-10-01T00:00:00.000Z");
+  assert.equal(state.history[0].toStageId, "stage-g");
+  assert.equal(state.audit[0].action, "WON");
+  assert.equal(state.audit[0].changes.quoteNumber, "COT-000007");
+});
+
+test("arrastrar a la etapa de 100 % es ganar con las mismas reglas", async () => {
+  const { prisma } = mockPrisma({ stageId: "stage-n", deal: { need: ready.need }, quotes: [{ number: "COT-000001", status: "ACCEPTED", total: "115.00" }] });
+  assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "stage-g", {}, vendedor)), ["CLOSED_AT"]);
+  const result = await service(prisma).transition("deal-1", "stage-g", { closedAt: day("2026-10-01") }, vendedor);
+  assert.equal(result.status, "WON");
+});
+
+test("perder guarda motivo y fecha sin mover la etapa; solo desde abierto", async () => {
+  const { prisma, state } = mockPrisma();
+  assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "LOST", {}, vendedor)), ["LOSS_REASON"]);
+  await service(prisma).transition("deal-1", "LOST", { lossReason: "PRICE" }, vendedor);
+  assert.equal(state.deal.status, "LOST");
+  assert.equal(state.deal.lossReason, "PRICE");
+  assert.equal(state.deal.lossDetail, null);
+  assert.equal(state.deal.stageId, "stage-a");
+  assert.ok(state.deal.closedAt instanceof Date);
+  assert.equal(state.audit[0].action, "LOST");
+  await assert.rejects(service(prisma).transition("deal-1", "LOST", { lossReason: "PRICE" }, admin), ConflictException);
+});
+
+test("un VENDEDOR no reabre, mueve, edita, borra ni cambia productos de un negocio cerrado", async () => {
+  const { prisma, state } = mockPrisma({ status: "WON", stageId: "stage-g" });
+  const s = service(prisma);
+  await assert.rejects(s.transition("deal-1", "REOPEN", { reason: "Error" }, vendedor), ForbiddenException);
+  await assert.rejects(s.previewTransition("deal-1", "REOPEN", vendedor), ForbiddenException);
+  await assert.rejects(s.transition("deal-1", "stage-a", { reason: "Error" }, vendedor), ForbiddenException);
+  await assert.rejects(s.updateDeal("deal-1", { title: "Otro" }, vendedor), ForbiddenException);
+  await assert.rejects(s.deleteDeal("deal-1", vendedor), ForbiddenException);
+  const lost = mockPrisma({ status: "LOST" });
+  await assert.rejects(service(lost.prisma).saveItems("deal-1", [], vendedor), ForbiddenException);
+  assert.equal(state.deal.status, "WON");
+});
+
+test("un ADMIN reabre un ganado con motivo, vuelve a su etapa y conserva la cotización", async () => {
+  const { prisma, state } = mockPrisma({ status: "WON", stageId: "stage-g", quotes: [{ number: "COT-000001", status: "ACCEPTED", total: "115.00" }] });
+  assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "REOPEN", {}, admin)), ["REASON"]);
+  await service(prisma).transition("deal-1", "REOPEN", { reason: "El cliente anuló la orden" }, admin);
+  assert.equal(state.deal.status, "OPEN");
+  assert.equal(state.deal.closedAt, null);
+  assert.equal(state.deal.stageId, "stage-n"); // última etapa abierta: el mock no tiene historial de origen
+  assert.equal(state.quotes.length, 1);
+  assert.deepEqual(state.audit[0], {
+    action: "REOPENED",
+    entityType: "Deal",
+    entityId: "deal-1",
+    changes: { from: "WON", reason: "El cliente anuló la orden" },
+    userId: "admin-1",
+  });
+  assert.equal(state.history[0].reason, "El cliente anuló la orden");
+});
+
+test("un ADMIN reabre un perdido en la etapa donde quedó", async () => {
+  const { prisma, state } = mockPrisma({ status: "LOST", stageId: "stage-n", deal: { lossReason: "PRICE" } });
+  await service(prisma).transition("deal-1", "REOPEN", { reason: "Volvió a escribir" }, admin);
+  assert.equal(state.deal.status, "OPEN");
+  assert.equal(state.deal.lossReason, null);
+  assert.equal(state.deal.stageId, "stage-n");
+  assert.equal(state.history.length, 0);
+});
+
+test("una etapa de otro pipeline responde 400 y un negocio inexistente 404", async () => {
+  const { prisma } = mockPrisma();
+  prisma.stage.findUnique = async () => ({ id: "foreign", pipelineId: "another-pipeline", probability: 10, position: 1, requirements: [] });
+  await assert.rejects(service(prisma).transition("deal-1", "foreign", {}, vendedor), BadRequestException);
+  await assert.rejects(service(prisma).transition("deal-9", "stage-n", {}, vendedor), NotFoundException);
+  await assert.rejects(service(prisma).previewTransition("deal-9", "stage-n", vendedor), NotFoundException);
+});
+
+test("la consulta previa devuelve los pendientes, la propuesta y los productos sin escribir", async () => {
+  const { prisma, state } = mockPrisma({ quotes: [{ number: "COT-000003", status: "SENT", total: "115.00" }] });
+  const preview = await service(prisma).previewTransition("deal-1", "stage-n", vendedor);
+  assert.deepEqual(
+    preview.pending.map((p) => p.code),
+    ["NEED", "NEXT_ACTIVITY"],
+  );
+  assert.deepEqual(preview.quote, { id: "q0", number: "COT-000003", status: "SENT" });
+  assert.equal(preview.items, 1);
+  assert.equal(state.history.length, 0);
+});
+
+test("mover a la misma etapa no escribe historial", async () => {
+  const { prisma, state } = mockPrisma();
+  await service(prisma).transition("deal-1", "stage-a", { fromStageId: "stage-a" }, vendedor);
+  assert.equal(state.history.length, 0);
+});
+
+test("cambiar la etapa al editar pasa por las mismas reglas", async () => {
+  const { prisma, state } = mockPrisma();
+  assert.deepEqual(await codesOf(service(prisma).updateDeal("deal-1", { stageId: "stage-n" }, vendedor)), ["NEED", "NEXT_ACTIVITY"]);
+  assert.equal(state.deal.stageId, "stage-a");
+  await service(prisma).updateDeal("deal-1", { need: "Catálogo", decisionMaker: "Gerente" }, vendedor);
+  assert.equal(state.deal.need, "Catálogo");
 });
 
 test("CRM-18: el negocio debe quedar asociado a un contacto o empresa", async () => {
   const { prisma } = mockPrisma();
   await assert.rejects(
-    new PipelineService(prisma).createDeal(
-      {
-        pipelineId: "pipe-1",
-        stageId: "stage-a",
-        title: "Sin relacion",
-        value: 50,
-      },
-      "user-1",
-    ),
+    service(prisma).createDeal({ pipelineId: "pipe-1", stageId: "stage-a", title: "Sin relacion", value: 50 }, "user-1"),
+    BadRequestException,
+  );
+});
+
+test("un alta en una etapa con requisitos lista lo que falta", async () => {
+  const { prisma } = mockPrisma();
+  const body = { pipelineId: "pipe-1", stageId: "stage-n", title: "Directo", value: 50, companyId: "company-1" };
+  assert.deepEqual(await codesOf(service(prisma).createDeal(body, "user-1")), ["NEED", "NEXT_ACTIVITY"]);
+  const created = await service(prisma).createDeal({ ...body, stageId: "stage-a" }, "user-1");
+  assert.equal(created.ownerId, "user-1");
+});
+
+test("CRM-21: no se crea un negocio directamente en una etapa de 100 %", async () => {
+  const { prisma } = mockPrisma();
+  await assert.rejects(
+    service(prisma).createDeal({ pipelineId: "pipe-1", stageId: "stage-g", title: "Directo", value: 50, companyId: "company-1" }, "user-1"),
     BadRequestException,
   );
 });
 
 test("CRM-20: guardar productos recalcula el valor y ordena las filas", async () => {
-  const { prisma, deal, calls } = mockPrisma();
-  await service(prisma).saveItems("deal-1", [
-    { description: "Pagina web", quantity: 1, unitPrice: 1400, taxRate: 15 },
-    { description: "Mantenimiento", quantity: 1, unitPrice: 1000, taxRate: 15 },
-  ]);
-  assert.equal(deal.value.toFixed(2), "2400.00");
+  const { prisma, state } = mockPrisma();
+  await service(prisma).saveItems(
+    "deal-1",
+    [
+      { description: "Pagina web", quantity: 1, unitPrice: 1400, taxRate: 15 },
+      { description: "Mantenimiento", quantity: 1, unitPrice: 1000, taxRate: 12 },
+    ],
+    vendedor,
+  );
+  assert.equal(state.deal.value.toFixed(2), "2400.00");
   assert.deepEqual(
-    calls.items.map((i) => [i.description, i.position, i.dealId]),
+    state.items.map((i) => [i.description, i.position, i.dealId]),
     [
       ["Pagina web", 0, "deal-1"],
       ["Mantenimiento", 1, "deal-1"],
@@ -179,157 +387,27 @@ test("CRM-20: guardar productos recalcula el valor y ordena las filas", async ()
 });
 
 test("CRM-20: sin productos el valor queda como estaba para escribirlo a mano", async () => {
-  const { prisma, deal } = mockPrisma();
-  await service(prisma).saveItems("deal-1", []);
-  assert.equal(deal.value, 120);
+  const { prisma, state } = mockPrisma();
+  await service(prisma).saveItems("deal-1", [], vendedor);
+  assert.equal(state.deal.value, 100);
 });
 
 test("CRM-20: los productos de un negocio ganado no se cambian", async () => {
-  const { prisma } = mockPrisma({ status: "WON", stageId: "stage-b" });
-  await assert.rejects(service(prisma).saveItems("deal-1", []), ConflictException);
+  const { prisma } = mockPrisma({ status: "WON", stageId: "stage-g" });
+  await assert.rejects(service(prisma).saveItems("deal-1", [], admin), ConflictException);
 });
 
 test("CRM-20: con productos el monto no se edita a mano", async () => {
   const { prisma } = mockPrisma();
-  await assert.rejects(
-    service(prisma).updateDeal("deal-1", { value: 10 }, "user-1"),
-    BadRequestException,
-  );
-});
-
-test("CRM-21: ganar exige productos y no crea cotizacion sin ellos", async () => {
-  const { prisma, calls } = mockPrisma({ items: [] });
-  await assert.rejects(
-    service(prisma).winDeal("deal-1", undefined, "user-1"),
-    BadRequestException,
-  );
-  assert.equal(calls.quotes.length, 0);
-});
-
-test("CRM-21: ganar crea la cotizacion con IVA por tarifa, pasa a 100 % y audita", async () => {
-  const { prisma, deal, calls } = mockPrisma({
-    items: [item(2, 10, 0), item(1, 100, 15)],
-    quotes: [{ number: "COT-000041", status: "ACCEPTED", dealId: "otro" }],
-  });
-  await service(prisma).winDeal(
-    "deal-1",
-    new Date("2026-10-01T00:00:00.000Z"),
-    "user-1",
-  );
-  const quote = calls.quotes.at(-1);
-  assert.equal(quote.number, "COT-000042");
-  assert.equal(quote.status, undefined); // DRAFT por defecto en el schema
-  assert.deepEqual(
-    [quote.subtotal, quote.tax, quote.total].map((d) => d.toFixed(2)),
-    ["120.00", "15.00", "135.00"],
-  );
-  assert.equal(deal.status, "WON");
-  assert.equal(deal.stageId, "stage-b");
-  assert.equal(deal.closedAt.toISOString(), "2026-10-01T00:00:00.000Z");
-  assert.deepEqual(calls.history[0], {
-    dealId: "deal-1",
-    fromStageId: "stage-a",
-    toStageId: "stage-b",
-    changedById: "user-1",
-  });
-  assert.equal(calls.audit[0].action, "WON");
-  assert.equal(calls.audit[0].changes.quoteNumber, "COT-000042");
-});
-
-test("CRM-21: la fecha de ganado no puede ser futura", async () => {
-  const { prisma } = mockPrisma();
-  const tomorrow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-  await assert.rejects(
-    service(prisma).winDeal("deal-1", tomorrow, "user-1"),
-    BadRequestException,
-  );
-});
-
-test("CRM-21: perder guarda motivo y fecha sin mover la etapa; solo desde abierto", async () => {
-  const { prisma, deal, calls } = mockPrisma();
-  await service(prisma).loseDeal("deal-1", { lossReason: "PRICE" }, "user-1");
-  assert.equal(deal.status, "LOST");
-  assert.equal(deal.lossReason, "PRICE");
-  assert.equal(deal.lossDetail, null);
-  assert.equal(deal.stageId, "stage-a");
-  assert.ok(deal.closedAt instanceof Date);
-  assert.equal(calls.audit[0].action, "LOST");
-  const won = mockPrisma({ status: "WON", stageId: "stage-b" });
-  await assert.rejects(
-    service(won.prisma).loseDeal("deal-1", { lossReason: "PRICE" }, "user-1"),
-    ConflictException,
-  );
-});
-
-test("CRM-21: reabrir un ganado borra su borrador y vuelve a una etapa abierta", async () => {
-  const { prisma, deal, calls } = mockPrisma({
-    status: "WON",
-    stageId: "stage-b",
-    quotes: [{ number: "COT-000001", status: "DRAFT" }],
-  });
-  await service(prisma).reopenDeal("deal-1", "user-1");
-  assert.equal(deal.status, "OPEN");
-  assert.equal(deal.closedAt, null);
-  assert.equal(deal.stageId, "stage-a");
-  assert.equal(calls.quotes.length, 0);
-  assert.equal(calls.audit[0].action, "REOPENED");
-  assert.deepEqual(calls.audit[0].changes.deletedQuotes, ["COT-000001"]);
-});
-
-test("CRM-21: no se reabre un ganado cuya cotizacion ya salio de borrador", async () => {
-  const { prisma } = mockPrisma({
-    status: "WON",
-    stageId: "stage-b",
-    quotes: [{ number: "COT-000001", status: "SENT" }],
-  });
-  await assert.rejects(
-    service(prisma).reopenDeal("deal-1", "user-1"),
-    ConflictException,
-  );
-});
-
-test("CRM-21: sacar un ganado de la etapa de 100 % lo reabre por el mismo camino", async () => {
-  const { prisma, deal, calls } = mockPrisma({
-    status: "WON",
-    stageId: "stage-b",
-    quotes: [{ number: "COT-000001", status: "DRAFT" }],
-  });
-  await service(prisma).moveDeal("deal-1", "stage-a", "user-1");
-  assert.equal(deal.status, "OPEN");
-  assert.equal(calls.quotes.length, 0);
-  assert.equal(calls.audit[0].action, "REOPENED");
-});
-
-test("CRM-21: no se crea un negocio directamente en una etapa de 100 %", async () => {
-  const { prisma } = mockPrisma();
-  await assert.rejects(
-    service(prisma).createDeal(
-      {
-        pipelineId: "pipe-1",
-        stageId: "stage-b",
-        title: "Directo",
-        value: 50,
-        companyId: "company-1",
-      },
-      "user-1",
-    ),
-    BadRequestException,
-  );
+  await assert.rejects(service(prisma).updateDeal("deal-1", { value: 10 }, vendedor), BadRequestException);
 });
 
 test("CRM-20: la actividad del negocio copia contacto y empresa y la asigna a quien la crea", async () => {
   const { prisma } = mockPrisma();
-  const created = await service(prisma).createActivity(
-    "deal-1",
-    { type: "CALL", subject: "Llamar al cliente" },
-    "user-1",
-  );
+  const created = await service(prisma).createActivity("deal-1", { type: "CALL", subject: "Llamar al cliente" }, "user-1");
   assert.deepEqual(
     [created.dealId, created.companyId, created.contactId, created.assigneeId],
-    ["deal-1", "company-1", null, "user-1"],
+    ["deal-1", "company-1", "contact-1", "user-1"],
   );
-  await assert.rejects(
-    service(prisma).completeActivity("deal-1", "ajena"),
-    NotFoundException,
-  );
+  await assert.rejects(service(prisma).completeActivity("deal-1", "ajena"), NotFoundException);
 });
