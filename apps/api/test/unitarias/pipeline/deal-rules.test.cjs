@@ -1,6 +1,8 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const {
+  BOARD_PAGE,
+  dealMetrics,
   dealTotals,
   ecuadorToday,
   nextQuoteNumber,
@@ -33,6 +35,28 @@ test("CRM-20: cada fila y el IVA redondean a centavos hacia arriba en la mitad",
 test("CRM-21: el numero de cotizacion es correlativo de seis digitos", () => {
   assert.equal(nextQuoteNumber(null), "COT-000001");
   assert.equal(nextQuoteNumber("COT-000041"), "COT-000042");
+});
+
+test("las métricas separan abiertos, ganados y perdidos con una sola definición", () => {
+  // Un groupBy por (stageId, status) trae varias filas por estado: se suman.
+  const metrics = dealMetrics([
+    { status: "OPEN", _count: { _all: 1 }, _sum: { value: "100.25" } },
+    { status: "OPEN", _count: { _all: 1 }, _sum: { value: "200.25" } },
+    { status: "WON", _count: { _all: 1 }, _sum: { value: "100" } },
+    { status: "LOST", _count: { _all: 1 }, _sum: { value: "999" } },
+  ]);
+  assert.deepEqual(metrics, {
+    open: { count: 2, value: "300.50" },
+    won: { count: 1, value: "100.00" },
+    lost: { count: 1, value: "999.00" },
+  });
+  const zero = { count: 0, value: "0.00" };
+  assert.deepEqual(dealMetrics([{ status: "OPEN", _count: { _all: 0 }, _sum: { value: null } }]), {
+    open: zero,
+    won: zero,
+    lost: zero,
+  });
+  assert.equal(BOARD_PAGE, 10);
 });
 
 test("CRM-21: hoy es el dia de Ecuador guardado a las 00:00 UTC", () => {

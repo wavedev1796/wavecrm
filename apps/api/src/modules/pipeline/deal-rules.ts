@@ -6,6 +6,35 @@ type Line = {
   taxRate: number;
 };
 
+/** Tarjetas por columna en el tablero; "Ver más" trae la página siguiente. */
+export const BOARD_PAGE = 10;
+
+type StatusGroup = {
+  status: "OPEN" | "WON" | "LOST";
+  _count: { _all: number };
+  _sum: { value: Prisma.Decimal.Value | null };
+};
+
+/** Única definición de las métricas: abiertos, ganados y perdidos (cantidad y valor). Los perdidos no suman a los otros. */
+export function dealMetrics(groups: readonly StatusGroup[]) {
+  const totals = {
+    open: { count: 0, value: new Prisma.Decimal(0) },
+    won: { count: 0, value: new Prisma.Decimal(0) },
+    lost: { count: 0, value: new Prisma.Decimal(0) },
+  };
+  const keys = { OPEN: "open", WON: "won", LOST: "lost" } as const;
+  for (const group of groups) {
+    const total = totals[keys[group.status]];
+    total.count += group._count._all;
+    total.value = total.value.plus(group._sum.value ?? 0);
+  }
+  const shown = (total: { count: number; value: Prisma.Decimal }) => ({
+    count: total.count,
+    value: total.value.toFixed(2),
+  });
+  return { open: shown(totals.open), won: shown(totals.won), lost: shown(totals.lost) };
+}
+
 /** Máximo de Decimal(14,2): ni el valor del negocio ni el subtotal pueden pasarlo. */
 export const MAX_DEAL_VALUE = "999999999999.99";
 
