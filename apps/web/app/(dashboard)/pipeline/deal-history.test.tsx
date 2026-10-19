@@ -13,6 +13,7 @@ test("muestra la creación y los movimientos con su responsable", async () => {
         fromStage: { id: "s1", name: "Inicial" },
         toStage: { id: "s2", name: "Propuesta" },
         changedBy: null,
+        reason: "El cliente pidió revisar la propuesta",
       },
       {
         id: "h1",
@@ -29,6 +30,7 @@ test("muestra la creación y los movimientos con su responsable", async () => {
   expect(screen.getByText("Creado en Inicial")).toBeInTheDocument();
   expect(screen.getByText(/Usuario no disponible/)).toBeInTheDocument();
   expect(screen.getByText(/Eduardo/)).toBeInTheDocument();
+  expect(screen.getByText("Motivo: El cliente pidió revisar la propuesta")).toBeInTheDocument();
   expect(dealHistoryAction).toHaveBeenCalledWith("d1");
 });
 

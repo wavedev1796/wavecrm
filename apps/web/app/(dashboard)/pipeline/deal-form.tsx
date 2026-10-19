@@ -155,10 +155,14 @@ export function DealForm({
               defaultValue={state.values.expectedClose}
             />
           </Field>
+          {/* Al editar, la etapa cambia solo por el tablero o la ficha: así pasa por las reglas de transición. */}
+          {deal && <input type="hidden" name="pipelineId" value={selectedPipeline} />}
+          {deal && <input type="hidden" name="stageId" value={selectedStage} />}
           <Field {...field("pipelineId", "Pipeline", true)}>
             <Select
               {...props("pipelineId")}
               value={selectedPipeline}
+              disabled={Boolean(deal)}
               required
               onChange={(event) => {
                 setSelectedPipeline(event.target.value);
@@ -179,7 +183,9 @@ export function DealForm({
             <Select
               {...props("stageId")}
               value={selectedStage}
+              disabled={Boolean(deal)}
               required
+              {...(deal && { "aria-describedby": "deal-stage-hint" })}
               onChange={(event) => {
                 setSelectedStage(event.target.value);
               }}
@@ -191,6 +197,11 @@ export function DealForm({
                 </option>
               ))}
             </Select>
+            {deal && (
+              <p id="deal-stage-hint" className="field-hint">
+                {PIPELINE.stageLocked}
+              </p>
+            )}
           </Field>
           <p className="deal-form-wide deal-form-hint">{PIPELINE.linked}</p>
           <Field {...field("contactId", "Contacto")}>

@@ -19,6 +19,29 @@ export const PIPELINE = {
     "Ingresa un monto con hasta dos decimales, por ejemplo 520.25 o 520,25 (maximo 999999999999.99).",
   dateInvalid: "Ingresa una fecha valida.",
   valueFromItems: "Se calcula con los productos de la ficha.",
+  stageLocked: "Cambia la etapa desde el tablero o la ficha.",
+} as const;
+
+export const TABLERO = {
+  kpis: {
+    abiertos: "Negocios abiertos",
+    valorAbierto: "Valor abierto",
+    valorAbiertoAyuda: "Solo negocios abiertos, en USD",
+    valorGanado: "Valor ganado",
+    perdidos: "Perdidos",
+    perdidosAyuda: (valor: string) => `${valor} que no suman al pipeline`,
+  },
+  total: (cantidad: number) =>
+    `${cantidad} ${cantidad === 1 ? "negocio" : "negocios"} en este pipeline`,
+  ganados: (cantidad: number) => `${cantidad} negocios ganados`,
+  perdido: "Perdido",
+  columnaPerdido: "Columna Perdido",
+  perdidoAyuda: "No suma al valor abierto ni al ganado",
+  perdidoVacio: "Suelta aquí una tarjeta para marcarla como perdida.",
+  verMas: (quedan: number) => `Ver más (quedan ${quedan})`,
+  cargandoMas: "Cargando…",
+  cambiarEtapa: "Cambiar de etapa",
+  motivo: (motivo: string) => `Motivo: ${motivo}`,
 } as const;
 
 export const TRANSICION = {

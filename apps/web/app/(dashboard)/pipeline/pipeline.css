@@ -92,9 +92,61 @@
   color: var(--wave-muted-strong);
   white-space: nowrap;
 }
+/* Columna acotada: las tarjetas se desplazan dentro de la columna y "Ver más" trae la página siguiente,
+   así el tablero no crece sin fin hacia abajo. */
 .pipeline-cards {
   display: grid;
   gap: 12px;
+  max-height: max(360px, calc(100dvh - 360px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+.pipeline-more {
+  width: 100%;
+  margin-top: 10px;
+  min-height: 36px;
+  border: 1px dashed var(--wave-line-strong);
+  border-radius: 10px;
+  background: var(--wave-white);
+  color: var(--wave-blue);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+.pipeline-more:hover:not(:disabled) {
+  background: var(--wave-blue-soft);
+}
+.pipeline-more:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+.pipeline-board .pipeline-column--lost {
+  background: var(--wave-page);
+  border-style: dashed;
+}
+.pipeline-lost-dot {
+  background: var(--wave-muted);
+}
+.transition-pending {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.transition-pending > li {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--wave-line);
+  border-radius: 10px;
+}
+.transition-pending > li > p {
+  margin: 0;
+  font-weight: 600;
 }
 .pipeline-board .deal-card {
   padding: 14px;

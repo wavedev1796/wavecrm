@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { COMUN } from "@/content/comun";
+import { TABLERO } from "@/content/pipeline";
 import { formatDateTime } from "@/lib/format";
 import { dealHistoryAction } from "./actions";
 import type { HistoryItem } from "./types";
@@ -41,6 +42,7 @@ export function DealHistory({ id }: Readonly<{ id: string }>) {
               {item.changedBy?.name ?? "Usuario no disponible"} ·{" "}
               {formatDateTime(item.changedAt)}
             </span>
+            {item.reason && <p>{TABLERO.motivo(item.reason)}</p>}
           </li>
         ))}
       </ol>

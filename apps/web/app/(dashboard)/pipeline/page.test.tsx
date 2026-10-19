@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 vi.mock("./actions", () => ({
-  moveDealAction: vi.fn(),
+  previewTransitionAction: vi.fn(),
   saveDeal: vi.fn(),
   configurePipelineAction: vi.fn(),
 }));
@@ -37,6 +37,8 @@ test("carga el pipeline solicitado y todas las paginas de opciones", async () =>
       return Response.json({
         pipeline: { id: "p1", name: "Ventas", isDefault: true },
         stages: [stage],
+        lost: { count: 0, value: "0.00", deals: [] },
+        metrics: Object.fromEntries(["open", "won", "lost"].map((k) => [k, { count: 0, value: "0.00" }])),
       });
     if (path === "/contacts?limit=100&page=1")
       return Response.json({
