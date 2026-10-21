@@ -101,3 +101,23 @@ Bloque añadido por Zaith Manangón (CRM-20 y CRM-21), con autorización del usu
 ### Validación
 
 - Pruebas ajustadas al nuevo camino de cierre: `apps/api/test/pipeline.service.test.cjs` y `apps/api/test/integracion/pipeline.http.test.cjs`. Resultado del 2026-10-10: 123 pruebas del API y 10 HTTP contra `pruebas` aprobadas.
+
+## Reglas de transición entre etapas (2026-10-18)
+
+Bloque añadido por Zaith Manangón (*Reglas de transición del pipeline*), con autorización del usuario del 2026-10-18.
+
+### Implementación
+
+- `PATCH /deals/:id/move`, `POST /deals/:id/win`, `/lose`, `/reopen` y el cambio de etapa en `PATCH /deals/:id` delegan en `PipelineService.transition()`, que decide con la función pura `stage-gates.ts`. `GET /deals/:id/transition?to=<stageId|WON|LOST|REOPEN>` devuelve lo que falta sin escribir.
+- `MoveDealDto` suma `fromStageId`, `reason` y `closedAt`. `WinDealDto.closedAt` y `ReopenDealDto.reason` pasan a ser obligatorios. Lo que falta responde `422` con `error.errors = [{ code, message }]`; una etapa vista desactualizada, `409`.
+- Un negocio ganado o perdido solo lo mueve, edita, borra o reabre un ADMIN (`403`).
+- `GET /deals/board` trae 10 tarjetas por columna, la columna `lost` y `metrics` (abiertos, ganados y perdidos de `dealMetrics`). Con `?column=<stageId|LOST>&page=N` trae la página siguiente de una columna.
+- El alta en una etapa con requisitos pasa por las mismas reglas.
+
+### Decisiones
+
+- **Coordinación con *Reglas de transición del pipeline*.** Mover a una etapa de 100 % sigue siendo ganar, pero ahora exige la propuesta aceptada, el importe igual al de los productos y la fecha real de cierre, y ya no crea la cotización. Detalle en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).
+
+### Validación
+
+- `pipeline.service.test.cjs`, `pipeline-config.service.test.cjs` y `pipeline.http.test.cjs` ajustados al contrato nuevo. Cifras en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).

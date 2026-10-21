@@ -89,3 +89,25 @@ Bloque añadido por Zaith Manangón (CRM-20 y CRM-21), con autorización del usu
 ### Validación
 
 - Pruebas ajustadas: `pipeline-board.test.tsx`, `actions.test.ts` y `e2e/pipeline.spec.ts` (sin *Estado*; el arrastre y el recorrido del tablero siguen funcionando con el título convertido en enlace). Resultado del 2026-10-10: 233 pruebas web y 3 de navegador aprobadas.
+
+## Requisitos por etapa, columna Perdido y paginación (2026-10-18)
+
+Bloque añadido por Zaith Manangón (*Reglas de transición del pipeline*), con autorización del usuario del 2026-10-18.
+
+### Implementación
+
+- `pipeline-board.tsx`: el arrastre y el selector abren el mismo modal (`transition-dialog.tsx`), que pregunta al API qué falta y pide cada dato. La tarjeta se mueve solo cuando el API confirma.
+- Columna **Perdido** al final (es un estado, no una etapa): soltar ahí pide el motivo. El selector de la tarjeta suma *Perdido*.
+- Los indicadores salen de `metrics` del API: *Negocios abiertos*, *Valor abierto*, *Valor ganado* y *Perdidos*. Los perdidos ya no suman al valor del pipeline.
+- Cada columna muestra 10 tarjetas, con altura acotada, desplazamiento interno y *Ver más (quedan N)*.
+- `deal-form.tsx`: al editar, pipeline y etapa quedan deshabilitados ("Cambia la etapa desde el tablero o la ficha.").
+- `pipeline-settings.tsx`: casillas *Requisitos para entrar a esta etapa*; solo un ADMIN puede cambiarlas.
+- `deal-history.tsx`: muestra el motivo de cada retroceso o reapertura.
+
+### Decisiones
+
+- **Coordinación con *Reglas de transición del pipeline*.** Las reglas viven solo en el API: el tablero no decide qué falta. Detalle en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).
+
+### Validación
+
+- `pipeline-board.test.tsx`, `deal-history.test.tsx`, `pipeline-settings.test.tsx` y `e2e/pipeline.spec.ts` ajustados y ampliados. Cifras en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).

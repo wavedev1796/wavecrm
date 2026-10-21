@@ -70,6 +70,26 @@ El ticket no trae criterios escritos; salen de los del tablero: motivo de pérdi
 2. *Reabrir*: el negocio vuelve a su etapa y la cotización desaparece.
 3. *Perder* con motivo "Otro" sin detalle: el diálogo lo pide.
 
+## Cierres con propuesta aceptada y reapertura con permiso (2026-10-18)
+
+Bloque añadido por Zaith Manangón (*Reglas de transición del pipeline*), con autorización del usuario del 2026-10-18.
+
+### Implementación
+
+- Ganar ya no crea la cotización en borrador: exige una propuesta aceptada con evidencia, vigente y con el importe de los productos, más la fecha real de cierre (obligatoria y no futura). Usa esa cotización.
+- Reabrir es solo para un ADMIN, exige motivo y ya no borra cotizaciones. El motivo queda en `AuditLog` (`REOPENED`) y en el historial de etapas.
+- Perder se pide desde el modal de transición (motivo y detalle), también desde la columna Perdido del tablero.
+- Una propuesta que deja de valer pasa al estado nuevo `SUPERSEDED` (*Desactualizada*) en lugar de borrarse.
+
+### Decisiones
+
+- **Coordinación con *Reglas de transición del pipeline*.** Reemplaza "ganar crea la cotización en borrador" y "reabrir borra el borrador" de este ticket. Detalle en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).
+- Con esto deja de aplicar el pendiente "el número de cotización de un borrador eliminado puede reutilizarse": ya no se borran cotizaciones.
+
+### Validación
+
+- `pipeline.service.test.cjs` y `pipeline.http.test.cjs` reescritos para el cierre nuevo. Cifras en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).
+
 ## Pendientes
 
 - `pruebas` y `development` tienen una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`); conviene averiguar su origen.

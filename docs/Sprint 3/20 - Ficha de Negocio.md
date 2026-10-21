@@ -134,6 +134,26 @@ Auditoría de sobreingeniería (ponytail-review) sobre todo el diff del Sprint 3
 - Preview en `development` a 1024 px y 375 px: tablero en columnas con desplazamiento horizontal propio, sin desborde de la página, KPIs correctos (3.200 + 4.200 = 7.400) y selector de color de la etapa con su valor actual.
 - `pnpm test:e2e e2e/pipeline.spec.ts` con la config principal: 3 pruebas aprobadas (2,6 min).
 
+## IVA editable, calificación y propuestas (2026-10-18)
+
+Bloque añadido por Zaith Manangón (*Reglas de transición del pipeline*), con autorización del usuario del 2026-10-18.
+
+### Implementación
+
+- IVA por producto: entero de 0 a 100 en la web, el DTO y la base (`CHECK "DealItem_taxRate_range"`), con sugerencias 15, 12 y 0. `IVA_RATES` pasa a `IVA_SUGGESTIONS` en `@wave/shared`.
+- Tarjeta **Calificación** (`deal-qualification.tsx`): necesidad, solución, presupuesto o su justificación y persona decisora.
+- Tarjeta **Propuestas** (`deal-quotes.tsx`): registrar la propuesta enviada (vigencia y fecha de envío) y marcarla aceptada con su evidencia.
+- *Ganar*, *Perder* y *Reabrir* abren el modal de transición; *Reabrir* (y *Editar* en un cerrado) solo aparece para un ADMIN.
+- *Registrar actividad* suma la casilla *Ya se realizó* (primera interacción). La línea de tiempo muestra el motivo de retrocesos y reaperturas.
+
+### Decisiones
+
+- **Coordinación con *Reglas de transición del pipeline*.** Detalle en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).
+
+### Validación
+
+- `deal-items.test.tsx`, `deal-actions.test.tsx`, `deal-qualification.test.tsx`, `deal-quotes.test.tsx`, `deal-timeline.test.tsx` y `[id]/page.test.tsx`. Cifras en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).
+
 ## Pendientes
 
 - Las dos bases tienen una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`).
