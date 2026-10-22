@@ -17,9 +17,9 @@ import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatDate, formatMoney, initials } from "@/lib/format";
 import { DOCUMENT_TYPES } from "@/lib/ecuador";
 import { formatPhone, splitPhone } from "@/lib/phone";
-import { ContactForm } from "../contact-form";
-import { companyLabel } from "../contact-form-state";
-import type { ContactDetail } from "../types";
+import { ContactForm } from "../../../../features/contactos/contact-form";
+import { companyLabel } from "../../../../features/contactos/contact-form-state";
+import type { ContactDetail } from "../../../../features/contactos/types";
 
 export default async function ContactDetailPage({
   params,

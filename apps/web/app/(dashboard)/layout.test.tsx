@@ -5,7 +5,7 @@ import DashboardLayout from './layout';
 
 vi.mock('@/lib/authenticated-api', () => ({ authenticatedApi: vi.fn() }));
 vi.mock('next/navigation', () => ({ usePathname: () => '/pipeline' }));
-vi.mock('@/app/(auth)/actions', () => ({ logout: vi.fn() }));
+vi.mock('@/features/auth/actions', () => ({ logout: vi.fn() }));
 
 test('pasa al shell la persona que devuelve /auth/me', async () => {
   vi.mocked(authenticatedApi).mockResolvedValue(

@@ -60,3 +60,9 @@ pnpm --filter @wave/web test   # 241/241 en 69 archivos, igual que antes de move
 - Los 42 `vi.mock` internos apuntan a archivos que existen.
 - La regla marca un archivo temporal en `components/ui/` y otro en `lib/` que importaban `@/app/(auth)/actions`. Se borraron después.
 - Revisión con `pnpm dev` y el usuario de desarrollo del seed: listado y ficha de contacto, `/cotizaciones` (`SectionPlaceholder`) y *Cerrar sesión*, que lleva a `/login` y cierra la sesión. Sin errores en la consola ni en el servidor.
+
+## Reubicacion adicional (2026-10-13)
+
+### Implementacion
+
+`components/csv-import/` ahora vive en `features/importacion-csv/` y `components/form/new-password-form.tsx` vive en `features/auth/`. El mapa completo esta en [Estructura de carpetas de apps/web](Estructura%20de%20carpetas%20de%20apps-web.md). La tabla anterior describe el estado al cerrar esta primera reorganizacion.

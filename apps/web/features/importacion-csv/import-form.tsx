@@ -9,7 +9,7 @@ import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Select } from "@/components/ui/select";
 import { Table } from "@/components/ui/table";
 import { IMPORTACION } from "@/content/importacion";
-import type { ImportState } from "@/lib/csv-import";
+import type { ImportState } from "@/features/importacion-csv/csv-import";
 import {
   guessMapping,
   readCsvHeader,

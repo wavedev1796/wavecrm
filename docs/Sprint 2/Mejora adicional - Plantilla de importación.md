@@ -17,12 +17,12 @@ Los criterios salen del pedido del usuario (2026-10-05); esta mejora se añadió
 
 ## Implementación
 
-- `apps/web/components/csv-import/template-download.tsx` (nuevo): botones **Descargar plantilla Excel** y **Descargar plantilla CSV**.
-- `apps/web/components/csv-import/spreadsheet.ts`: `downloadTemplate(fields, name, format)` arma la cabecera con las etiquetas de `fields.ts`.
+- `apps/web/features/importacion-csv/template-download.tsx` (nuevo): botones **Descargar plantilla Excel** y **Descargar plantilla CSV**.
+- `apps/web/features/importacion-csv/spreadsheet.ts`: `downloadTemplate(fields, name, format)` arma la cabecera con las etiquetas de `fields.ts`.
   - **Excel:** cabecera en negrita, anchos de columna y la primera fila fija, con `write-excel-file/browser`, que se carga solo al pulsar.
   - **CSV:** BOM y `;`.
   - Descarga `plantilla-contactos.xlsx|csv` o `plantilla-empresas.xlsx|csv`.
-- `apps/web/components/csv-import/import-page.tsx`: los botones van entre las reglas y el formulario.
+- `apps/web/features/importacion-csv/import-page.tsx`: los botones van entre las reglas y el formulario.
 - `apps/web/app/globals.css`: `.import-template` (fila de botones que salta de línea).
 - `apps/web/package.json`: `write-excel-file` 4.1.1, aprobada por el usuario (2026-10-05).
 
@@ -48,12 +48,12 @@ Pedido del usuario: una segunda hoja que explique cada columna con un ejemplo, y
 
 ### Implementación
 
-- `apps/web/components/csv-import/spreadsheet.ts`: `downloadTemplate(template, format)` recibe ahora `{ fields, fileName, guide, rules }` y el Excel lleva dos hojas:
+- `apps/web/features/importacion-csv/spreadsheet.ts`: `downloadTemplate(template, format)` recibe ahora `{ fields, fileName, guide, rules }` y el Excel lleva dos hojas:
   - **Contactos** o **Empresas** (primera, la que se importa): cabecera de 28 px en negrita, azul oscuro (`--wave-blue-dark`) con texto blanco si la columna es obligatoria y azul claro (`--wave-blue-line`) si no. Las filas 2 a 1001 llevan bordes `--wave-line-strong` y bandas alternas en `--wave-blue-soft` por formato condicional. Primera fila fija y ancho de columna según la etiqueta o el ejemplo.
   - **Instrucciones**: título, tres pasos, una tabla `Columna | ¿Obligatoria? | Qué escribir | Ejemplo` con bordes y bandas, y al final las reglas de la pantalla (*Antes de importar*). Sin cuadrícula; el alto de cada fila sale del largo de la ayuda.
 - `apps/web/content/importacion.ts`: `plantilla.instrucciones` (textos de la hoja) y, en `contactos` y `empresas`, `hoja` y `columnas` (qué escribir y un ejemplo válido por campo). Teléfono, provincia, cantón y etiquetas comparten texto.
-- `apps/web/components/csv-import/template-download.tsx` e `import-page.tsx`: pasan la guía y las reglas. Los dos `importar/page.tsx` entregan `guide={IMPORTACION.contactos|empresas}`.
-- `apps/web/components/csv-import/spreadsheet.test.tsx`: la prueba de la plantilla pasa una guía de prueba y hay una prueba nueva de la hoja de instrucciones.
+- `apps/web/features/importacion-csv/template-download.tsx` e `import-page.tsx`: pasan la guía y las reglas. Los dos `importar/page.tsx` entregan `guide={IMPORTACION.contactos|empresas}`.
+- `apps/web/features/importacion-csv/spreadsheet.test.tsx`: la prueba de la plantilla pasa una guía de prueba y hay una prueba nueva de la hoja de instrucciones.
 
 ### Decisiones
 
@@ -76,7 +76,7 @@ Pedido del usuario: que el tipo de documento y los demás campos con opciones fi
 
 ### Implementación
 
-- `apps/web/components/csv-import/spreadsheet.ts`:
+- `apps/web/features/importacion-csv/spreadsheet.ts`:
   - Tercera hoja, **Listas**, oculta: en A los tipos de documento (`TIPO_DOCUMENTO` de `content/catalogos.ts`), en B las 24 provincias (`PROVINCES`) y en C-D cada cantón junto a su provincia (`CANTONS_BY_PROVINCE`). Son las mismas fuentes que los selects del formulario.
   - Validación de datos de tipo lista en las filas 2 a 1001 de la hoja de datos. **Tipo de documento** y **Provincia** apuntan a su columna de **Listas**; **Cantón** usa `OFFSET` + `MATCH` + `COUNTIF` para mostrar solo los cantones de la provincia de su fila.
   - Un valor que no está en la lista se rechaza con el aviso «Valor no válido» y un mensaje propio de la columna.

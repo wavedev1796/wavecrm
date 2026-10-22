@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { NewPasswordForm } from "@/components/form/new-password-form";
+import { NewPasswordForm } from "@/features/auth/new-password-form";
 import { ACCESO } from "@/content/acceso";
 import { activateAccount } from "./actions";
 import { TermsConsent } from "./terms-consent";

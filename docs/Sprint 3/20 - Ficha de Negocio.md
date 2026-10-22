@@ -85,8 +85,8 @@ El ticket no trae criterios escritos; salen de los del tablero: detalle con valo
 ### Implementación
 
 - `apps/web/app/(dashboard)/pipeline/[id]/page.tsx`: la tarjeta de Productos sale de la columna principal y ocupa todo el ancho debajo de la cabecera; debajo quedan el timeline y los datos del negocio. El valor del negocio en la cabecera lleva la clase `deal-profile-value`.
-- `apps/web/app/(dashboard)/pipeline/pipeline.css`: `.deal-profile-value` (1.125rem / 800, tinta, números tabulares) y columna de IVA de 116 px.
-- `apps/web/app/(dashboard)/pipeline/activity-actions.tsx` (nuevo): `ActivityForm` y `CompleteButton`, las únicas partes cliente del timeline. `deal-timeline.tsx` deja de ser `"use client"`.
+- `apps/web/styles/pipeline.css`: `.deal-profile-value` (1.125rem / 800, tinta, números tabulares) y columna de IVA de 116 px.
+- `apps/web/features/pipeline/activity-actions.tsx` (nuevo): `ActivityForm` y `CompleteButton`, las únicas partes cliente del timeline. `deal-timeline.tsx` deja de ser `"use client"`.
 - `apps/api/src/modules/pipeline/pipeline.service.ts`: `findDeal` admite 15 s en su transacción de lectura.
 - `apps/web/app/globals.css`: el ícono del avatar de las fichas (negocio, contacto y empresa) vuelve a blanco y 1rem. La regla `.contact-profile span` lo pintaba gris y pequeño porque el avatar también es un `span`.
 - `deal-items.tsx` y `pipeline.css`: la columna de quitar mide 60 px, y los totales tienen más aire (16 px sobre ellos, 20 px bajo ellos, 10 px entre filas). Terminan en el mismo borde que el texto del subtotal de cada fila, no en el del botón Guardar.
@@ -112,13 +112,13 @@ Auditoría de sobreingeniería (ponytail-review) sobre todo el diff del Sprint 3
 
 ### Implementación
 
-- `apps/web/app/(dashboard)/pipeline/actions.ts`: todas las rutas de negocio pasan por `dealPath`; `dealHistoryAction` devuelve `request()` tipado en vez de volver a armar `{ error, data }`.
+- `apps/web/features/pipeline/actions.ts`: todas las rutas de negocio pasan por `dealPath`; `dealHistoryAction` devuelve `request()` tipado en vez de volver a armar `{ error, data }`.
 - `apps/web/app/(dashboard)/pipeline/page.tsx`: usa `dealFormOptions()` de `data.ts` en vez de repetir las cuatro consultas de opciones.
-- `apps/web/app/(dashboard)/pipeline/pipeline-board.tsx`: una sola suma en centavos (`sum`) y un solo filtro de ganados (`wonDeals`).
-- `apps/web/app/(dashboard)/pipeline/pipeline-settings.tsx`: los colores de etapa viven en `COLORS`; el selector y la comprobación de "Color actual" salen de esa lista.
-- `apps/web/app/(dashboard)/pipeline/deal-validation.ts`: fuera el `Number(value) > 999999999999.99`, que nunca se cumplía (el regex ya limita a 12 enteros y 2 decimales).
-- `apps/web/app/(dashboard)/pipeline/item-totals.ts`: normaliza con `decimal()` de `deal-validation.ts` en vez de repetir `trim().replace(",", ".")`.
-- `apps/web/app/(dashboard)/pipeline/pipeline.css`, `loading.tsx` y `apps/web/app/globals.css`: el modificador `.pipeline-board--live` pasa a ser `.pipeline-board`; se borran de `globals.css` la regla del tablero de la maqueta (y su ajuste a 1024 px) y `.deal-card strong|small|footer|--featured`, que ninguna pantalla usa.
+- `apps/web/features/pipeline/pipeline-board.tsx`: una sola suma en centavos (`sum`) y un solo filtro de ganados (`wonDeals`).
+- `apps/web/features/pipeline/pipeline-settings.tsx`: los colores de etapa viven en `COLORS`; el selector y la comprobación de "Color actual" salen de esa lista.
+- `apps/web/features/pipeline/deal-validation.ts`: fuera el `Number(value) > 999999999999.99`, que nunca se cumplía (el regex ya limita a 12 enteros y 2 decimales).
+- `apps/web/features/pipeline/item-totals.ts`: normaliza con `decimal()` de `deal-validation.ts` en vez de repetir `trim().replace(",", ".")`.
+- `apps/web/styles/pipeline.css`, `loading.tsx` y `apps/web/app/globals.css`: el modificador `.pipeline-board--live` pasa a ser `.pipeline-board`; se borran de `globals.css` la regla del tablero de la maqueta (y su ajuste a 1024 px) y `.deal-card strong|small|footer|--featured`, que ninguna pantalla usa.
 - `apps/api/src/modules/pipeline/pipeline.service.ts`: `deleteDeal` y `deleteStage` ya no buscan el registro antes de borrarlo; si no existe, el `delete` lanza P2025 y `write()` responde 404. `apps/api/test/pipeline-config.service.test.cjs` simula ese P2025 en el mock.
 - Borrados: `playwright.pipeline.config.ts`, `test/pipeline-db-status.cjs`, `distDir` de `apps/web/next.config.ts`, `.next-pipeline-test` en `tsconfig.json` y `.gitignore`, `packages/database/.sprint3-deploy/` en `.gitignore`; ESLint y Vitest vuelven a ignorar solo `.next/**`.
 

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 import LoginPage from './page';
 
-vi.mock('../actions', () => ({ login: vi.fn() }));
+vi.mock('../../../features/auth/actions', () => ({ login: vi.fn() }));
 
 const open = async (params: Record<string, string>) => render(await LoginPage({ searchParams: Promise.resolve(params) }));
 

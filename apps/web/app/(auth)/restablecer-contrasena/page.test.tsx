@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import RestablecerContrasenaPage from './page';
 
-vi.mock('./actions', () => ({ resetPassword: vi.fn() }));
+vi.mock('../../../features/auth/restablecer-contrasena/actions', () => ({ resetPassword: vi.fn() }));
 
 const fetchMock = vi.fn();
 beforeEach(() => vi.stubGlobal('fetch', fetchMock));

@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({
     throw new Error(`NEXT_REDIRECT ${path}`);
   }),
 }));
-vi.mock("./actions", () => ({
+vi.mock("../../../features/usuarios/actions", () => ({
   inviteUser: vi.fn(),
   updateUser: vi.fn(),
   deactivateUser: vi.fn(),

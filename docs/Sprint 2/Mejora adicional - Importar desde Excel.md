@@ -17,12 +17,12 @@ Los criterios salen del pedido del usuario (2026-10-05); esta mejora se añadió
 
 ## Implementación
 
-- `apps/web/components/csv-import/spreadsheet.ts` (nuevo): `asCsv(file)` deja un CSV igual y convierte un `.xlsx` (su primera hoja) a CSV UTF-8 con `,` y comillas cuando hacen falta. Carga `read-excel-file/browser` solo al usarse.
-- `apps/web/components/csv-import/import-form.tsx`:
+- `apps/web/features/importacion-csv/spreadsheet.ts` (nuevo): `asCsv(file)` deja un CSV igual y convierte un `.xlsx` (su primera hoja) a CSV UTF-8 con `,` y comillas cuando hacen falta. Carga `read-excel-file/browser` solo al usarse.
+- `apps/web/features/importacion-csv/import-form.tsx`:
   - El campo se llama **Archivo Excel o CSV** y acepta `.xlsx` y `.csv`.
   - Al elegir el archivo lo convierte una vez, lee la cabecera del CSV resultante y lo guarda en estado. Al enviar, ese CSV reemplaza al archivo original.
   - Avisa `No pudimos leer el archivo de Excel. Revisa que sea un .xlsx válido.` si el `.xlsx` está dañado. El límite de 1 MB vale para el archivo elegido y para el CSV convertido.
-- `apps/web/components/csv-import/import-page.tsx`: explica que acepta Excel o CSV, que de un Excel se lee la primera hoja y que conviene dar formato de texto a documento y teléfono.
+- `apps/web/features/importacion-csv/import-page.tsx`: explica que acepta Excel o CSV, que de un Excel se lee la primera hoja y que conviene dar formato de texto a documento y teléfono.
 - Textos: los títulos pasan a `Importar contactos desde Excel o CSV` y `Importar empresas desde Excel o CSV`. El botón del listado pasa a **Importar** (`components/list-header.tsx`). El subtítulo del shell pasa a `Carga masiva desde Excel o CSV` (`components/app-shell.tsx`). Sin archivo, la action responde `Adjunta un archivo Excel o CSV.` (`lib/csv-import.ts`).
 - `apps/web/package.json`: `read-excel-file` 9.3.10, aprobada por el usuario (2026-10-05).
 

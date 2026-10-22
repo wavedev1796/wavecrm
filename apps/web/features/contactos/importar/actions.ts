@@ -1,7 +1,7 @@
 "use server";
 
 import { IMPORTACION } from "@/content/importacion";
-import { sendImport, type ImportState } from "@/lib/csv-import";
+import { sendImport, type ImportState } from "@/features/importacion-csv/csv-import";
 
 export async function importContacts(
   _state: ImportState,

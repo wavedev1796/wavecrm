@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import ImportCompaniesPage from "./page";
 
-vi.mock("./actions", () => ({ importCompanies: vi.fn() }));
+vi.mock("../../../../features/empresas/importar/actions", () => ({ importCompanies: vi.fn() }));
 
 test("CRM-15: explica las reglas e importa empresas", () => {
   render(<ImportCompaniesPage />);

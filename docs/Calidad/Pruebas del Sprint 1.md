@@ -75,8 +75,8 @@ Las e2e no aportan cobertura a SonarQube; su evidencia es el reporte de Playwrig
 
 | Archivo | Tipo | Pruebas | Qué verifica |
 | --- | --- | --- | --- |
-| `apps/web/app/(auth)/actions.test.ts` | Web | 7 | Validación previa, normalización del correo, mensajes de 401/403/429/400, sin conexión, logout |
-| `apps/web/app/(auth)/login/login-form.test.tsx` | Web | 4 | Error por campo, alerta del servidor, estado de carga, `noValidate` y longitudes |
+| `apps/web/features/auth/actions.test.ts` | Web | 7 | Validación previa, normalización del correo, mensajes de 401/403/429/400, sin conexión, logout |
+| `apps/web/features/auth/login/login-form.test.tsx` | Web | 4 | Error por campo, alerta del servidor, estado de carga, `noValidate` y longitudes |
 | `apps/web/app/(auth)/login/page.test.tsx` | Web | 4 | Avisos de cuenta activada, sesión terminada y contraseña actualizada; **un texto libre en la URL no se muestra** |
 | `apps/web/app/(auth)/recuperar-contrasena/*.test.*` | Web | 8 | Server action (validación, normalización, 429 y sin conexión) y formulario (confirmación, error por campo y alerta) |
 | `apps/web/app/(auth)/restablecer-contrasena/*.test.*` | Web | 8 | Server action (reglas, redirección a `?contrasena=actualizada`, enlace vencido, contraseña repetida bajo el campo) y página (sin token, enlace válido, enlace caído) |
@@ -89,10 +89,10 @@ Las e2e no aportan cobertura a SonarQube; su evidencia es el reporte de Playwrig
 
 | Archivo | Tipo | Pruebas | Qué verifica |
 | --- | --- | --- | --- |
-| `apps/web/app/(dashboard)/usuarios/actions.test.ts` | Web | 6 | Validación de nombre/correo/rol, normalización, motivo del API, acciones de fila y sesión vencida |
-| `apps/web/app/(dashboard)/usuarios/invite-user-form.test.tsx` | Web | 4 | Error por campo, rechazo del API, éxito que vacía el formulario |
-| `apps/web/app/(dashboard)/usuarios/edit-user-dialog.test.tsx` | Web | 3 | Diálogo con datos actuales, error que no lo cierra, éxito que sí |
-| `apps/web/app/(dashboard)/usuarios/row-action.test.tsx` | Web | 2 | Envío del id y aviso de la página |
+| `apps/web/features/usuarios/actions.test.ts` | Web | 6 | Validación de nombre/correo/rol, normalización, motivo del API, acciones de fila y sesión vencida |
+| `apps/web/features/usuarios/invite-user-form.test.tsx` | Web | 4 | Error por campo, rechazo del API, éxito que vacía el formulario |
+| `apps/web/features/usuarios/edit-user-dialog.test.tsx` | Web | 3 | Diálogo con datos actuales, error que no lo cierra, éxito que sí |
+| `apps/web/features/usuarios/row-action.test.tsx` | Web | 2 | Envío del id y aviso de la página |
 | `apps/web/app/(dashboard)/usuarios/page.test.tsx` | Web | 5 | Un vendedor no entra, acciones por estado, filtros válidos, **error de carga visible** y **mensajes de la URL ignorados** |
 | `apps/api/test/integracion/users.http.test.cjs` | Integración | 8 de 9 | Roles, invitación y duplicados, filtros, edición, desactivar/reactivar, reenviar y eliminar |
 | `e2e/usuarios.spec.ts` | Navegador | 6 de 7 | Invitar, duplicado, **flujo de la cuenta desactivada**, reactivar, editar y mensajes falsos por URL |

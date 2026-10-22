@@ -182,7 +182,7 @@ Parte del pedido [documento obligatorio, empresa opcional y selects de Wave](Aju
 
 - `apps/api/test/contact-import.service.test.cjs`: filas con cédula y pasaporte (`pasaporte`, `ab-123 456` → `PASAPORTE`, `AB123456`), errores de tipo y número por columna, documentos repetidos y ya registrados, y los dos mapeos incompletos nuevos.
 - `apps/api/test/integracion/contact-import.http.test.cjs` (rama `pruebas`): un CSV de Excel con cédula y RUC guarda cada contacto con su tipo; reimportar da `Ya existe un contacto con ese documento.`; una fila inválida no guarda nada.
-- `apps/web/components/csv-import/import-form.test.tsx`: la pantalla propone las columnas de tipo y número y las envía en el mapeo.
+- `apps/web/features/importacion-csv/import-form.test.tsx`: la pantalla propone las columnas de tipo y número y las envía en el mapeo.
 - `e2e/contactos.spec.ts`: importar con una cédula inválida muestra el error y el archivo corregido importa 2 contactos.
 
 ### Cómo probarlo a mano

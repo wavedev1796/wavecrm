@@ -17,7 +17,7 @@ export default defineConfig({
     unstubGlobals: true,
     coverage: {
       provider: 'v8',
-      include: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'content/**/*.ts', 'lib/**/*.ts', 'middleware.ts'],
+      include: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'content/**/*.ts', 'features/**/*.{ts,tsx}', 'lib/**/*.ts', 'middleware.ts'],
       exclude: ['**/*.test.{ts,tsx}', '**/*-fixture.ts'],
       reportsDirectory: '../../coverage/web',
       // Rutas relativas a la raíz del repo: SonarQube resuelve el LCOV desde ahí.

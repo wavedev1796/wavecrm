@@ -1,4 +1,4 @@
-import type { ImportFieldSpec } from "@/components/csv-import/csv-header";
+import type { ImportFieldSpec } from "@/features/importacion-csv/csv-header";
 
 /** Campos de la importación de contactos (POST /contacts/import), con los alias que se proponen. */
 export const CONTACT_IMPORT_FIELDS = [

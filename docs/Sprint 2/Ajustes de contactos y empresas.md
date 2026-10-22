@@ -254,7 +254,7 @@ Pedido del usuario tras el cambio anterior: arreglar el desborde de la barra de 
   - `.contact-filter-panel` deja la rejilla `minmax(260px, …) minmax(520px, …)`, que pedía 840 px, y pasa a `flex-wrap`. El buscador ocupa lo que sobra (`flex: 1 1 260px`); si los filtros no caben a su lado, bajan a su propia línea, alineados a la derecha, y dentro también pueden partirse.
   - El select de provincia de la barra mide 220 px: con el `width: 100%` de `.select-control`, al poder saltar de línea ocupaba una fila entera.
   - En móvil (≤ 760 px), buscador y filtros ocupan cada uno su línea completa, como antes.
-- `apps/web/app/(dashboard)/empresas/company-form.tsx`: `*` y `required` en **Nombre comercial** y **RUC**, y la cabecera `Los campos con * son obligatorios. Los datos se validan al guardar.`, igual que en Contactos.
+- `apps/web/features/empresas/company-form.tsx`: `*` y `required` en **Nombre comercial** y **RUC**, y la cabecera `Los campos con * son obligatorios. Los datos se validan al guardar.`, igual que en Contactos.
 
 ### Decisiones
 
@@ -301,7 +301,7 @@ Pedido del usuario: todo contacto debe tener al menos una forma de contacto. Ant
 - `apps/api/src/common/validation.ts`: `CONTACT_METHOD_REQUIRED` («Ingresa un teléfono o un correo.»).
 - `apps/api/src/modules/contacts/contacts.service.ts` (CRM-13, con autorización del usuario): `requireContactMethod` en `create` y `update`. En un `PATCH` cuenta lo que el contacto ya tiene guardado: `requireContact` trae ahora `phone` y `email`. `contacts.controller.ts` lo describe en Swagger.
 - `apps/api/src/modules/contact-import/contact-import.service.ts`: sin columna de teléfono ni de correo, `400` «Asigna la columna del teléfono o la del correo.»; una fila sin ninguno de los dos da el error en la columna del teléfono, o en la del correo si es la única asignada.
-- `apps/web/app/(dashboard)/contactos/actions.ts`: el error se marca en **Teléfono** antes de llamar al API. `apps/web/content/contactos.ts`: `errores.contacto` y la cabecera del formulario: «Los campos con * son obligatorios, además de un teléfono o un correo. Los datos se validan al guardar.».
+- `apps/web/features/contactos/actions.ts`: el error se marca en **Teléfono** antes de llamar al API. `apps/web/content/contactos.ts`: `errores.contacto` y la cabecera del formulario: «Los campos con * son obligatorios, además de un teléfono o un correo. Los datos se validan al guardar.».
 - Importación: la regla de la pantalla y de la plantilla dice «y al menos un teléfono o un correo»; la hoja **Instrucciones** marca Correo y Teléfono con «Sí, o el teléfono» y «Sí, o el correo».
 
 ### Decisiones

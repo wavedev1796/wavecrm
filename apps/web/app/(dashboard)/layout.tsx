@@ -1,5 +1,5 @@
 import type { UserRole } from "@wave/shared";
-import { logout } from "@/app/(auth)/actions";
+import { logout } from "@/features/auth/actions";
 import { AppShell } from "@/components/layout/app-shell";
 import { authenticatedApi } from "@/lib/authenticated-api";
 

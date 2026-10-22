@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
   unstable_rethrow: vi.fn(),
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
-vi.mock("./actions", () => ({
+vi.mock("../../../features/pipeline/actions", () => ({
   previewTransitionAction: vi.fn(),
   saveDeal: vi.fn(),
   configurePipelineAction: vi.fn(),

@@ -8,8 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EMPRESAS } from "@/content/empresas";
 import { listQuery } from "@/lib/list-params";
-import { NewCompanyDialog } from "../new-company-dialog";
-import { CompaniesResults, CompaniesSummary } from "./companies-results";
+import { NewCompanyDialog } from "../../../../features/empresas/new-company-dialog";
+import { CompaniesResults, CompaniesSummary } from "../../../../features/empresas/companies-results";
 
 type PageProps = Readonly<{
   searchParams: Promise<{

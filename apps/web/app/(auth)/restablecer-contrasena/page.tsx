@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ACCESO } from "@/content/acceso";
 import { API_URL } from "@/lib/api";
-import { ResetPasswordForm } from "./reset-password-form";
+import { ResetPasswordForm } from "../../../features/auth/restablecer-contrasena/reset-password-form";
 
 export const metadata: Metadata = { title: ACCESO.restablecer.titulo };
 

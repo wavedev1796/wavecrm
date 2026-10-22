@@ -20,8 +20,8 @@ import { EMPRESAS } from "@/content/empresas";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { formatPhone, splitPhone } from "@/lib/phone";
-import { CompanyForm } from "../company-form";
-import type { CompanyDetail } from "../types";
+import { CompanyForm } from "../../../../features/empresas/company-form";
+import type { CompanyDetail } from "../../../../features/empresas/types";
 
 export default async function CompanyDetailPage({
   params,
