@@ -9,7 +9,7 @@ vi.mock("@/lib/authenticated-api", () => ({
 }));
 vi.mock("next/navigation", () => ({
   unstable_rethrow: vi.fn(),
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ push: vi.fn() }),
 }));
 vi.mock("../../../features/pipeline/actions", () => ({
   previewTransitionAction: vi.fn(),
@@ -38,7 +38,7 @@ test("carga el pipeline solicitado y todas las paginas de opciones", async () =>
         pipeline: { id: "p1", name: "Ventas", isDefault: true },
         stages: [stage],
         lost: { count: 0, value: "0.00", deals: [] },
-        metrics: Object.fromEntries(["open", "won", "lost"].map((k) => [k, { count: 0, value: "0.00" }])),
+        metrics: Object.fromEntries(["open", "won", "lost", "rejected"].map((k) => [k, { count: 0, value: "0.00" }])),
       });
     if (path === "/contacts?limit=100&page=1")
       return Response.json({
@@ -62,6 +62,16 @@ test("carga el pipeline solicitado y todas las paginas de opciones", async () =>
   expect(
     screen.getByRole("option", { name: "Otra Pagina" }),
   ).toBeInTheDocument();
+});
+test("sin pipelines invita a crear el primero aunque el tablero responda 404", async () => {
+  api.mockImplementation(async (path) =>
+    path.startsWith("/deals/board")
+      ? Response.json({ error: { message: "No hay un pipeline configurado." } }, { status: 404 })
+      : Response.json(path === "/pipelines" || path === "/pipeline/owners" ? [] : { data: [], meta: { totalPages: 0 } }),
+  );
+  render(await PipelinePage({}));
+  expect(api).toHaveBeenCalledWith("/deals/board");
+  expect(screen.getByText("Crea tu primer pipeline y agrega sus etapas para comenzar.")).toBeInTheDocument();
 });
 test("un fallo de catalogos muestra un estado recuperable", async () => {
   api.mockRejectedValue(new Error("offline"));

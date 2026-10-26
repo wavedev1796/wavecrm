@@ -96,8 +96,13 @@ test("la ficha devuelve el contacto y borrarlo usa su id", async () => {
     return contact;
   };
   const contacts = new ContactsService(prisma);
+  let query;
+  const findUnique = prisma.contact.findUnique;
+  prisma.contact.findUnique = async (args) => ((query = args), findUnique(args));
 
   assert.equal((await contacts.findOne("contact-1")).firstName, "Ana");
+  const deals = query.include.deals.select;
+  assert.deepEqual([deals.closedAt, deals.lossReason, deals.stageHistory.take], [true, true, 1]);
   await contacts.remove("contact-1");
   assert.deepEqual(deleted, { where: { id: "contact-1" } });
 });

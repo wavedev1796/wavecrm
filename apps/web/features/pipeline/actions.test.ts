@@ -1,15 +1,17 @@
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import {
   saveDeal,
   configurePipelineAction,
   saveDealItemsAction,
   deleteDealAction,
+  deleteRejectedAction,
   dealHistoryAction,
   createActivityAction,
   completeActivityAction,
   previewTransitionAction,
   completeTransitionAction,
+  saveTransitionAction,
   loadColumnAction,
   qualifyDealAction,
   createQuoteAction,
@@ -23,6 +25,12 @@ vi.mock("@/lib/authenticated-api", () => ({
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ unstable_rethrow: vi.fn() }));
 const api = vi.mocked(authenticatedApi);
+/** Las reglas de fecha comparan con el día de Ecuador: se fija para que la prueba no caduque. */
+const today = (day: string) => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(day + "T17:00:00.000Z"));
+};
+afterEach(() => vi.useRealTimers());
 const initial = { values: emptyDeal, fieldErrors: {} };
 const fields = (values: Record<string, string>) => {
   const data = new FormData();
@@ -157,11 +165,11 @@ test("los productos viajan como numeros con coma o punto decimal", async () => {
 test("ganar, perder y reabrir van a su ruta con la etapa vista y el dia a las 00:00 UTC", async () => {
   api.mockResolvedValue(Response.json({ id: "d1" }));
   await completeTransitionAction("d1", "WON", "s3", fields({ closedAt: "2026-10-10" }));
-  await completeTransitionAction("d1", "LOST", "s1", fields({ lossReason: "PRICE" }));
+  await completeTransitionAction("d1", "LOST", "s1", fields({ lossReason: "NEGOTIATION" }));
   await completeTransitionAction("d1", "REOPEN", "s4", fields({ reason: " El cliente anuló la orden " }));
   expect(calls()).toEqual([
     ["/deals/d1/win", "POST", { closedAt: "2026-10-10T00:00:00.000Z", fromStageId: "s3" }],
-    ["/deals/d1/lose", "POST", { lossReason: "PRICE", fromStageId: "s1" }],
+    ["/deals/d1/lose", "POST", { lossReason: "NEGOTIATION", fromStageId: "s1" }],
     ["/deals/d1/reopen", "POST", { reason: "El cliente anuló la orden" }],
   ]);
   expect((await completeTransitionAction("d1", "WON", "s3", fields({ closedAt: "10/10/2026" }))).error).toBeTruthy();
@@ -169,6 +177,7 @@ test("ganar, perder y reabrir van a su ruta con la etapa vista y el dia a las 00
 });
 
 test("completar una transicion encadena los datos y termina moviendo con la etapa vista", async () => {
+  today("2026-10-20");
   api.mockResolvedValue(Response.json({ id: "d1" }));
   const result = await completeTransitionAction(
     "d1",
@@ -206,6 +215,66 @@ test("completar una transicion encadena los datos y termina moviendo con la etap
     ["/deals/d1/quotes/q%201/accept", "POST", { acceptedAt: "2026-10-18T00:00:00.000Z", acceptanceNote: "Orden de compra" }],
     ["/deals/d1/move", "PATCH", { stageId: "s2", fromStageId: "s1", reason: "Revisar" }],
   ]);
+});
+
+test("rechazar va a su ruta; perder agenda el seguimiento solo si tiene asunto", async () => {
+  today("2026-10-20");
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  await completeTransitionAction("d1", "REJECTED", "s2", fields({ lossReason: "DO_NOT_CONTACT" }));
+  await completeTransitionAction(
+    "d1",
+    "LOST",
+    "s2",
+    fields({ lossReason: "NEED_POSTPONED", followUpType: "CALL", followUpSubject: " Retomar ", followUpDay: "2027-01-18" }),
+  );
+  await completeTransitionAction("d1", "LOST", "s2", fields({ lossReason: "NO_BUDGET", followUpType: "CALL", followUpSubject: "", followUpDay: "2027-01-18" }));
+  expect(calls()).toEqual([
+    ["/deals/d1/reject", "POST", { lossReason: "DO_NOT_CONTACT", fromStageId: "s2" }],
+    [
+      "/deals/d1/lose",
+      "POST",
+      { lossReason: "NEED_POSTPONED", followUp: { type: "CALL", subject: "Retomar", dueAt: "2027-01-18T00:00:00.000Z" }, fromStageId: "s2" },
+    ],
+    ["/deals/d1/lose", "POST", { lossReason: "NO_BUDGET", fromStageId: "s2" }],
+  ]);
+});
+
+test("cada dato pendiente es obligatorio y tiene su mensaje; nada llega al API", async () => {
+  today("2026-10-20");
+  const cases: [string, Record<string, string>, string][] = [
+    ["s2", { contactId: "" }, "Elige el contacto del negocio."],
+    ["s2", { interactionType: "CALL", interactionSubject: "", interactionDay: "2026-10-20" }, "Cuenta qué se habló con el cliente (entre 2 y 160 caracteres)."],
+    ["s2", { interactionSubject: "Llamada", interactionDay: "2026-10-21" }, "Ingresa cuándo fue la interacción; no puede ser futura."],
+    ["s2", { nextType: "CALL", nextSubject: "", nextDay: "2026-10-25" }, "Escribe el asunto de la próxima actividad (entre 2 y 160 caracteres)."],
+    ["s2", { nextSubject: "Demo", nextDay: "2026-10-19" }, "Programa la próxima actividad para hoy o un día posterior."],
+    ["s3", { budget: "", budgetNote: "" }, "Ingresa el presupuesto o explica por qué aún no se conoce (al menos 2 caracteres)."],
+    ["s3", { validUntil: "", sentAt: "2026-10-20" }, "Ingresa hasta cuándo es válida la propuesta, de hoy en adelante."],
+    ["s3", { validUntil: "2026-10-30", sentAt: "2026-10-21" }, "Ingresa cuándo se envió la propuesta; no puede ser futura."],
+    ["WON", { acceptedAt: "2026-10-20", acceptanceNote: "" }, "Describe la evidencia de aceptación (entre 2 y 500 caracteres)."],
+    ["REJECTED", { lossReason: "COMPETITOR" }, "Elige el motivo del rechazo."],
+    ["LOST", { lossReason: "DO_NOT_CONTACT" }, "Elige el motivo de la pérdida."],
+    ["LOST", { lossReason: "OTHER", followUpSubject: "Retomar", followUpDay: "2026-10-19" }, "El seguimiento debe ser de hoy en adelante."],
+  ];
+  for (const [to, values, message] of cases)
+    expect([to, (await completeTransitionAction("d1", to, "s1", fields(values))).error]).toEqual([to, message]);
+  expect(api).not.toHaveBeenCalled();
+});
+
+test("guardar sin mover registra lo llenado y no llama a mover", async () => {
+  today("2026-10-20");
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  expect(await saveTransitionAction("d1", "s3", fields({ solution: " Portal ", budget: "", budgetNote: "Sin definir" }))).toEqual({ done: true });
+  expect(calls()).toEqual([["/deals/d1", "PATCH", { solution: "Portal", budgetNote: "Sin definir" }]]);
+  expect((await saveTransitionAction("d1", "s3", fields({ solution: "" }))).error).toBe(
+    "Describe la solución de interés (entre 2 y 2000 caracteres).",
+  );
+  expect(api).toHaveBeenCalledTimes(1);
+});
+
+test("vaciar la papelera envía los ids y devuelve cuántos se eliminaron", async () => {
+  api.mockResolvedValue(Response.json({ deleted: 2 }));
+  expect(await deleteRejectedAction(["d1", "d2"])).toEqual({ data: { deleted: 2 } });
+  expect(calls()).toEqual([["/deals/rejected/delete", "POST", { ids: ["d1", "d2"] }]]);
 });
 
 test("un 422 devuelve los pendientes y un paso previo que falla corta la cadena", async () => {
@@ -284,12 +353,12 @@ test("editar un negocio usa PATCH, envia el responsable y avisa que se actualizo
 test("perder valida el largo del detalle y lo envia recortado", async () => {
   api.mockResolvedValue(Response.json({ id: "d1" }));
   const lose = (detail: string) =>
-    completeTransitionAction("d1", "LOST", "s1", fields({ lossReason: detail ? "OTHER" : "PRICE", lossDetail: detail }));
+    completeTransitionAction("d1", "LOST", "s1", fields({ lossReason: detail ? "OTHER" : "NEGOTIATION", lossDetail: detail }));
   expect((await lose("x".repeat(501))).error).toBeTruthy();
   await lose("");
   await lose("  Cambio de proveedor ");
   expect(calls().map(([, , body]) => body)).toEqual([
-    { lossReason: "PRICE", fromStageId: "s1" },
+    { lossReason: "NEGOTIATION", fromStageId: "s1" },
     { lossReason: "OTHER", lossDetail: "Cambio de proveedor", fromStageId: "s1" },
   ]);
 });

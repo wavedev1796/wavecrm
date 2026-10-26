@@ -1,11 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { prisma } from "@wave/database";
-import { createUser, login, rucDePrueba } from "./datos";
+import { cedulaDePrueba, createUser, login, rucDePrueba } from "./datos";
 
 let seller: Awaited<ReturnType<typeof createUser>>;
 let owner: Awaited<ReturnType<typeof createUser>>;
 let admin: Awaited<ReturnType<typeof createUser>>;
 let gatedPipelineId: string;
+let journeyPipelineId: string;
+let contactId: string;
 let pipelineId: string;
 let companyId: string;
 let initialId: string;
@@ -22,6 +24,18 @@ test.beforeAll(async () => {
     },
   });
   companyId = company.id;
+  const contact = await prisma.contact.create({
+    data: {
+      firstName: "Ana",
+      lastName: "Kanban " + Date.now(),
+      email: "ana.kanban." + Date.now() + "@pruebas.example.com",
+      documentType: "CEDULA",
+      documentId: cedulaDePrueba(),
+      companyId,
+      ownerId: seller.id,
+    },
+  });
+  contactId = contact.id;
   const pipeline = await prisma.pipeline.create({
     data: {
       name: "Ventas Kanban " + Date.now(),
@@ -40,7 +54,7 @@ test.beforeAll(async () => {
   proposalId = pipeline.stages.find((s) => s.name === "Propuesta")!.id;
 });
 test.afterAll(async () => {
-  for (const id of [pipelineId, gatedPipelineId].filter(Boolean)) {
+  for (const id of [pipelineId, gatedPipelineId, journeyPipelineId].filter(Boolean)) {
     const deals = await prisma.deal.findMany({ where: { pipelineId: id }, select: { id: true } });
     await prisma.auditLog.deleteMany({
       where: { entityType: "Deal", entityId: { in: deals.map((d) => d.id) } },
@@ -48,6 +62,7 @@ test.afterAll(async () => {
     await prisma.deal.deleteMany({ where: { pipelineId: id } });
     await prisma.pipeline.delete({ where: { id } });
   }
+  if (contactId) await prisma.contact.delete({ where: { id: contactId } });
   if (companyId) await prisma.company.delete({ where: { id: companyId } });
   await prisma.user.deleteMany({
     where: { id: { in: [seller?.id, owner?.id, admin?.id].filter(Boolean) } },
@@ -251,10 +266,10 @@ test("la ficha arma productos, registra y acepta la propuesta, gana, y solo un A
   expect(await prisma.quote.count({ where: { dealId: deal.id } })).toBe(1);
   await adminPage.getByRole("button", { name: "Perder", exact: true }).click();
   const lose = adminPage.getByRole("dialog", { name: "Perder negocio" });
-  await lose.getByLabel("Motivo de la pérdida").selectOption("PRICE");
+  await lose.getByLabel("Motivo de la pérdida").selectOption("NEGOTIATION");
   await lose.getByRole("button", { name: "Guardar y continuar" }).click();
   await expect(adminPage.getByText("Perdido el")).toBeVisible();
-  await expect(adminPage.getByText("Perdido · Precio")).toBeVisible();
+  await expect(adminPage.getByText("Perdido · Problemas de negociación")).toBeVisible();
   await adminPage.setViewportSize({ width: 390, height: 844 });
   await adminPage.screenshot({ path: "test-results/deal-detail-mobile.png", fullPage: true });
   expect(await adminPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -318,6 +333,193 @@ test("el tablero pide los requisitos en el modal, pagina las columnas y pierde e
   await expect(page.getByRole("region", { name: "Columna Perdido" }).getByRole("article")).toHaveCount(1);
   await expect(page.getByRole("region", { name: "Resumen comercial" })).toContainText("Perdidos");
   await page.screenshot({ path: "test-results/pipeline-gates-desktop.png", fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("recorrido del tester con un negocio nuevo: Contactado → Negociación → Propuesta → Ganado, sin errores", async ({ page }) => {
+  test.setTimeout(300_000);
+  const pipeline = await prisma.pipeline.create({
+    data: {
+      name: "Recorrido Kanban " + Date.now(),
+      stages: {
+        create: [
+          { name: "Contactado", position: 1, probability: 15 },
+          { name: "Negociación", position: 2, probability: 45, requirements: ["CONTACT", "OWNER", "INTERACTION", "NEED", "NEXT_ACTIVITY"] },
+          { name: "Propuesta", position: 3, probability: 70, requirements: ["SOLUTION", "BUDGET", "PROPOSAL_SENT", "EXPECTED_CLOSE"] },
+          { name: "Ganado", position: 4, probability: 100 },
+        ],
+      },
+    },
+  });
+  journeyPipelineId = pipeline.id;
+  const failures: string[] = [];
+  page.on("response", (response) => {
+    if (response.status() >= 500) failures.push(response.status() + " " + response.url());
+  });
+  const tiempos: string[] = [];
+  const timed = async (paso: string, run: () => Promise<unknown>) => {
+    const start = Date.now();
+    await run();
+    tiempos.push(`${paso}: ${Date.now() - start} ms`);
+  };
+  const day = (days: number) => new Date(Date.now() + days * 864e5).toISOString().slice(0, 10);
+  const title = "Recorrido " + Date.now();
+  const card = page.getByRole("article", { name: "Negocio " + title });
+  const gate = page.getByRole("dialog", { name: "Cambiar de etapa" });
+  const column = (name: string) => page.getByRole("region", { name: "Etapa " + name });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await login(page, seller.email);
+  await expect(page).toHaveURL(/\/pipeline$/);
+  await timed("tablero", async () => {
+    await page.goto("/pipeline?pipelineId=" + pipeline.id);
+    await expect(column("Contactado")).toBeVisible();
+  });
+
+  await column("Contactado").getByRole("button", { name: "Crear negocio" }).click();
+  const form = page.getByRole("dialog", { name: "Crear nuevo negocio" });
+  await form.getByLabel("Nombre del negocio").fill(title);
+  await form.getByLabel("Monto (USD)").fill("500");
+  await form.getByLabel("Contacto", { exact: true }).selectOption(contactId);
+  await form.getByLabel("Responsable", { exact: true }).selectOption(seller.id);
+  await timed("alta", async () => {
+    await form.getByRole("button", { name: "Crear negocio", exact: true }).click();
+    await expect(card).toBeVisible();
+  });
+
+  await timed("modal de Negociación", async () => {
+    await card.dragTo(column("Negociación"));
+    await expect(gate.getByRole("button", { name: "Guardar y continuar" })).toBeVisible();
+  });
+  await expect(gate).toContainText("Recomendación: mantén completa la ficha del negocio");
+  await gate.getByLabel("Qué se habló").fill("Llamada de presentación");
+  await gate.getByLabel("Necesidad del cliente").fill("Ordenar su cartera de clientes");
+  await gate.getByLabel("Asunto de la próxima actividad").fill("Enviar demo");
+  await gate.getByLabel("Programada para").fill(day(7));
+  await timed("mover a Negociación", async () => {
+    await gate.getByRole("button", { name: "Guardar y continuar" }).click();
+    await expect(column("Negociación").getByRole("article", { name: "Negocio " + title })).toBeVisible();
+  });
+
+  // Sin productos la propuesta solo se registra en la ficha: guarda lo llenado y lleva allá, sin 422.
+  await timed("modal de Propuesta", async () => {
+    await card.dragTo(column("Propuesta"));
+    await expect(gate.getByRole("button", { name: "Guardar e ir a la ficha" })).toBeVisible();
+  });
+  await expect(gate).toContainText("Los productos y las propuestas se registran en la ficha.");
+  await gate.getByLabel("Solución de interés").fill("CRM Wave plan anual");
+  await gate.getByLabel("Presupuesto (USD)").fill("6000");
+  await gate.getByLabel("Fecha estimada de cierre").fill(day(30));
+  const deal = await prisma.deal.findFirstOrThrow({ where: { pipelineId: pipeline.id, title } });
+  await timed("guardar e ir a la ficha", async () => {
+    await gate.getByRole("button", { name: "Guardar e ir a la ficha" }).click();
+    await expect(page).toHaveURL(new RegExp("/pipeline/" + deal.id + "$"));
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  });
+  const saved = await prisma.deal.findUniqueOrThrow({ where: { id: deal.id }, include: { stage: true } });
+  expect([saved.stage.name, saved.solution, saved.budget?.toString()]).toEqual(["Negociación", "CRM Wave plan anual", "6000"]);
+
+  await page.getByRole("button", { name: "Agregar producto" }).click();
+  await page.getByLabel("Descripción del producto 1").fill("Licencia anual");
+  await page.getByLabel("Cantidad del producto 1").fill("1");
+  await page.getByLabel("Precio unitario del producto 1").fill("5000");
+  await timed("guardar productos", async () => {
+    await page.getByRole("button", { name: "Guardar productos" }).click();
+    await expect(page.getByText("Productos guardados.")).toBeVisible();
+  });
+
+  // Con productos, el modal registra la propuesta; sin vigencia avisa en el campo y no guarda nada.
+  await page.goto("/pipeline?pipelineId=" + pipeline.id);
+  await card.dragTo(column("Propuesta"));
+  await expect(gate.getByLabel("Vigente hasta")).toBeVisible();
+  await gate.getByRole("button", { name: "Guardar y continuar" }).click();
+  await expect(gate).toContainText("Ingresa hasta cuándo es válida la propuesta, de hoy en adelante.");
+  expect(await prisma.quote.count({ where: { dealId: deal.id } })).toBe(0);
+  await gate.getByLabel("Vigente hasta").fill(day(15));
+  await timed("mover a Propuesta con la propuesta", async () => {
+    await gate.getByRole("button", { name: "Guardar y continuar" }).click();
+    await expect(column("Propuesta").getByRole("article", { name: "Negocio " + title })).toBeVisible();
+  });
+
+  await timed("ficha", async () => {
+    await page.goto("/pipeline/" + deal.id);
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  });
+  const [quote] = await prisma.quote.findMany({ where: { dealId: deal.id } });
+  await page.getByText("Productos de " + quote!.number).click();
+  await expect(page.getByText("1 × Licencia anual")).toBeVisible();
+  await expect(page.getByText(new RegExp(`Propuesta ${quote!.number} enviada`))).toBeVisible();
+  await page.getByLabel("Evidencia de aceptación").fill("Orden de compra 77 por correo");
+  await page.getByRole("button", { name: "Marcar aceptada" }).click();
+  await expect(page.getByText(`Propuesta ${quote!.number} aceptada`)).toBeVisible();
+  await page.getByRole("button", { name: "Ganar", exact: true }).click();
+  await timed("ganar", async () => {
+    await page.getByRole("dialog", { name: "Ganar negocio" }).getByRole("button", { name: "Guardar y continuar" }).click();
+    await expect(page.getByText("Ganado el")).toBeVisible();
+  });
+  console.log("\nTiempos del recorrido (pruebas):\n  " + tiempos.join("\n  ") + "\n");
+  expect(failures).toEqual([]);
+});
+
+test("perdido con seguimiento → rechazado → la papelera elimina dos a la vez", async ({ page }) => {
+  test.setTimeout(240_000);
+  const titles = ["Zombie " + Date.now(), "Riesgo " + Date.now()];
+  const ids: string[] = [];
+  for (const title of titles) {
+    const deal = await prisma.deal.create({
+      data: { title, value: 80, pipelineId, stageId: initialId, contactId, companyId, ownerId: seller.id },
+    });
+    await prisma.dealStageHistory.create({ data: { dealId: deal.id, toStageId: initialId, changedById: seller.id } });
+    ids.push(deal.id);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await login(page, seller.email);
+  await expect(page).toHaveURL(/\/pipeline$/);
+  await page.goto("/pipeline?pipelineId=" + pipelineId);
+  const gate = page.getByRole("dialog", { name: "Cambiar de etapa" });
+  const lostColumn = page.getByRole("region", { name: "Columna Perdido" });
+  const trashZone = page.getByRole("region", { name: "Zona Rechazado" });
+
+  // Con seis columnas Perdido queda tras el scroll horizontal: se usa el selector de la tarjeta.
+  await page.getByLabel("Mover " + titles[0] + " de etapa").selectOption({ label: "Perdido" });
+  await gate.getByLabel("Motivo de la pérdida").selectOption("NEED_POSTPONED");
+  await gate.getByLabel("Asunto del seguimiento").fill("Retomar en temporada");
+  await gate.getByRole("button", { name: "Guardar y continuar" }).click();
+  await expect(lostColumn.getByRole("article", { name: "Negocio " + titles[0] })).toBeVisible();
+  const followUp = await prisma.activity.findFirstOrThrow({ where: { dealId: ids[0] } });
+  expect([followUp.subject, followUp.status, followUp.contactId]).toEqual(["Retomar en temporada", "PENDING", contactId]);
+
+  // Un vendedor pasa el perdido a Rechazado: el seguimiento queda cancelado.
+  // La zona queda tras el scroll horizontal: se muestra antes de arrastrar, o el scroll a mitad del arrastre toma el enlace.
+  await trashZone.scrollIntoViewIfNeeded();
+  await lostColumn.getByRole("article", { name: "Negocio " + titles[0] }).dragTo(trashZone);
+  await expect(gate).toContainText("Se invalidará el proceso");
+  await gate.getByLabel("Motivo del rechazo").selectOption("DO_NOT_CONTACT");
+  await gate.getByRole("button", { name: "Guardar y continuar" }).click();
+  await expect(trashZone).toContainText("1 negocio en la papelera");
+  await page.getByLabel("Mover " + titles[1] + " de etapa").selectOption({ label: "Rechazado" });
+  await gate.getByLabel("Motivo del rechazo").selectOption("COMMERCIAL_RISK");
+  await gate.getByRole("button", { name: "Guardar y continuar" }).click();
+  await expect(trashZone).toContainText("2 negocios en la papelera");
+  expect((await prisma.activity.findUniqueOrThrow({ where: { id: followUp.id } })).status).toBe("CANCELLED");
+
+  await page.goto("/contactos/" + contactId);
+  await expect(page.getByRole("link", { name: titles[0] })).toBeVisible();
+  await expect(page.getByText("Inicial · Rechazado").first()).toBeVisible();
+
+  await page.goto("/pipeline?pipelineId=" + pipelineId);
+  await trashZone.getByRole("link", { name: "Ver papelera" }).click();
+  await expect(page.getByRole("heading", { name: "Papelera" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Reabrir " + titles[0] })).toHaveCount(0);
+  // ponytail: solo los dos de esta prueba; «Seleccionar todos» borraría rechazados ajenos de la rama compartida.
+  for (const title of titles) await page.getByLabel("Seleccionar " + title).check();
+  await page.getByRole("button", { name: "Eliminar seleccionados (2)" }).click();
+  const confirm = page.getByRole("dialog", { name: "Eliminar de la papelera" });
+  await confirm.getByRole("button", { name: "Eliminar definitivamente" }).click();
+  await expect(page.getByText("Se eliminaron 2 negocios.")).toBeVisible();
+  expect(await prisma.deal.count({ where: { id: { in: ids } } })).toBe(0);
+  expect(await prisma.auditLog.count({ where: { entityId: { in: ids }, action: "DELETED" } })).toBe(2);
+  await prisma.auditLog.deleteMany({ where: { entityType: "Deal", entityId: { in: ids } } });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

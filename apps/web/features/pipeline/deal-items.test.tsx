@@ -4,7 +4,6 @@ import { expect, test, vi } from "vitest";
 import { saveDealItemsAction } from "./actions";
 import { DealItems } from "./deal-items";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("./actions", () => ({ saveDealItemsAction: vi.fn() }));
 const save = vi.mocked(saveDealItemsAction);
 

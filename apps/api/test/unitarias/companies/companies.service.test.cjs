@@ -126,6 +126,9 @@ test("la ficha de empresa incluye contactos negocios e historial", async () => {
 
   assert.ok(companyQuery.include.contacts);
   assert.ok(companyQuery.include.deals);
+  // Recorrido: cada negocio trae su cierre y solo su último movimiento.
+  const deals = companyQuery.include.deals.select;
+  assert.deepEqual([deals.closedAt, deals.lossReason, deals.stageHistory.take], [true, true, 1]);
   assert.equal(result.history[0].action, "CREATE");
 });
 

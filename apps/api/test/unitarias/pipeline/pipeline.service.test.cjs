@@ -105,6 +105,9 @@ function mockPrisma({
       create: async ({ data }) => ({ id: "deal-2", ...data }),
       update: async ({ data }) => Object.assign(state.deal, data),
       delete: async () => state.deal,
+      deleteMany: async ({ where }) => {
+        state.deleted = where;
+      },
     },
     dealItem: {
       findMany: async () => state.items,
@@ -139,10 +142,21 @@ function mockPrisma({
         state.audit.push(data);
         return data;
       },
+      createMany: async ({ data }) => {
+        state.audit.push(...data);
+      },
       findMany: async () => state.audit,
     },
     activity: {
-      create: async ({ data }) => data,
+      create: async ({ data }) => {
+        state.activities.push(data);
+        return data;
+      },
+      updateMany: async ({ where, data }) => {
+        const hits = state.activities.filter((a) => a.status === where.status);
+        for (const a of hits) Object.assign(a, data);
+        return { count: hits.length };
+      },
       findFirst: async () => null,
       count: async ({ where }) =>
         state.activities.filter(
@@ -257,14 +271,99 @@ test("arrastrar a la etapa de 100 % es ganar con las mismas reglas", async () =>
 test("perder guarda motivo y fecha sin mover la etapa; solo desde abierto", async () => {
   const { prisma, state } = mockPrisma();
   assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "LOST", {}, vendedor)), ["LOSS_REASON"]);
-  await service(prisma).transition("deal-1", "LOST", { lossReason: "PRICE" }, vendedor);
+  await service(prisma).transition("deal-1", "LOST", { lossReason: "NEGOTIATION" }, vendedor);
   assert.equal(state.deal.status, "LOST");
-  assert.equal(state.deal.lossReason, "PRICE");
+  assert.equal(state.deal.lossReason, "NEGOTIATION");
   assert.equal(state.deal.lossDetail, null);
   assert.equal(state.deal.stageId, "stage-a");
   assert.ok(state.deal.closedAt instanceof Date);
   assert.equal(state.audit[0].action, "LOST");
-  await assert.rejects(service(prisma).transition("deal-1", "LOST", { lossReason: "PRICE" }, admin), ConflictException);
+  await assert.rejects(service(prisma).transition("deal-1", "LOST", { lossReason: "NEGOTIATION" }, admin), ConflictException);
+});
+
+test("perder con seguimiento lo agenda con contacto y empresa y conserva la propuesta", async () => {
+  const { prisma, state } = mockPrisma({ quotes: [{ number: "COT-000002", status: "SENT", total: "115.00" }] });
+  const followUp = { type: "CALL", subject: "Retomar", dueAt: day("2999-01-18") };
+  await assert.rejects(
+    service(prisma).transition("deal-1", "LOST", { lossReason: "NEED_POSTPONED", followUp: { ...followUp, dueAt: day("2000-01-01") } }, vendedor),
+    BadRequestException,
+  );
+  assert.equal(state.deal.status, "OPEN");
+  await service(prisma).transition("deal-1", "LOST", { lossReason: "NEED_POSTPONED", followUp }, vendedor);
+  assert.deepEqual(state.activities.at(-1), { ...followUp, dealId: "deal-1", contactId: "contact-1", companyId: "company-1", assigneeId: "user-1" });
+  assert.equal(state.quotes[0].status, "SENT");
+  assert.equal(state.audit[0].changes.followUpAt, "2999-01-18T00:00:00.000Z");
+});
+
+test("rechazar invalida el proceso: propuesta Rechazada, pendientes Canceladas y auditoría", async () => {
+  const { prisma, state } = mockPrisma({
+    quotes: [{ number: "COT-000003", status: "SENT", total: "115.00" }, { number: "COT-000002", status: "SUPERSEDED", total: "90.00" }],
+    activities: [{ status: "PENDING", type: "CALL" }, { status: "DONE", type: "MEETING" }],
+  });
+  assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "REJECTED", {}, vendedor)), ["REJECTION_REASON"]);
+  await service(prisma).transition("deal-1", "REJECTED", { lossReason: "COMMERCIAL_RISK", lossDetail: "Mora" }, vendedor);
+  assert.deepEqual([state.deal.status, state.deal.lossReason, state.deal.lossDetail, state.deal.stageId], ["REJECTED", "COMMERCIAL_RISK", "Mora", "stage-a"]);
+  assert.ok(state.deal.closedAt instanceof Date);
+  assert.deepEqual(state.quotes.map((q) => q.status), ["REJECTED", "SUPERSEDED"]);
+  assert.deepEqual(state.activities.map((a) => a.status), ["CANCELLED", "DONE"]);
+  assert.deepEqual(state.audit[0], {
+    action: "REJECTED",
+    entityType: "Deal",
+    entityId: "deal-1",
+    changes: { lossReason: "COMMERCIAL_RISK", lossDetail: "Mora", from: "OPEN", quotes: ["COT-000003"], cancelledActivities: 1 },
+    userId: "user-1",
+  });
+  await assert.rejects(service(prisma).transition("deal-1", "REJECTED", { lossReason: "OTHER" }, admin), ConflictException);
+});
+
+test("un VENDEDOR rechaza un perdido; un ganado se reabre antes de rechazarlo", async () => {
+  const lost = mockPrisma({ status: "LOST" });
+  await service(lost.prisma).transition("deal-1", "REJECTED", { lossReason: "DO_NOT_CONTACT" }, vendedor);
+  assert.equal(lost.state.deal.status, "REJECTED");
+  assert.equal(lost.state.audit[0].changes.from, "LOST");
+  await assert.rejects(service(mockPrisma({ status: "WON" }).prisma).transition("deal-1", "REJECTED", { lossReason: "OTHER" }, admin), ConflictException);
+  await assert.rejects(service(mockPrisma({ status: "WON" }).prisma).transition("deal-1", "REJECTED", { lossReason: "OTHER" }, vendedor), ForbiddenException);
+});
+
+test("un rechazado no cambia productos ni registra actividades hasta reabrirlo", async () => {
+  const { prisma } = mockPrisma({ status: "REJECTED" });
+  await assert.rejects(service(prisma).saveItems("deal-1", [], admin), ConflictException);
+  await assert.rejects(service(prisma).createActivity("deal-1", { type: "CALL", subject: "Llamar" }, "admin-1"), ConflictException);
+  await assert.rejects(service(prisma).transition("deal-1", "REOPEN", { reason: "Volvió" }, vendedor), ForbiddenException);
+});
+
+test("la papelera borra solo rechazados y deja una fila DELETED por cada uno", async () => {
+  const { prisma, state } = mockPrisma();
+  const row = (id) => ({ id, title: "N " + id, value: new Prisma.Decimal(50), lossReason: "OTHER", lossDetail: "x", contactId: "contact-1", companyId: null });
+  prisma.deal.findMany = async ({ where }) => {
+    assert.deepEqual(where, { id: { in: ["d1", "d2"] }, status: "REJECTED" });
+    return [row("d1"), row("d2")];
+  };
+  assert.deepEqual(await service(prisma).deleteRejected(["d1", "d2"], "user-1"), { deleted: 2 });
+  assert.deepEqual(state.deleted, { id: { in: ["d1", "d2"] }, status: "REJECTED" });
+  assert.deepEqual(state.audit[1], {
+    action: "DELETED",
+    entityType: "Deal",
+    entityId: "d2",
+    userId: "user-1",
+    changes: { title: "N d2", lossReason: "OTHER", lossDetail: "x", contactId: "contact-1", companyId: null, value: "50.00" },
+  });
+  prisma.deal.findMany = async () => [row("d1")];
+  state.deleted = undefined;
+  await assert.rejects(service(prisma).deleteRejected(["d1", "d2"], "user-1"), ConflictException);
+  assert.equal(state.deleted, undefined);
+});
+
+test("una transacción que pasa del tiempo límite responde 503 sin guardar", async () => {
+  const { prisma } = mockPrisma();
+  prisma.$transaction = async () => {
+    throw new Prisma.PrismaClientKnownRequestError("Transaction already closed", { code: "P2028", clientVersion: "6" });
+  };
+  await assert.rejects(service(prisma).transition("deal-1", "LOST", { lossReason: "OTHER" }, vendedor), (error) => {
+    assert.equal(error.getStatus(), 503);
+    assert.match(error.message, /no se guardó nada/);
+    return true;
+  });
 });
 
 test("un VENDEDOR no reabre, mueve, edita, borra ni cambia productos de un negocio cerrado", async () => {
@@ -299,7 +398,7 @@ test("un ADMIN reabre un ganado con motivo, vuelve a su etapa y conserva la coti
 });
 
 test("un ADMIN reabre un perdido en la etapa donde quedó", async () => {
-  const { prisma, state } = mockPrisma({ status: "LOST", stageId: "stage-n", deal: { lossReason: "PRICE" } });
+  const { prisma, state } = mockPrisma({ status: "LOST", stageId: "stage-n", deal: { lossReason: "NEGOTIATION" } });
   await service(prisma).transition("deal-1", "REOPEN", { reason: "Volvió a escribir" }, admin);
   assert.equal(state.deal.status, "OPEN");
   assert.equal(state.deal.lossReason, null);
@@ -424,6 +523,25 @@ test("registrar propuesta crea la COT enviada con los totales y desactualiza la 
   );
   assert.ok(quote.sentAt instanceof Date);
   assert.deepEqual([quote.subtotal, quote.tax, quote.total].map((d) => d.toFixed(2)), ["100.00", "15.00", "115.00"]);
+  assert.deepEqual(state.audit.map((a) => [a.action, a.changes.quoteNumber]), [["QUOTE_SUPERSEDED", "COT-000004"], ["QUOTE_SENT", "COT-000005"]]);
+  assert.deepEqual(state.audit[1].changes, { quoteNumber: "COT-000005", total: "115.00", validUntil: "2999-01-31T00:00:00.000Z" });
+});
+
+test("la propuesta guarda la copia de los productos en su orden, que no cambia al editarlos", async () => {
+  const { prisma, state } = mockPrisma({
+    items: [
+      { description: "Soporte", quantity: 2, unitPrice: 10.5, taxRate: 0, position: 1 },
+      { description: "Web", quantity: 1, unitPrice: 100, taxRate: 15, position: 0 },
+    ],
+  });
+  let order;
+  prisma.dealItem.findMany = async (args) => ((order = args.orderBy), [...state.items].sort((a, b) => a.position - b.position));
+  await service(prisma).createQuote("deal-1", { validUntil: future }, vendedor);
+  assert.deepEqual(order, { position: "asc" });
+  assert.deepEqual(state.quotes[0].items, [
+    { description: "Web", quantity: "1", unitPrice: "100", taxRate: 15 },
+    { description: "Soporte", quantity: "2", unitPrice: "10.5", taxRate: 0 },
+  ]);
 });
 
 test("la propuesta exige productos, negocio abierto, envío no futuro y vigencia posterior al envío", async () => {
@@ -461,6 +579,9 @@ test("aceptar una propuesta guarda fecha y evidencia, dentro de su vigencia", as
     [state.quotes[0].status, state.quotes[0].acceptedAt.toISOString(), state.quotes[0].acceptanceNote],
     ["ACCEPTED", "2026-10-02T00:00:00.000Z", "Orden de compra 55"],
   );
+  assert.deepEqual(state.audit.map((a) => [a.action, a.changes]), [
+    ["QUOTE_ACCEPTED", { quoteNumber: "COT-000001", acceptedAt: "2026-10-02T00:00:00.000Z", acceptanceNote: "Orden de compra 55" }],
+  ]);
   await assert.rejects(
     service(prisma).acceptQuote("deal-1", "q0", { acceptedAt: day("2026-10-02"), acceptanceNote: "Otra vez" }, vendedor),
     ConflictException,
@@ -484,6 +605,7 @@ test("guardar productos con otros importes deja la propuesta desactualizada, sin
   await service(prisma).saveItems("deal-1", [{ description: "Web", quantity: 2, unitPrice: 100, taxRate: 15 }], vendedor);
   assert.equal(state.quotes.length, 1);
   assert.equal(state.quotes[0].status, "SUPERSEDED");
+  assert.deepEqual(state.audit.map((a) => [a.action, a.changes]), [["QUOTE_SUPERSEDED", { quoteNumber: "COT-000001" }]]);
 });
 
 test("una actividad ya realizada nace completada y no admite fecha futura", async () => {

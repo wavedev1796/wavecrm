@@ -6,6 +6,7 @@ const {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  ServiceUnavailableException,
 } = require("@nestjs/common");
 const { Prisma } = require("@wave/database");
 const {
@@ -281,6 +282,7 @@ test("los errores de Prisma se traducen a respuestas HTTP claras", async () => {
   await assert.rejects(failing("P2003"), /referencias ya no existe/);
   await assert.rejects(failing("P2025"), NotFoundException);
   await assert.rejects(failing("P2034"), /Otra persona modifico/);
+  await assert.rejects(failing("P2028"), ServiceUnavailableException);
   await assert.rejects(failing("P9999"), Prisma.PrismaClientKnownRequestError);
 });
 
@@ -307,7 +309,7 @@ test("el controlador delega cada ruta en el servicio con el usuario del token", 
   c.createActivity("d1", { type: "CALL" }, user);
   c.completeActivity("d1", "a1");
   c.win("d1", { closedAt: undefined }, user);
-  c.lose("d1", { lossReason: "PRICE" }, user);
+  c.lose("d1", { lossReason: "NEGOTIATION" }, user);
   c.reopen("d1", { reason: "Error" }, user);
   c.getDeal("d1");
   c.moveDeal("d1", { stageId: "s2" }, user);
@@ -328,7 +330,7 @@ test("el controlador delega cada ruta en el servicio con el usuario del token", 
     calls.filter(([n]) => n === "transition").map(([, ...args]) => args),
     [
       ["d1", "WON", { closedAt: undefined }, actor],
-      ["d1", "LOST", { lossReason: "PRICE" }, actor],
+      ["d1", "LOST", { lossReason: "NEGOTIATION" }, actor],
       ["d1", "REOPEN", { reason: "Error" }, actor],
       ["d1", "s2", {}, actor],
     ],
@@ -352,11 +354,13 @@ test("el tablero trae 10 tarjetas por columna con la cantidad y el valor de toda
         { stageId: "s1", status: "OPEN", _count: { _all: 12 }, _sum: { value: new Prisma.Decimal("1200.10") } },
         { stageId: "s2", status: "WON", _count: { _all: 1 }, _sum: { value: new Prisma.Decimal("50") } },
         { stageId: "s1", status: "LOST", _count: { _all: 2 }, _sum: { value: new Prisma.Decimal("999") } },
+        { stageId: "s1", status: "REJECTED", _count: { _all: 4 }, _sum: { value: new Prisma.Decimal("40") } },
       ],
       findMany: ({ where }) => [{ id: where.stageId ?? where.status }],
     },
   });
   const board = await service.board("p1");
+  // Los rechazados no cuentan en ninguna etapa: solo en las métricas (papelera).
   assert.deepEqual(
     board.stages.map((s) => [s.id, s.count, s.value, s.deals]),
     [
@@ -365,8 +369,9 @@ test("el tablero trae 10 tarjetas por columna con la cantidad y el valor de toda
     ],
   );
   assert.deepEqual(board.lost, { count: 2, value: "999.00", deals: [{ id: "LOST" }] });
+  assert.deepEqual(board.metrics.rejected, { count: 4, value: "40.00" });
   const pages = called("deal.findMany");
-  assert.deepEqual(pages[0].where, { pipelineId: "p1", stageId: "s1", status: { not: "LOST" } });
+  assert.deepEqual(pages[0].where, { pipelineId: "p1", stageId: "s1", status: { in: ["OPEN", "WON"] } });
   assert.deepEqual([pages[0].skip, pages[0].take], [0, 10]);
   assert.deepEqual(pages.at(-1).where, { pipelineId: "p1", status: "LOST" });
 });
@@ -388,6 +393,7 @@ test("los perdidos van a su columna y no suman al valor abierto ni al ganado", a
     open: { count: 3, value: "300.00" },
     won: { count: 0, value: "0.00" },
     lost: { count: 1, value: "999.00" },
+    rejected: { count: 0, value: "0.00" },
   });
   assert.equal(stages[0].value, "300.00");
 });
@@ -400,5 +406,5 @@ test("ver más pide la página siguiente de una columna con el mismo filtro y or
   assert.deepEqual([query.skip, query.take], [10, 10]);
   assert.deepEqual(query.orderBy, [{ updatedAt: "desc" }, { id: "asc" }]);
   await service.boardColumn("p1", "s1", 1);
-  assert.deepEqual(called("deal.findMany")[1].where, { pipelineId: "p1", stageId: "s1", status: { not: "LOST" } });
+  assert.deepEqual(called("deal.findMany")[1].where, { pipelineId: "p1", stageId: "s1", status: { in: ["OPEN", "WON"] } });
 });

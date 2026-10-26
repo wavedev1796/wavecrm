@@ -10,7 +10,7 @@ import {
   previewTransitionAction,
 } from "./actions";
 import type { Board, Deal, Stage } from "./types";
-const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
+const router = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("./actions", () => ({
   previewTransitionAction: vi.fn(),
@@ -48,7 +48,7 @@ const board = (overrides: Partial<Board> = {}): Board => ({
   pipeline: { id: "p1", name: "Ventas", isDefault: true },
   stages,
   lost: { count: 0, value: "0.00", deals: [] },
-  metrics: { open: { count: 1, value: "1250.25" }, won: zero, lost: zero },
+  metrics: { open: { count: 1, value: "1250.25" }, won: zero, lost: zero, rejected: zero },
   ...overrides,
 });
 const props = {
@@ -102,7 +102,6 @@ test("un movimiento rechazado muestra el error en el modal y conserva la etapa v
   const modal = screen.getByRole("dialog", { name: "Cambiar de etapa" });
   await waitFor(() => expect(within(modal).getByRole("alert")).toHaveTextContent("No se pudo guardar."));
   expect(screen.getByLabelText("Mover Cuenta Andina de etapa")).toHaveValue("s1");
-  expect(router.refresh).not.toHaveBeenCalled();
 });
 
 test("el selector y el arrastre piden el mismo cambio con las mismas reglas", async () => {
@@ -111,7 +110,6 @@ test("el selector y el arrastre piden el mismo cambio con las mismas reglas", as
   view();
   await user.selectOptions(screen.getByLabelText("Mover Cuenta Andina de etapa"), "s2");
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cuenta Andina pasó a Ganado."));
-  expect(router.refresh).toHaveBeenCalled();
   const bySelect = [preview.mock.calls[0], complete.mock.calls[0]?.slice(0, 3)];
 
   preview.mockClear();
@@ -152,12 +150,30 @@ test("soltar una tarjeta en Perdido abre el modal con el motivo de la pérdida",
   expect(preview).toHaveBeenCalledWith("d1", "LOST");
 });
 
+test("la zona Rechazado cuenta la papelera, enlaza a ella y al soltar pide el motivo del rechazo", async () => {
+  preview.mockResolvedValue({
+    data: { pending: [{ code: "REJECTION_REASON", message: "Elige el motivo del rechazo." }], quote: null, items: 0 },
+  });
+  view(board({ metrics: { open: { count: 1, value: "1250.25" }, won: zero, lost: zero, rejected: { count: 3, value: "10.00" } } }));
+  const zone = screen.getByRole("region", { name: "Zona Rechazado" });
+  expect(within(zone).getByText("3 negocios en la papelera")).toBeInTheDocument();
+  expect(within(zone).getByRole("link", { name: "Ver papelera" })).toHaveAttribute("href", "/pipeline/papelera");
+  expect(within(screen.getByLabelText("Mover Cuenta Andina de etapa")).getByRole("option", { name: "Rechazado" })).toBeInTheDocument();
+  const dataTransfer = { setData: vi.fn(), dropEffect: "", effectAllowed: "" };
+  fireEvent.dragStart(screen.getByRole("article", { name: "Negocio Cuenta Andina" }), { dataTransfer });
+  fireEvent.dragOver(zone, { dataTransfer });
+  expect(zone).toHaveClass("pipeline-column--over");
+  fireEvent.drop(zone, { dataTransfer });
+  expect(await screen.findByLabelText("Motivo del rechazo")).toBeInTheDocument();
+  expect(preview).toHaveBeenCalledWith("d1", "REJECTED");
+});
+
 test("las métricas salen del API y los perdidos no suman al valor abierto ni al ganado", () => {
   const lostDeal = { ...deal, id: "d9", title: "Cuenta perdida", status: "LOST" as const, value: "999" };
   view(
     board({
       lost: { count: 1, value: "999.00", deals: [lostDeal] },
-      metrics: { open: { count: 1, value: "1250.25" }, won: { count: 0, value: "0.00" }, lost: { count: 1, value: "999.00" } },
+      metrics: { open: { count: 1, value: "1250.25" }, won: { count: 0, value: "0.00" }, lost: { count: 1, value: "999.00" }, rejected: { count: 2, value: "300.00" } },
     }),
   );
   const kpis = screen.getByRole("region", { name: "Resumen comercial" });
@@ -206,7 +222,7 @@ test("cambiar de pipeline navega con su id", async () => {
 });
 
 test("sin etapas avisa que hay que configurarlas y no deja crear negocios", () => {
-  view(board({ stages: [], metrics: { open: zero, won: zero, lost: zero } }));
+  view(board({ stages: [], metrics: { open: zero, won: zero, lost: zero, rejected: zero } }));
   expect(screen.getByText(/Agrega una etapa en Configurar pipeline/)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Nuevo negocio" })).toBeDisabled();
   expect(screen.getByText("0 negocios en este pipeline")).toBeInTheDocument();
@@ -214,7 +230,7 @@ test("sin etapas avisa que hay que configurarlas y no deja crear negocios", () =
 
 test("una tarjeta ganada sin contacto, responsable ni fecha muestra sus textos de respaldo", () => {
   const won: Deal = { ...deal, status: "WON", contact: null, owner: null, expectedClose: null, company: { id: "co1", name: "Andina S.A." } };
-  view(board({ stages: [{ ...stages[0]!, deals: [won] }, stages[1]!], metrics: { open: zero, won: { count: 1, value: "1250.25" }, lost: zero } }));
+  view(board({ stages: [{ ...stages[0]!, deals: [won] }, stages[1]!], metrics: { open: zero, won: { count: 1, value: "1250.25" }, lost: zero, rejected: zero } }));
   const card = screen.getByRole("article", { name: "Negocio Cuenta Andina" });
   for (const text of ["Andina S.A.", "Sin contacto", "Sin responsable", "Sin fecha de cierre"])
     expect(within(card).getByText(text)).toBeInTheDocument();
@@ -245,7 +261,6 @@ test("eliminar un negocio muestra el error del API o confirma y refresca", async
 
   await user.click(within(modal).getByRole("button", { name: "Eliminar negocio" }));
   await waitFor(() => expect(screen.getByText("Negocio eliminado.")).toBeInTheDocument());
-  expect(router.refresh).toHaveBeenCalled();
   expect(modal).not.toHaveAttribute("open");
 
   await user.click(screen.getByRole("button", { name: "Eliminar Cuenta Andina" }));

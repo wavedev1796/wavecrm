@@ -6,11 +6,11 @@ import { DealActions } from "./deal-actions";
 import { baseDeal } from "./deal-fixture";
 import type { DealDetail } from "./types";
 
-const router = vi.hoisted(() => ({ refresh: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("./actions", () => ({
   previewTransitionAction: vi.fn(),
   completeTransitionAction: vi.fn(),
+  saveTransitionAction: vi.fn(),
   saveDeal: vi.fn(),
 }));
 const preview = vi.mocked(previewTransitionAction);
@@ -56,6 +56,23 @@ test("perder abre el mismo modal hacia Perdido", async () => {
   expect(preview).toHaveBeenCalledWith("d1", "LOST");
 });
 
+test("rechazar se ofrece en abiertos y perdidos, no en ganados ni rechazados", async () => {
+  asks("REJECTION_REASON");
+  const user = userEvent.setup();
+  const { unmount } = view({ ...baseDeal, status: "LOST" });
+  expect(screen.queryByRole("button", { name: "Ganar" })).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Rechazar" }));
+  const dialog = screen.getByRole("dialog", { name: "Rechazar negocio" });
+  expect(await within(dialog).findByLabelText("Motivo del rechazo")).toBeInTheDocument();
+  expect(preview).toHaveBeenCalledWith("d1", "REJECTED");
+  unmount();
+  for (const status of ["WON", "REJECTED"] as const) {
+    const { unmount: drop } = view({ ...baseDeal, status });
+    expect(screen.queryByRole("button", { name: "Rechazar" })).toBeNull();
+    drop();
+  }
+});
+
 test("reabrir solo aparece para un ADMIN y pide el motivo", async () => {
   const won = { ...baseDeal, status: "WON" as const };
   const { unmount } = view(won);
@@ -78,5 +95,4 @@ test("al completar el cambio avisa y refresca la ficha", async () => {
   view(baseDeal);
   await user.click(screen.getByRole("button", { name: "Ganar" }));
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cuenta Andina pasó a Ganado."));
-  expect(router.refresh).toHaveBeenCalled();
 });

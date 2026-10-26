@@ -6,7 +6,7 @@ import { baseDeal } from "../../../../features/pipeline/deal-fixture";
 import DealPage from "./page";
 
 vi.mock("@/lib/authenticated-api", () => ({ authenticatedApi: vi.fn(), apiError: async () => "x" }));
-vi.mock("next/navigation", () => ({ notFound: vi.fn(), unstable_rethrow: vi.fn(), useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ notFound: vi.fn(), unstable_rethrow: vi.fn()}));
 vi.mock("../../../../features/pipeline/data", () => ({
   dealFormOptions: async () => ({ pipelines: [], contacts: [], companies: [], users: [] }),
 }));
@@ -66,6 +66,17 @@ test("un perdido muestra su motivo y detalle", async () => {
   render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
   expect(screen.getByText("Otro")).toBeInTheDocument();
   expect(screen.getByText("Cerro el local")).toBeInTheDocument();
+});
+
+test("un rechazado muestra su cierre, bloquea productos y actividades y solo un ADMIN lo reabre", async () => {
+  serve({ ...baseDeal, status: "REJECTED", closedAt: "2026-10-05T00:00:00.000Z", lossReason: "COMMERCIAL_RISK", lossDetail: null }, "VENDEDOR");
+  render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
+  expect(screen.getAllByText("Rechazado").length).toBeGreaterThan(0);
+  expect(screen.getByText("Rechazado el")).toBeInTheDocument();
+  expect(screen.getByText("Riesgo comercial")).toBeInTheDocument();
+  expect(screen.getByText("Reabre el negocio para cambiar sus productos.")).toBeInTheDocument();
+  expect(screen.queryByLabelText("Asunto")).toBeNull();
+  expect(screen.queryByRole("button", { name: /Reabrir|Rechazar|Ganar|Perder/ })).toBeNull();
 });
 
 test("al ganar, la tabla de productos vuelve a leer lo del servidor y no conserva filas editadas", async () => {

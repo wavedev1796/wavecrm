@@ -5,8 +5,6 @@ import { qualifyDealAction } from "./actions";
 import { baseDeal } from "./deal-fixture";
 import { DealQualification } from "./deal-qualification";
 
-const router = vi.hoisted(() => ({ refresh: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("./actions", () => ({ qualifyDealAction: vi.fn() }));
 const qualify = vi.mocked(qualifyDealAction);
 
@@ -28,7 +26,6 @@ test("guarda necesidad, solución, presupuesto, justificación y decisor", async
     "Gerente general",
   ]);
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Calificación guardada."));
-  expect(router.refresh).toHaveBeenCalled();
 });
 
 test("un presupuesto inválido se marca en su campo", async () => {

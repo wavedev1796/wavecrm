@@ -6,8 +6,6 @@ import { baseDeal } from "./deal-fixture";
 import { DealQuotes } from "./deal-quotes";
 import type { Quote } from "./types";
 
-const router = vi.hoisted(() => ({ refresh: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("./actions", () => ({ createQuoteAction: vi.fn(), acceptQuoteAction: vi.fn() }));
 const quote = (overrides: Partial<Quote> = {}): Quote => ({
   id: "q1",
@@ -35,7 +33,6 @@ test("registra la propuesta con su vigencia y fecha de envío", async () => {
   expect(form.get("validUntil")).toBe("2026-11-30");
   expect(form.get("sentAt")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Propuesta registrada."));
-  expect(router.refresh).toHaveBeenCalled();
 });
 
 test("la propuesta enviada se marca como aceptada con su evidencia", async () => {
@@ -59,6 +56,27 @@ test("un error del API se muestra junto al formulario", async () => {
   await user.type(screen.getByLabelText("Vigente hasta"), "2026-11-30");
   await user.click(screen.getByRole("button", { name: "Registrar propuesta" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Agrega sus productos");
+});
+
+test("cada propuesta muestra la copia de sus productos; las anteriores, que no tienen detalle", async () => {
+  const user = userEvent.setup();
+  render(
+    <DealQuotes
+      deal={{
+        ...baseDeal,
+        quotes: [
+          quote({ items: [{ description: "Vinos", quantity: "2", unitPrice: "100", taxRate: 15 }] }),
+          quote({ id: "q0", number: "COT-000000", status: "SUPERSEDED", items: [] }),
+        ],
+      }}
+      locked={false}
+    />,
+  );
+  await user.click(screen.getByText("Productos de COT-000001"));
+  const line = screen.getByText("2 × Vinos").closest("li")!;
+  expect(line).toHaveTextContent(/100,00 c\/u · IVA 15 %/);
+  expect(line).toHaveTextContent(/200,00/);
+  expect(screen.getByText("Registrada sin detalle de productos.")).toBeInTheDocument();
 });
 
 test("sin productos no ofrece registrar y un cerrado muestra las propuestas sin acciones", () => {

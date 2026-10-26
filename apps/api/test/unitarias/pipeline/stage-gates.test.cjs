@@ -152,7 +152,12 @@ test("un pipeline sin etapa de 100 % también gana con las condiciones de cierre
 
 test("perder exige el motivo", () => {
   assert.deepEqual(codes(facts(empty), { kind: "lost" }), ["LOSS_REASON"]);
-  assert.deepEqual(codes(facts(empty), { kind: "lost" }, { lossReason: "PRICE" }), []);
+  assert.deepEqual(codes(facts(empty), { kind: "lost" }, { lossReason: "NEGOTIATION" }), []);
+});
+
+test("rechazar exige su propio motivo y nada de las etapas", () => {
+  assert.deepEqual(codes(facts(empty), { kind: "rejected" }), ["REJECTION_REASON"]);
+  assert.deepEqual(codes(facts({ ...empty, status: "LOST" }), { kind: "rejected" }, { lossReason: "DO_NOT_CONTACT" }), []);
 });
 
 test("reabrir exige motivo", () => {

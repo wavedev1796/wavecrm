@@ -10,9 +10,11 @@ const {
   CreateDealDto,
   CreatePipelineDto,
   CreateStageDto,
+  DeleteDealsDto,
   ListDealsDto,
   LoseDealDto,
   MoveDealDto,
+  RejectDealDto,
   ReopenDealDto,
   SaveDealItemsDto,
   TransitionQueryDto,
@@ -104,13 +106,35 @@ test("ganar exige la fecha real de cierre y perder exige motivo y detalle si es 
   });
 
   assert.deepEqual(await errors(LoseDealDto, {}), { lossReason: "Elige el motivo de la pérdida." });
-  assert.deepEqual(await errors(LoseDealDto, { lossReason: "PRICE" }), {});
+  assert.deepEqual(await errors(LoseDealDto, { lossReason: "NEGOTIATION" }), {});
   assert.deepEqual(await errors(LoseDealDto, { lossReason: "OTHER" }), {
     lossDetail: "Ingresa el detalle del motivo.",
   });
-  assert.deepEqual(await errors(LoseDealDto, { lossReason: "PRICE", lossDetail: "x" }), {
+  assert.deepEqual(await errors(LoseDealDto, { lossReason: "NEGOTIATION", lossDetail: "x" }), {
     lossDetail: "Revisa el detalle del motivo: entre 2 y 500 caracteres.",
   });
+});
+
+test("perder y rechazar aceptan solo sus motivos; el seguimiento es opcional y se valida entero", async () => {
+  assert.deepEqual(await errors(LoseDealDto, { lossReason: "DO_NOT_CONTACT" }), { lossReason: "Elige el motivo de la pérdida." });
+  assert.deepEqual(await errors(RejectDealDto, { lossReason: "BUDGET" }), { lossReason: "Elige el motivo del rechazo." });
+  assert.deepEqual(await errors(RejectDealDto, { lossReason: "DO_NOT_CONTACT", fromStageId: "s1" }), {});
+  assert.deepEqual(await errors(RejectDealDto, { lossReason: "OTHER" }), { lossDetail: "Ingresa el detalle del motivo." });
+  const followUp = { type: "CALL", subject: "Retomar", dueAt: "2027-01-18" };
+  assert.deepEqual(await errors(LoseDealDto, { lossReason: "NEED_POSTPONED", followUp }), {});
+  assert.ok(plainToInstance(LoseDealDto, { lossReason: "NEED_POSTPONED", followUp }).followUp.dueAt instanceof Date);
+  assert.deepEqual(await errors(LoseDealDto, { lossReason: "NEED_POSTPONED", followUp: { ...followUp, type: "FAX" } }), {
+    followUp: "Elige el tipo del seguimiento.",
+  });
+});
+
+test("la papelera borra entre 1 y 100 ids sin repetir, y el listado filtra por estado", async () => {
+  const invalid = { ids: "Elige entre 1 y 100 negocios, sin repetir." };
+  assert.deepEqual(await errors(DeleteDealsDto, { ids: ["d1", "d2"] }), {});
+  for (const ids of [[], ["d1", "d1"], Array.from({ length: 101 }, (_, i) => "d" + i), "d1", [1]])
+    assert.deepEqual(await errors(DeleteDealsDto, { ids }), invalid, JSON.stringify(ids));
+  assert.deepEqual(await errors(ListDealsDto, { status: "REJECTED" }), {});
+  assert.deepEqual(await errors(ListDealsDto, { status: "BORRADO" }), { status: "Elige un estado válido." });
 });
 
 test("reabrir exige motivo y mover acepta motivo, etapa de origen y fecha de cierre opcionales", async () => {

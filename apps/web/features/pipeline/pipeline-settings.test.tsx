@@ -5,7 +5,7 @@ import { PipelineSettings } from "./pipeline-settings";
 import { configurePipelineAction } from "./actions";
 import type { Pipeline } from "./types";
 
-const router = { push: vi.fn(), refresh: vi.fn() };
+const router = { push: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("./actions", () => ({ configurePipelineAction: vi.fn() }));
 const configure = vi.mocked(configurePipelineAction);
@@ -43,15 +43,14 @@ async function open(pipelineId = "p1") {
 
 const sent = () => Object.fromEntries(configure.mock.calls.at(-1)![2] as FormData);
 
-test("guardar el pipeline principal lo actualiza y refresca el tablero", async () => {
+test("guardar el pipeline principal lo actualiza y cierra el modal", async () => {
   const { user, dialog } = await open();
   expect(within(dialog).queryByRole("button", { name: "Eliminar pipeline" })).toBeNull();
   await user.click(within(dialog).getByRole("button", { name: "Guardar pipeline" }));
 
-  await waitFor(() => expect(router.refresh).toHaveBeenCalled());
+  await waitFor(() => expect(dialog).not.toHaveAttribute("open"));
   expect(configure).toHaveBeenCalledWith("updatePipeline", "p1", expect.any(FormData));
   expect(sent()).toEqual({ name: "Ventas", isDefault: "true" });
-  expect(dialog).not.toHaveAttribute("open");
 });
 
 test("crear otro pipeline navega al nuevo", async () => {
@@ -117,7 +116,6 @@ test("un error del API se muestra y cierra la confirmación", async () => {
   await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("La etapa tiene negocios."));
   expect(within(dialog).queryByText(/Confirma que deseas eliminar/)).toBeNull();
   expect(dialog).toHaveAttribute("open");
-  expect(router.refresh).not.toHaveBeenCalled();
 });
 
 test("una etapa envía los requisitos marcados para entrar a ella", async () => {

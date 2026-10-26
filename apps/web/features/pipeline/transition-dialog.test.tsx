@@ -1,12 +1,15 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import { completeTransitionAction, previewTransitionAction } from "./actions";
+import { completeTransitionAction, previewTransitionAction, saveTransitionAction } from "./actions";
 import { TransitionDialog } from "./transition-dialog";
 
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("./actions", () => ({
   previewTransitionAction: vi.fn(),
   completeTransitionAction: vi.fn(),
+  saveTransitionAction: vi.fn(),
 }));
 const preview = vi.mocked(previewTransitionAction);
 const complete = vi.mocked(completeTransitionAction);
@@ -66,15 +69,62 @@ test("al confirmar envía lo escrito y, si sigue faltando algo, vuelve a pedirlo
   expect(onDone).not.toHaveBeenCalled();
 });
 
-test("lo que solo se completa en la ficha muestra el enlace y no un campo", async () => {
-  preview.mockResolvedValue({ data: { pending: pending("PROPOSAL_SENT", "ACCEPTANCE", "FINAL_AMOUNT"), quote: null, items: 0 } });
-  view("WON", "Ganado");
-  expect(await screen.findByText("Falta FINAL_AMOUNT.")).toBeInTheDocument();
-  const links = screen.getAllByRole("link", { name: "Abrir la ficha" });
-  expect(links).toHaveLength(3);
-  expect(links[0]).toHaveAttribute("href", "/pipeline/d1");
+test("con pendientes recomienda completar la ficha y enlaza a ella", async () => {
+  preview.mockResolvedValue({ data: { pending: pending("NEED"), quote: null, items: 0 } });
+  view();
+  expect(await screen.findByText(/Recomendación: mantén completa la ficha/)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Abrir la ficha" })).toHaveAttribute("href", "/pipeline/d1");
+  expect(screen.getByRole("button", { name: "Guardar y continuar" })).toBeInTheDocument();
+});
+
+test("lo que solo se completa en la ficha guarda lo llenado y lleva a la ficha sin intentar mover", async () => {
+  preview.mockResolvedValue({ data: { pending: pending("NEED", "PROPOSAL_SENT", "ACCEPTANCE", "FINAL_AMOUNT"), quote: null, items: 0 } });
+  vi.mocked(saveTransitionAction).mockResolvedValue({ done: true });
+  const user = userEvent.setup();
+  const { onCancel } = view("WON", "Ganado");
+  expect(await screen.findByText(/Los productos y las propuestas se registran en la ficha/)).toBeInTheDocument();
   expect(screen.queryByLabelText("Vigente hasta")).toBeNull();
   expect(screen.queryByLabelText("Evidencia de aceptación")).toBeNull();
+  await user.type(screen.getByLabelText("Necesidad del cliente"), "Tienda en línea");
+  await user.click(screen.getByRole("button", { name: "Guardar e ir a la ficha" }));
+  await waitFor(() => expect(push).toHaveBeenCalledWith("/pipeline/d1"));
+  expect((vi.mocked(saveTransitionAction).mock.calls[0]?.[2] as FormData).get("need")).toBe("Tienda en línea");
+  expect(onCancel).toHaveBeenCalled();
+  expect(complete).not.toHaveBeenCalled();
+});
+
+test("si guardar falla, el error se muestra y no navega", async () => {
+  push.mockClear();
+  preview.mockResolvedValue({ data: { pending: pending("PROPOSAL_SENT"), quote: null, items: 0 } });
+  vi.mocked(saveTransitionAction).mockResolvedValue({ error: "Ingresa hasta cuándo es válida la propuesta." });
+  const user = userEvent.setup();
+  view("s3", "Propuesta");
+  await user.click(await screen.findByRole("button", { name: "Guardar e ir a la ficha" }));
+  expect(await screen.findByText("Ingresa hasta cuándo es válida la propuesta.")).toBeInTheDocument();
+  expect(push).not.toHaveBeenCalled();
+});
+
+test("rechazar avisa que invalida el proceso y ofrece solo los motivos del rechazo", async () => {
+  preview.mockResolvedValue({ data: { pending: pending("REJECTION_REASON"), quote: null, items: 0 } });
+  view("REJECTED", "Rechazado");
+  const select = await screen.findByLabelText("Motivo del rechazo");
+  expect(screen.getByText(/Se invalidará el proceso/)).toBeInTheDocument();
+  expect(within(select).getByRole("option", { name: "Cliente solicita no ser contactado" })).toBeInTheDocument();
+  expect(within(select).queryByRole("option", { name: "Competencia" })).toBeNull();
+});
+
+test("perder ofrece un seguimiento opcional en tres meses", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-25T15:00:00.000Z"));
+  preview.mockResolvedValue({ data: { pending: pending("LOSS_REASON"), quote: null, items: 0 } });
+  view("LOST", "Perdido");
+  const select = await screen.findByLabelText("Motivo de la pérdida");
+  expect(within(select).getByRole("option", { name: "Necesidad aplazada" })).toBeInTheDocument();
+  expect(within(select).queryByRole("option", { name: "Riesgo comercial" })).toBeNull();
+  expect(screen.getByRole("group", { name: "Seguimiento (opcional)" })).toBeInTheDocument();
+  expect(screen.getByLabelText("Asunto del seguimiento")).not.toBeRequired();
+  expect(screen.getByLabelText("Programado para")).toHaveValue("2027-01-23");
+  vi.useRealTimers();
 });
 
 test("con productos y una propuesta enviada, se registran y aceptan en el mismo modal", async () => {

@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const {
   BadRequestException,
   HttpException,
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } = require("@nestjs/common");
@@ -106,7 +107,8 @@ test("el detalle por fila de la importación viaja junto al mensaje", () => {
   assert.equal(respond(new BadRequestException("x")).body.error.errors, undefined);
 });
 
-test("conserva los mensajes propios y oculta los errores internos", () => {
+test("conserva los mensajes propios y oculta los errores internos, que quedan en el log", (t) => {
+  const logged = t.mock.method(Logger.prototype, "error", () => {});
   assert.equal(
     respond(new BadRequestException("Las contraseñas no coinciden.")).body.error.message,
     "Las contraseñas no coinciden.",
@@ -114,9 +116,12 @@ test("conserva los mensajes propios y oculta los errores internos", () => {
   assert.deepEqual(respond(new BadRequestException(["Ingresa tu correo."])).body.error.message, ["Ingresa tu correo."]);
   assert.equal(respond(new NotFoundException("Usuario no encontrado.")).status, 404);
   assert.equal(respond(new HttpException("Texto propio", 418)).body.error.message, "Texto propio");
+  assert.equal(logged.mock.callCount(), 0);
   const internal = respond(new Error("connect ECONNREFUSED"));
   assert.equal(internal.status, 500);
   assert.equal(internal.body.error.message, "Ocurrió un error inesperado.");
+  assert.equal(logged.mock.callCount(), 1);
+  assert.match(logged.mock.calls[0].arguments[1], /ECONNREFUSED/);
 });
 
 test("CRM-20: una fila invalida de una lista anidada responde su propio mensaje", () => {

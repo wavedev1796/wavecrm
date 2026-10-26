@@ -341,11 +341,11 @@ test("cierres: ganar con la propuesta aceptada, perder con motivo y reabrir solo
   assert.equal((await call(path + "/items", { method: "PUT", body: { items: [] } })).status, 409);
   // Un ganado es terminal: el VENDEDOR no puede tocarlo (403) y ni el ADMIN lo pierde sin reabrirlo (409).
   assert.equal(
-    (await call(path + "/lose", { method: "POST", body: { lossReason: "PRICE" } })).status,
+    (await call(path + "/lose", { method: "POST", body: { lossReason: "NEGOTIATION" } })).status,
     403,
   );
   assert.equal(
-    (await asAdmin(path + "/lose", { method: "POST", body: { lossReason: "PRICE" } })).status,
+    (await asAdmin(path + "/lose", { method: "POST", body: { lossReason: "NEGOTIATION" } })).status,
     409,
   );
   assert.equal((await call(path + "/reopen", { method: "POST", body: { reason: "Error" } })).status, 403);
@@ -384,6 +384,85 @@ test("cierres: ganar con la propuesta aceptada, perder con motivo y reabrir solo
     body: { title: "Directo a ganado", value: 1, pipelineId: pipeline, stageId: won, companyId: company.id },
   });
   assert.equal(direct.status, 400);
+});
+test("perdido con seguimiento → rechazado por un vendedor → papelera; la propuesta guarda sus productos y eventos", async () => {
+  const newDeal = async (title) => {
+    const created = await call("/deals", {
+      method: "POST",
+      body: { title, value: 0, pipelineId: pipeline, stageId: stage, contactId: contact.id, companyId: company.id },
+    });
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    return created.body.id;
+  };
+  const id = await newDeal("Vinos para eventos");
+  const path = "/deals/" + id;
+  await call(path + "/items", { method: "PUT", body: { items: [{ description: "Vinos", quantity: 2, unitPrice: 100, taxRate: 15 }] } });
+  assert.equal((await call(path + "/quotes", { method: "POST", body: { validUntil: nextMonth } })).status, 201);
+  await call(path + "/quotes", { method: "POST", body: { validUntil: nextMonth } });
+  let detail = (await call(path)).body;
+  const [live, old] = detail.quotes;
+  assert.deepEqual([live.status, old.status], ["SENT", "SUPERSEDED"]);
+  assert.deepEqual(live.items, [{ description: "Vinos", quantity: "2", unitPrice: "100", taxRate: 15 }]);
+  assert.deepEqual(
+    detail.closures.map((c) => [c.action, c.changes.quoteNumber]),
+    [["QUOTE_SENT", live.number], ["QUOTE_SUPERSEDED", old.number], ["QUOTE_SENT", old.number]],
+  );
+  assert.equal(detail.closures[0].changes.total, "230.00");
+
+  assert.equal((await call(path + "/lose", { method: "POST", body: { lossReason: "DO_NOT_CONTACT" } })).status, 400);
+  const followUp = { type: "CALL", subject: "Retomar en temporada", dueAt: nextMonth };
+  const lost = await call(path + "/lose", { method: "POST", body: { lossReason: "NEED_POSTPONED", followUp } });
+  assert.equal(lost.status, 200, JSON.stringify(lost.body));
+  assert.deepEqual([lost.body.status, lost.body.quotes[0].status], ["LOST", "SENT"]);
+  const pending = lost.body.activities.find((a) => a.subject === followUp.subject);
+  assert.deepEqual([pending.status, pending.dueAt], ["PENDING", nextMonth]);
+
+  assert.equal((await call(path + "/reject", { method: "POST", body: { lossReason: "BUDGET" } })).status, 400);
+  const rejected = await call(path + "/reject", { method: "POST", body: { lossReason: "DO_NOT_CONTACT" } });
+  assert.equal(rejected.status, 200, JSON.stringify(rejected.body));
+  detail = rejected.body;
+  assert.deepEqual(
+    [detail.status, detail.lossReason, detail.quotes.map((q) => q.status), detail.activities.find((a) => a.subject === followUp.subject).status],
+    ["REJECTED", "DO_NOT_CONTACT", ["REJECTED", "SUPERSEDED"], "CANCELLED"],
+  );
+  assert.deepEqual(detail.closures[0].changes, {
+    lossReason: "DO_NOT_CONTACT",
+    lossDetail: null,
+    from: "LOST",
+    quotes: [live.number],
+    cancelledActivities: 1,
+  });
+  assert.equal((await call(path + "/items", { method: "PUT", body: { items: [] } })).status, 409);
+  assert.equal((await call(path + "/activities", { method: "POST", body: { type: "CALL", subject: "Insistir" } })).status, 409);
+  assert.equal((await call(path + "/reopen", { method: "POST", body: { reason: "Volvió" } })).status, 403);
+
+  const journey = (await call("/contacts/" + contact.id)).body.deals.find((d) => d.id === id);
+  assert.deepEqual([journey.status, journey.lossReason], ["REJECTED", "DO_NOT_CONTACT"]);
+  assert.equal(journey.stageHistory[0].toStage.name, journey.stage.name);
+
+  // Un abierto también se rechaza y un ADMIN lo reabre en su etapa.
+  const second = await newDeal("Riesgo de mora");
+  const direct = await call("/deals/" + second + "/reject", { method: "POST", body: { lossReason: "COMMERCIAL_RISK" } });
+  assert.equal(direct.body.closures[0].changes.from, "OPEN");
+  const reopened = await asAdmin("/deals/" + second + "/reopen", { method: "POST", body: { reason: "Pagó la deuda" } });
+  assert.deepEqual([reopened.body.status, reopened.body.stage.id, reopened.body.lossReason], ["OPEN", stage, null]);
+  await call("/deals/" + second + "/reject", { method: "POST", body: { lossReason: "COMMERCIAL_RISK" } });
+
+  const board = (await call("/deals/board?pipelineId=" + pipeline)).body;
+  assert.ok(!board.stages.flatMap((s) => s.deals).some((d) => [id, second].includes(d.id)));
+  assert.equal(board.metrics.rejected.count, 2);
+  const trash = await call("/deals?status=REJECTED&pipelineId=" + pipeline);
+  assert.deepEqual(trash.body.data.map((d) => d.id).sort(), [id, second].sort());
+
+  const remove = (ids) => call("/deals/rejected/delete", { method: "POST", body: { ids } });
+  assert.equal((await remove([id, second, deal])).status, 409);
+  assert.equal(await api.prisma.deal.count({ where: { id: { in: [id, second] } } }), 2);
+  const removed = await remove([id, second]);
+  assert.deepEqual([removed.status, removed.body], [200, { deleted: 2 }]);
+  assert.equal((await call(path)).status, 404);
+  const trail = { entityType: "Deal", entityId: { in: [id, second] }, action: "DELETED" };
+  assert.equal(await api.prisma.auditLog.count({ where: trail }), 2);
+  await api.prisma.auditLog.deleteMany({ where: { entityType: "Deal", entityId: { in: [id, second] } } });
 });
 test("recorrido con requisitos: Contactado → Negociación → Propuesta con datos reales, saltos y retrocesos", async () => {
   const created = await call("/pipelines", { method: "POST", body: { name: "Pipeline Requisitos" } });
