@@ -1,4 +1,3 @@
-import "../../../../styles/pipeline.css";
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
 import { Pagination } from "@/components/data/pagination";

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import "../../../styles/pipeline.css";
 import { unstable_rethrow } from "next/navigation";
 import { Alert } from "@/components/ui/alert";
 import { PipelineBoard } from "../../../features/pipeline/pipeline-board";

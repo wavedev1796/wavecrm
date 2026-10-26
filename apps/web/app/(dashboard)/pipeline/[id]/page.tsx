@@ -1,4 +1,3 @@
-import "../../../../styles/pipeline.css";
 import Link from "next/link";
 import { notFound, unstable_rethrow } from "next/navigation";
 import {

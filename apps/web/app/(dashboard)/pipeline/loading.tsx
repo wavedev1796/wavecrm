@@ -1,5 +1,4 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import "../../../styles/pipeline.css";
 export default function PipelineLoading() {
   return (
     <output className="pipeline-page" aria-label="Cargando pipeline">

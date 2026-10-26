@@ -63,7 +63,7 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
 
   useEffect(() => {
     let current = true;
-    (async () => {
+    void (async () => {
       const result = await (opening.current ??= previewTransitionAction(deal.id, to));
       if (!current) return;
       if (!result.data) return setError(result.error ?? "");

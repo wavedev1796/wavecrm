@@ -271,6 +271,26 @@ Verificación final del 2026-10-26, con `pnpm dev` apagado:
 - La segunda pasada de la e2e del recorrido repitió los tiempos de la tabla con ±0,5 s (ganar: 7,1 s).
 - La migración `20261025120000_rejected_and_quote_items` está aplicada solo en `pruebas`; pasa a `development` con OK del usuario.
 
+## Quality Gate y precarga de estilos del pipeline (2026-10-26)
+
+### Implementación
+
+- `apps/web/features/pipeline/transition-dialog.tsx`: la función `async` del `useEffect` que abre el modal se ejecuta como `void (async () => { … })()`.
+- `apps/web/app/(dashboard)/pipeline/layout.tsx` (nuevo): importa `styles/pipeline.css` una sola vez para el tablero, la ficha, la papelera y el esqueleto.
+- `apps/web/app/(dashboard)/pipeline/loading.tsx`, `page.tsx`, `[id]/page.tsx` y `papelera/page.tsx`: ya no importan la hoja.
+
+### Decisiones
+
+- **Quality Gate.** El push `18c1a92` falló en CI solo en SonarCloud: fiabilidad del código nuevo C (máximo A) por una incidencia, `typescript:S9383` (promesa sin `await`, `.catch` ni `void`) en el modal de transición. El efecto ya ignora el resultado si el modal se cerró, así que basta con `void`.
+- **Precarga de estilos.** Con la hoja importada en `loading.tsx`, Next le daba al esqueleto un chunk CSS propio. En cada `router.refresh()` o acción de servidor, Next precarga los chunks `layout`, `page` y `loading`, pero el del esqueleto nunca llega a aplicarse, y Chrome avisaba "preloaded using link preload but not used" una vez por respuesta (en desarrollo el `?v=` cambia cada vez). Con el layout de segmento, la hoja vive en un único chunk que siempre se aplica.
+- **Coordinación con CRM-17 a CRM-19.** El layout nuevo queda en `app/(dashboard)/pipeline/`, la carpeta del tablero de Eduardo: los estilos de una pantalla nueva del pipeline ya no se importan en la página.
+
+### Validación
+
+- `pnpm lint` sin errores; `tsc --noEmit` de la web sin errores; 132 de 132 pruebas web de `app/(dashboard)` y `features/pipeline`.
+- `pnpm build` sin errores. `prisma generate` no corrió porque el API de desarrollo bloqueaba el motor en Windows; el esquema no cambió y se compilaron `@wave/database` (`tsc`), el API y la web por separado.
+- En el navegador (`/pipeline`, `next dev`), después de `router.refresh()` todos los `preload` de estilos tienen su `stylesheet` y el chunk `pipeline/loading.css` ya no existe. El tablero conserva sus estilos.
+
 ## Pendientes
 
 - Endpoint único de transición (datos del modal más el cambio de etapa en una transacción), si mover con el modal sigue lento en producción.
