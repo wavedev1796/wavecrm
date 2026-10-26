@@ -9,15 +9,19 @@ import {
 import { Transform, Type } from "class-transformer";
 import {
   ACTIVITY_TYPES,
+  DEAL_STATUSES,
   IVA_SUGGESTIONS,
   LOSS_REASONS,
+  REJECTION_REASONS,
   STAGE_REQUIREMENTS,
   type ActivityType,
+  type DealStatus,
   type LossReason,
   type StageRequirement,
 } from "@wave/shared";
 import {
   ArrayMaxSize,
+  ArrayMinSize,
   ArrayUnique,
   IsArray,
   IsBoolean,
@@ -184,20 +188,59 @@ export class ReopenDealDto {
   @ApiProperty() @reason() reason!: string;
 }
 export class TransitionQueryDto {
-  @ApiProperty({ description: "Id de etapa, WON, LOST o REOPEN" })
+  @ApiProperty({ description: "Id de etapa, WON, LOST, REJECTED o REOPEN" })
   @text("el destino")
   to!: string;
+}
+/** Detalle del motivo de un cierre: obligatorio con «Otro». */
+const closeDetail = () =>
+  applyDecorators(
+    ApiPropertyOptional(),
+    ValidateIf(
+      (dto: { lossReason?: string; lossDetail?: unknown }) =>
+        dto.lossReason === "OTHER" || dto.lossDetail != null,
+    ),
+    text("el detalle del motivo", 500, 2),
+  );
+/** Seguimiento opcional de un perdido: queda como actividad pendiente del negocio. */
+export class FollowUpDto {
+  @ApiProperty({ enum: ACTIVITY_TYPES })
+  @IsIn([...ACTIVITY_TYPES], { message: "Elige el tipo del seguimiento." })
+  type!: ActivityType;
+  @ApiProperty({ example: "Retomar la propuesta" })
+  @text("el asunto del seguimiento", 160, 2)
+  subject!: string;
+  @ApiProperty({ example: "2027-01-25" })
+  @isoDate()
+  @IsDate({ message: "Ingresa la fecha del seguimiento." })
+  dueAt!: Date;
 }
 export class LoseDealDto extends FromStageDto {
   @ApiProperty({ enum: LOSS_REASONS })
   @IsIn([...LOSS_REASONS], { message: "Elige el motivo de la pérdida." })
   lossReason!: LossReason;
-  @ApiPropertyOptional()
-  @ValidateIf(
-    (dto: LoseDealDto) => dto.lossReason === "OTHER" || dto.lossDetail != null,
-  )
-  @text("el detalle del motivo", 500, 2)
-  lossDetail?: string;
+  @closeDetail() lossDetail?: string;
+  @ApiPropertyOptional({ type: FollowUpDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => FollowUpDto)
+  followUp?: FollowUpDto;
+}
+export class RejectDealDto extends FromStageDto {
+  @ApiProperty({ enum: REJECTION_REASONS })
+  @IsIn([...REJECTION_REASONS], { message: "Elige el motivo del rechazo." })
+  lossReason!: LossReason;
+  @closeDetail() lossDetail?: string;
+}
+const IDS_INVALID = "Elige entre 1 y 100 negocios, sin repetir.";
+export class DeleteDealsDto {
+  @ApiProperty({ type: [String] })
+  @IsArray({ message: IDS_INVALID })
+  @ArrayMinSize(1, { message: IDS_INVALID })
+  @ArrayMaxSize(100, { message: IDS_INVALID })
+  @ArrayUnique({ message: IDS_INVALID })
+  @IsString({ each: true, message: IDS_INVALID })
+  ids!: string[];
 }
 export class DealItemDto {
   @ApiProperty({ example: "Pagina web corporativa" })
@@ -296,4 +339,8 @@ export class ListDealsDto extends PaginationDto {
   @ApiPropertyOptional() @IsOptional() @text("la etapa") stageId?: string;
   @ApiPropertyOptional() @IsOptional() @text("el responsable") ownerId?: string;
   @ApiPropertyOptional() @IsOptional() @text("la busqueda") search?: string;
+  @ApiPropertyOptional({ enum: DEAL_STATUSES, description: "REJECTED: la papelera" })
+  @IsOptional()
+  @IsIn([...DEAL_STATUSES], { message: "Elige un estado válido." })
+  status?: DealStatus;
 }

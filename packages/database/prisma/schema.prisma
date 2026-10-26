@@ -1,6 +1,9 @@
 generator client {
-  provider   = "prisma-client-js"
-  engineType = "binary"
+  provider        = "prisma-client-js"
+  engineType      = "binary"
+  // Cada include se resuelve en la misma consulta (LATERAL JOIN) en vez de una por relación:
+  // contra Neon cada ida y vuelta cuesta ~130 ms y la ficha pasaba de 14 consultas.
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -14,10 +17,12 @@ enum UserRole {
   VENDEDOR
 }
 
+// LOST es recuperable (sigue en el tablero); REJECTED es la decisión de no continuar y va a la papelera.
 enum DealStatus {
   OPEN
   WON
   LOST
+  REJECTED
 }
 
 enum ActivityType {
@@ -54,13 +59,23 @@ enum StageRequirement {
   PROPOSAL_SENT
 }
 
+// Motivo de un cierre, perdido o rechazado: @wave/shared separa LOSS_REASONS y REJECTION_REASONS.
+// Conserva el nombre LossReason (y Deal.lossReason) para no renombrar columna ni tipo.
 enum LossReason {
-  PRICE
+  NEGOTIATION
   COMPETITOR
   NO_BUDGET
   NO_RESPONSE
   BAD_TIMING
   OTHER
+  NEED_POSTPONED
+  PRIORITY_CHANGE
+  CLIENT_DECLINED
+  PRODUCT_MISMATCH
+  REQUIREMENTS_UNMET
+  COMMERCIAL_RISK
+  OUT_OF_SCOPE
+  DO_NOT_CONTACT
 }
 
 model User {
@@ -298,6 +313,8 @@ model Quote {
   sentAt    DateTime?
   acceptedAt DateTime?
   acceptanceNote String?
+  /// Productos con los que se envió: [{ description, quantity, unitPrice, taxRate }]. Las anteriores al 2026-10-25, [].
+  items     Json        @default("[]")
   dealId    String
   deal      Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
   createdAt DateTime    @default(now())

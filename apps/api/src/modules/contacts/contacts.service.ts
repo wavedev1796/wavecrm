@@ -28,7 +28,19 @@ const contactDetailInclude = {
       currency: true,
       status: true,
       expectedClose: true,
+      closedAt: true,
+      lossReason: true,
       stage: { select: { id: true, name: true, color: true } },
+      // Recorrido: el último movimiento de etapa del negocio.
+      stageHistory: {
+        select: {
+          changedAt: true,
+          fromStage: { select: { name: true } },
+          toStage: { select: { name: true } },
+        },
+        orderBy: [{ changedAt: "desc" }, { id: "desc" }],
+        take: 1,
+      },
     },
     orderBy: { updatedAt: "desc" },
   },

@@ -6,7 +6,8 @@
 export const USER_ROLES = ['ADMIN', 'VENDEDOR'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
-export const DEAL_STATUSES = ['OPEN', 'WON', 'LOST'] as const;
+// LOST sigue en el tablero (recuperable); REJECTED va a la papelera.
+export const DEAL_STATUSES = ['OPEN', 'WON', 'LOST', 'REJECTED'] as const;
 export type DealStatus = (typeof DEAL_STATUSES)[number];
 
 export const ACTIVITY_TYPES = ['CALL', 'EMAIL', 'MEETING', 'TASK'] as const;
@@ -18,8 +19,47 @@ export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number];
 export const QUOTE_STATUSES = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'SUPERSEDED'] as const;
 export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
 
-export const LOSS_REASONS = ['PRICE', 'COMPETITOR', 'NO_BUDGET', 'NO_RESPONSE', 'BAD_TIMING', 'OTHER'] as const;
-export type LossReason = (typeof LOSS_REASONS)[number];
+// Motivo de un cierre (enum LossReason), perdido o rechazado. Cada cierre elige de su lista; OTHER vale para los dos.
+export const CLOSE_REASONS = [
+  'NEGOTIATION',
+  'COMPETITOR',
+  'NO_BUDGET',
+  'NO_RESPONSE',
+  'BAD_TIMING',
+  'OTHER',
+  'NEED_POSTPONED',
+  'PRIORITY_CHANGE',
+  'CLIENT_DECLINED',
+  'PRODUCT_MISMATCH',
+  'REQUIREMENTS_UNMET',
+  'COMMERCIAL_RISK',
+  'OUT_OF_SCOPE',
+  'DO_NOT_CONTACT',
+] as const;
+export type LossReason = (typeof CLOSE_REASONS)[number];
+
+// Perdido: la venta no se concretó por algo que puede cambiar.
+export const LOSS_REASONS = [
+  'NO_BUDGET',
+  'COMPETITOR',
+  'BAD_TIMING',
+  'NO_RESPONSE',
+  'NEED_POSTPONED',
+  'NEGOTIATION',
+  'PRIORITY_CHANGE',
+  'OTHER',
+] as const satisfies readonly LossReason[];
+
+// Rechazado: decisión explícita de no continuar, del cliente o de la empresa.
+export const REJECTION_REASONS = [
+  'CLIENT_DECLINED',
+  'PRODUCT_MISMATCH',
+  'REQUIREMENTS_UNMET',
+  'COMMERCIAL_RISK',
+  'OUT_OF_SCOPE',
+  'DO_NOT_CONTACT',
+  'OTHER',
+] as const satisfies readonly LossReason[];
 
 // Requisitos para entrar a una etapa (Stage.requirements). Cada etapa elige los suyos; se suman los de las anteriores.
 export const STAGE_REQUIREMENTS = [
@@ -42,6 +82,7 @@ export const TRANSITION_CHECKS = [
   'FINAL_AMOUNT',
   'CLOSED_AT',
   'LOSS_REASON',
+  'REJECTION_REASON',
   'REASON',
 ] as const;
 export type TransitionCheck = (typeof TRANSITION_CHECKS)[number];

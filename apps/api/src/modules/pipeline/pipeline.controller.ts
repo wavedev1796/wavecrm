@@ -22,8 +22,10 @@ import {
   CreateDealDto,
   CreatePipelineDto,
   CreateStageDto,
+  DeleteDealsDto,
   LoseDealDto,
   MoveDealDto,
+  RejectDealDto,
   ReopenDealDto,
   SaveDealItemsDto,
   TransitionQueryDto,
@@ -83,6 +85,12 @@ export class PipelineController {
   }
   @Get("deals") listDeals(@Query() query: ListDealsDto): Promise<unknown> {
     return this.service.listDeals(query);
+  }
+  @Post("deals/rejected/delete") @HttpCode(200) deleteRejected(
+    @Body() dto: DeleteDealsDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.service.deleteRejected(dto.ids, user.sub);
   }
   @Post("deals") createDeal(
     @Body() dto: CreateDealDto,
@@ -148,6 +156,13 @@ export class PipelineController {
     @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
     return this.service.transition(id, "LOST", dto, actor(user));
+  }
+  @Post("deals/:id/reject") @HttpCode(200) reject(
+    @Param("id") id: string,
+    @Body() dto: RejectDealDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.transition(id, "REJECTED", dto, actor(user));
   }
   @Post("deals/:id/reopen") @HttpCode(200) reopen(
     @Param("id") id: string,

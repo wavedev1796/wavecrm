@@ -8,7 +8,7 @@ import {
 } from "@wave/shared";
 
 // Reglas de transición entre etapas: una función pura, sin HTTP ni Prisma, que usan todos los caminos
-// (arrastre, selector, edición, ganar, perder, reabrir y alta). Decide qué falta; el servicio escribe.
+// (arrastre, selector, edición, ganar, perder, rechazar, reabrir y alta). Decide qué falta; el servicio escribe.
 
 export type GateStage = {
   id: string;
@@ -41,6 +41,7 @@ export type GateTarget =
   | { kind: "stage"; stage: GateStage }
   | { kind: "won"; stage: GateStage | null }
   | { kind: "lost" }
+  | { kind: "rejected" }
   | { kind: "reopen"; stage: GateStage };
 export type GateInput = { reason?: string; closedAt?: Date; lossReason?: string };
 export type Pending = { code: TransitionCheck; message: string };
@@ -60,6 +61,7 @@ export const CHECK_MESSAGES: Record<TransitionCheck, string> = {
     "El importe de la propuesta aceptada no coincide con el de los productos. Registra y acepta una nueva.",
   CLOSED_AT: "Ingresa la fecha real de cierre; no puede ser futura.",
   LOSS_REASON: "Elige el motivo de la pérdida.",
+  REJECTION_REASON: "Elige el motivo del rechazo.",
   REASON: "Indica el motivo del cambio.",
 };
 
@@ -101,8 +103,8 @@ export function pendingChecks(
   const require = (codes: Set<StageRequirement>) => {
     for (const code of codes) if (!MET[code](facts)) missing.add(code);
   };
-  if (target.kind === "lost") {
-    if (!input.lossReason) missing.add("LOSS_REASON");
+  if (target.kind === "lost" || target.kind === "rejected") {
+    if (!input.lossReason) missing.add(target.kind === "lost" ? "LOSS_REASON" : "REJECTION_REASON");
   } else if (target.kind === "won") {
     // ponytail: el negocio cerrado no necesita seguimiento; pedirlo obligaría a inventar una actividad.
     const pipelineId = target.stage?.pipelineId ?? current?.pipelineId ?? "";

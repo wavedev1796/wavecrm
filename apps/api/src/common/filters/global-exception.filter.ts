@@ -1,4 +1,4 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
 // Nest convierte el SyntaxError del body parser (JSON roto), el URIError de una ruta mal codificada y los
@@ -13,6 +13,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request>();
     const status = statusOf(exception);
+    // El usuario solo ve «Ocurrió un error inesperado» (o el 503 de una transacción caducada): la causa queda en el log.
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR)
+      new Logger(GlobalExceptionFilter.name).error(
+        `${request.method} ${request.url} respondió ${status}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
     response.status(status).json({
       error: {
         status,

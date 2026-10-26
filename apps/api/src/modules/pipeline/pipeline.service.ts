@@ -4,10 +4,11 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
   UnprocessableEntityException,
 } from "@nestjs/common";
 import { Prisma } from "@wave/database";
-import type { LossReason, UserRole } from "@wave/shared";
+import type { ActivityType, LossReason, UserRole } from "@wave/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   AcceptQuoteDto,
@@ -69,6 +70,7 @@ const dealDetailInclude = {
       validUntil: true,
       acceptedAt: true,
       acceptanceNote: true,
+      items: true,
     },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   },
@@ -95,6 +97,8 @@ export type TransitionInput = {
   closedAt?: Date;
   lossReason?: LossReason;
   lossDetail?: string | null;
+  /** Solo al perder: seguimiento opcional, como actividad pendiente. */
+  followUp?: { type: ActivityType; subject: string; dueAt: Date };
   /** Solo al editar: el pipeline de destino si cambia. */
   pipelineId?: string;
 };
@@ -110,11 +114,11 @@ const gateInclude = {
   },
 } satisfies Prisma.DealInclude;
 type GateDeal = Prisma.DealGetPayload<{ include: typeof gateInclude }>;
-/** Filtro único de una columna del tablero: una etapa muestra sus abiertos y ganados; LOST, los perdidos. */
+/** Filtro único de una columna del tablero: una etapa muestra sus abiertos y ganados; LOST, los perdidos. Los rechazados, solo la papelera. */
 const columnWhere = (pipelineId: string, column: string): Prisma.DealWhereInput =>
   column === "LOST"
     ? { pipelineId, status: "LOST" }
-    : { pipelineId, stageId: column, status: { not: "LOST" } };
+    : { pipelineId, stageId: column, status: { in: ["OPEN", "WON"] } };
 const FORBIDDEN_CLOSED =
   "Solo un administrador puede reabrir o modificar un negocio cerrado.";
 
@@ -261,6 +265,7 @@ export class PipelineService {
       pipelineId: query.pipelineId,
       stageId: query.stageId,
       ownerId: query.ownerId,
+      status: query.status,
       ...(query.search && {
         title: { contains: query.search, mode: "insensitive" },
       }),
@@ -319,7 +324,9 @@ export class PipelineService {
             ...stage,
             ...(await column(
               stage.id,
-              groups.filter((g) => g.stageId === stage.id && g.status !== "LOST"),
+              groups.filter(
+                (g) => g.stageId === stage.id && (g.status === "OPEN" || g.status === "WON"),
+              ),
             )),
           });
         return {
@@ -436,16 +443,46 @@ export class PipelineService {
       return tx.deal.delete({ where: { id } });
     });
   }
-  findDeal(id: string) {
-    return this.prisma.$transaction((tx) => this.detail(tx, id), {
-      isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
-      timeout: 15000, // la ficha lee negocio, productos, cotizaciones, actividades, historial y cierres: con 5 s caduca contra Neon
+  /** Papelera: borra de una vez los rechazados elegidos (cualquier rol); cada uno deja una fila DELETED en la auditoría. */
+  deleteRejected(ids: string[], actorId: string) {
+    return this.write(async (tx) => {
+      const deals = await tx.deal.findMany({
+        where: { id: { in: ids }, status: "REJECTED" },
+        select: {
+          id: true,
+          title: true,
+          value: true,
+          lossReason: true,
+          lossDetail: true,
+          contactId: true,
+          companyId: true,
+        },
+      });
+      if (deals.length !== ids.length)
+        throw new ConflictException(
+          "Solo se eliminan negocios rechazados. Actualiza la papelera.",
+        );
+      await tx.deal.deleteMany({ where: { id: { in: ids }, status: "REJECTED" } });
+      await tx.auditLog.createMany({
+        data: deals.map(({ id, value, ...deal }) => ({
+          action: "DELETED",
+          entityType: "Deal",
+          entityId: id,
+          userId: actorId,
+          changes: { ...deal, value: value.toFixed(2) },
+        })),
+      });
+      return { deleted: deals.length };
     });
+  }
+  // Sin transacción: solo lee, y con relationJoins la ficha son dos consultas en paralelo.
+  findDeal(id: string) {
+    return this.detail(this.prisma, id);
   }
   saveItems(id: string, items: DealItemDto[], actor: Actor) {
     return this.write(async (tx) => {
       const deal = await this.requireDeal(tx, id);
-      if (deal.status === "WON")
+      if (deal.status === "WON" || deal.status === "REJECTED")
         throw new ConflictException("Reabre el negocio para cambiar sus productos.");
       this.assertCanChange(deal, actor);
       const totals = dealTotals(items);
@@ -461,32 +498,30 @@ export class PipelineService {
       // Sin productos el monto vuelve a escribirse a mano y conserva el último valor.
       if (items.length)
         await tx.deal.update({ where: { id }, data: { value: subtotal } });
-      // Una propuesta con otros importes deja de valer: queda desactualizada, nunca se borra.
-      const live = await tx.quote.findMany({
-        where: { dealId: id, status: { in: ["SENT", "ACCEPTED"] } },
-        select: { id: true, subtotal: true, tax: true, total: true },
-      });
-      const changed = live
-        .filter(
+      // Una propuesta con otros importes deja de valer.
+      const live = await this.liveQuotes(tx, id);
+      await this.supersede(
+        tx,
+        id,
+        live.filter(
           (quote) =>
             !totals.subtotal.equals(quote.subtotal) ||
             !totals.tax.equals(quote.tax) ||
             !totals.total.equals(quote.total),
-        )
-        .map((quote) => quote.id);
-      if (changed.length)
-        await tx.quote.updateMany({
-          where: { id: { in: changed } },
-          data: { status: "SUPERSEDED" },
-        });
+        ),
+        actor.id,
+      );
       return this.detail(tx, id);
     });
   }
-  /** Propuesta enviada: COT con los totales de los productos; la enviada o aceptada anterior queda desactualizada. */
+  /** Propuesta enviada: COT con los productos y sus totales; la enviada o aceptada anterior queda desactualizada. */
   createQuote(dealId: string, dto: CreateQuoteDto, actor: Actor) {
     return this.write(async (tx) => {
       await this.requireOpenDeal(tx, dealId, actor);
-      const items = await tx.dealItem.findMany({ where: { dealId } });
+      const items = await tx.dealItem.findMany({
+        where: { dealId },
+        orderBy: { position: "asc" },
+      });
       if (!items.length)
         throw new BadRequestException(
           "Agrega sus productos antes de registrar la propuesta.",
@@ -500,24 +535,35 @@ export class PipelineService {
         throw new BadRequestException(
           "La vigencia debe ser igual o posterior a la fecha de envío.",
         );
-      await tx.quote.updateMany({
-        where: { dealId, status: { in: ["SENT", "ACCEPTED"] } },
-        data: { status: "SUPERSEDED" },
-      });
+      await this.supersede(tx, dealId, await this.liveQuotes(tx, dealId), actor.id);
       const last = await tx.quote.findFirst({
         where: { number: { startsWith: "COT-" } },
         orderBy: { number: "desc" },
         select: { number: true },
       });
+      const number = nextQuoteNumber(last?.number);
+      const totals = dealTotals(items);
       await tx.quote.create({
         data: {
-          number: nextQuoteNumber(last?.number),
+          number,
           status: "SENT",
           dealId,
           sentAt,
           validUntil,
-          ...dealTotals(items),
+          ...totals,
+          // Copia de lo enviado: si después cambian los productos, la propuesta conserva su detalle.
+          items: items.map(({ description, quantity, unitPrice, taxRate }) => ({
+            description,
+            quantity: quantity.toString(),
+            unitPrice: unitPrice.toString(),
+            taxRate,
+          })),
         },
+      });
+      await this.audit(tx, dealId, "QUOTE_SENT", actor.id, {
+        quoteNumber: number,
+        total: totals.total.toFixed(2),
+        validUntil: validUntil.toISOString(),
       });
       return this.detail(tx, dealId);
     });
@@ -541,11 +587,16 @@ export class PipelineService {
         where: { id: quoteId },
         data: { status: "ACCEPTED", acceptedAt, acceptanceNote: dto.acceptanceNote },
       });
+      await this.audit(tx, dealId, "QUOTE_ACCEPTED", actor.id, {
+        quoteNumber: quote.number,
+        acceptedAt: acceptedAt.toISOString(),
+        acceptanceNote: dto.acceptanceNote,
+      });
       return this.detail(tx, dealId);
     });
   }
   /**
-   * Único camino para cambiar de etapa o de estado: mover, ganar (`WON`), perder (`LOST`), reabrir (`REOPEN`).
+   * Único camino para cambiar de etapa o de estado: mover, ganar (`WON`), perder (`LOST`), rechazar (`REJECTED`), reabrir (`REOPEN`).
    * Comprueba permiso, etapa vista y requisitos con datos guardados; escribe negocio, historial y auditoría juntos.
    */
   transition(id: string, to: string, input: TransitionInput, actor: Actor) {
@@ -554,23 +605,15 @@ export class PipelineService {
       return this.detail(tx, id);
     });
   }
-  /** Lo que falta para un cambio, sin escribir: con esto la web arma el modal. */
-  previewTransition(id: string, to: string, actor: Actor) {
-    return this.prisma.$transaction(
-      async (tx) => {
-        const { deal, pending } = await this.plan(tx, id, to, {}, actor);
-        const quote = deal.quotes[0];
-        return {
-          pending,
-          quote: quote ? { id: quote.id, number: quote.number, status: quote.status } : null,
-          items: deal.items.length,
-        };
-      },
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
-        timeout: 15000,
-      },
-    );
+  /** Lo que falta para un cambio, sin escribir: con esto la web arma el modal. Sin transacción: transition() vuelve a comprobar todo. */
+  async previewTransition(id: string, to: string, actor: Actor) {
+    const { deal, pending } = await this.plan(this.prisma, id, to, {}, actor);
+    const quote = deal.quotes[0];
+    return {
+      pending,
+      quote: quote ? { id: quote.id, number: quote.number, status: quote.status } : null,
+      items: deal.items.length,
+    };
   }
   async history(id: string) {
     if (!(await this.prisma.deal.count({ where: { id } })))
@@ -588,6 +631,8 @@ export class PipelineService {
   createActivity(dealId: string, dto: CreateDealActivityDto, actorId: string) {
     return this.write(async (tx) => {
       const deal = await this.requireDeal(tx, dealId);
+      if (deal.status === "REJECTED")
+        throw new ConflictException("Reabre el negocio para registrar actividades.");
       const { completedAt, ...fields } = dto;
       if (completedAt && toDay(completedAt) > ecuadorToday())
         throw new BadRequestException(
@@ -622,6 +667,27 @@ export class PipelineService {
       });
     });
   }
+  private liveQuotes(tx: Tx, dealId: string) {
+    return tx.quote.findMany({
+      where: { dealId, status: { in: ["SENT", "ACCEPTED"] } },
+      select: { id: true, number: true, subtotal: true, tax: true, total: true },
+    });
+  }
+  /** Una propuesta que deja de valer queda desactualizada, nunca se borra, y la línea de tiempo lo registra. */
+  private async supersede(
+    tx: Tx,
+    dealId: string,
+    quotes: { id: string; number: string }[],
+    userId: string,
+  ) {
+    if (!quotes.length) return;
+    await tx.quote.updateMany({
+      where: { id: { in: quotes.map((quote) => quote.id) } },
+      data: { status: "SUPERSEDED" },
+    });
+    for (const quote of quotes)
+      await this.audit(tx, dealId, "QUOTE_SUPERSEDED", userId, { quoteNumber: quote.number });
+  }
   private async requireDeal(tx: Tx, id: string) {
     const deal = await tx.deal.findUnique({ where: { id }, include: { stage: true } });
     if (!deal) throw new NotFoundException("Negocio no encontrado.");
@@ -629,19 +695,22 @@ export class PipelineService {
   }
   /** Ficha completa: negocio, productos, cotizaciones, actividades, historial y cierres (AuditLog). */
   private async detail(tx: Tx, id: string) {
-    const deal = await tx.deal.findUnique({ where: { id }, include: dealDetailInclude });
+    // En paralelo fuera de una transacción; dentro, Prisma las encola en su conexión.
+    const [deal, closures] = await Promise.all([
+      tx.deal.findUnique({ where: { id }, include: dealDetailInclude }),
+      tx.auditLog.findMany({
+        where: { entityType: "Deal", entityId: id },
+        select: {
+          id: true,
+          action: true,
+          changes: true,
+          createdAt: true,
+          user: { select: { id: true, name: true } },
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      }),
+    ]);
     if (!deal) throw new NotFoundException("Negocio no encontrado.");
-    const closures = await tx.auditLog.findMany({
-      where: { entityType: "Deal", entityId: id },
-      select: {
-        id: true,
-        action: true,
-        changes: true,
-        createdAt: true,
-        user: { select: { id: true, name: true } },
-      },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    });
     return { ...deal, closures };
   }
   private assertCanSetRequirements(actor: Actor) {
@@ -679,7 +748,8 @@ export class PipelineService {
   ): Promise<{ deal: GateDeal; target: GateTarget | null; pending: Pending[] }> {
     const deal = await tx.deal.findUnique({ where: { id }, include: gateInclude });
     if (!deal) throw new NotFoundException("Negocio no encontrado.");
-    this.assertCanChange(deal, actor);
+    // Cualquiera pasa un perdido a rechazado; cualquier otro cambio a un cerrado es solo de ADMIN.
+    if (to !== "REJECTED" || deal.status !== "LOST") this.assertCanChange(deal, actor);
     if (input.fromStageId && input.fromStageId !== deal.stageId)
       throw new ConflictException(
         "Otra persona movió este negocio. Actualiza el tablero.",
@@ -722,10 +792,17 @@ export class PipelineService {
         );
       return { kind: "lost" };
     }
+    if (to === "REJECTED") {
+      if (deal.status === "REJECTED")
+        throw new ConflictException("Este negocio ya está rechazado.");
+      if (deal.status === "WON")
+        throw new ConflictException("Reabre el negocio antes de rechazarlo.");
+      return { kind: "rejected" };
+    }
     if (to === "REOPEN") {
       if (deal.status === "OPEN")
         throw new ConflictException("Este negocio ya está abierto.");
-      // Un ganado vuelve a la etapa de donde vino; un perdido se queda donde estaba.
+      // Un ganado vuelve a la etapa de donde vino; un perdido o un rechazado se queda donde estaba.
       const stageId =
         deal.status === "WON" && deal.stage.probability === 100
           ? await this.originStage(tx, deal)
@@ -743,7 +820,7 @@ export class PipelineService {
         if (stage?.id === deal.stageId && to !== "WON") return null;
         throw new ConflictException("Este negocio ya está ganado.");
       }
-      if (deal.status === "LOST")
+      if (deal.status !== "OPEN")
         throw new ConflictException("Reabre el negocio antes de ganarlo.");
       return { kind: "won", stage };
     }
@@ -770,16 +847,18 @@ export class PipelineService {
     deal: GateDeal,
     today: Date,
   ): Promise<GateFacts> {
-    const interactions = await tx.activity.count({
-      where: {
-        dealId: deal.id,
-        status: "COMPLETED",
-        type: { in: ["CALL", "EMAIL", "MEETING"] },
-      },
-    });
-    const upcoming = await tx.activity.count({
-      where: { dealId: deal.id, status: "PENDING", dueAt: { gte: today } },
-    });
+    const [interactions, upcoming] = await Promise.all([
+      tx.activity.count({
+        where: {
+          dealId: deal.id,
+          status: "COMPLETED",
+          type: { in: ["CALL", "EMAIL", "MEETING"] },
+        },
+      }),
+      tx.activity.count({
+        where: { dealId: deal.id, status: "PENDING", dueAt: { gte: today } },
+      }),
+    ]);
     const quote = deal.quotes[0];
     return {
       status: deal.status,
@@ -811,6 +890,9 @@ export class PipelineService {
     const reason = input.reason?.trim() || null;
     if (target.kind === "lost") {
       const lossDetail = input.lossDetail ?? null;
+      const followUp = input.followUp;
+      if (followUp && toDay(followUp.dueAt) < ecuadorToday())
+        throw new BadRequestException("El seguimiento debe ser de hoy en adelante.");
       await tx.deal.update({
         where: { id },
         data: {
@@ -820,9 +902,52 @@ export class PipelineService {
           lossDetail,
         },
       });
+      // Perdido es recuperable: conserva propuesta y actividades, y el seguimiento queda pendiente.
+      if (followUp)
+        await tx.activity.create({
+          data: {
+            ...followUp,
+            dealId: id,
+            contactId: deal.contactId,
+            companyId: deal.companyId,
+            assigneeId: actor.id,
+          },
+        });
       await this.audit(tx, id, "LOST", actor.id, {
         lossReason: input.lossReason ?? null,
         lossDetail,
+        followUpAt: followUp ? toDay(followUp.dueAt).toISOString() : null,
+      });
+      return;
+    }
+    if (target.kind === "rejected") {
+      const lossDetail = input.lossDetail ?? null;
+      await tx.deal.update({
+        where: { id },
+        data: {
+          status: "REJECTED",
+          closedAt: ecuadorToday(),
+          lossReason: input.lossReason,
+          lossDetail,
+        },
+      });
+      // Rechazar invalida el proceso: la propuesta vigente queda rechazada y las actividades pendientes, canceladas.
+      const quotes = await this.liveQuotes(tx, id);
+      if (quotes.length)
+        await tx.quote.updateMany({
+          where: { id: { in: quotes.map((quote) => quote.id) } },
+          data: { status: "REJECTED" },
+        });
+      const cancelled = await tx.activity.updateMany({
+        where: { dealId: id, status: "PENDING" },
+        data: { status: "CANCELLED" },
+      });
+      await this.audit(tx, id, "REJECTED", actor.id, {
+        lossReason: input.lossReason ?? null,
+        lossDetail,
+        from: deal.status,
+        quotes: quotes.map((quote) => quote.number),
+        cancelledActivities: cancelled.count,
       });
       return;
     }
@@ -908,7 +1033,14 @@ export class PipelineService {
   private audit(
     tx: Tx,
     dealId: string,
-    action: "WON" | "LOST" | "REOPENED",
+    action:
+      | "WON"
+      | "LOST"
+      | "REJECTED"
+      | "REOPENED"
+      | "QUOTE_SENT"
+      | "QUOTE_ACCEPTED"
+      | "QUOTE_SUPERSEDED",
     userId: string,
     changes: Prisma.InputJsonObject,
   ) {
@@ -954,6 +1086,11 @@ export class PipelineService {
         if (error.code === "P2034")
           throw new ConflictException(
             "Otra persona modifico estos datos. Actualiza e intenta de nuevo.",
+          );
+        // La transacción pasó los 15 s (picos de latencia contra Neon): Prisma ya la revirtió.
+        if (error.code === "P2028")
+          throw new ServiceUnavailableException(
+            "El servidor tardó demasiado; no se guardó nada. Intenta de nuevo.",
           );
       }
       throw error;
