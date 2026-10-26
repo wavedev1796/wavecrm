@@ -95,3 +95,19 @@ Bloque añadido por Zaith Manangón, con autorización del usuario.
 ### Implementación
 
 El listado pasó a `app/(dashboard)/contactos/(listado)/page.tsx`, con su `loading.tsx`; el resumen y la tabla cargan dentro de un `Suspense` por consulta, así que el esqueleto aparece también al buscar, filtrar o paginar. La ficha anuncia su propio texto de carga. La URL no cambia. Detalle: [Esqueletos de carga](../Sprint%203/Esqueletos%20de%20carga.md).
+
+## Recorrido de los negocios (2026-10-25)
+
+Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*, Sprint 3), con autorización del usuario del 2026-10-25.
+
+### Implementación
+
+- La ficha de contacto muestra cada negocio con `DealJourney` (`apps/web/features/pipeline/deal-journey.tsx`): pipeline y etapa, estado con el motivo del cierre, y la fecha del último movimiento o del cierre.
+
+### Decisiones
+
+- **Coordinación con *Revisión del flujo comercial*.** Detalle en [Revisión del flujo comercial](../Sprint%203/Revisi%C3%B3n%20del%20flujo%20comercial.md).
+
+### Validación
+
+- `deal-journey.test.tsx` y la e2e *perdido con seguimiento → rechazado* (abre la ficha del contacto).

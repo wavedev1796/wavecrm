@@ -72,3 +72,11 @@ Input (`.input`) y select (componente `Select`, clase `.select-control`) compart
 - Campo obligatorio: `*` después de la etiqueta, en el color de la etiqueta y oculto al lector de pantalla (el control lleva `aria-required`). El formulario lo explica en su cabecera.
 - Ayuda bajo el campo (`.field-hint`): `0.72rem / 550`, `--wave-muted-strong`, enlazada al control con `aria-describedby`.
 
+
+## Estados del negocio y papelera (2026-10-25)
+
+- `Badge` tiene cinco tonos: `blue`, `success`, `warning`, `danger` y `neutral`. `danger` (texto `--wave-danger` sobre `--wave-danger-soft`) marca un negocio **Rechazado**; Perdido sigue en `warning`.
+- Zona **Rechazado** del tablero: última columna, fondo `--wave-page`, borde discontinuo `#F1D4D4` y punto `--wave-danger`. Solo recibe tarjetas (no las lista) y cierra con *Ver papelera*, un enlace con la piel de *Ver más*.
+- Seguimiento opcional del modal (`.transition-followup`): el mismo `fieldset` de los requisitos de etapa (borde `--wave-line`, radio `10px`), con `10px` entre campos.
+- Productos de una propuesta (`.deal-quote-lines`): `<details>` nativo bajo la fila, resumen azul `0.82rem / 600`; cada línea en tres columnas (cantidad × descripción, precio con IVA, subtotal) a `0.86rem`, con el detalle en `--wave-muted`.
+- Papelera: la tabla lleva una columna de casillas de 44 px (`accent-color: --wave-blue`) y una barra de selección de alto fijo (68 px) para que el aviso del resultado no mueva la tabla. El icono de la cabecera usa la piel de `.contact-list-mark` en `--wave-danger`.

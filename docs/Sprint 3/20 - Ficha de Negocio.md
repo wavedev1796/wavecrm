@@ -154,6 +154,25 @@ Bloque añadido por Zaith Manangón (*Reglas de transición del pipeline*), con 
 
 - `deal-items.test.tsx`, `deal-actions.test.tsx`, `deal-qualification.test.tsx`, `deal-quotes.test.tsx`, `deal-timeline.test.tsx` y `[id]/page.test.tsx`. Cifras en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).
 
+## Productos en la propuesta y trazabilidad (2026-10-25)
+
+Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*), con autorización del usuario del 2026-10-25.
+
+### Implementación
+
+- Cada propuesta guarda la copia de sus productos (`Quote.items`) y la ficha los muestra bajo la propuesta. Las anteriores dicen «Registrada sin detalle de productos».
+- La línea de tiempo muestra los eventos de cada propuesta: `QUOTE_SENT`, `QUOTE_ACCEPTED`, `QUOTE_SUPERSEDED` y el rechazo, con quién y cuándo.
+- *Rechazar* en la ficha de un negocio abierto o perdido y tarjeta *Cierre* del rechazado. Productos y actividades quedan bloqueados mientras esté rechazado.
+- `relationJoins`: la ficha pasa de 14 consultas a 2.
+
+### Decisiones
+
+- **Coordinación con *Revisión del flujo comercial*.** Detalle en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).
+
+### Validación
+
+- `deal-quotes`, `deal-timeline`, `deal-actions`, `deal-items` y `[id]/page` con sus pruebas. Cifras en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).
+
 ## Pendientes
 
 - Las dos bases tienen una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`).

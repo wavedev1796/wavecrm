@@ -48,7 +48,7 @@ El ticket no trae criterios escritos; salen de los del tablero: motivo de pérdi
 - No se puede ganar sin productos: "Agrega sus productos en la ficha antes de ganarlo."
 - Al ganar se crea, en la misma transacción, la cotización `COT-000001` (6 dígitos, el mayor existente más 1) en `DRAFT`, con subtotal, IVA y total de los productos. No copia líneas: lee las del negocio, que quedan bloqueadas mientras esté ganado.
 - Reabrir un ganado solo si su cotización sigue en borrador; entonces se elimina y el negocio vuelve a la etapa de la que venía. Con una cotización ya enviada responde `409`.
-- Motivo de pérdida con lista fija (`PRICE`, `COMPETITOR`, `NO_BUDGET`, `NO_RESPONSE`, `BAD_TIMING`, `OTHER`) más un detalle, obligatorio solo con "Otro" (máximo 500).
+- Motivo de pérdida con lista fija (`PRICE`, que desde el 2026-10-25 es `NEGOTIATION`, `COMPETITOR`, `NO_BUDGET`, `NO_RESPONSE`, `BAD_TIMING`, `OTHER`) más un detalle, obligatorio solo con "Otro" (máximo 500).
 - `closedAt` es un día guardado a las 00:00 UTC, como `expectedClose`, y se muestra con `timeZone: "UTC"`. "Hoy" es el día de Ecuador (UTC-5) y la fecha de ganado no puede ser futura.
 - Los cierres se registran en `AuditLog` (`WON`, `LOST`, `REOPENED`). La auditoría `REOPENED` guarda `deletedQuotes` (arreglo) en lugar del `deletedQuote?` del diseño, porque un negocio puede tener más de una cotización en borrador.
 - Billing/ERP queda fuera del CRM: el enganche es la cotización en borrador.
@@ -89,6 +89,24 @@ Bloque añadido por Zaith Manangón (*Reglas de transición del pipeline*), con 
 ### Validación
 
 - `pipeline.service.test.cjs` y `pipeline.http.test.cjs` reescritos para el cierre nuevo. Cifras en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).
+
+## Perdido recuperable y rechazado (2026-10-25)
+
+Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*), con autorización del usuario del 2026-10-25.
+
+### Implementación
+
+- Perdido y rechazado son cierres distintos. Perdido sigue en el tablero, conserva la propuesta y ofrece un seguimiento; rechazado invalida la propuesta y las actividades pendientes y va a la papelera.
+- Motivos propios de cada cierre. `PRICE` pasa a `NEGOTIATION` («Problemas de negociación»): los negocios y las auditorías que lo tenían se actualizan en la migración.
+- Reabrir, solo de ADMIN, también vale para un rechazado.
+
+### Decisiones
+
+- **Coordinación con *Revisión del flujo comercial*.** Reemplaza la lista de motivos de este ticket. Detalle en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).
+
+### Validación
+
+- `pipeline.service.test.cjs` y `pipeline.http.test.cjs` cubren rechazar, perder con seguimiento y reabrir un rechazado. Cifras en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).
 
 ## Pendientes
 

@@ -119,3 +119,20 @@ Bloque anadido por Zaith Manangon, con autorizacion del usuario, junto con los [
 ### Validacion
 
 - `contacts-companies.service.test.cjs` (+1) y `documentos.http.test.cjs` (+1, rama `pruebas`).
+
+## Recorrido de los negocios en la ficha (2026-10-25)
+
+Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*, Sprint 3), con autorización del usuario del 2026-10-25.
+
+### Implementación
+
+- `GET /contacts/:id` y `GET /companies/:id`: cada negocio trae `closedAt`, `lossReason` y su último movimiento (`stageHistory`, `take: 1`, con etapa de origen y de destino).
+- `relationJoins` activado en todo el API: cada `include` se resuelve en la misma consulta.
+
+### Decisiones
+
+- **Coordinación con *Revisión del flujo comercial*.** Trazabilidad del cliente pedida por el tester. Detalle en [Revisión del flujo comercial](../Sprint%203/Revisi%C3%B3n%20del%20flujo%20comercial.md).
+
+### Validación
+
+- `contacts.service.test.cjs` y `companies.service.test.cjs` comprueban los campos nuevos del `include`.

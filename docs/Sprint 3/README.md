@@ -21,6 +21,8 @@ Configurar el embudo comercial, administrar negocios desde la API y moverlos en 
 | — | [Estilos globales por partes](Estilos globales por partes.md) | Zaith Manangón | Completo (5/5 criterios) |
 | — | [Esqueletos de carga](Esqueletos de carga.md) | Zaith Manangón | Completo (5/5 criterios) |
 | — | [Cobertura y orden de pruebas](Cobertura y orden de pruebas.md) | Zaith Manangón | Completo (5/5 criterios) |
+| — | [Reglas de transición del pipeline](Reglas de transición del pipeline.md) | Zaith Manangón | En curso (0/15 criterios) |
+| — | [Revisión del flujo comercial](Revisión del flujo comercial.md) | Zaith Manangón | Completo (12/12 criterios) |
 
 ## Decisiones
 
@@ -50,3 +52,10 @@ Configurar el embudo comercial, administrar negocios desde la API y moverlos en 
 - Ganar crea la cotización `COT-000001` en borrador; perder exige motivo; reabrir deshace el cierre. La facturación queda fuera del CRM.
 - Revisión del 2026-10-10: 123 pruebas unitarias API, 237 pruebas web, 10 pruebas HTTP del pipeline y 3 pruebas de navegador aprobadas; lint y build sin errores.
 - La migración `20261010120000_deal_items_close` está aplicada en `pruebas` y `development` (esta desde el 2026-10-11, junto con las dos de contactos del Sprint 2 que le faltaban).
+
+## Revisión del flujo comercial (2026-10-25)
+
+- Perdido es un cierre recuperable (sigue en el tablero, con seguimiento opcional) y Rechazado invalida el proceso y va a la papelera `/pipeline/papelera`, donde se eliminan varios a la vez.
+- El modal de cambio de etapa recomienda completar la ficha, valida antes de guardar y ya no falla al mover a Propuesta.
+- Cada propuesta guarda sus productos, la línea de tiempo muestra sus eventos y las fichas de contacto y empresa, el recorrido de cada negocio.
+- `relationJoins` y menos repintados bajan los tiempos del recorrido. Diagrama del flujo y cifras en [Revisión del flujo comercial](Revisión del flujo comercial.md).

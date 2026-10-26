@@ -167,3 +167,20 @@ Pendiente. Pruebas previstas, una por caso obligatorio del pedido:
 | Arrastre y selector con las mismas reglas y el mismo modal | `pipeline-board.test.tsx` |
 | Recorrido real contra Neon `pruebas` | `apps/api/test/integracion/pipeline.http.test.cjs` |
 | IVA libre y paginación | `deal-items.test.tsx`, `pipeline-board.test.tsx` |
+
+## Perdido y rechazado separados (2026-10-25)
+
+Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*), con autorización del usuario del 2026-10-25.
+
+### Implementación
+
+- Nuevo destino `rejected` y pendiente `REJECTION_REASON` en `stage-gates.ts`. `LOST` pide motivos de pérdida y `REJECTED`, motivos de rechazo.
+- El modal valida antes de guardar y ofrece «Guardar e ir a la ficha» cuando un pendiente solo se completa allá.
+
+### Decisiones
+
+- **Coordinación con *Revisión del flujo comercial*.** Detalle en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).
+
+### Validación
+
+- `stage-gates.test.cjs` y `transition-dialog.test.tsx`. Cifras en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).

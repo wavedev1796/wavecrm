@@ -121,3 +121,24 @@ Bloque añadido por Zaith Manangón (*Reglas de transición del pipeline*), con 
 ### Validación
 
 - `pipeline.service.test.cjs`, `pipeline-config.service.test.cjs` y `pipeline.http.test.cjs` ajustados al contrato nuevo. Cifras en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).
+
+## Perdido, rechazado y papelera (2026-10-25)
+
+Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*), con autorización del usuario del 2026-10-25.
+
+### Implementación
+
+- `DealStatus` suma `REJECTED`. `POST /deals/:id/reject` rechaza un negocio abierto o perdido: la propuesta vigente pasa a `REJECTED` y las actividades pendientes, a `CANCELLED`. Cualquier usuario puede rechazar un perdido.
+- `POST /deals/:id/lose` admite un `followUp { type, subject, dueAt }` opcional que crea la actividad de seguimiento.
+- `GET /deals` filtra por `status` y `POST /deals/rejected/delete { ids }` borra varios rechazados, con una fila `DELETED` de auditoría por cada uno.
+- `LossReason`: `PRICE` pasa a `NEGOTIATION` y suma 8 motivos. Perdido y rechazado usan subconjuntos distintos (`LOSS_REASONS` y `REJECTION_REASONS` en `@wave/shared`).
+- `GET /deals/board`: las etapas muestran `OPEN` y `WON`, y los rechazados solo se cuentan en `metrics.rejected`.
+- `findDeal` y `previewTransition` leen sin transacción, y P2028 responde `503`.
+
+### Decisiones
+
+- **Coordinación con *Revisión del flujo comercial*.** Migración `20261025120000_rejected_and_quote_items` y `relationJoins` en todo el API. Detalle en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).
+
+### Validación
+
+- `pipeline.service`, `pipeline.dto`, `stage-gates`, `deal-rules` y `pipeline.http` cubren el rechazo, el seguimiento y la papelera. Cifras en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).

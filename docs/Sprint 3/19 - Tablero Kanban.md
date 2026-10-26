@@ -111,3 +111,22 @@ Bloque añadido por Zaith Manangón (*Reglas de transición del pipeline*), con 
 ### Validación
 
 - `pipeline-board.test.tsx`, `deal-history.test.tsx`, `pipeline-settings.test.tsx` y `e2e/pipeline.spec.ts` ajustados y ampliados. Cifras en [Reglas de transición del pipeline](Reglas%20de%20transici%C3%B3n%20del%20pipeline.md).
+
+## Zona Rechazado y modal que valida antes de guardar (2026-10-25)
+
+Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*), con autorización del usuario del 2026-10-25.
+
+### Implementación
+
+- Zona **Rechazado** al final del tablero: recibe tarjetas abiertas o perdidas, muestra la cantidad y enlaza a la papelera (`/pipeline/papelera`). El selector de la tarjeta suma «Rechazado».
+- El modal recomienda completar la ficha cuando falta algo, valida cada campo antes de guardar y, si un pendiente solo se completa en la ficha, ofrece «Guardar e ir a la ficha» en vez de responder `422`.
+- Perder ofrece un seguimiento opcional (3 meses por defecto); rechazar avisa que se invalidará el proceso.
+- Sin `router.refresh()` después de las server actions, y la página pide las opciones y el tablero en paralelo.
+
+### Decisiones
+
+- **Coordinación con *Revisión del flujo comercial*.** Corrige el error al mover a Propuesta que vio el tester. Detalle en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).
+
+### Validación
+
+- `pipeline-board.test.tsx`, `transition-dialog.test.tsx` y `actions.test.ts`, más dos e2e nuevas en `test/e2e/pipeline.spec.ts`. Cifras en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).
