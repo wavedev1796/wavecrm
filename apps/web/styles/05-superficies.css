@@ -25,6 +25,10 @@
   color: var(--wave-warning);
   background: var(--wave-warning-soft);
 }
+.badge--danger {
+  color: var(--wave-danger);
+  background: var(--wave-danger-soft);
+}
 .badge--neutral {
   color: var(--wave-muted-strong);
   background: #f0efe8;

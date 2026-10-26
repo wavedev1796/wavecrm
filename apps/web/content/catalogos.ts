@@ -22,6 +22,7 @@ export const ESTADO_NEGOCIO = {
   OPEN: "Abierto",
   WON: "Ganado",
   LOST: "Perdido",
+  REJECTED: "Rechazado",
 } as const satisfies Record<DealStatus, string>;
 
 export const TIPO_ACTIVIDAD = {
@@ -37,13 +38,22 @@ export const TIPO_DOCUMENTO = {
   PASAPORTE: { etiqueta: "Pasaporte", ejemplo: "AB123456" },
 } as const satisfies Record<DocumentType, { etiqueta: string; ejemplo: string }>;
 
-export const MOTIVO_PERDIDA = {
-  PRICE: "Precio",
-  COMPETITOR: "Eligió a la competencia",
-  NO_BUDGET: "Sin presupuesto",
-  NO_RESPONSE: "Sin respuesta del cliente",
-  BAD_TIMING: "No era el momento",
+// Motivos de perdido y de rechazado (LOSS_REASONS y REJECTION_REASONS de @wave/shared).
+export const MOTIVO_CIERRE = {
+  NEGOTIATION: "Problemas de negociación",
+  COMPETITOR: "Competencia",
+  NO_BUDGET: "Falta de presupuesto",
+  NO_RESPONSE: "Falta de respuesta",
+  BAD_TIMING: "Falta de tiempo",
   OTHER: "Otro",
+  NEED_POSTPONED: "Necesidad aplazada",
+  PRIORITY_CHANGE: "Cambio de prioridades",
+  CLIENT_DECLINED: "Cliente rechaza definitivamente",
+  PRODUCT_MISMATCH: "Producto no adecuado",
+  REQUIREMENTS_UNMET: "Cliente no cumple requisitos",
+  COMMERCIAL_RISK: "Riesgo comercial",
+  OUT_OF_SCOPE: "Solicitud fuera del alcance",
+  DO_NOT_CONTACT: "Cliente solicita no ser contactado",
 } as const satisfies Record<LossReason, string>;
 
 export const ESTADO_ACTIVIDAD = {

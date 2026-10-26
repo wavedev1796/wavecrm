@@ -14,9 +14,16 @@ export default async function PipelinePage({
 }>) {
   try {
     const params = await searchParams;
-    const options = await dealFormOptions();
-    const { pipelines } = options;
-    if (!pipelines.length)
+    const query = params?.pipelineId
+      ? "?pipelineId=" + encodeURIComponent(params.pipelineId)
+      : "";
+    // En paralelo: sin pipelineId el API abre el principal. Sin pipelines, el 404 del tablero no importa.
+    const [options, board] = await Promise.allSettled([
+      dealFormOptions(),
+      get<Board>("/deals/board" + query),
+    ]);
+    if (options.status === "rejected") throw options.reason;
+    if (!options.value.pipelines.length)
       return (
         <div className="pipeline-page">
           <Alert tone="note">
@@ -25,14 +32,14 @@ export default async function PipelinePage({
           <PipelineSettings pipelines={[]} pipelineId="" />
         </div>
       );
-    const id =
-      params?.pipelineId ??
-      pipelines.find((p) => p.isDefault)?.id ??
-      pipelines[0]!.id;
-    const board = await get<Board>(
-      "/deals/board?pipelineId=" + encodeURIComponent(id),
+    if (board.status === "rejected") throw board.reason;
+    return (
+      <PipelineBoard
+        key={board.value.pipeline.id}
+        {...board.value}
+        {...options.value}
+      />
     );
-    return <PipelineBoard key={board.pipeline.id} {...board} {...options} />;
   } catch (error) {
     unstable_rethrow(error);
     return (

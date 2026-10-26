@@ -1,6 +1,5 @@
 "use client";
 import { useId, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Package, Plus, Trash2 } from "lucide-react";
 import { IVA_SUGGESTIONS } from "@wave/shared";
 import { Alert } from "@/components/ui/alert";
@@ -33,7 +32,6 @@ export function DealItems({
   items,
   locked,
 }: Readonly<{ dealId: string; items: DealItem[]; locked: boolean }>) {
-  const router = useRouter();
   // ponytail: las filas guardadas usan su id y las nuevas un contador por instancia, así servidor y navegador coinciden.
   const prefix = useId();
   const nextKey = useRef(0);
@@ -53,10 +51,7 @@ export function DealItems({
       );
       setErrors(result.rowErrors ?? {});
       if (result.error) setFeedback({ tone: "error", message: result.error });
-      else if (!result.rowErrors) {
-        setFeedback({ tone: "success", message: texto.guardados });
-        router.refresh();
-      }
+      else if (!result.rowErrors) setFeedback({ tone: "success", message: texto.guardados });
     });
   const cell = (row: Row, index: number, field: "description" | "quantity" | "unitPrice" | "taxRate", label: string) => {
     const id = prefix + "-" + row.key + "-" + field;

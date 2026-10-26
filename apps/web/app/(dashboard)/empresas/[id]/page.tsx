@@ -14,14 +14,14 @@ import { notFound } from "next/navigation";
 import { Info } from "@/components/data/detail-info";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ESTADO_NEGOCIO } from "@/content/catalogos";
 import { COMUN } from "@/content/comun";
 import { EMPRESAS } from "@/content/empresas";
 import { authenticatedApi } from "@/lib/authenticated-api";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 import { formatPhone, splitPhone } from "@/lib/phone";
 import { CompanyForm } from "../../../../features/empresas/company-form";
 import type { CompanyDetail } from "../../../../features/empresas/types";
+import { DealJourney } from "../../../../features/pipeline/deal-journey";
 
 export default async function CompanyDetailPage({
   params,
@@ -145,19 +145,7 @@ export default async function CompanyDetailPage({
               <Badge tone="blue">{company.deals.length}</Badge>
             </h3>
             {company.deals.length ? (
-              company.deals.map((deal) => (
-                <article key={deal.id}>
-                  <div>
-                    <Link href={`/pipeline/${deal.id}`}>
-                      <strong>{deal.title}</strong>
-                    </Link>
-                    <span>
-                      {deal.stage.name} · {ESTADO_NEGOCIO[deal.status]}
-                    </span>
-                  </div>
-                  <b>{formatMoney(deal.value, deal.currency)}</b>
-                </article>
-              ))
+              company.deals.map((deal) => <DealJourney key={deal.id} deal={deal} />)
             ) : (
               <p>{texto.sinNegocios}</p>
             )}

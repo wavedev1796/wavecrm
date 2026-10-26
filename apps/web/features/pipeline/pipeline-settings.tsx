@@ -60,7 +60,6 @@ export function PipelineSettings({
           "/pipeline?pipelineId=" + (result.data as { id: string }).id,
         );
       else if (operation === "deletePipeline") router.push("/pipeline");
-      else router.refresh();
     });
   };
   return (

@@ -1,6 +1,5 @@
 "use client";
 import { useState, useTransition, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { ClipboardCheck } from "lucide-react";
 import { Field } from "@/components/form/form-field";
 import { Alert } from "@/components/ui/alert";
@@ -21,7 +20,6 @@ const TEXTS = [
 
 /** Necesidad, solución, presupuesto y persona decisora: los datos que piden las etapas Negociación y Propuesta. */
 export function DealQualification({ deal, locked }: Readonly<{ deal: DealDetail; locked: boolean }>) {
-  const router = useRouter();
   const [feedback, setFeedback] = useState<{ tone: "error" | "success"; message: string } | null>(null);
   const [budgetError, setBudgetError] = useState<string>();
   const [pending, startTransition] = useTransition();
@@ -33,10 +31,7 @@ export function DealQualification({ deal, locked }: Readonly<{ deal: DealDetail;
       const result = await qualifyDealAction(deal.id, form);
       setBudgetError(result.fieldErrors?.budget);
       if (result.error) setFeedback({ tone: "error", message: result.error });
-      else if (!result.fieldErrors) {
-        setFeedback({ tone: "success", message: texto.guardada });
-        router.refresh();
-      }
+      else if (!result.fieldErrors) setFeedback({ tone: "success", message: texto.guardada });
     });
   };
   const title = (

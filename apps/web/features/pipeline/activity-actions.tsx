@@ -1,6 +1,5 @@
 "use client";
 import { useActionState, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { ACTIVITY_TYPES } from "@wave/shared";
 import { Field } from "@/components/form/form-field";
@@ -20,7 +19,6 @@ import { emptyActivity, type ActivityValues } from "./types";
 
 export function CompleteButton({ dealId, activity }: Readonly<{ dealId: string; activity: { id: string; subject: string } }>) {
   const texto = NEGOCIO.timeline;
-  const router = useRouter();
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
   return (
@@ -33,7 +31,6 @@ export function CompleteButton({ dealId, activity }: Readonly<{ dealId: string; 
           startTransition(async () => {
             const result = await completeActivityAction(dealId, activity.id);
             if (result.error) setError(result.error);
-            else router.refresh();
           })
         }
       >

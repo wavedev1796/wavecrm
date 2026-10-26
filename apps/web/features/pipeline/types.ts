@@ -39,7 +39,7 @@ export type Stage = {
 };
 /** Columna del tablero: cantidad y valor de todos sus negocios, con la primera página de tarjetas. */
 export type Column = { count: number; value: string | number; deals: Deal[] };
-export type Metrics = Record<"open" | "won" | "lost", { count: number; value: string }>;
+export type Metrics = Record<"open" | "won" | "lost" | "rejected", { count: number; value: string }>;
 /** Lo que falta para un cambio de etapa (códigos de @wave/shared, mensaje del API). */
 export type Pending = { code: TransitionCheck; message: string };
 export type Preview = {
@@ -58,6 +58,26 @@ export type Board = {
   stages: Stage[];
   lost: Column;
   metrics: Metrics;
+};
+/** Fila de la papelera: `GET /deals?status=REJECTED` trae todos los campos del negocio. */
+export type RejectedDeal = Deal & {
+  pipeline?: Option;
+  closedAt: string | null;
+  lossReason: LossReason | null;
+  lossDetail: string | null;
+};
+/** Negocio en la ficha de su contacto o empresa, con el último cambio de etapa (`take: 1` del API). */
+export type JourneyDeal = {
+  id: string;
+  title: string;
+  value: string;
+  currency: string;
+  status: DealStatus;
+  expectedClose: string | null;
+  closedAt?: string | null;
+  lossReason?: LossReason | null;
+  stage: { id: string; name: string; color: string | null };
+  stageHistory?: Array<{ changedAt: string; fromStage: { name: string } | null; toStage: { name: string } }>;
 };
 export type HistoryItem = {
   id: string;
@@ -125,16 +145,26 @@ export type Quote = {
   validUntil?: string | null;
   acceptedAt?: string | null;
   acceptanceNote?: string | null;
+  /** Copia de los productos con los que se envió; las anteriores a la copia traen []. */
+  items?: QuoteLine[];
 };
+export type QuoteLine = { description: string; quantity: string; unitPrice: string; taxRate: number };
+/** Eventos del negocio en AuditLog: cierres y propuestas. */
 export type Closure = {
   id: string;
-  action: "WON" | "LOST" | "REOPENED";
+  action: "WON" | "LOST" | "REJECTED" | "REOPENED" | "QUOTE_SENT" | "QUOTE_ACCEPTED" | "QUOTE_SUPERSEDED";
   changes: {
-    quoteNumber?: string;
-    lossReason?: LossReason;
+    quoteNumber?: string | null;
+    lossReason?: LossReason | null;
     lossDetail?: string | null;
     from?: DealStatus;
     reason?: string | null;
+    total?: string;
+    validUntil?: string;
+    acceptanceNote?: string;
+    followUpAt?: string | null;
+    quotes?: string[];
+    cancelledActivities?: number;
   } | null;
   createdAt: string;
   user: Option | null;

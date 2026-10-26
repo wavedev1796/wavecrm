@@ -43,6 +43,12 @@ export const TABLERO = {
   columnaPerdido: "Columna Perdido",
   perdidoAyuda: "No suma al valor abierto ni al ganado",
   perdidoVacio: "Suelta aquí una tarjeta para marcarla como perdida.",
+  rechazado: "Rechazado",
+  zonaRechazado: "Zona Rechazado",
+  rechazadoAyuda: (cantidad: number) =>
+    `${cantidad} ${cantidad === 1 ? "negocio" : "negocios"} en la papelera`,
+  rechazadoVacio: "Suelta aquí una tarjeta para rechazarla: el negocio irá a la papelera.",
+  verPapelera: "Ver papelera",
   verMas: (quedan: number) => `Ver más (quedan ${quedan})`,
   cargandoMas: "Cargando…",
   cambiarEtapa: "Cambiar de etapa",
@@ -58,7 +64,12 @@ export const TRANSICION = {
   cancelar: "Cancelar",
   hecho: (negocio: string, destino: string) => `${negocio} pasó a ${destino}.`,
   abrirFicha: "Abrir la ficha",
-  destinos: { WON: "Ganado", LOST: "Perdido", REOPEN: "Abierto" },
+  irFicha: "Guardar e ir a la ficha",
+  recomendacion:
+    "Recomendación: mantén completa la ficha del negocio (contacto, calificación, productos y propuestas) para que los cambios de etapa no se detengan.",
+  soloFicha:
+    "Los productos y las propuestas se registran en la ficha. Guarda lo que llenaste aquí y termina allá; después vuelve a mover la tarjeta.",
+  destinos: { WON: "Ganado", LOST: "Perdido", REJECTED: "Rechazado", REOPEN: "Abierto" },
   campos: {
     contacto: "Contacto",
     responsable: "Responsable",
@@ -80,6 +91,14 @@ export const TRANSICION = {
     evidenciaAyuda: "Por ejemplo: orden de compra 55 recibida por correo.",
     cierreReal: "Fecha real de cierre",
     motivoPerdida: "Motivo de la pérdida",
+    motivoRechazo: "Motivo del rechazo",
+    avisoRechazo:
+      "Se invalidará el proceso: la propuesta vigente quedará Rechazada y las actividades pendientes, Canceladas. El negocio irá a la papelera.",
+    seguimiento: "Seguimiento (opcional)",
+    seguimientoAyuda: "Escribe un asunto para agendarlo; déjalo vacío si no hace falta.",
+    tipoSeguimiento: "Tipo de seguimiento",
+    asuntoSeguimiento: "Asunto del seguimiento",
+    fechaSeguimiento: "Programado para",
     detalle: "Detalle",
     motivo: "Motivo del cambio",
     elegir: "Selecciona una opción",
@@ -88,6 +107,23 @@ export const TRANSICION = {
     presupuesto: "Ingresa un presupuesto con hasta dos decimales, por ejemplo 5000 o 5000,50.",
     motivo: "Cuenta el motivo del cambio (entre 2 y 500 caracteres).",
     evidencia: "Describe la evidencia de aceptación (entre 2 y 500 caracteres).",
+    contacto: "Elige el contacto del negocio.",
+    responsable: "Elige el responsable del negocio.",
+    interaccion: "Cuenta qué se habló con el cliente (entre 2 y 160 caracteres).",
+    interaccionFecha: "Ingresa cuándo fue la interacción; no puede ser futura.",
+    necesidad: "Describe la necesidad del cliente (entre 2 y 2000 caracteres).",
+    actividad: "Escribe el asunto de la próxima actividad (entre 2 y 160 caracteres).",
+    actividadFecha: "Programa la próxima actividad para hoy o un día posterior.",
+    solucion: "Describe la solución de interés (entre 2 y 2000 caracteres).",
+    presupuestoRequerido: "Ingresa el presupuesto o explica por qué aún no se conoce (al menos 2 caracteres).",
+    cierreEstimado: "Ingresa la fecha estimada de cierre.",
+    vigencia: "Ingresa hasta cuándo es válida la propuesta, de hoy en adelante.",
+    envio: "Ingresa cuándo se envió la propuesta; no puede ser futura.",
+    vigenciaEnvio: "La vigencia debe ser igual o posterior a la fecha de envío.",
+    aceptacion: "Ingresa cuándo se aceptó la propuesta; no puede ser futura.",
+    cierreReal: "Ingresa la fecha real de cierre; no puede ser futura.",
+    seguimiento: "Escribe el asunto del seguimiento (entre 2 y 160 caracteres).",
+    seguimientoFecha: "El seguimiento debe ser de hoy en adelante.",
   },
 } as const;
 
@@ -110,6 +146,7 @@ export const NEGOCIO = {
   acciones: {
     ganar: "Ganar",
     perder: "Perder",
+    rechazar: "Rechazar",
     reabrir: "Reabrir",
     editar: "Editar",
   },
@@ -148,6 +185,10 @@ export const NEGOCIO = {
     motivoRequerido: "Elige el motivo de la pérdida.",
     detalleRequerido: "Cuenta el motivo (entre 2 y 500 caracteres).",
   },
+  rechazar: {
+    titulo: "Rechazar negocio",
+    motivoRequerido: "Elige el motivo del rechazo.",
+  },
   reabrir: { titulo: "Reabrir negocio" },
   calificacion: {
     titulo: "Calificación",
@@ -182,11 +223,16 @@ export const NEGOCIO = {
     evidenciaLabel: "Evidencia de aceptación",
     aceptar: "Marcar aceptada",
     aceptadaOk: "Propuesta aceptada.",
+    productos: (numero: string) => `Productos de ${numero}`,
+    sinDetalle: "Registrada sin detalle de productos.",
+    linea: (cantidad: string, descripcion: string) => `${cantidad} × ${descripcion}`,
+    lineaPrecio: (precio: string, tarifa: number) => `${precio} c/u · IVA ${tarifa} %`,
   },
   cierre: {
     titulo: "Cierre",
     ganadoEl: "Ganado el",
     perdidoEl: "Perdido el",
+    rechazadoEl: "Rechazado el",
     motivo: "Motivo",
     detalle: "Detalle",
     cotizacion: "Cotización",
@@ -198,7 +244,15 @@ export const NEGOCIO = {
     movido: (de: string, a: string) => `${de} → ${a}`,
     ganado: (cotizacion: string) => `Ganado · cotización ${cotizacion}`,
     perdido: (motivo: string) => `Perdido · ${motivo}`,
+    rechazado: (motivo: string) => `Rechazado · ${motivo}`,
     reabierto: "Reabierto",
+    propuestaEnviada: (numero: string, total: string) => `Propuesta ${numero} enviada · ${total}`,
+    propuestaAceptada: (numero: string) => `Propuesta ${numero} aceptada`,
+    propuestaDesactualizada: (numero: string) => `Propuesta ${numero} desactualizada por cambios en los productos`,
+    vigencia: (fecha: string) => `Vigente hasta ${fecha}`,
+    seguimiento: (fecha: string) => `Seguimiento programado para ${fecha}`,
+    invalidado: (propuestas: number, actividades: number) =>
+      `${propuestas} ${propuestas === 1 ? "propuesta rechazada" : "propuestas rechazadas"} · ${actividades} ${actividades === 1 ? "actividad cancelada" : "actividades canceladas"}`,
     sistema: "Usuario no disponible",
     completar: "Completar",
     completarDe: (asunto: string) => `Completar ${asunto}`,
@@ -216,4 +270,38 @@ export const NEGOCIO = {
     notaLarga: "La nota admite hasta 1000 caracteres.",
     hecha: "Ya se realizó",
   },
+} as const;
+
+/** Recorrido de cada negocio en las fichas de contacto y empresa. */
+export const RECORRIDO = {
+  movido: (desde: string, hasta: string, fecha: string) => `Pasó de ${desde} a ${hasta} el ${fecha}`,
+  creado: (etapa: string, fecha: string) => `Ingresó en ${etapa} el ${fecha}`,
+  cerrado: (fecha: string) => `Cerrado el ${fecha}`,
+} as const;
+
+/** Papelera: negocios rechazados, de todos los pipelines. */
+export const PAPELERA = {
+  etiqueta: "Pipeline de ventas",
+  titulo: "Papelera",
+  descripcion: (total: number) =>
+    `${total} ${total === 1 ? "negocio rechazado" : "negocios rechazados"}. Elimínalos cuando ya no los necesites; un administrador puede reabrirlos.`,
+  volver: "Volver al pipeline",
+  vacio: "La papelera está vacía. Los negocios que rechaces en el tablero o en la ficha aparecen aquí.",
+  errorCarga: "No se pudo cargar la papelera. Intenta de nuevo.",
+  cargando: "Cargando papelera...",
+  paginacion: "Paginación de la papelera",
+  columnas: ["Negocio", "Cliente", "Valor", "Motivo", "Rechazado el", "Responsable", "Acciones"],
+  seleccionarTodos: "Seleccionar todos",
+  seleccionar: (negocio: string) => `Seleccionar ${negocio}`,
+  eliminar: (cantidad: number) => `Eliminar seleccionados (${cantidad})`,
+  confirmarTitulo: "Eliminar de la papelera",
+  confirmar: (cantidad: number) =>
+    `Se ${cantidad === 1 ? "eliminará 1 negocio" : `eliminarán ${cantidad} negocios`} con sus productos, propuestas y actividades. Esta acción no se puede deshacer.`,
+  confirmarBoton: "Eliminar definitivamente",
+  eliminados: (cantidad: number) =>
+    cantidad === 1 ? "Se eliminó 1 negocio." : `Se eliminaron ${cantidad} negocios.`,
+  reabrir: "Reabrir",
+  reabrirDe: (negocio: string) => `Reabrir ${negocio}`,
+  sinContacto: "Sin contacto",
+  sinResponsable: "Sin responsable",
 } as const;

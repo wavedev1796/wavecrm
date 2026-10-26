@@ -17,7 +17,7 @@ import { Info } from "@/components/data/detail-info";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ESTADO_COTIZACION, ESTADO_NEGOCIO, MOTIVO_PERDIDA } from "@/content/catalogos";
+import { ESTADO_COTIZACION, ESTADO_NEGOCIO, MOTIVO_CIERRE } from "@/content/catalogos";
 import { NEGOCIO } from "@/content/pipeline";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatDateTime, formatDay, formatMoney } from "@/lib/format";
@@ -30,7 +30,7 @@ import { DealQuotes } from "../../../../features/pipeline/deal-quotes";
 import { DealTimeline } from "../../../../features/pipeline/deal-timeline";
 import type { DealDetail } from "../../../../features/pipeline/types";
 
-const TONO = { OPEN: "neutral", WON: "success", LOST: "warning" } as const;
+const TONO = { OPEN: "neutral", WON: "success", LOST: "warning", REJECTED: "danger" } as const;
 
 export default async function DealPage({
   params,
@@ -86,7 +86,7 @@ export default async function DealPage({
         key={deal.status + ":" + deal.items.map((item) => item.id).join(",")}
         dealId={deal.id}
         items={deal.items}
-        locked={deal.status === "WON"}
+        locked={deal.status === "WON" || deal.status === "REJECTED"}
       />
       <DealQuotes deal={deal} locked={locked} />
       <div className="contact-detail-grid">
@@ -128,7 +128,7 @@ export default async function DealPage({
               <dl>
                 <Info
                   icon={<CalendarCheck />}
-                  label={deal.status === "WON" ? cierre.ganadoEl : cierre.perdidoEl}
+                  label={{ WON: cierre.ganadoEl, LOST: cierre.perdidoEl, REJECTED: cierre.rechazadoEl }[deal.status]}
                   value={deal.closedAt && formatDay(deal.closedAt)}
                 />
                 {deal.status === "WON" && quote && (
@@ -138,9 +138,9 @@ export default async function DealPage({
                     value={`${quote.number} · ${ESTADO_COTIZACION[quote.status]} · ${formatMoney(quote.total)}`}
                   />
                 )}
-                {deal.status === "LOST" && deal.lossReason && (
+                {deal.status !== "WON" && deal.lossReason && (
                   <>
-                    <Info icon={<FileText />} label={cierre.motivo} value={MOTIVO_PERDIDA[deal.lossReason]} />
+                    <Info icon={<FileText />} label={cierre.motivo} value={MOTIVO_CIERRE[deal.lossReason]} />
                     <Info icon={<FileText />} label={cierre.detalle} value={deal.lossDetail} />
                   </>
                 )}

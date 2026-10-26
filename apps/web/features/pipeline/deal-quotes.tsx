@@ -1,6 +1,5 @@
 "use client";
-import { useState, useTransition, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { Fragment, useState, useTransition, type FormEvent } from "react";
 import { FileText } from "lucide-react";
 import { Field } from "@/components/form/form-field";
 import { Alert } from "@/components/ui/alert";
@@ -14,6 +13,7 @@ import { NEGOCIO } from "@/content/pipeline";
 import { formatDay, formatMoney } from "@/lib/format";
 import { acceptQuoteAction, createQuoteAction } from "./actions";
 import { todayEcuador } from "./deal-validation";
+import { lineTotal } from "./item-totals";
 import type { DealDetail } from "./types";
 
 const texto = NEGOCIO.propuestas;
@@ -21,7 +21,6 @@ type Result = { error?: string };
 
 /** Propuestas del negocio: se registran enviadas con los productos actuales y se aceptan con su evidencia. */
 export function DealQuotes({ deal, locked }: Readonly<{ deal: DealDetail; locked: boolean }>) {
-  const router = useRouter();
   const [feedback, setFeedback] = useState<{ tone: "error" | "success"; message: string } | null>(null);
   const [pending, startTransition] = useTransition();
   const sent = deal.quotes.find((quote) => quote.status === "SENT");
@@ -32,11 +31,7 @@ export function DealQuotes({ deal, locked }: Readonly<{ deal: DealDetail; locked
     startTransition(async () => {
       setFeedback(null);
       const result = await action(form);
-      if (result.error) setFeedback({ tone: "error", message: result.error });
-      else {
-        setFeedback({ tone: "success", message: success });
-        router.refresh();
-      }
+      setFeedback(result.error ? { tone: "error", message: result.error } : { tone: "success", message: success });
     });
   };
   const day = (value?: string | null) => (value ? formatDay(value) : "—");
@@ -60,15 +55,38 @@ export function DealQuotes({ deal, locked }: Readonly<{ deal: DealDetail; locked
           </thead>
           <tbody>
             {deal.quotes.map((quote) => (
-              <tr key={quote.id}>
-                <td>{quote.number}</td>
-                <td>{ESTADO_COTIZACION[quote.status]}</td>
-                <td className="deal-items-money">{formatMoney(quote.total)}</td>
-                <td>{day(quote.sentAt)}</td>
-                <td>{day(quote.validUntil)}</td>
-                <td>{day(quote.acceptedAt)}</td>
-                <td>{quote.acceptanceNote ?? "—"}</td>
-              </tr>
+              <Fragment key={quote.id}>
+                <tr>
+                  <td>{quote.number}</td>
+                  <td>{ESTADO_COTIZACION[quote.status]}</td>
+                  <td className="deal-items-money">{formatMoney(quote.total)}</td>
+                  <td>{day(quote.sentAt)}</td>
+                  <td>{day(quote.validUntil)}</td>
+                  <td>{day(quote.acceptedAt)}</td>
+                  <td>{quote.acceptanceNote ?? "—"}</td>
+                </tr>
+                {/* La copia de los productos con que se envió: no cambia aunque después se editen. */}
+                <tr className="deal-quote-lines">
+                  <td colSpan={7}>
+                    {quote.items?.length ? (
+                      <details>
+                        <summary>{texto.productos(quote.number)}</summary>
+                        <ul>
+                          {quote.items.map((line, index) => (
+                            <li key={index}>
+                              <span>{texto.linea(line.quantity, line.description)}</span>
+                              <small>{texto.lineaPrecio(formatMoney(line.unitPrice), line.taxRate)}</small>
+                              <b className="deal-items-money">{formatMoney(lineTotal(line))}</b>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    ) : (
+                      <span className="field-hint">{texto.sinDetalle}</span>
+                    )}
+                  </td>
+                </tr>
+              </Fragment>
             ))}
           </tbody>
         </Table>

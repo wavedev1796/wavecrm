@@ -1,25 +1,42 @@
 "use client";
-import { useEffect, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
-import { ACTIVITY_TYPES, LOSS_REASONS, type TransitionCheck } from "@wave/shared";
+import { useRouter } from "next/navigation";
+import { ACTIVITY_TYPES, LOSS_REASONS, REJECTION_REASONS, type TransitionCheck } from "@wave/shared";
 import { Field } from "@/components/form/form-field";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { MOTIVO_PERDIDA, TIPO_ACTIVIDAD } from "@/content/catalogos";
+import { MOTIVO_CIERRE, TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { TRANSICION } from "@/content/pipeline";
-import { completeTransitionAction, previewTransitionAction } from "./actions";
+import { completeTransitionAction, previewTransitionAction, saveTransitionAction } from "./actions";
 import { todayEcuador } from "./deal-validation";
 import type { Deal, Option, Preview } from "./types";
 
 const texto = TRANSICION;
 const campos = TRANSICION.campos;
 const INTERACTIONS = ["CALL", "EMAIL", "MEETING"] as const;
+/** Seguimiento de un perdido: por defecto, en tres meses. */
+const FOLLOW_UP_DAYS = 90;
+const inDays = (day: string, days: number) =>
+  new Date(Date.parse(day + "T00:00:00.000Z") + days * 86_400_000).toISOString().slice(0, 10);
+
+/** Lo que solo se completa en la ficha: productos para la propuesta, la propuesta enviada y su importe. */
+function onlyInFicha(preview: Preview | null) {
+  return Boolean(
+    preview?.pending.some(
+      ({ code }) =>
+        code === "FINAL_AMOUNT" ||
+        (code === "PROPOSAL_SENT" && !preview.items) ||
+        (code === "ACCEPTANCE" && preview.quote?.status !== "SENT"),
+    ),
+  );
+}
 
 type Props = {
   deal: Pick<Deal, "id" | "title" | "stageId">;
-  /** Id de etapa, WON, LOST o REOPEN. */
+  /** Id de etapa, WON, LOST, REJECTED o REOPEN. */
   to: string;
   targetName: string;
   contacts: Option[];
@@ -31,17 +48,23 @@ type Props = {
 /**
  * Modal único de cambio de etapa (arrastre, selector y botones de la ficha). Pregunta al API qué falta;
  * sin pendientes cambia directo, y con pendientes pide cada dato. Las reglas viven solo en el API.
+ * Si falta algo que solo se completa en la ficha, guarda lo llenado y lleva a la ficha en vez de intentar mover.
  */
 export function TransitionDialog({ deal, to, targetName, contacts, users, onCancel, onDone }: Readonly<Props>) {
+  const router = useRouter();
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
   const message = texto.hecho(deal.title, targetName);
+  const href = "/pipeline/" + deal.id;
+  const toFicha = onlyInFicha(preview);
+  // StrictMode (desarrollo) monta el efecto dos veces: la segunda reutiliza la misma vista previa.
+  const opening = useRef<ReturnType<typeof previewTransitionAction>>(null);
 
   useEffect(() => {
     let current = true;
     (async () => {
-      const result = await previewTransitionAction(deal.id, to);
+      const result = await (opening.current ??= previewTransitionAction(deal.id, to));
       if (!current) return;
       if (!result.data) return setError(result.error ?? "");
       if (result.data.pending.length) return setPreview(result.data);
@@ -62,6 +85,12 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
   const submit = (form: FormData) =>
     startTransition(async () => {
       setError("");
+      if (toFicha) {
+        const saved = await saveTransitionAction(deal.id, to, form);
+        if (saved.error) return setError(saved.error);
+        onCancel();
+        return router.push(href);
+      }
       const result = await completeTransitionAction(deal.id, to, deal.stageId, form);
       if (result.done) return onDone(message);
       setError(result.error ?? "");
@@ -85,11 +114,6 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
     );
 
   const today = todayEcuador();
-  const ficha = (
-    <Link className="button button--secondary" href={"/pipeline/" + deal.id}>
-      {texto.abrirFicha}
-    </Link>
-  );
   const field = (name: string, label: string, control: ReactNode, required = true) => (
     <Field id={"transition-" + name} label={label} required={required}>
       {control}
@@ -113,6 +137,7 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
   );
   const named = (list: Option[]) => list.map((o) => [o.id, o.name] as const);
   const types = (codes: readonly (keyof typeof TIPO_ACTIVIDAD)[]) => codes.map((c) => [c, TIPO_ACTIVIDAD[c]] as const);
+  const reasons = (codes: readonly (keyof typeof MOTIVO_CIERRE)[]) => codes.map((c) => [c, MOTIVO_CIERRE[c]] as const);
 
   const FIELDS: Record<TransitionCheck, () => ReactNode> = {
     CONTACT: () => field("contactId", campos.contacto, select("contactId", named(contacts))),
@@ -140,31 +165,52 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
       </>
     ),
     EXPECTED_CLOSE: () => field("expectedClose", campos.cierreEstimado, date("expectedClose", { min: today })),
+    // Sin productos o sin propuesta enviada se completa en la ficha (onlyInFicha): basta el mensaje del pendiente.
     PROPOSAL_SENT: () =>
-      preview.items ? (
+      preview.items > 0 && (
         <>
           {field("validUntil", campos.vigencia, date("validUntil", { min: today }))}
           {field("sentAt", campos.enviadaEl, date("sentAt", { max: today, defaultValue: today }))}
         </>
-      ) : (
-        ficha
       ),
     ACCEPTANCE: () =>
-      preview.quote?.status === "SENT" ? (
+      preview.quote?.status === "SENT" && (
         <>
           <input type="hidden" name="quoteId" value={preview.quote.id} />
           {field("acceptedAt", campos.aceptadaEl, date("acceptedAt", { max: today, defaultValue: today }))}
           {field("acceptanceNote", campos.evidencia, text("acceptanceNote", 500))}
           <p className="field-hint">{campos.evidenciaAyuda}</p>
         </>
-      ) : (
-        ficha
       ),
-    FINAL_AMOUNT: () => ficha,
+    FINAL_AMOUNT: () => null,
     CLOSED_AT: () => field("closedAt", campos.cierreReal, date("closedAt", { max: today, defaultValue: today })),
     LOSS_REASON: () => (
       <>
-        {field("lossReason", campos.motivoPerdida, select("lossReason", LOSS_REASONS.map((c) => [c, MOTIVO_PERDIDA[c]] as const)))}
+        {field("lossReason", campos.motivoPerdida, select("lossReason", reasons(LOSS_REASONS)))}
+        {field("lossDetail", campos.detalle, text("lossDetail", 500), false)}
+        <fieldset className="transition-followup">
+          <legend>{campos.seguimiento}</legend>
+          <p className="field-hint">{campos.seguimientoAyuda}</p>
+          {field("followUpType", campos.tipoSeguimiento, select("followUpType", types(ACTIVITY_TYPES), false), false)}
+          {field(
+            "followUpSubject",
+            campos.asuntoSeguimiento,
+            <Input id="transition-followUpSubject" name="followUpSubject" maxLength={160} />,
+            false,
+          )}
+          {field(
+            "followUpDay",
+            campos.fechaSeguimiento,
+            date("followUpDay", { min: today, defaultValue: inDays(today, FOLLOW_UP_DAYS) }),
+            false,
+          )}
+        </fieldset>
+      </>
+    ),
+    REJECTION_REASON: () => (
+      <>
+        <Alert tone="note">{campos.avisoRechazo}</Alert>
+        {field("lossReason", campos.motivoRechazo, select("lossReason", reasons(REJECTION_REASONS)))}
         {field("lossDetail", campos.detalle, text("lossDetail", 500), false)}
       </>
     ),
@@ -183,6 +229,15 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
     >
       <h2>{texto.titulo}</h2>
       <p>{texto.intro(deal.title, targetName)}</p>
+      <Alert tone="note">
+        {toFicha ? (
+          texto.soloFicha
+        ) : (
+          <>
+            {texto.recomendacion} <Link href={href}>{texto.abrirFicha}</Link>
+          </>
+        )}
+      </Alert>
       {error && <Alert tone="error">{error}</Alert>}
       <ul className="transition-pending">
         {preview.pending.map((item) => (
@@ -195,7 +250,7 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
       <div className="deal-confirm-actions">
         {cancel}
         <Button type="submit" loading={pending}>
-          {texto.confirmar}
+          {toFicha ? texto.irFicha : texto.confirmar}
         </Button>
       </div>
     </form>

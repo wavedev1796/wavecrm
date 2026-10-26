@@ -38,6 +38,8 @@ type Editor =
   | { kind: "transition"; deal: Deal; to: string; targetName: string };
 /** Columna del estado Perdido: no es una etapa, así que usa este código en vez de un id. */
 const LOST = "LOST";
+/** Zona Rechazado: solo recibe tarjetas; los rechazados se ven en la papelera. */
+const REJECTED = "REJECTED";
 
 export function PipelineBoard({
   pipeline,
@@ -72,10 +74,10 @@ export function PipelineBoard({
     setEditor(null);
     setDeleteError("");
   };
+  // Sin router.refresh(): la server action ya hizo revalidatePath y su respuesta trae el tablero nuevo.
   const saved = (message: string) => {
     close();
     setFeedback({ tone: "success", message });
-    router.refresh();
   };
   const columns: [string, Column][] = [
     ...stages.map((stage) => [stage.id, stage] as [string, Column]),
@@ -83,8 +85,8 @@ export function PipelineBoard({
   ];
   const shown = (key: string, column: Column) => [...column.deals, ...(more[key]?.deals ?? [])];
   const deals = columns.flatMap(([key, column]) => shown(key, column));
-  const targetName = (to: string) =>
-    to === LOST ? TABLERO.perdido : (stages.find((s) => s.id === to)?.name ?? "");
+  const closed: Record<string, string> = { [LOST]: TABLERO.perdido, [REJECTED]: TABLERO.rechazado };
+  const targetName = (to: string) => closed[to] ?? stages.find((s) => s.id === to)?.name ?? "";
   /** Arrastre y selector piden lo mismo: el modal pregunta al API qué falta antes de mover. */
   function requestMove(deal: Deal, to: string) {
     const current = deal.status === "LOST" ? LOST : deal.stageId;
@@ -182,6 +184,7 @@ export function PipelineBoard({
             </option>
           ))}
           <option value={LOST}>{TABLERO.perdido}</option>
+          <option value={REJECTED}>{TABLERO.rechazado}</option>
         </Select>
       </div>
       <div className="deal-card-actions">
@@ -360,6 +363,32 @@ export function PipelineBoard({
                 <span>{TABLERO.perdidoVacio}</span>
               </div>
             )}
+          </section>
+        )}
+        {stages.length > 0 && (
+          <section
+            className={
+              "pipeline-column pipeline-column--rejected" + (over === REJECTED ? " pipeline-column--over" : "")
+            }
+            aria-label={TABLERO.zonaRechazado}
+            {...dropZone(REJECTED)}
+          >
+            <header>
+              <h2>
+                <i className="pipeline-rejected-dot" />
+                {TABLERO.rechazado}
+              </h2>
+              <span>{metrics.rejected.count}</span>
+            </header>
+            <div className="pipeline-stage-summary">
+              <span>{TABLERO.rechazadoAyuda(metrics.rejected.count)}</span>
+            </div>
+            <div className="pipeline-stage-empty">
+              <span>{TABLERO.rechazadoVacio}</span>
+            </div>
+            <Link className="pipeline-more" href="/pipeline/papelera">
+              {TABLERO.verPapelera}
+            </Link>
           </section>
         )}
       </section>

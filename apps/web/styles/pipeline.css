@@ -130,6 +130,19 @@
 .pipeline-lost-dot {
   background: var(--wave-muted);
 }
+.pipeline-board .pipeline-column--rejected {
+  background: var(--wave-page);
+  border-style: dashed;
+  border-color: #f1d4d4;
+}
+.pipeline-rejected-dot {
+  background: var(--wave-danger);
+}
+.pipeline-board a.pipeline-more {
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}
 .transition-pending {
   display: grid;
   gap: 14px;
@@ -578,7 +591,8 @@
   border-radius: 50%;
 }
 
-.pipeline-requirements {
+.pipeline-requirements,
+.transition-followup {
   display: grid;
   gap: 6px;
   margin: 0;
@@ -586,7 +600,11 @@
   border: 1px solid var(--wave-line);
   border-radius: 10px;
 }
-.pipeline-requirements legend {
+.transition-followup {
+  gap: 10px;
+}
+.pipeline-requirements legend,
+.transition-followup legend {
   padding: 0 4px;
   font-weight: 600;
 }
@@ -606,7 +624,54 @@
 .deal-quote-form h4 {
   margin: 0;
 }
+.deal-quote-lines > td {
+  padding-top: 0;
+}
+.deal-quote-lines summary {
+  cursor: pointer;
+  color: var(--wave-blue);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.deal-quote-lines ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.deal-quote-lines li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.86rem;
+}
+.deal-quote-lines small {
+  color: var(--wave-muted);
+}
 .deal-qualification dl > div {
   display: grid;
   gap: 2px;
+}
+/* Papelera: casillas, barra de selección y el icono en rojo suave. */
+.trash-toolbar {
+  min-height: 68px;
+}
+.trash-toolbar .alert {
+  margin: 0;
+}
+.table .trash-check {
+  width: 44px;
+}
+.trash-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--wave-blue);
+  cursor: pointer;
+}
+.contact-list-mark.trash-mark {
+  color: var(--wave-danger);
+  border-color: var(--wave-danger-soft);
+  background: linear-gradient(145deg, white, var(--wave-danger-soft));
 }

@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { authenticatedApi, apiError } from "@/lib/authenticated-api";
-import { ACTIVITY_TYPES, LOSS_REASONS } from "@wave/shared";
+import { ACTIVITY_TYPES, LOSS_REASONS, REJECTION_REASONS } from "@wave/shared";
 import { NEGOCIO, PIPELINE, TRANSICION } from "@/content/pipeline";
 import {
   decimal,
@@ -121,6 +121,13 @@ export async function saveDeal(
 export async function deleteDealAction(dealId: string) {
   return request(dealPath(dealId), "DELETE");
 }
+/** Papelera: elimina a la vez varios negocios rechazados. */
+export async function deleteRejectedAction(ids: string[]) {
+  return request("/deals/rejected/delete", "POST", { ids }) as Promise<{
+    error?: string;
+    data?: { deleted: number };
+  }>;
+}
 export async function dealHistoryAction(id: string) {
   return request(dealPath(id, "/history"), "GET") as Promise<{
     error?: string;
@@ -153,43 +160,63 @@ export async function previewTransitionAction(dealId: string, to: string) {
   ) as Promise<{ error?: string; data?: Preview }>;
 }
 
-/** Ruta y cuerpo del cambio: ganar, perder y reabrir tienen la suya; el resto es mover. */
+/** Ruta y cuerpo del cambio: ganar, perder, rechazar y reabrir tienen la suya; el resto es mover. */
 const TRANSITION_ROUTES = {
   WON: ["/win", "POST", ["closedAt", "fromStageId"]],
-  LOST: ["/lose", "POST", ["lossReason", "lossDetail", "fromStageId"]],
+  LOST: ["/lose", "POST", ["lossReason", "lossDetail", "followUp", "fromStageId"]],
+  REJECTED: ["/reject", "POST", ["lossReason", "lossDetail", "fromStageId"]],
   REOPEN: ["/reopen", "POST", ["reason"]],
 } as const;
 
+const between = (value: string, min: number, max: number) => value.length >= min && value.length <= max;
+
+/**
+ * El formulario del modal solo trae los campos de lo que falta, y cada uno es obligatorio: así no se guarda
+ * nada a medias ni se ignora una fecha. Devuelve el primer error, con su mensaje propio.
+ */
 function transitionError(to: string, form: FormData): string | undefined {
   const text = (key: string) => formText(form, key);
-  for (const key of ["expectedClose", "interactionDay", "nextDay", "validUntil", "sentAt", "acceptedAt", "closedAt"])
-    if (text(key) && !isDay(text(key))) return PIPELINE.dateInvalid;
-  if (text("budget") && !isAmount(text("budget"))) return TRANSICION.errores.presupuesto;
-  if (text("reason") && (text("reason").length < 2 || text("reason").length > 500))
-    return TRANSICION.errores.motivo;
-  if (text("acceptedAt") && (text("acceptanceNote").length < 2 || text("acceptanceNote").length > 500))
-    return TRANSICION.errores.evidencia;
-  if (to !== "LOST") return undefined;
+  const has = (key: string) => form.has(key);
+  const day = (key: string) => isDay(text(key));
+  const today = todayEcuador();
+  const errores = TRANSICION.errores;
+  // Las fechas son AAAA-MM-DD: compararlas como texto respeta el orden de los días.
+  const rules: [boolean, string][] = [
+    [has("contactId") && !text("contactId"), errores.contacto],
+    [has("ownerId") && !text("ownerId"), errores.responsable],
+    [has("interactionSubject") && !between(text("interactionSubject"), 2, 160), errores.interaccion],
+    [has("interactionDay") && !(day("interactionDay") && text("interactionDay") <= today), errores.interaccionFecha],
+    [has("need") && !between(text("need"), 2, 2000), errores.necesidad],
+    [has("nextSubject") && !between(text("nextSubject"), 2, 160), errores.actividad],
+    [has("nextDay") && !(day("nextDay") && text("nextDay") >= today), errores.actividadFecha],
+    [has("solution") && !between(text("solution"), 2, 2000), errores.solucion],
+    [Boolean(text("budget")) && !isAmount(text("budget")), errores.presupuesto],
+    [has("budget") && !text("budget") && !between(text("budgetNote"), 2, 1000), errores.presupuestoRequerido],
+    [has("expectedClose") && !day("expectedClose"), errores.cierreEstimado],
+    [has("validUntil") && !(day("validUntil") && text("validUntil") >= today), errores.vigencia],
+    [has("sentAt") && !(day("sentAt") && text("sentAt") <= today), errores.envio],
+    [has("sentAt") && text("validUntil") < text("sentAt"), errores.vigenciaEnvio],
+    [has("acceptedAt") && !(day("acceptedAt") && text("acceptedAt") <= today), errores.aceptacion],
+    [has("acceptedAt") && !between(text("acceptanceNote"), 2, 500), errores.evidencia],
+    [has("closedAt") && !(day("closedAt") && text("closedAt") <= today), errores.cierreReal],
+    [has("reason") && !between(text("reason"), 2, 500), errores.motivo],
+    [Boolean(text("followUpSubject")) && !between(text("followUpSubject"), 2, 160), errores.seguimiento],
+    [Boolean(text("followUpSubject")) && !(day("followUpDay") && text("followUpDay") >= today), errores.seguimientoFecha],
+  ];
+  const broken = rules.find(([failed]) => failed);
+  if (broken) return broken[1];
+  if (to !== "LOST" && to !== "REJECTED") return undefined;
   const reason = text("lossReason");
   const detail = text("lossDetail");
-  if (!(LOSS_REASONS as readonly string[]).includes(reason)) return NEGOCIO.perder.motivoRequerido;
-  if ((reason === "OTHER" || detail) && (detail.length < 2 || detail.length > 500))
-    return NEGOCIO.perder.detalleRequerido;
+  const reasons: readonly string[] = to === "LOST" ? LOSS_REASONS : REJECTION_REASONS;
+  if (!reasons.includes(reason))
+    return to === "LOST" ? NEGOCIO.perder.motivoRequerido : NEGOCIO.rechazar.motivoRequerido;
+  if ((reason === "OTHER" || detail) && !between(detail, 2, 500)) return NEGOCIO.perder.detalleRequerido;
   return undefined;
 }
 
-/**
- * Guarda lo que el modal completó (datos del negocio, interacción, próxima actividad, propuesta y aceptación)
- * y termina con el cambio de etapa. Corta en el primer error; lo guardado antes queda, porque son datos reales.
- */
-export async function completeTransitionAction(
-  dealId: string,
-  to: string,
-  fromStageId: string,
-  form: FormData,
-): Promise<{ error?: string; pending?: Pending[]; done?: true }> {
-  const error = transitionError(to, form);
-  if (error) return { error };
+/** Datos que el modal completó: negocio, interacción, próxima actividad, propuesta y aceptación. */
+function transitionSteps(dealId: string, form: FormData) {
   const text = (key: string) => formText(form, key);
   const deal: Record<string, unknown> = {};
   for (const key of ["contactId", "ownerId", "need", "solution", "budgetNote", "decisionMaker"])
@@ -205,14 +232,14 @@ export async function completeTransitionAction(
       {
         type: text("interactionType"),
         subject: text("interactionSubject"),
-        completedAt: utcDay(text("interactionDay") || todayEcuador()),
+        completedAt: utcDay(text("interactionDay")),
       },
     ]);
   if (text("nextSubject"))
     steps.push([
       dealPath(dealId, "/activities"),
       "POST",
-      { type: text("nextType"), subject: text("nextSubject"), dueAt: utcDay(text("nextDay") || todayEcuador()) },
+      { type: text("nextType"), subject: text("nextSubject"), dueAt: utcDay(text("nextDay")) },
     ]);
   if (text("validUntil"))
     steps.push([
@@ -226,16 +253,46 @@ export async function completeTransitionAction(
       "POST",
       { acceptedAt: utcDay(text("acceptedAt")), acceptanceNote: text("acceptanceNote") },
     ]);
-  for (const [path, method, body] of steps) {
+  return steps;
+}
+
+/**
+ * Valida y guarda lo que el modal completó, sin cambiar de etapa: es «Guardar e ir a la ficha», para lo que
+ * solo se completa allí. Corta en el primer error; lo guardado antes queda, porque son datos reales.
+ */
+export async function saveTransitionAction(
+  dealId: string,
+  to: string,
+  form: FormData,
+): Promise<{ error?: string; done?: true }> {
+  const error = transitionError(to, form);
+  if (error) return { error };
+  for (const [path, method, body] of transitionSteps(dealId, form)) {
     const result = await request(path, method, body);
     if (result.error) return { error: result.error };
   }
-  const values: Record<string, string | undefined> = {
+  return { done: true };
+}
+
+/** Guarda lo que el modal completó y termina con el cambio de etapa. */
+export async function completeTransitionAction(
+  dealId: string,
+  to: string,
+  fromStageId: string,
+  form: FormData,
+): Promise<{ error?: string; pending?: Pending[]; done?: true }> {
+  const saved = await saveTransitionAction(dealId, to, form);
+  if (saved.error) return saved;
+  const text = (key: string) => formText(form, key);
+  const values: Record<string, unknown> = {
     fromStageId,
     reason: text("reason") || undefined,
     closedAt: text("closedAt") ? utcDay(text("closedAt")) : undefined,
     lossReason: text("lossReason") || undefined,
     lossDetail: text("lossDetail") || undefined,
+    followUp: text("followUpSubject")
+      ? { type: text("followUpType"), subject: text("followUpSubject"), dueAt: utcDay(text("followUpDay")) }
+      : undefined,
   };
   const route = TRANSITION_ROUTES[to as keyof typeof TRANSITION_ROUTES];
   const [rest, method, keys] = route ?? ["/move", "PATCH", ["fromStageId", "reason", "closedAt"]];

@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Pencil, RotateCcw, ThumbsDown, Trophy } from "lucide-react";
+import { Ban, Pencil, RotateCcw, ThumbsDown, Trophy } from "lucide-react";
 import { FormDialog } from "@/components/form/form-dialog";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { DealForm } from "./deal-form";
 import { TransitionDialog } from "./transition-dialog";
 import type { DealDetail, Option, Pipeline } from "./types";
 
-type Mode = "WON" | "LOST" | "REOPEN" | "edit";
+type Mode = "WON" | "LOST" | "REJECTED" | "REOPEN" | "edit";
 type Props = {
   deal: DealDetail;
   pipelines: Pipeline[];
@@ -23,13 +22,16 @@ type Props = {
 const TITLES = {
   WON: NEGOCIO.ganar.titulo,
   LOST: NEGOCIO.perder.titulo,
+  REJECTED: NEGOCIO.rechazar.titulo,
   REOPEN: NEGOCIO.reabrir.titulo,
   edit: PIPELINE.editDeal,
 } as const;
 
-/** Ganar, perder y reabrir abren el mismo modal de transición que el tablero: las reglas son las del API. */
+/**
+ * Ganar, perder, rechazar y reabrir abren el mismo modal de transición que el tablero: las reglas son las del API.
+ * Cualquiera rechaza un abierto o un perdido; reabrir sigue siendo de ADMIN.
+ */
 export function DealActions({ deal, canReopen, ...options }: Readonly<Props>) {
-  const router = useRouter();
   const dialog = useRef<HTMLDialogElement>(null);
   const [mode, setMode] = useState<Mode | null>(null);
   const [message, setMessage] = useState("");
@@ -43,7 +45,6 @@ export function DealActions({ deal, canReopen, ...options }: Readonly<Props>) {
   const done = (text: string) => {
     close();
     setMessage(text);
-    router.refresh();
   };
   const acciones = NEGOCIO.acciones;
   const open = deal.status === "OPEN";
@@ -60,6 +61,12 @@ export function DealActions({ deal, canReopen, ...options }: Readonly<Props>) {
             {acciones.perder}
           </Button>
         </>
+      )}
+      {(open || deal.status === "LOST") && (
+        <Button variant="secondary" onClick={() => setMode("REJECTED")}>
+          <Ban aria-hidden />
+          {acciones.rechazar}
+        </Button>
       )}
       {!open && canReopen && (
         <Button variant="secondary" onClick={() => setMode("REOPEN")}>

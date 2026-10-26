@@ -11,15 +11,16 @@ import { notFound } from "next/navigation";
 import { Info } from "@/components/data/detail-info";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ESTADO_NEGOCIO, TIPO_ACTIVIDAD } from "@/content/catalogos";
+import { TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { CONTACTOS } from "@/content/contactos";
 import { authenticatedApi } from "@/lib/authenticated-api";
-import { formatDate, formatMoney, initials } from "@/lib/format";
+import { formatDate, initials } from "@/lib/format";
 import { DOCUMENT_TYPES } from "@/lib/ecuador";
 import { formatPhone, splitPhone } from "@/lib/phone";
 import { ContactForm } from "../../../../features/contactos/contact-form";
 import { companyLabel } from "../../../../features/contactos/contact-form-state";
 import type { ContactDetail } from "../../../../features/contactos/types";
+import { DealJourney } from "../../../../features/pipeline/deal-journey";
 
 export default async function ContactDetailPage({
   params,
@@ -115,19 +116,7 @@ export default async function ContactDetailPage({
               <Badge tone="blue">{contact.deals.length}</Badge>
             </h3>
             {contact.deals.length ? (
-              contact.deals.map((deal) => (
-                <article key={deal.id}>
-                  <div>
-                    <Link href={`/pipeline/${deal.id}`}>
-                      <strong>{deal.title}</strong>
-                    </Link>
-                    <span>
-                      {deal.stage.name} · {ESTADO_NEGOCIO[deal.status]}
-                    </span>
-                  </div>
-                  <b>{formatMoney(deal.value, deal.currency)}</b>
-                </article>
-              ))
+              contact.deals.map((deal) => <DealJourney key={deal.id} deal={deal} />)
             ) : (
               <p>{texto.sinNegocios}</p>
             )}
