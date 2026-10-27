@@ -435,3 +435,28 @@ test("la configuracion exige etapas con enteros, color por defecto y pipeline pr
   await configurePipelineAction("createPipeline", "", activity({ name: "Ventas", isDefault: "true" }));
   expect(JSON.parse(String(api.mock.calls[1]?.[1]?.body))).toEqual({ name: "Ventas", isDefault: true });
 });
+test("sanitiza lo que escribe la persona: sin controles ni invisibles, con saltos de línea solo en las notas", async () => {
+  api.mockResolvedValue(Response.json({ id: "deal-1" }));
+  await saveDeal(initial, form({ title: " Con\u0000trato\u200B  anual\u202E " }));
+  expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body)).title).toBe("Contrato anual");
+  api.mockClear();
+  await qualifyDealAction("d1", fields({ need: " Uno\r\n\r\n\r\n\u200BDos ", decisionMaker: "Ana\n\u0007 Paz" }));
+  const body = JSON.parse(String(api.mock.calls[0]?.[1]?.body));
+  expect(body.need).toBe("Uno\n\nDos");
+  expect(body.decisionMaker).toBe("Ana Paz");
+});
+test("los productos limpian cada celda y lo que no es texto queda vacío", async () => {
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  await saveDealItemsAction("d1", [{ description: "Vi\u200Bnos\u0000  finos", quantity: "1", unitPrice: "10", taxRate: "15" }]);
+  expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body)).items[0].description).toBe("Vinos finos");
+  api.mockClear();
+  const hostile = [{ description: { toString: () => "x" }, quantity: 5, unitPrice: null, taxRate: undefined }];
+  const result = await saveDealItemsAction("d1", hostile as never);
+  expect(result.rowErrors?.[0]).toEqual({
+    description: expect.any(String),
+    quantity: expect.any(String),
+    unitPrice: expect.any(String),
+    taxRate: expect.any(String),
+  });
+  expect(api).not.toHaveBeenCalled();
+});

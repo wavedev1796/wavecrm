@@ -291,6 +291,27 @@ Verificación final del 2026-10-26, con `pnpm dev` apagado:
 - `pnpm build` sin errores. `prisma generate` no corrió porque el API de desarrollo bloqueaba el motor en Windows; el esquema no cambió y se compilaron `@wave/database` (`tsc`), el API y la web por separado.
 - En el navegador (`/pipeline`, `next dev`), después de `router.refresh()` todos los `preload` de estilos tienen su `stylesheet` y el chunk `pipeline/loading.css` ya no existe. El tablero conserva sus estilos.
 
+## Sanitización de los formularios del pipeline (2026-10-27)
+
+### Implementación
+
+- `packages/shared/src/text.ts` (nuevo) y `index.ts`: `cleanText(valor, multilinea?)`. Compone Unicode (NFC), quita controles C0/C1 (el nulo `\0` incluido), invisibles (guion blando, ancho cero, BOM), marcas de dirección (bidi), etiquetas U+E0000 y sustitutos sueltos; recorta y junta los espacios. Con `multilinea` conserva los saltos de línea (CRLF pasa a LF, hasta una línea en blanco seguida).
+- `apps/api/src/modules/pipeline/pipeline.dto.ts`: `text()` usa `cleanText` (4.º parámetro `multiline` para necesidad, solución, justificación del presupuesto, motivos, detalle del cierre, nota de actividad y evidencia de aceptación). `numeric()` solo convierte a número lo escrito en cifras (`/^-?\d+(\.\d+)?$/`). En los campos numéricos `IsNumber`/`IsInt` pasan al final de la lista: class-validator informa primero el decorador listado al final y un texto como «1e3» mostraba el mensaje de `@Max`; `value` y `position` además tenían ese mensaje en inglés.
+- `apps/web/features/pipeline/actions.ts`: `formText` usa `cleanText` (conjunto `MULTILINE` con los mismos campos de varias líneas); `saveDeal` lo reutiliza en vez de su propio `trim()`; `saveDealItemsAction` limpia cada celda de las filas (llegan como argumento, no como `FormData`) y trata como vacío lo que no es texto.
+- Pruebas: `apps/api/test/unitarias/common/text.test.cjs` (nuevo), dos casos en `pipeline.dto.test.cjs` y dos en `features/pipeline/actions.test.ts`.
+
+### Decisiones
+
+- **Un solo punto por lado.** Todo texto del pipeline entra por `formText` (web) o por `text()` (API); no se tocó cada componente. La web limpia para mostrar los errores con el valor real y el API vuelve a limpiar porque es el borde de confianza (otro cliente puede llamarlo sin la web).
+- **El HTML no se elimina.** React escapa al pintar, Prisma parametriza y no hay `dangerouslySetInnerHTML`; quitar «<» dañaría textos como «Oferta < 5 mil». Si algún día un dato del pipeline se inserta en un correo o un CSV, se escapa allí (como ya hace `mailer.service.ts`).
+- **Montos y fechas** ya eran estrictos (expresión regular y calendario real); lo nuevo es que el API tampoco acepta notación científica ni hexadecimal.
+- Los ids (`pipelineId`, `stageId`, …) pasan por `text()` y viajan con `encodeURIComponent`; las listas de ids de la papelera y los parámetros de la URL (`pipelineId`, `page`) ya se validaban.
+
+### Validación
+
+- API 236 de 236 (`pnpm --filter @wave/api test`); web `features/pipeline` y `app/(dashboard)/pipeline`, 110 de 110.
+- `pnpm lint` y `pnpm build` sin errores.
+
 ## Pendientes
 
 - Endpoint único de transición (datos del modal más el cambio de etapa en una transacción), si mover con el modal sigue lento en producción.

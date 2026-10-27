@@ -240,3 +240,28 @@ test("el tablero acepta columna y página; la columna exige el pipeline", async 
     page: "La página debe ser un número entero mayor que 0.",
   });
 });
+
+test("Sanitización: los textos pierden controles e invisibles y el motivo conserva sus líneas", async () => {
+  const body = {
+    ...deal,
+    title: "  Web\u0000 \u200Bcorporativa\u202E  ",
+    need: "Línea uno\r\n\r\n\r\n\r\nLínea\u00A0dos\u0007 ",
+  };
+  assert.deepEqual(await errors(CreateDealDto, body), {});
+  const dto = plainToInstance(CreateDealDto, body);
+  assert.equal(dto.title, "Web corporativa");
+  assert.equal(dto.need, "Línea uno\n\nLínea dos");
+  // Solo invisibles equivale a vacío: no pasa el largo mínimo.
+  assert.deepEqual(await errors(ReopenDealDto, { reason: "\u200B\u0000 \u200B" }), {
+    reason: "Revisa el motivo: entre 2 y 500 caracteres.",
+  });
+  assert.equal(plainToInstance(ReopenDealDto, { reason: "Volvió\r\nel cliente" }).reason, "Volvió\nel cliente");
+});
+
+test("Sanitización: solo un decimal en cifras pasa a número", async () => {
+  for (const value of ["1e3", "0x10", "Infinity", "1_000", "١٢٣", "1,5"]) {
+    assert.equal(plainToInstance(CreateDealDto, { ...deal, value }).value, value);
+    assert.equal((await errors(CreateDealDto, { ...deal, value })).value, "Ingresa un monto valido con hasta dos decimales.");
+  }
+  assert.equal(plainToInstance(CreateDealDto, { ...deal, value: " 15.5 " }).value, 15.5);
+});

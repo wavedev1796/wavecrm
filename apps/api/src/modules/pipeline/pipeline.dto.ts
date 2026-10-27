@@ -10,6 +10,7 @@ import {
 import { Transform, Type } from "class-transformer";
 import {
   ACTIVITY_TYPES,
+  cleanText,
   DEAL_STATUSES,
   IVA_SUGGESTIONS,
   LOSS_REASONS,
@@ -41,10 +42,11 @@ import {
   isISO8601,
 } from "class-validator";
 
-const text = (label: string, max = 100, min = 1) =>
+/** `multiline`: notas y motivos conservan sus saltos de línea; el resto queda en una sola línea. */
+const text = (label: string, max = 100, min = 1, multiline = false) =>
   applyDecorators(
     Transform(({ value }: { value: unknown }) =>
-      typeof value === "string" ? value.trim() : value,
+      typeof value === "string" ? cleanText(value, multiline) : value,
     ),
     IsString({ message: "Ingresa " + label + "." }),
     Length(min, max, {
@@ -52,9 +54,13 @@ const text = (label: string, max = 100, min = 1) =>
         "Revisa " + label + ": entre " + min + " y " + max + " caracteres.",
     }),
   );
+/** Solo un decimal escrito en cifras pasa a número: «1e3», «0x10» o «Infinity» siguen siendo texto y fallan la validación. */
+const NUMBER_TEXT = /^-?\d+(\.\d+)?$/;
 const numeric = () =>
   Transform(({ value }: { value: unknown }) =>
-    typeof value === "string" && value.trim() ? Number(value) : value,
+    typeof value === "string" && NUMBER_TEXT.test(value.trim())
+      ? Number(value)
+      : value,
   );
 /** Texto ISO 8601 → Date, con su mensaje si no lo es. */
 const isoDate = (message: string) =>
@@ -67,6 +73,9 @@ const isoDate = (message: string) =>
     IsDate({ message }),
   );
 
+const AMOUNT_INVALID = "Ingresa un monto valido con hasta dos decimales.";
+const POSITION_INVALID = "La posicion debe ser un entero.";
+const PROBABILITY_INVALID = "La probabilidad debe estar entre 0 y 100.";
 const IVA_INVALID = "El IVA debe ser un porcentaje entero entre 0 y 100.";
 const REQUIREMENTS_INVALID = "Elige requisitos válidos y sin repetir.";
 // El máximo de Decimal(14,2): como número para @Max y dentro de los mensajes de monto.
@@ -90,15 +99,15 @@ export class CreateStageDto {
   @ApiProperty() @text("el nombre de la etapa", 80, 2) name!: string;
   @ApiProperty()
   @numeric()
-  @IsInt({ message: "La posicion debe ser un entero." })
-  @Min(0)
-  @Max(1000000)
+  @Min(0, { message: POSITION_INVALID })
+  @Max(1000000, { message: POSITION_INVALID })
+  @IsInt({ message: POSITION_INVALID })
   position!: number;
   @ApiProperty()
   @numeric()
-  @IsInt()
-  @Min(0, { message: "La probabilidad debe estar entre 0 y 100." })
-  @Max(100, { message: "La probabilidad debe estar entre 0 y 100." })
+  @Min(0, { message: PROBABILITY_INVALID })
+  @Max(100, { message: PROBABILITY_INVALID })
+  @IsInt({ message: PROBABILITY_INVALID })
   probability!: number;
   @ApiPropertyOptional()
   @IsOptional()
@@ -118,12 +127,9 @@ export class CreateDealDto {
   @ApiProperty() @text("el nombre del negocio", 160, 2) title!: string;
   @ApiProperty()
   @numeric()
-  @IsNumber(
-    { maxDecimalPlaces: 2 },
-    { message: "Ingresa un monto valido con hasta dos decimales." },
-  )
-  @Min(0)
-  @Max(MAX_MONEY)
+  @Min(0, { message: AMOUNT_INVALID })
+  @Max(MAX_MONEY, { message: AMOUNT_INVALID })
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: AMOUNT_INVALID })
   value!: number;
   @ApiProperty() @text("el pipeline") pipelineId!: string;
   @ApiProperty() @text("la etapa") stageId!: string;
@@ -139,22 +145,22 @@ export class CreateDealDto {
   expectedClose?: Date | null;
   @ApiPropertyOptional({ description: "Necesidad del cliente" })
   @IsOptional()
-  @text("la necesidad", 2000, 2)
+  @text("la necesidad", 2000, 2, true)
   need?: string | null;
   @ApiPropertyOptional({ description: "Solución de interés" })
   @IsOptional()
-  @text("la solución", 2000, 2)
+  @text("la solución", 2000, 2, true)
   solution?: string | null;
   @ApiPropertyOptional({ description: "Presupuesto evaluado (USD)" })
   @IsOptional()
   @numeric()
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: BUDGET_INVALID })
   @Min(0, { message: BUDGET_INVALID })
   @Max(MAX_MONEY, { message: BUDGET_INVALID })
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: BUDGET_INVALID })
   budget?: number | null;
   @ApiPropertyOptional({ description: "Por qué el presupuesto aún no se conoce" })
   @IsOptional()
-  @text("la justificación del presupuesto", 1000, 2)
+  @text("la justificación del presupuesto", 1000, 2, true)
   budgetNote?: string | null;
   @ApiPropertyOptional({ description: "Persona decisora" })
   @IsOptional()
@@ -164,7 +170,7 @@ export class CreateDealDto {
 export class UpdateDealDto extends PartialType(CreateDealDto, {
   skipNullProperties: false,
 }) {}
-const reason = () => text("el motivo", 500, 2);
+const reason = () => text("el motivo", 500, 2, true);
 /** Etapa que la persona veía: si ya cambió, el API responde 409 en vez de pisar el cambio de otro. */
 class FromStageDto {
   @ApiPropertyOptional() @IsOptional() @text("la etapa de origen") fromStageId?: string;
@@ -201,7 +207,7 @@ const closeDetail = () =>
       (dto: { lossReason?: string; lossDetail?: unknown }) =>
         dto.lossReason === "OTHER" || dto.lossDetail != null,
     ),
-    text("el detalle del motivo", 500, 2),
+    text("el detalle del motivo", 500, 2, true),
   );
 /** Seguimiento opcional de un perdido: queda como actividad pendiente del negocio. */
 export class FollowUpDto {
@@ -248,27 +254,27 @@ export class DealItemDto {
   description!: string;
   @ApiProperty({ example: 1 })
   @numeric()
+  @Min(0.01, { message: "La cantidad debe ser mayor que cero." })
+  @Max(999999.99, { message: "La cantidad máxima es 999999.99." })
   @IsNumber(
     { maxDecimalPlaces: 2 },
     { message: "Ingresa una cantidad con hasta dos decimales." },
   )
-  @Min(0.01, { message: "La cantidad debe ser mayor que cero." })
-  @Max(999999.99, { message: "La cantidad máxima es 999999.99." })
   quantity!: number;
   @ApiProperty({ example: 1400 })
   @numeric()
+  @Min(0, { message: "El precio no puede ser negativo." })
+  @Max(MAX_MONEY, { message: "El precio máximo es " + MAX_DEAL_VALUE + "." })
   @IsNumber(
     { maxDecimalPlaces: 2 },
     { message: "Ingresa un precio válido con hasta dos decimales." },
   )
-  @Min(0, { message: "El precio no puede ser negativo." })
-  @Max(MAX_MONEY, { message: "El precio máximo es " + MAX_DEAL_VALUE + "." })
   unitPrice!: number;
   @ApiProperty({ example: IVA_SUGGESTIONS[0], minimum: 0, maximum: 100 })
   @numeric()
-  @IsInt({ message: IVA_INVALID })
   @Min(0, { message: IVA_INVALID })
   @Max(100, { message: IVA_INVALID })
+  @IsInt({ message: IVA_INVALID })
   taxRate!: number;
 }
 export class CreateDealActivityDto {
@@ -284,7 +290,7 @@ export class CreateDealActivityDto {
   dueAt?: Date;
   @ApiPropertyOptional()
   @IsOptional()
-  @text("la nota", 1000)
+  @text("la nota", 1000, 1, true)
   description?: string;
   @ApiPropertyOptional({ description: "Con fecha, la actividad se registra como ya realizada" })
   @IsOptional()
@@ -305,7 +311,7 @@ export class AcceptQuoteDto {
   @isoDate("Ingresa la fecha de aceptación.")
   acceptedAt!: Date;
   @ApiProperty({ example: "Orden de compra 55 recibida por correo" })
-  @text("la evidencia de aceptación", 500, 2)
+  @text("la evidencia de aceptación", 500, 2, true)
   acceptanceNote!: string;
 }
 export class SaveDealItemsDto {

@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { authenticatedApi, apiError } from "@/lib/authenticated-api";
-import { ACTIVITY_TYPES, LOSS_REASONS, REJECTION_REASONS } from "@wave/shared";
+import { ACTIVITY_TYPES, cleanText, LOSS_REASONS, REJECTION_REASONS } from "@wave/shared";
 import { NEGOCIO, PIPELINE, TRANSICION } from "@/content/pipeline";
 import {
   decimal,
@@ -35,9 +35,20 @@ function refresh() {
   for (const path of ["/pipeline", "/contactos", "/empresas"])
     revalidatePath(path, "layout");
 }
+/** Campos de varias líneas (notas y motivos): conservan sus saltos de línea; el resto queda en una línea. */
+const MULTILINE = new Set([
+  "need",
+  "solution",
+  "budgetNote",
+  "description",
+  "reason",
+  "lossDetail",
+  "acceptanceNote",
+]);
+/** Todo texto del formulario entra limpio (sin controles ni invisibles); un archivo o un campo ausente queda vacío. */
 function formText(form: FormData, key: string): string {
   const value = form.get(key);
-  return typeof value === "string" ? value.trim() : "";
+  return typeof value === "string" ? cleanText(value, MULTILINE.has(key)) : "";
 }
 async function request(
   path: string,
@@ -77,10 +88,8 @@ export async function saveDeal(
   form: FormData,
 ): Promise<DealFormState> {
   const values = { ...emptyDeal };
-  for (const key of Object.keys(values) as (keyof DealValues)[]) {
-    const value = form.get(key);
-    values[key] = typeof value === "string" ? value.trim() : "";
-  }
+  for (const key of Object.keys(values) as (keyof DealValues)[])
+    values[key] = formText(form, key);
   values.value = decimal(values.value);
   const locked = form.get("valueLocked") === "1";
   const fieldErrors = validateDeal(values);
@@ -137,11 +146,19 @@ export async function saveDealItemsAction(
   dealId: string,
   rows: ItemValues[],
 ): Promise<{ error?: string; rowErrors?: ItemErrors }> {
-  const rowErrors = validateItems(rows);
+  // Las filas llegan como argumento, no como FormData: se limpian campo a campo y lo que no es texto queda vacío.
+  const clean = (value: unknown) => (typeof value === "string" ? cleanText(value) : "");
+  const cleaned = (Array.isArray(rows) ? rows : []).map((row) => ({
+    description: clean(row?.description),
+    quantity: clean(row?.quantity),
+    unitPrice: clean(row?.unitPrice),
+    taxRate: clean(row?.taxRate),
+  }));
+  const rowErrors = validateItems(cleaned);
   if (rowErrors) return { rowErrors };
   return request(dealPath(dealId, "/items"), "PUT", {
-    items: rows.map((row) => ({
-      description: row.description.trim(),
+    items: cleaned.map((row) => ({
+      description: row.description,
       quantity: Number(decimal(row.quantity)),
       unitPrice: Number(decimal(row.unitPrice)),
       taxRate: Number(row.taxRate),
