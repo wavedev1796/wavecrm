@@ -1,5 +1,6 @@
 import { applyDecorators } from "@nestjs/common";
 import { PaginationDto } from "../../common/dto/pagination.dto";
+import { MAX_DEAL_VALUE } from "./deal-rules";
 import {
   ApiProperty,
   ApiPropertyOptional,
@@ -55,15 +56,23 @@ const numeric = () =>
   Transform(({ value }: { value: unknown }) =>
     typeof value === "string" && value.trim() ? Number(value) : value,
   );
-const isoDate = () =>
-  Transform(({ value }: { value: unknown }) =>
-    typeof value === "string" && isISO8601(value, { strict: true })
-      ? new Date(value)
-      : value,
+/** Texto ISO 8601 → Date, con su mensaje si no lo es. */
+const isoDate = (message: string) =>
+  applyDecorators(
+    Transform(({ value }: { value: unknown }) =>
+      typeof value === "string" && isISO8601(value, { strict: true })
+        ? new Date(value)
+        : value,
+    ),
+    IsDate({ message }),
   );
 
 const IVA_INVALID = "El IVA debe ser un porcentaje entero entre 0 y 100.";
 const REQUIREMENTS_INVALID = "Elige requisitos válidos y sin repetir.";
+// El máximo de Decimal(14,2): como número para @Max y dentro de los mensajes de monto.
+const MAX_MONEY = Number(MAX_DEAL_VALUE);
+const BUDGET_INVALID =
+  "Ingresa un presupuesto válido de hasta " + MAX_DEAL_VALUE + ".";
 
 export class CreatePipelineDto {
   @ApiProperty({ example: "Ventas Ecuador" })
@@ -114,7 +123,7 @@ export class CreateDealDto {
     { message: "Ingresa un monto valido con hasta dos decimales." },
   )
   @Min(0)
-  @Max(999999999999.99)
+  @Max(MAX_MONEY)
   value!: number;
   @ApiProperty() @text("el pipeline") pipelineId!: string;
   @ApiProperty() @text("la etapa") stageId!: string;
@@ -126,8 +135,7 @@ export class CreateDealDto {
     string | null;
   @ApiPropertyOptional()
   @IsOptional()
-  @isoDate()
-  @IsDate({ message: "Ingresa una fecha valida." })
+  @isoDate("Ingresa una fecha valida.")
   expectedClose?: Date | null;
   @ApiPropertyOptional({ description: "Necesidad del cliente" })
   @IsOptional()
@@ -140,14 +148,9 @@ export class CreateDealDto {
   @ApiPropertyOptional({ description: "Presupuesto evaluado (USD)" })
   @IsOptional()
   @numeric()
-  @IsNumber(
-    { maxDecimalPlaces: 2 },
-    { message: "Ingresa un presupuesto válido de hasta 999999999999.99." },
-  )
-  @Min(0, { message: "Ingresa un presupuesto válido de hasta 999999999999.99." })
-  @Max(999999999999.99, {
-    message: "Ingresa un presupuesto válido de hasta 999999999999.99.",
-  })
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: BUDGET_INVALID })
+  @Min(0, { message: BUDGET_INVALID })
+  @Max(MAX_MONEY, { message: BUDGET_INVALID })
   budget?: number | null;
   @ApiPropertyOptional({ description: "Por qué el presupuesto aún no se conoce" })
   @IsOptional()
@@ -174,14 +177,12 @@ export class MoveDealDto extends FromStageDto {
   reason?: string;
   @ApiPropertyOptional({ description: "Fecha real de cierre al mover a una etapa de 100 %" })
   @IsOptional()
-  @isoDate()
-  @IsDate({ message: "Ingresa la fecha real de cierre." })
+  @isoDate("Ingresa la fecha real de cierre.")
   closedAt?: Date;
 }
 export class WinDealDto extends FromStageDto {
   @ApiProperty({ example: "2026-10-10T00:00:00.000Z" })
-  @isoDate()
-  @IsDate({ message: "Ingresa la fecha real de cierre." })
+  @isoDate("Ingresa la fecha real de cierre.")
   closedAt!: Date;
 }
 export class ReopenDealDto {
@@ -211,8 +212,7 @@ export class FollowUpDto {
   @text("el asunto del seguimiento", 160, 2)
   subject!: string;
   @ApiProperty({ example: "2027-01-25" })
-  @isoDate()
-  @IsDate({ message: "Ingresa la fecha del seguimiento." })
+  @isoDate("Ingresa la fecha del seguimiento.")
   dueAt!: Date;
 }
 export class LoseDealDto extends FromStageDto {
@@ -262,7 +262,7 @@ export class DealItemDto {
     { message: "Ingresa un precio válido con hasta dos decimales." },
   )
   @Min(0, { message: "El precio no puede ser negativo." })
-  @Max(999999999999.99, { message: "El precio máximo es 999999999999.99." })
+  @Max(MAX_MONEY, { message: "El precio máximo es " + MAX_DEAL_VALUE + "." })
   unitPrice!: number;
   @ApiProperty({ example: IVA_SUGGESTIONS[0], minimum: 0, maximum: 100 })
   @numeric()
@@ -280,8 +280,7 @@ export class CreateDealActivityDto {
   subject!: string;
   @ApiPropertyOptional()
   @IsOptional()
-  @isoDate()
-  @IsDate({ message: "Ingresa una fecha válida." })
+  @isoDate("Ingresa una fecha válida.")
   dueAt?: Date;
   @ApiPropertyOptional()
   @IsOptional()
@@ -289,25 +288,21 @@ export class CreateDealActivityDto {
   description?: string;
   @ApiPropertyOptional({ description: "Con fecha, la actividad se registra como ya realizada" })
   @IsOptional()
-  @isoDate()
-  @IsDate({ message: "Ingresa una fecha válida." })
+  @isoDate("Ingresa una fecha válida.")
   completedAt?: Date;
 }
 export class CreateQuoteDto {
   @ApiProperty({ example: "2026-11-30" })
-  @isoDate()
-  @IsDate({ message: "Ingresa la vigencia de la propuesta." })
+  @isoDate("Ingresa la vigencia de la propuesta.")
   validUntil!: Date;
   @ApiPropertyOptional({ description: "Por defecto, hoy" })
   @IsOptional()
-  @isoDate()
-  @IsDate({ message: "Ingresa una fecha de envío válida." })
+  @isoDate("Ingresa una fecha de envío válida.")
   sentAt?: Date;
 }
 export class AcceptQuoteDto {
   @ApiProperty({ example: "2026-10-20" })
-  @isoDate()
-  @IsDate({ message: "Ingresa la fecha de aceptación." })
+  @isoDate("Ingresa la fecha de aceptación.")
   acceptedAt!: Date;
   @ApiProperty({ example: "Orden de compra 55 recibida por correo" })
   @text("la evidencia de aceptación", 500, 2)

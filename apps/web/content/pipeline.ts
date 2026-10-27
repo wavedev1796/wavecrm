@@ -10,7 +10,6 @@ export const PIPELINE = {
     "No pudimos conectar con el servidor. Tus datos se conservan; intenta de nuevo.",
   created: "Negocio creado.",
   updated: "Negocio actualizado.",
-  moved: "Etapa actualizada.",
   deleted: "Negocio eliminado.",
   noDeals: "Aun no hay negocios en esta etapa.",
   linked: "Selecciona al menos un contacto o una empresa.",

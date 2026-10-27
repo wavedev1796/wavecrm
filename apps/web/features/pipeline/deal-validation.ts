@@ -19,16 +19,14 @@ export const decimal = (value: string) => value.trim().replace(",", ".");
 /** Hoy en Ecuador como AAAA-MM-DD (UTC-5, sin horario de verano), igual que ecuadorToday() del API. */
 export const todayEcuador = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guayaquil" }).format(new Date());
-/** Monto de 0 a 999999999999.99 con hasta dos decimales, con punto o coma. */
+/** Monto de 0 a 999999999999.99 (el máximo de Decimal(14,2)) con hasta dos decimales, con punto o coma. */
 export const isAmount = (value: string) => /^\d{1,12}(\.\d{1,2})?$/.test(decimal(value));
 
 export function validateDeal(values: DealValues): DealFormState["fieldErrors"] {
   const errors: DealFormState["fieldErrors"] = {};
   if (values.title.length < 2 || values.title.length > 160)
     errors.title = PIPELINE.titleRequired;
-  // El regex ya limita el monto a 999999999999.99, el máximo de Decimal(14,2).
-  if (!/^\d{1,12}(\.\d{1,2})?$/.test(values.value))
-    errors.value = PIPELINE.amountInvalid;
+  if (!isAmount(values.value)) errors.value = PIPELINE.amountInvalid;
   if (!values.pipelineId) errors.pipelineId = "Elige un pipeline.";
   if (!values.stageId) errors.stageId = "Elige una etapa.";
   if (!values.contactId && !values.companyId)
@@ -50,8 +48,7 @@ export function validateItems(rows: readonly ItemValues[]): ItemErrors | null {
       rowErrors.description = texto.descripcion;
     if (!/^\d{1,6}(\.\d{1,2})?$/.test(quantity) || Number(quantity) === 0)
       rowErrors.quantity = texto.cantidad;
-    if (!/^\d{1,12}(\.\d{1,2})?$/.test(decimal(row.unitPrice)))
-      rowErrors.unitPrice = texto.precio;
+    if (!isAmount(row.unitPrice)) rowErrors.unitPrice = texto.precio;
     if (!/^\d{1,3}$/.test(row.taxRate.trim()) || Number(row.taxRate) > 100)
       rowErrors.taxRate = texto.iva;
     if (Object.keys(rowErrors).length) errors[index] = rowErrors;

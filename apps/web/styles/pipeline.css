@@ -179,15 +179,10 @@
   gap: 8px;
 }
 .deal-title {
-  padding: 0;
   text-decoration: none;
-  border: 0;
-  background: none;
-  text-align: left;
   font-weight: 700;
   color: var(--wave-ink);
   font-size: 0.85rem;
-  cursor: pointer;
   overflow-wrap: anywhere;
 }
 .deal-title:hover {

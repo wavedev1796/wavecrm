@@ -29,6 +29,7 @@ import {
 
 const dealPath = (id: string, rest = "") =>
   "/deals/" + encodeURIComponent(id) + rest;
+const utcDay = (day: string) => day + "T00:00:00.000Z";
 
 function refresh() {
   for (const path of ["/pipeline", "/contactos", "/empresas"])
@@ -80,7 +81,7 @@ export async function saveDeal(
     const value = form.get(key);
     values[key] = typeof value === "string" ? value.trim() : "";
   }
-  values.value = values.value.replace(",", ".");
+  values.value = decimal(values.value);
   const locked = form.get("valueLocked") === "1";
   const fieldErrors = validateDeal(values);
   if (Object.keys(fieldErrors).length) return { values, fieldErrors };
@@ -96,9 +97,7 @@ export async function saveDeal(
       contactId: values.contactId || null,
       companyId: values.companyId || null,
       ...(values.ownerId && { ownerId: values.ownerId }),
-      expectedClose: values.expectedClose
-        ? values.expectedClose + "T00:00:00.000Z"
-        : null,
+      expectedClose: values.expectedClose ? utcDay(values.expectedClose) : null,
     },
   );
   if (result.error)
@@ -149,7 +148,6 @@ export async function saveDealItemsAction(
     })),
   });
 }
-const utcDay = (day: string) => day + "T00:00:00.000Z";
 const optional = (form: FormData, key: string) => formText(form, key) || null;
 
 /** Lo que falta para un cambio de etapa, sin escribir nada. */
@@ -368,7 +366,7 @@ export async function createActivityAction(
     fieldErrors.description = texto.notaLarga;
   if (Object.keys(fieldErrors).length) return { values, fieldErrors };
   // "Ya se realizó": la fecha es la de la actividad hecha (hoy si se deja vacía), no un vencimiento.
-  const day = values.dueAt && values.dueAt + "T00:00:00.000Z";
+  const day = values.dueAt && utcDay(values.dueAt);
   const result = await request(dealPath(dealId, "/activities"), "POST", {
     type: values.type,
     subject: values.subject,

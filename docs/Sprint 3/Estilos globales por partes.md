@@ -74,3 +74,9 @@ pnpm --filter @wave/web test        # 241/241 en 69 archivos
 ### Implementacion
 
 `pipeline.css` paso de `app/(dashboard)/pipeline/` a `styles/pipeline.css` durante la [reorganizacion de carpetas](Estructura%20de%20carpetas%20de%20apps-web.md). Sigue importado solo por las rutas del pipeline. Los 14 tramos globales y el orden de `app/globals.css` no cambiaron.
+
+## `.page-actions` retirada (2026-10-27)
+
+### Implementación
+
+`.page-actions` salió de `06-pipeline.css` y de `11-responsive.css`: ninguna pantalla la usa. Desde entonces el tramo 06 abre con `.kpi-grid {` y no con `.page-actions {`; la tabla de tramos conserva el ancla del corte original (`b26ebf4`). Por esas reglas, el CSS compilado ya no es idéntico al del corte. Detalle en el bloque *Recorte de código del pipeline* de [CRM-20](20%20-%20Ficha%20de%20Negocio.md).

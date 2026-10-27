@@ -173,6 +173,38 @@ Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*), con autor
 
 - `deal-quotes`, `deal-timeline`, `deal-actions`, `deal-items` y `[id]/page` con sus pruebas. Cifras en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).
 
+## Recorte de código del pipeline (2026-10-27)
+
+Revisión de sobreingeniería (ponytail) sobre el pipeline, API y web. Con OK del usuario, el recorte toca archivos de Eduardo (CRM-17/18/19): `deal-rules.ts`, `pipeline.dto.ts`, `pipeline.service.ts`, `06-pipeline.css`, `11-responsive.css` y `pipeline.css`. El comportamiento no cambia, salvo lo que dice *Decisiones*.
+
+### Implementación
+
+- `apps/api/src/modules/pipeline/deal-rules.ts`: nuevo `sumGroups(rows)`, la cantidad y el valor (con centavos) de las filas de un `groupBy`. `dealMetrics` lo usa por estado en 4 líneas, en vez de acumular a mano; devuelve lo mismo.
+- `apps/api/src/modules/pipeline/pipeline.service.ts`: la columna del tablero (`board`) usa `sumGroups` y no repite la suma; `dealDetailInclude.quotes` trae la propuesta completa en vez de un `select` de 12 campos; el mensaje del subtotal máximo sale de `MAX_DEAL_VALUE`; se borra el alias `DealWithStage` (`originStage` usa `GateDeal`).
+- `apps/api/src/modules/pipeline/pipeline.dto.ts`: `isoDate(message)` aplica la conversión a `Date` y `@IsDate` juntos, y sustituye 9 pares `@isoDate()` + `@IsDate`; `MAX_MONEY` y `BUDGET_INVALID` salen de `MAX_DEAL_VALUE`, que ya no se escribe a mano en los `@Max` ni en los mensajes. Los mensajes no cambian.
+- `apps/web/styles/06-pipeline.css` y `apps/web/styles/11-responsive.css`: se borra `.page-actions` (y su regla móvil), que ninguna pantalla usa. `06-pipeline.css` abre ahora con `.kpi-grid`.
+- `apps/web/styles/pipeline.css`: `.deal-title` pierde `padding`, `border`, `background`, `text-align` y `cursor`, restos de cuando la tarjeta era un `<button>`; hoy es un `<Link>`.
+- `apps/web/features/pipeline/types.ts`: `Stage` es `Column & { … }` y no repite `count`, `value` y `deals`.
+- `apps/web/features/pipeline/deal-validation.ts` y `actions.ts`: `validateDeal` y `validateItems` usan `isAmount`; `saveDeal` usa `decimal()` y `utcDay`, y `createActivityAction` usa `utcDay` (ahora definida arriba), en vez de repetir el `replace` y el `"T00:00:00.000Z"`.
+- `apps/web/content/pipeline.ts`: se borra `PIPELINE.moved`, que nadie lee.
+
+### Decisiones
+
+- **Respuesta de la ficha:** en `GET /deals/:id` y en las demás respuestas que la devuelven, cada propuesta trae ahora todas sus columnas, es decir, suma `dealId` y `updatedAt` a las 12 que ya llegaban. La web no los lee. Se prefirió a conservar el `select`, que ya listaba casi toda la tabla.
+- **`.deal-title`:** el único cambio de estilo calculado es `text-align: left` → `start`, igual en un documento de izquierda a derecha.
+- **Coordinación con CRM-17 a 19.** El módulo de pipeline es de Eduardo y el usuario autorizó el recorte (2026-10-27). Sin migraciones, variables de entorno ni dependencias nuevas.
+- **Coordinación con *Estilos globales por partes*.** El tramo `06-pipeline.css` ya no abre con `.page-actions {`; el bloque fechado de ese documento lo anota.
+- Código: 10 archivos, +55 y −129 líneas.
+
+### Validación
+
+- `pnpm lint`: sin errores en `shared`, `database`, `api` y `web`.
+- `pnpm test`: 230 pruebas unitarias del API y 328 de la web (79 archivos) aprobadas, sin tocar ninguna prueba.
+- `pnpm build`: aprobado, con `pnpm dev` apagado.
+- `pnpm test:integration` contra la rama `pruebas`: 54 pruebas aprobadas.
+- Prueba A/B del CSS con páginas temporales fuera del repositorio: el marcado de una tarjeta, los indicadores y las columnas con el CSS de `HEAD` y con el nuevo, a 1200 px y 375 px. Mismas medidas y mismos estilos calculados en todos los elementos, salvo `text-align: left` → `start`.
+- `pnpm test:e2e test/e2e/pipeline.spec.ts` con la config principal, contra `pruebas`: 6 pruebas aprobadas (3,5 min).
+
 ## Pendientes
 
 - Las dos bases tienen una migración ajena que no está en el repo (`20260926220000_restore_password_history_default`).

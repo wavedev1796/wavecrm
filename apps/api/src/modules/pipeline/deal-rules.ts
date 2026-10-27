@@ -9,36 +9,23 @@ type Line = {
 /** Tarjetas por columna en el tablero; "Ver más" trae la página siguiente. */
 export const BOARD_PAGE = 10;
 
-type StatusGroup = {
-  status: "OPEN" | "WON" | "LOST" | "REJECTED";
+type Sums = {
   _count: { _all: number };
   _sum: { value: Prisma.Decimal.Value | null };
 };
 
+/** Cantidad y valor (con centavos) de las filas de un groupBy: el tablero lo usa por columna y las métricas, por estado. */
+export const sumGroups = (rows: readonly Sums[]) => ({
+  count: rows.reduce((count, row) => count + row._count._all, 0),
+  value: rows
+    .reduce((sum, row) => sum.plus(row._sum.value ?? 0), new Prisma.Decimal(0))
+    .toFixed(2),
+});
+
 /** Única definición de las métricas: abiertos, ganados, perdidos y rechazados (cantidad y valor). Ninguno suma a otro. */
-export function dealMetrics(groups: readonly StatusGroup[]) {
-  const totals = {
-    open: { count: 0, value: new Prisma.Decimal(0) },
-    won: { count: 0, value: new Prisma.Decimal(0) },
-    lost: { count: 0, value: new Prisma.Decimal(0) },
-    rejected: { count: 0, value: new Prisma.Decimal(0) },
-  };
-  const keys = { OPEN: "open", WON: "won", LOST: "lost", REJECTED: "rejected" } as const;
-  for (const group of groups) {
-    const total = totals[keys[group.status]];
-    total.count += group._count._all;
-    total.value = total.value.plus(group._sum.value ?? 0);
-  }
-  const shown = (total: { count: number; value: Prisma.Decimal }) => ({
-    count: total.count,
-    value: total.value.toFixed(2),
-  });
-  return {
-    open: shown(totals.open),
-    won: shown(totals.won),
-    lost: shown(totals.lost),
-    rejected: shown(totals.rejected),
-  };
+export function dealMetrics(groups: readonly (Sums & { status: string })[]) {
+  const by = (status: string) => sumGroups(groups.filter((group) => group.status === status));
+  return { open: by("OPEN"), won: by("WON"), lost: by("LOST"), rejected: by("REJECTED") };
 }
 
 /** Máximo de Decimal(14,2): ni el valor del negocio ni el subtotal pueden pasarlo. */

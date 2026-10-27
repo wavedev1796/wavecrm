@@ -30,6 +30,7 @@ import {
   ecuadorToday,
   MAX_DEAL_VALUE,
   nextQuoteNumber,
+  sumGroups,
   toDay,
 } from "./deal-rules";
 import {
@@ -57,23 +58,7 @@ const dealDetailInclude = {
     select: { id: true, name: true, taxId: true, email: true, phone: true },
   },
   items: { orderBy: { position: "asc" } },
-  quotes: {
-    select: {
-      id: true,
-      number: true,
-      status: true,
-      subtotal: true,
-      tax: true,
-      total: true,
-      createdAt: true,
-      sentAt: true,
-      validUntil: true,
-      acceptedAt: true,
-      acceptanceNote: true,
-      items: true,
-    },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-  },
+  quotes: { orderBy: [{ createdAt: "desc" }, { id: "desc" }] },
   activities: {
     include: { assignee: { select: { id: true, name: true } } },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
@@ -88,7 +73,6 @@ const dealDetailInclude = {
   },
 } satisfies Prisma.DealInclude;
 type Tx = Prisma.TransactionClient;
-type DealWithStage = Prisma.DealGetPayload<{ include: { stage: true } }>;
 /** Quien pide el cambio: su rol decide si puede tocar un negocio cerrado. */
 export type Actor = { id: string; role: UserRole };
 export type TransitionInput = {
@@ -312,10 +296,7 @@ export class PipelineService {
           _sum: { value: true },
         });
         const column = async (key: string, rows: typeof groups) => ({
-          count: rows.reduce((sum, row) => sum + row._count._all, 0),
-          value: rows
-            .reduce((sum, row) => sum.plus(row._sum.value ?? 0), new Prisma.Decimal(0))
-            .toFixed(2),
+          ...sumGroups(rows),
           deals: await this.columnDeals(tx, pipeline.id, key, 1),
         });
         const columns = [];
@@ -489,7 +470,7 @@ export class PipelineService {
       const { subtotal } = totals;
       if (subtotal.greaterThan(MAX_DEAL_VALUE))
         throw new BadRequestException(
-          "El subtotal de los productos supera el máximo de 999999999999.99.",
+          `El subtotal de los productos supera el máximo de ${MAX_DEAL_VALUE}.`,
         );
       await tx.dealItem.deleteMany({ where: { dealId: id } });
       await tx.dealItem.createMany({
@@ -999,7 +980,7 @@ export class PipelineService {
   /** Etapa a la que vuelve un ganado al reabrirse: de donde vino o la última abierta del pipeline. */
   private async originStage(
     tx: Tx,
-    deal: Pick<DealWithStage, "id" | "stageId" | "pipelineId">,
+    deal: Pick<GateDeal, "id" | "stageId" | "pipelineId">,
   ) {
     const last = await tx.dealStageHistory.findFirst({
       where: {

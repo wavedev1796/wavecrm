@@ -26,19 +26,16 @@ export type Deal = {
   owner: Option | null;
   _count?: { items: number };
 };
-export type Stage = {
+/** Columna del tablero: cantidad y valor de todos sus negocios, con la primera página de tarjetas. */
+export type Column = { count: number; value: string | number; deals: Deal[] };
+export type Stage = Column & {
   id: string;
   name: string;
   color: string | null;
   position: number;
   probability: number;
   requirements?: StageRequirement[];
-  count: number;
-  value: string | number;
-  deals: Deal[];
 };
-/** Columna del tablero: cantidad y valor de todos sus negocios, con la primera página de tarjetas. */
-export type Column = { count: number; value: string | number; deals: Deal[] };
 export type Metrics = Record<"open" | "won" | "lost" | "rejected", { count: number; value: string }>;
 /** Lo que falta para un cambio de etapa (códigos de @wave/shared, mensaje del API). */
 export type Pending = { code: TransitionCheck; message: string };
