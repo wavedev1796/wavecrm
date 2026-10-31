@@ -180,9 +180,13 @@
 }
 .contact-data-card dl {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* Pasa a una columna cuando la card no da para dos de 170px; minmax(0) evita que un valor largo la ensanche. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
   gap: 16px;
   margin: 18px 0 0;
+}
+.contact-data-card dl > * {
+  min-width: 0;
 }
 .contact-data-card dt {
   display: flex;
@@ -198,6 +202,7 @@
 }
 .contact-data-card dd {
   margin: 4px 0 0 23px;
+  overflow-wrap: anywhere;
   font-size: 0.82rem;
   font-weight: 650;
 }

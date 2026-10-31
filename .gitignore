@@ -24,3 +24,6 @@ playwright-report/
 
 # Herramientas locales de diseño
 .impeccable/
+
+# graphify (grafo de conocimiento local; se regenera con /graphify . --update)
+graphify-out/
