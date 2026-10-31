@@ -53,10 +53,32 @@ export class MailerService {
     return this.send(recipient, PASSWORD_RESET, token);
   }
 
-  private async send(recipient: Recipient, message: Message, token: string) {
+  sendActivityReminder(recipient: Recipient, subject: string, dueAt: Date) {
+    const due = new Intl.DateTimeFormat("es-EC", {
+      dateStyle: "full",
+      timeStyle: "short",
+      timeZone: "America/Guayaquil",
+    }).format(dueAt);
+    return this.send(
+      recipient,
+      {
+        path: "/actividades",
+        subject: `Recordatorio: ${subject}`,
+        heading: "Tienes una actividad pendiente",
+        intro: `Te recordamos «${subject}», programada para ${due}.`,
+        action: "Abrir agenda",
+        expiry: "Este aviso corresponde a una actividad pendiente de Wave CRM.",
+        footer:
+          "Puedes revisar o completar la actividad desde la agenda del equipo.",
+      },
+      undefined,
+    );
+  }
+
+  private async send(recipient: Recipient, message: Message, token?: string) {
     const appUrl =
       this.config.get<string>("APP_URL") ?? "http://localhost:3000";
-    const url = `${appUrl.replace(/\/$/, "")}${message.path}?token=${encodeURIComponent(token)}`;
+    const url = `${appUrl.replace(/\/$/, "")}${message.path}${token === undefined ? "" : `?token=${encodeURIComponent(token)}`}`;
     const smtpHost = this.config.get<string>("SMTP_HOST")?.trim();
 
     if (!smtpHost) {
@@ -65,7 +87,9 @@ export class MailerService {
           "El servicio de correo no está configurado.",
         );
       }
-      console.info(`[Wave CRM] ${message.subject} · ${recipient.email}: ${url}`);
+      console.info(
+        `[Wave CRM] ${message.subject} · ${recipient.email}: ${url}`,
+      );
       return;
     }
 
@@ -108,12 +132,17 @@ export class MailerService {
   private template(name: string, url: string, message: Message) {
     const safeName = escapeHtml(name);
     const safeUrl = escapeHtml(url);
+    const safeHeading = escapeHtml(message.heading);
+    const safeIntro = escapeHtml(message.intro);
+    const safeAction = escapeHtml(message.action);
+    const safeExpiry = escapeHtml(message.expiry);
+    const safeFooter = escapeHtml(message.footer);
     return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#22221f">
-      <h1 style="color:#2f6f8f">${message.heading}</h1>
+      <h1 style="color:#2f6f8f">${safeHeading}</h1>
       <p>Hola ${safeName},</p>
-      <p>${message.intro} ${message.expiry}</p>
-      <p><a href="${safeUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f6f8f;color:#fff;text-decoration:none;font-weight:700">${message.action}</a></p>
-      <p style="color:#8f8e85;font-size:13px">${message.footer}</p>
+      <p>${safeIntro} ${safeExpiry}</p>
+      <p><a href="${safeUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f6f8f;color:#fff;text-decoration:none;font-weight:700">${safeAction}</a></p>
+      <p style="color:#8f8e85;font-size:13px">${safeFooter}</p>
     </div>`;
   }
 }

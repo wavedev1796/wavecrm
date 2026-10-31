@@ -6,6 +6,7 @@ const { AppModule } = require("../../dist/app.module.js");
 const { configureApp } = require("../../dist/app.setup.js");
 const { PrismaService } = require("../../dist/modules/prisma/prisma.service.js");
 const { MailerService } = require("../../dist/modules/mailer/mailer.service.js");
+const { ActivityRemindersService } = require("../../dist/modules/activities/activity-reminders.service.js");
 
 async function startApi() {
   assertTestDatabase();
@@ -18,6 +19,9 @@ async function startApi() {
       },
       sendPasswordReset: async (recipient, token) => {
         inbox.push({ ...recipient, token, kind: "password-reset" });
+      },
+      sendActivityReminder: async (recipient, subject, dueAt) => {
+        inbox.push({ ...recipient, subject, dueAt, kind: "activity-reminder" });
       },
     })
     .compile();
@@ -42,7 +46,7 @@ async function startApi() {
     return { status: response.status, headers: response.headers, body: text ? JSON.parse(text) : null };
   }
 
-  return { call, inbox, prisma: app.get(PrismaService), close: () => app.close() };
+  return { call, inbox, prisma: app.get(PrismaService), reminders: app.get(ActivityRemindersService), close: () => app.close() };
 }
 
 module.exports = { startApi };
