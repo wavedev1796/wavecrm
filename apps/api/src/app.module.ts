@@ -9,6 +9,7 @@ import { HealthModule } from "./modules/health/health.module";
 import { PrismaModule } from "./modules/prisma/prisma.module";
 import { PipelineModule } from "./modules/pipeline/pipeline.module";
 import { UsersModule } from "./modules/users/users.module";
+import { ActivitiesModule } from "./modules/activities/activities.module";
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { UsersModule } from "./modules/users/users.module";
     ContactImportModule,
     CompanyImportModule,
     PipelineModule,
+    ActivitiesModule,
   ],
 })
 export class AppModule {}

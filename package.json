@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@11.19.0",
   "scripts": {
-    "dev": "pnpm --filter @wave/shared build && pnpm --parallel --filter @wave/web --filter @wave/api dev",
+    "dev": "pnpm --filter @wave/shared build && pnpm --filter @wave/database build && pnpm --parallel --filter @wave/web --filter @wave/api dev",
     "dev:web": "pnpm --filter @wave/web dev",
     "dev:api": "pnpm --filter @wave/api dev",
     "build": "pnpm --filter @wave/shared build && pnpm --filter @wave/database build && pnpm --filter @wave/api build && pnpm --filter @wave/web build",

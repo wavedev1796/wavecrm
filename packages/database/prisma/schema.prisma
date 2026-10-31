@@ -284,6 +284,9 @@ model Activity {
   subject      String
   description  String?
   dueAt        DateTime?
+  reminderAt   DateTime?
+  reminderClaimedAt DateTime?
+  reminderSentAt DateTime?
   completedAt  DateTime?
   assigneeId   String?
   assignee     User?          @relation("ActivityAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
@@ -297,6 +300,8 @@ model Activity {
   updatedAt    DateTime       @updatedAt
 
   @@index([assigneeId, status, dueAt])
+  @@index([status, dueAt])
+  @@index([reminderAt, reminderSentAt, status])
   @@index([companyId])
   @@index([contactId])
   @@index([dealId])

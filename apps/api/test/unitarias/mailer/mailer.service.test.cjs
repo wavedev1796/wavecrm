@@ -126,6 +126,18 @@ test("sin SMTP fuera de producción, el enlace de recuperación se escribe en co
   ]);
 });
 
+test("el recordatorio llega al responsable, abre la agenda y escapa el asunto", async (t) => {
+  let message;
+  withTransport(t, async (value) => { message = value; });
+  const mailer = new MailerService(config({ APP_URL: "https://crm.example/", SMTP_HOST: "smtp.example.com" }));
+  await mailer.sendActivityReminder({ email: "ana@empresa.ec", name: "Ana" }, "Oferta < urgente", new Date("2026-11-05T15:00:00.000Z"));
+  assert.equal(message.to, "ana@empresa.ec");
+  assert.match(message.subject, /Oferta < urgente/);
+  assert.match(message.text, /\/actividades/);
+  assert.match(message.html, /Oferta &lt; urgente/);
+  assert.doesNotMatch(message.html, /Oferta < urgente/);
+});
+
 test("el puerto 587 por defecto no usa TLS directo y un fallo de envío responde 503", async (t) => {
   const options = withTransport(t, async () => {
     throw new Error("ECONNREFUSED");
