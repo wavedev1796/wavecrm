@@ -224,6 +224,91 @@
   }
 }
 
+@media (max-width: 760px) {
+  .activities-intro {
+    flex-direction: column;
+  }
+  .activity-dialog-backdrop {
+    padding: 10px;
+  }
+  .activity-dialog {
+    max-height: calc(100dvh - 20px);
+  }
+  .activity-dialog > header,
+  .activity-dialog form {
+    padding-inline: 16px;
+  }
+  .activities-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+  .activities-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .activities-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .activities-filters label:first-child {
+    grid-column: 1 / -1;
+  }
+  .activities-filters select {
+    min-width: 0;
+    width: 100%;
+  }
+  .activities-view-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .activity-card {
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+  }
+  .activity-card-date {
+    grid-column: 1;
+    display: flex;
+    gap: 8px;
+  }
+  .activity-card-main {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .activity-card-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .activity-toast { top: 12px; right: 12px; }
+  .activity-card-actions .button {
+    padding-inline: 8px;
+  }
+  .activity-card-actions .button svg {
+    width: 17px;
+  }
+  .activity-card-actions .button:not(:first-child) {
+    font-size: 0;
+  }
+  .activity-card-actions .button:not(:first-child) svg {
+    width: 17px;
+  }
+  .activity-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .activity-form-grid .activity-description {
+    grid-column: auto;
+  }
+  .calendar-panel {
+    padding: 10px;
+  }
+  .calendar-day,
+  .calendar-blank {
+    min-height: 72px;
+    padding: 4px;
+  }
+  .calendar-day small {
+    font-size: 0.56rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -233,4 +318,3 @@
     animation-duration: 0.01ms !important;
   }
 }
-
