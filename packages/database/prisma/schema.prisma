@@ -92,7 +92,7 @@ model User {
   termsVersion       String?
   passwordResetTokenHash String? @unique
   passwordResetExpiresAt DateTime?
-  previousPasswordHashes String[]
+  previousPasswordHashes String[] @default([])
   role               UserRole    @default(VENDEDOR)
   active             Boolean     @default(true)
   ownedCompanies     Company[]   @relation("CompanyOwner")
