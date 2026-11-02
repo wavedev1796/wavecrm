@@ -10,6 +10,7 @@ import { PrismaModule } from "./modules/prisma/prisma.module";
 import { PipelineModule } from "./modules/pipeline/pipeline.module";
 import { UsersModule } from "./modules/users/users.module";
 import { ActivitiesModule } from "./modules/activities/activities.module";
+import { TimelineModule } from "./modules/timeline/timeline.module";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ActivitiesModule } from "./modules/activities/activities.module";
     CompanyImportModule,
     PipelineModule,
     ActivitiesModule,
+    TimelineModule,
   ],
 })
 export class AppModule {}

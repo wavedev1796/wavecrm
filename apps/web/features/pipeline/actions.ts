@@ -4,6 +4,7 @@ import { unstable_rethrow } from "next/navigation";
 import { authenticatedApi, apiError } from "@/lib/authenticated-api";
 import { ACTIVITY_TYPES, cleanText, LOSS_REASONS, REJECTION_REASONS } from "@wave/shared";
 import { NEGOCIO, PIPELINE, TRANSICION } from "@/content/pipeline";
+import { TIMELINE } from "@/content/timeline";
 import {
   decimal,
   isAmount,
@@ -54,7 +55,7 @@ async function request(
   path: string,
   method: string,
   body?: unknown,
-): Promise<{ error?: string; data?: unknown; pending?: Pending[] }> {
+): Promise<{ error?: string; status?: number; data?: unknown; pending?: Pending[] }> {
   try {
     const response = await authenticatedApi(path, {
       method,
@@ -69,6 +70,7 @@ async function request(
       const pending = body?.error?.errors;
       return {
         error: await apiError(response),
+        status: response.status,
         ...(Array.isArray(pending) && { pending: pending as Pending[] }),
       };
     }
@@ -136,11 +138,11 @@ export async function deleteRejectedAction(ids: string[]) {
     data?: { deleted: number };
   }>;
 }
-export async function dealHistoryAction(id: string) {
-  return request(dealPath(id, "/history"), "GET") as Promise<{
-    error?: string;
-    data?: HistoryItem[];
-  }>;
+export async function dealHistoryAction(id: string): Promise<{ error?: string; data?: HistoryItem[] }> {
+  const { error, status, data } = await request(dealPath(id, "/history"), "GET");
+  // 404 de una tarjeta que sí está en el tablero: un VENDEDOR solo ve el historial de lo suyo (CRM-25).
+  if (status === 404) return { error: TIMELINE.sinAcceso };
+  return error ? { error } : { data: data as HistoryItem[] };
 }
 export async function saveDealItemsAction(
   dealId: string,

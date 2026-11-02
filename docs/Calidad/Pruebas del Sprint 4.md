@@ -42,6 +42,18 @@ Para aplicar la migración en la base de pruebas:
 pnpm.cmd exec dotenv -e .env.test.local -- pnpm.cmd --filter @wave/database migrate:deploy
 ```
 
+## CRM-25 — Timeline por contacto/negocio (2026-11-01)
+
+| Capa | Resultado |
+| --- | --- |
+| API unitarias | 251 aprobadas (8 nuevas en `unitarias/timeline/`) |
+| Web (Vitest) | 355 aprobadas |
+| Integración HTTP contra `pruebas` (`pnpm test:integration`) | 60 aprobadas, incluida `timeline.http.test.cjs` |
+| Navegador (Playwright: pipeline, contactos y actividades) | 10 de 11; `activities.spec.ts:81` (completar en la agenda) falla igual sin este ticket |
+| `pnpm lint` y `pnpm build` | Aprobados |
+
+Alcance: orden estable y paginación por cursor sin repetir ni omitir empates, autor de cada evento, alcance de VENDEDOR (`404` en lo ajeno, también en `GET /deals/:id/history`), negocio eliminado sin enlace y notas como texto. La migración `20261101120000_activity_created_by` está aplicada solo en `pruebas`.
+
 ## Entorno
 
 - La migración `20261031120000_activity_reminders` quedó aplicada en la rama `pruebas` de Neon.

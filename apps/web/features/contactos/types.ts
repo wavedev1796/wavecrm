@@ -1,4 +1,4 @@
-import type { ActivityStatus, ActivityType, DocumentType } from "@wave/shared";
+import type { DocumentType } from "@wave/shared";
 import type { JourneyDeal } from "../pipeline/types";
 
 export type ContactCompany = {
@@ -30,16 +30,6 @@ export type Contact = {
 
 export type ContactDetail = Contact & {
   deals: JourneyDeal[];
-  activities: Array<{
-    id: string;
-    type: ActivityType;
-    status: ActivityStatus;
-    subject: string;
-    description: string | null;
-    dueAt: string | null;
-    completedAt: string | null;
-    assignee: { id: string; name: string } | null;
-  }>;
 };
 
 export type ContactList = {

@@ -12,6 +12,7 @@ Administrar actividades comerciales y sus recordatorios desde una API autenticad
 | --- | --- | --- | --- |
 | CRM-23 | [API Actividades + recordatorios](23 - API Actividades - recordatorios.md) | Eduardo Garcia | Completo (4/4 criterios) |
 | CRM-24 | [Agenda de actividades](24 - Agenda de actividades.md) | Eduardo Garcia | Completo (3/3 criterios) |
+| CRM-25 | [Timeline por contacto/negocio](25 - Timeline por contacto-negocio.md) | Zaith Manangón | Completo (4/4 criterios) |
 
 ## Decisiones
 
@@ -20,6 +21,7 @@ Administrar actividades comerciales y sus recordatorios desde una API autenticad
 - El responsable que crea una actividad queda asignado por defecto. Los vencimientos y las consultas de próximas y atrasadas usan el día de Ecuador.
 - Los recordatorios se envían por correo al responsable. El proceso se ejecuta al iniciar el API y cada minuto; la base registra el reclamo y el envío para evitar duplicados y recuperar reclamos vencidos.
 - La actividad requiere vencimiento si tiene recordatorio, y la fecha del recordatorio no puede ser posterior al vencimiento.
+- CRM-25 (2026-11-01): el historial de un negocio o contacto sale de `GET /deals|contacts/:id/timeline`, paginado por cursor estable. Un VENDEDOR solo ve el historial de lo que tiene a su cargo; las fichas y la agenda siguen compartidas. Las actividades registran a su autor (`createdById`).
 
 ## Validación
 

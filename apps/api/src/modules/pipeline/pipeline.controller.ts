@@ -127,8 +127,11 @@ export class PipelineController {
   ): Promise<unknown> {
     return this.service.previewTransition(id, query.to, actor(user));
   }
-  @Get("deals/:id/history") history(@Param("id") id: string) {
-    return this.service.history(id);
+  @Get("deals/:id/history") history(
+    @Param("id") id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.service.history(id, actor(user));
   }
   @Post("deals/:id/activities") createActivity(
     @Param("id") id: string,

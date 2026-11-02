@@ -290,7 +290,7 @@ test("perder con seguimiento lo agenda con contacto y empresa y conserva la prop
   );
   assert.equal(state.deal.status, "OPEN");
   await service(prisma).transition("deal-1", "LOST", { lossReason: "NEED_POSTPONED", followUp }, vendedor);
-  assert.deepEqual(state.activities.at(-1), { ...followUp, dealId: "deal-1", contactId: "contact-1", companyId: "company-1", assigneeId: "user-1" });
+  assert.deepEqual(state.activities.at(-1), { ...followUp, dealId: "deal-1", contactId: "contact-1", companyId: "company-1", assigneeId: "user-1", createdById: "user-1" });
   assert.equal(state.quotes[0].status, "SENT");
   assert.equal(state.audit[0].changes.followUpAt, "2999-01-18T00:00:00.000Z");
 });
@@ -334,7 +334,7 @@ test("un rechazado no cambia productos ni registra actividades hasta reabrirlo",
 
 test("la papelera borra solo rechazados y deja una fila DELETED por cada uno", async () => {
   const { prisma, state } = mockPrisma();
-  const row = (id) => ({ id, title: "N " + id, value: new Prisma.Decimal(50), lossReason: "OTHER", lossDetail: "x", contactId: "contact-1", companyId: null });
+  const row = (id) => ({ id, title: "N " + id, value: new Prisma.Decimal(50), lossReason: "OTHER", lossDetail: "x", contactId: "contact-1", companyId: null, ownerId: "user-1" });
   prisma.deal.findMany = async ({ where }) => {
     assert.deepEqual(where, { id: { in: ["d1", "d2"] }, status: "REJECTED" });
     return [row("d1"), row("d2")];
@@ -346,7 +346,7 @@ test("la papelera borra solo rechazados y deja una fila DELETED por cada uno", a
     entityType: "Deal",
     entityId: "d2",
     userId: "user-1",
-    changes: { title: "N d2", lossReason: "OTHER", lossDetail: "x", contactId: "contact-1", companyId: null, value: "50.00" },
+    changes: { title: "N d2", lossReason: "OTHER", lossDetail: "x", contactId: "contact-1", companyId: null, ownerId: "user-1", value: "50.00" },
   });
   prisma.deal.findMany = async () => [row("d1")];
   state.deleted = undefined;
@@ -504,8 +504,8 @@ test("CRM-20: la actividad del negocio copia contacto y empresa y la asigna a qu
   const { prisma } = mockPrisma();
   const created = await service(prisma).createActivity("deal-1", { type: "CALL", subject: "Llamar al cliente" }, "user-1");
   assert.deepEqual(
-    [created.dealId, created.companyId, created.contactId, created.assigneeId],
-    ["deal-1", "company-1", "contact-1", "user-1"],
+    [created.dealId, created.companyId, created.contactId, created.assigneeId, created.createdById],
+    ["deal-1", "company-1", "contact-1", "user-1", "user-1"],
   );
   await assert.rejects(service(prisma).completeActivity("deal-1", "ajena"), NotFoundException);
 });

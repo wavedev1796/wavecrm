@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { baseDeal } from "../../../../features/pipeline/deal-fixture";
+import { apiPage, pendingCall } from "../../../../features/timeline/timeline-fixture";
 import DealPage from "./page";
 
 vi.mock("@/lib/authenticated-api", () => ({ authenticatedApi: vi.fn(), apiError: async () => "x" }));
@@ -23,9 +24,13 @@ vi.mock("../../../../features/pipeline/actions", () => ({
   completeActivityAction: vi.fn(),
 }));
 const api = vi.mocked(authenticatedApi);
-/** La ficha pide el negocio y quién mira (su rol decide si puede reabrir). */
-function serve(deal: unknown, role = "ADMIN") {
-  api.mockImplementation(async (path) => (path === "/auth/me" ? Response.json({ id: "u1", role }) : Response.json(deal)));
+/** La ficha pide el negocio, quién mira (su rol decide si puede reabrir) y la primera página del historial. */
+function serve(deal: unknown, role = "ADMIN", timeline: unknown = apiPage([])) {
+  api.mockImplementation(async (path) => {
+    if (path === "/auth/me") return Response.json({ id: "u1", role });
+    if (path.endsWith("/timeline")) return typeof timeline === "number" ? new Response(null, { status: timeline }) : Response.json(timeline);
+    return Response.json(deal);
+  });
 }
 
 test("la ficha abierta muestra valor, productos, empresa enlazada y botones de cierre", async () => {
@@ -93,4 +98,21 @@ test("al ganar, la tabla de productos vuelve a leer lo del servidor y no conserv
   rerender(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
   expect(screen.queryByText(/editado sin guardar/)).toBeNull();
   expect(screen.getByText("Chocolates")).toBeInTheDocument();
+});
+
+test("el historial llega del API ya armado y sus pendientes se completan en la ficha", async () => {
+  serve(baseDeal, "ADMIN", apiPage([pendingCall], "k1"));
+  render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
+  expect(api).toHaveBeenCalledWith("/deals/d1/timeline");
+  expect(screen.getByText("Llamar a Maria")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Completar Llamar a Maria" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Ver más" })).toBeInTheDocument();
+});
+
+test("un VENDEDOR sin acceso al historial ve la ficha, el aviso y el formulario de actividad", async () => {
+  serve(baseDeal, "VENDEDOR", 404);
+  render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
+  expect(screen.getByRole("heading", { name: "Cuenta Andina" })).toBeInTheDocument();
+  expect(screen.getByText("No tienes acceso al historial de este registro.")).toBeInTheDocument();
+  expect(screen.getByLabelText("Asunto")).toBeInTheDocument();
 });

@@ -132,7 +132,11 @@ test("crea, mueve, edita y elimina un negocio real con controles Wave en escrito
     .toBe(proposalId);
   await card.getByRole("button", { name: "Historial", exact: true }).click();
   const history = page.getByRole("dialog", { name: "Historial del negocio" });
-  await expect(history).toContainText("Inicial → Propuesta");
+  // CRM-25: el negocio quedó a cargo de otro responsable; el VENDEDOR ve la tarjeta, pero no su historial.
+  await expect(history).toContainText("No tienes acceso al historial de este registro.");
+  expect(
+    await prisma.dealStageHistory.count({ where: { dealId: saved.id, fromStageId: initialId, toStageId: proposalId } }),
+  ).toBe(1);
   await history.getByRole("button", { name: "Cerrar", exact: true }).click();
   await page.screenshot({
     path: "test-results/pipeline-board-desktop.png",
@@ -228,7 +232,9 @@ test("la ficha arma productos, registra y acepta la propuesta, gana, y solo un A
   await expect(page.locator(".deal-profile")).toContainText("120,00");
   await page.getByLabel("Asunto").fill("Llamar para confirmar");
   await page.getByRole("button", { name: "Registrar actividad" }).click();
-  await expect(page.getByText("Llamada · Llamar para confirmar")).toBeVisible();
+  const timeline = page.locator(".deal-timeline li", { hasText: "Llamar para confirmar" });
+  await expect(timeline).toContainText("Llamada");
+  await expect(timeline).toContainText(seller.name);
 
   // Ganar sin propuesta aceptada: el modal lo explica y manda a la ficha.
   await page.getByRole("button", { name: "Ganar", exact: true }).click();
@@ -504,7 +510,8 @@ test("perdido con seguimiento → rechazado → la papelera elimina dos a la vez
   expect((await prisma.activity.findUniqueOrThrow({ where: { id: followUp.id } })).status).toBe("CANCELLED");
 
   await page.goto("/contactos/" + contactId);
-  await expect(page.getByRole("link", { name: titles[0] })).toBeVisible();
+  // El negocio enlaza desde su recorrido y desde cada evento del historial del contacto (CRM-25).
+  await expect(page.getByRole("link", { name: titles[0] }).first()).toBeVisible();
   await expect(page.getByText("Inicial · Rechazado").first()).toBeVisible();
 
   await page.goto("/pipeline?pipelineId=" + pipelineId);

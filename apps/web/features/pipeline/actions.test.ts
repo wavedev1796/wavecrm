@@ -338,6 +338,13 @@ test("el historial es un GET que tolera un cuerpo que no es JSON", async () => {
   expect(api).toHaveBeenCalledWith("/deals/d1/history", { method: "GET" });
 });
 
+test("el historial de un negocio ajeno avisa que no hay acceso; otro error pasa tal cual", async () => {
+  api.mockResolvedValueOnce(new Response("", { status: 404 }));
+  expect(await dealHistoryAction("d1")).toEqual({ error: "No tienes acceso al historial de este registro." });
+  api.mockResolvedValueOnce(new Response("", { status: 500 }));
+  expect(await dealHistoryAction("d1")).toEqual({ error: "La referencia ya no existe." });
+});
+
 test("editar un negocio usa PATCH, envia el responsable y avisa que se actualizo", async () => {
   api.mockResolvedValue(Response.json({ id: "deal-1" }));
   const result = await saveDeal(

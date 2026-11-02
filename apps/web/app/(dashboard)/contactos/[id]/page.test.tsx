@@ -1,51 +1,64 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { authenticatedApi } from "@/lib/authenticated-api";
+import { apiPage, event } from "../../../../features/timeline/timeline-fixture";
 import ContactDetailPage from "./page";
 
 vi.mock("@/lib/authenticated-api", () => ({ authenticatedApi: vi.fn() }));
-vi.mock("next/navigation", () => ({ notFound: vi.fn() }));
+vi.mock("next/navigation", () => ({ notFound: vi.fn(), unstable_rethrow: vi.fn() }));
+vi.mock("../../../../features/pipeline/actions", () => ({ completeActivityAction: vi.fn() }));
 vi.mock("../../../../features/contactos/contact-form", () => ({
   ContactForm: ({ id }: { id: string }) => <div>Editando {id}</div>,
 }));
 const api = vi.mocked(authenticatedApi);
 
-test("CRM-14: la ficha muestra datos, negocios, actividades y edición", async () => {
-  api.mockResolvedValue(
-    Response.json({
-      id: "c1",
-      firstName: "Ana",
-      lastName: "López",
-      email: "ana@wave.ec",
-      phone: "+593991234567",
-      documentType: "CEDULA",
-      documentId: "1712345675",
-      province: "Pichincha",
-      city: "Quito",
-      position: "Gerente",
-      tags: ["cliente"],
-      createdAt: "",
-      updatedAt: "",
-      company: {
-        id: "e1",
-        name: "Wave",
-        legalName: null,
-        taxId: "1791234561001",
-      },
-      owner: { id: "u1", name: "Eduardo", email: "e@wave.ec" },
-      deals: [
-        {
-          id: "d1",
-          title: "Renovación anual",
-          value: "4200",
-          currency: "USD",
-          status: "OPEN",
-          expectedClose: null,
-          stage: { id: "s1", name: "Negociación", color: null },
-        },
-      ],
-      activities: [
-        {
+const contact = {
+  id: "c1",
+  firstName: "Ana",
+  lastName: "López",
+  email: "ana@wave.ec",
+  phone: "+593991234567",
+  documentType: "CEDULA",
+  documentId: "1712345675",
+  province: "Pichincha",
+  city: "Quito",
+  position: "Gerente",
+  tags: ["cliente"],
+  createdAt: "",
+  updatedAt: "",
+  company: {
+    id: "e1",
+    name: "Wave",
+    legalName: null,
+    taxId: "1791234561001",
+  },
+  owner: { id: "u1", name: "Eduardo", email: "e@wave.ec" },
+  deals: [
+    {
+      id: "d1",
+      title: "Renovación anual",
+      value: "4200",
+      currency: "USD",
+      status: "OPEN",
+      expectedClose: null,
+      stage: { id: "s1", name: "Negociación", color: null },
+    },
+  ],
+};
+/** La ficha pide el contacto y, en paralelo, la primera página de su historial. */
+function serve(timeline: unknown) {
+  api.mockImplementation(async (path) => {
+    if (!path.endsWith("/timeline")) return Response.json(contact);
+    return typeof timeline === "number" ? new Response(null, { status: timeline }) : Response.json(timeline);
+  });
+}
+
+test("CRM-14: la ficha muestra datos, negocios, historial y edición", async () => {
+  serve(
+    apiPage([
+      event("ACTIVITY:a1", "2026-10-01T12:00:00.000Z", {
+        kind: "ACTIVITY",
+        activity: {
           id: "a1",
           type: "MEETING",
           status: "PENDING",
@@ -55,11 +68,16 @@ test("CRM-14: la ficha muestra datos, negocios, actividades y edición", async (
           completedAt: null,
           assignee: { id: "u1", name: "Eduardo" },
         },
-      ],
-    }),
+      }),
+      event("EVENT:x", "2026-09-30T12:00:00.000Z", {
+        deal: null,
+        event: { action: "DELETED", changes: { title: "Cuenta vieja" } },
+      }),
+    ]),
   );
   render(await ContactDetailPage({ params: Promise.resolve({ id: "c1" }) }));
   expect(api).toHaveBeenCalledWith("/contacts/c1");
+  expect(api).toHaveBeenCalledWith("/contacts/c1/timeline");
   expect(
     screen.getByRole("heading", { name: "Ana López" }),
   ).toBeInTheDocument();
@@ -67,8 +85,18 @@ test("CRM-14: la ficha muestra datos, negocios, actividades y edición", async (
     "href",
     "/pipeline/d1",
   );
+  expect(screen.getByRole("heading", { name: "Historial" })).toBeInTheDocument();
   expect(screen.getByText("Reunión comercial")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Cuenta Andina" })).toHaveAttribute("href", "/pipeline/d1");
+  expect(screen.getByText("Negocio «Cuenta vieja» eliminado")).toBeInTheDocument();
   expect(screen.getByText("Editando c1")).toBeInTheDocument();
   expect(screen.getByText("+593 99 123 4567")).toBeInTheDocument();
   expect(screen.getByText("Cédula 1712345675")).toBeInTheDocument();
+});
+
+test("sin acceso al historial la ficha se ve igual, con el aviso en su lugar", async () => {
+  serve(404);
+  render(await ContactDetailPage({ params: Promise.resolve({ id: "c1" }) }));
+  expect(screen.getByRole("heading", { name: "Ana López" })).toBeInTheDocument();
+  expect(screen.getByText("No tienes acceso al historial de este registro.")).toBeInTheDocument();
 });

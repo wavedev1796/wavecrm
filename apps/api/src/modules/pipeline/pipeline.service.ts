@@ -59,22 +59,13 @@ const dealDetailInclude = {
   },
   items: { orderBy: { position: "asc" } },
   quotes: { orderBy: [{ createdAt: "desc" }, { id: "desc" }] },
-  activities: {
-    include: { assignee: { select: { id: true, name: true } } },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-  },
-  stageHistory: {
-    include: {
-      fromStage: { select: { id: true, name: true } },
-      toStage: { select: { id: true, name: true } },
-      changedBy: { select: { id: true, name: true } },
-    },
-    orderBy: [{ changedAt: "desc" }, { id: "desc" }],
-  },
 } satisfies Prisma.DealInclude;
 type Tx = Prisma.TransactionClient;
 /** Quien pide el cambio: su rol decide si puede tocar un negocio cerrado. */
 export type Actor = { id: string; role: UserRole };
+/** Alcance de lectura: ADMIN ve todo; VENDEDOR, solo lo que tiene a su cargo (sin responsable, solo ADMIN). */
+export const ownerScope = (actor: Actor) =>
+  actor.role === "ADMIN" ? {} : { ownerId: actor.id };
 export type TransitionInput = {
   fromStageId?: string;
   reason?: string;
@@ -437,6 +428,7 @@ export class PipelineService {
           lossDetail: true,
           contactId: true,
           companyId: true,
+          ownerId: true, // la línea de tiempo del contacto muestra el borrado solo a su responsable
         },
       });
       if (deals.length !== ids.length)
@@ -596,8 +588,8 @@ export class PipelineService {
       items: deal.items.length,
     };
   }
-  async history(id: string) {
-    if (!(await this.prisma.deal.count({ where: { id } })))
+  async history(id: string, actor: Actor) {
+    if (!(await this.prisma.deal.count({ where: { id, ...ownerScope(actor) } })))
       throw new NotFoundException("Negocio no encontrado.");
     return this.prisma.dealStageHistory.findMany({
       where: { dealId: id },
@@ -628,6 +620,7 @@ export class PipelineService {
           contactId: deal.contactId,
           companyId: deal.companyId,
           assigneeId: actorId,
+          createdById: actorId,
         },
         include: { assignee: { select: { id: true, name: true } } },
       });
@@ -674,25 +667,11 @@ export class PipelineService {
     if (!deal) throw new NotFoundException("Negocio no encontrado.");
     return deal;
   }
-  /** Ficha completa: negocio, productos, cotizaciones, actividades, historial y cierres (AuditLog). */
+  /** Ficha: negocio, productos y cotizaciones. Actividades, etapas y cierres van por GET /deals/:id/timeline. */
   private async detail(tx: Tx, id: string) {
-    // En paralelo fuera de una transacción; dentro, Prisma las encola en su conexión.
-    const [deal, closures] = await Promise.all([
-      tx.deal.findUnique({ where: { id }, include: dealDetailInclude }),
-      tx.auditLog.findMany({
-        where: { entityType: "Deal", entityId: id },
-        select: {
-          id: true,
-          action: true,
-          changes: true,
-          createdAt: true,
-          user: { select: { id: true, name: true } },
-        },
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      }),
-    ]);
+    const deal = await tx.deal.findUnique({ where: { id }, include: dealDetailInclude });
     if (!deal) throw new NotFoundException("Negocio no encontrado.");
-    return { ...deal, closures };
+    return deal;
   }
   private assertCanSetRequirements(actor: Actor) {
     if (actor.role !== "ADMIN")
@@ -892,6 +871,7 @@ export class PipelineService {
             contactId: deal.contactId,
             companyId: deal.companyId,
             assigneeId: actor.id,
+            createdById: actor.id,
           },
         });
       await this.audit(tx, id, "LOST", actor.id, {

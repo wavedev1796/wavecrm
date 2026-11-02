@@ -1,0 +1,31 @@
+// Historial (timeline) de las fichas de negocio y de contacto: los dos lo pintan igual.
+
+export const TIMELINE = {
+  titulo: "Actividad del negocio",
+  historial: "Historial",
+  vacio: "Todavía no hay actividad registrada.",
+  sinAcceso: "No tienes acceso al historial de este registro.",
+  errorCarga: "No pudimos cargar el historial.",
+  verMas: "Ver más",
+  reintentar: "Reintentar",
+  tipos: { NOTE: "Nota", STAGE: "Cambio de etapa", EVENT: "Evento del negocio" },
+  nota: "Nota registrada",
+  vence: (fecha: string) => `Vence el ${fecha}`,
+  creado: (etapa: string) => `Creado en ${etapa}`,
+  movido: (de: string, a: string) => `${de} → ${a}`,
+  ganado: (cotizacion: string) => `Ganado · cotización ${cotizacion}`,
+  perdido: (motivo: string) => `Perdido · ${motivo}`,
+  rechazado: (motivo: string) => `Rechazado · ${motivo}`,
+  reabierto: "Reabierto",
+  eliminado: (titulo: string) => `Negocio «${titulo}» eliminado`,
+  propuestaEnviada: (numero: string, total: string) => `Propuesta ${numero} enviada · ${total}`,
+  propuestaAceptada: (numero: string) => `Propuesta ${numero} aceptada`,
+  propuestaDesactualizada: (numero: string) => `Propuesta ${numero} desactualizada por cambios en los productos`,
+  vigencia: (fecha: string) => `Vigente hasta ${fecha}`,
+  seguimiento: (fecha: string) => `Seguimiento programado para ${fecha}`,
+  invalidado: (propuestas: number, actividades: number) =>
+    `${propuestas} ${propuestas === 1 ? "propuesta rechazada" : "propuestas rechazadas"} · ${actividades} ${actividades === 1 ? "actividad cancelada" : "actividades canceladas"}`,
+  sistema: "Usuario no disponible",
+  completar: "Completar",
+  completarDe: (asunto: string) => `Completar ${asunto}`,
+} as const;

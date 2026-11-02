@@ -69,7 +69,12 @@ export class ActivitiesService {
     const data = await this.relations(dto, actorId);
     this.validateReminder(data.dueAt, data.reminderAt);
     return this.prisma.activity.create({
-      data: { ...data, type: dto.type, subject: dto.subject },
+      data: {
+        ...data,
+        type: dto.type,
+        subject: dto.subject,
+        createdById: actorId,
+      },
       include,
     });
   }

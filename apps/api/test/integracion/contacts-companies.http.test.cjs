@@ -144,7 +144,7 @@ test("CRM-13: obtiene y actualiza fichas; vacío borra un campo opcional", async
   assert.equal(contact.status, 200);
   assert.equal(contact.body.company.name, "Wave Comercial");
   assert.deepEqual(contact.body.deals, []);
-  assert.deepEqual(contact.body.activities, []);
+  assert.equal(contact.body.activities, undefined); // van por GET /contacts/:id/timeline
 
   const updatedContact = await call(`/contacts/${contactId}`, {
     method: "PATCH",

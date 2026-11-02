@@ -11,24 +11,28 @@ import { notFound } from "next/navigation";
 import { Info } from "@/components/data/detail-info";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { CONTACTOS } from "@/content/contactos";
+import { TIMELINE } from "@/content/timeline";
 import { authenticatedApi } from "@/lib/authenticated-api";
-import { formatDate, initials } from "@/lib/format";
+import { initials } from "@/lib/format";
 import { DOCUMENT_TYPES } from "@/lib/ecuador";
 import { formatPhone, splitPhone } from "@/lib/phone";
 import { ContactForm } from "../../../../features/contactos/contact-form";
 import { companyLabel } from "../../../../features/contactos/contact-form-state";
 import type { ContactDetail } from "../../../../features/contactos/types";
 import { DealJourney } from "../../../../features/pipeline/deal-journey";
+import { loadTimeline } from "../../../../features/timeline/actions";
+import { TimelineList } from "../../../../features/timeline/timeline-list";
 
 export default async function ContactDetailPage({
   params,
 }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params;
-  const response = await authenticatedApi(
-    `/contacts/${encodeURIComponent(id)}`,
-  );
+  // El historial se pide aparte (paginado y con su propio alcance): un 404 suyo no oculta la ficha.
+  const [response, timeline] = await Promise.all([
+    authenticatedApi(`/contacts/${encodeURIComponent(id)}`),
+    loadTimeline("contacts", id),
+  ]);
   if (response.status === 404) notFound();
   const texto = CONTACTOS.ficha;
   if (!response.ok) return <p role="alert">{texto.errorCarga}</p>;
@@ -121,28 +125,12 @@ export default async function ContactDetailPage({
               <p>{texto.sinNegocios}</p>
             )}
           </Card>
-          <Card className="contact-related">
+          <Card className="contact-related deal-timeline">
             <h3>
               <CalendarDays />
-              {texto.actividades}{" "}
-              <Badge tone="blue">{contact.activities.length}</Badge>
+              {TIMELINE.historial}
             </h3>
-            {contact.activities.length ? (
-              contact.activities.map((activity) => (
-                <article key={activity.id}>
-                  <div>
-                    <strong>{activity.subject}</strong>
-                    <span>
-                      {TIPO_ACTIVIDAD[activity.type]}
-                      {activity.assignee ? ` · ${activity.assignee.name}` : ""}
-                    </span>
-                  </div>
-                  <b>{activity.dueAt ? formatDate(activity.dueAt) : texto.sinFecha}</b>
-                </article>
-              ))
-            ) : (
-              <p>{texto.sinActividades}</p>
-            )}
+            <TimelineList kind="contacts" id={contact.id} initial={timeline} />
           </Card>
         </div>
         <ContactForm id={contact.id} initialValues={values} />

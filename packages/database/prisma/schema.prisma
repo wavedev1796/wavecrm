@@ -100,6 +100,7 @@ model User {
   ownedDeals         Deal[]      @relation("DealOwner")
   dealStageChanges   DealStageHistory[]
   assignedActivities Activity[]  @relation("ActivityAssignee")
+  createdActivities  Activity[]  @relation("ActivityCreator")
   notes              Note[]
   auditLogs          AuditLog[]
   createdAt          DateTime    @default(now())
@@ -290,6 +291,9 @@ model Activity {
   completedAt  DateTime?
   assigneeId   String?
   assignee     User?          @relation("ActivityAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  /// Quién la registró; las anteriores al 2026-11-01 quedan en null y la línea de tiempo usa el responsable.
+  createdById  String?
+  createdBy    User?          @relation("ActivityCreator", fields: [createdById], references: [id], onDelete: SetNull)
   companyId    String?
   company      Company?       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   contactId    String?

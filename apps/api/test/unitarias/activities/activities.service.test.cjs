@@ -70,6 +70,7 @@ test("activity create assigns actor by default and validates an active assignee"
     "user-1",
   );
   assert.equal(inserted.assigneeId, "user-1");
+  assert.equal(inserted.createdById, "user-1");
   assert.equal(result.subject, "Llamar");
   prisma.user.findFirst = async () => null;
   await assert.rejects(

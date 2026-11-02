@@ -1,6 +1,4 @@
 import type {
-  ActivityStatus,
-  ActivityType,
   DealStatus,
   LossReason,
   QuoteStatus,
@@ -119,17 +117,6 @@ export type DealItem = {
   unitPrice: string | number;
   taxRate: number;
 };
-export type Activity = {
-  id: string;
-  type: ActivityType;
-  status: ActivityStatus;
-  subject: string;
-  description: string | null;
-  dueAt: string | null;
-  completedAt: string | null;
-  createdAt: string;
-  assignee: Option | null;
-};
 export type Quote = {
   id: string;
   number: string;
@@ -146,26 +133,6 @@ export type Quote = {
   items?: QuoteLine[];
 };
 export type QuoteLine = { description: string; quantity: string; unitPrice: string; taxRate: number };
-/** Eventos del negocio en AuditLog: cierres y propuestas. */
-export type Closure = {
-  id: string;
-  action: "WON" | "LOST" | "REJECTED" | "REOPENED" | "QUOTE_SENT" | "QUOTE_ACCEPTED" | "QUOTE_SUPERSEDED";
-  changes: {
-    quoteNumber?: string | null;
-    lossReason?: LossReason | null;
-    lossDetail?: string | null;
-    from?: DealStatus;
-    reason?: string | null;
-    total?: string;
-    validUntil?: string;
-    acceptanceNote?: string;
-    followUpAt?: string | null;
-    quotes?: string[];
-    cancelledActivities?: number;
-  } | null;
-  createdAt: string;
-  user: Option | null;
-};
 export type DealDetail = Omit<Deal, "contact" | "company"> & {
   closedAt: string | null;
   lossReason: LossReason | null;
@@ -188,9 +155,6 @@ export type DealDetail = Omit<Deal, "contact" | "company"> & {
   company: (Option & { taxId: string | null; email: string | null; phone: string | null }) | null;
   items: DealItem[];
   quotes: Quote[];
-  activities: Activity[];
-  stageHistory: HistoryItem[];
-  closures: Closure[];
 };
 export type ItemValues = {
   description: string;

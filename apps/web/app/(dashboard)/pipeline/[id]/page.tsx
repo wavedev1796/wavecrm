@@ -28,6 +28,7 @@ import { DealQualification } from "../../../../features/pipeline/deal-qualificat
 import { DealQuotes } from "../../../../features/pipeline/deal-quotes";
 import { DealTimeline } from "../../../../features/pipeline/deal-timeline";
 import type { DealDetail } from "../../../../features/pipeline/types";
+import { loadTimeline } from "../../../../features/timeline/actions";
 
 const TONO = { OPEN: "neutral", WON: "success", LOST: "warning", REJECTED: "danger" } as const;
 
@@ -35,9 +36,11 @@ export default async function DealPage({
   params,
 }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params;
-  const [response, me] = await Promise.all([
+  // El historial se pide aparte (paginado y con su propio alcance): un 404 suyo no oculta la ficha.
+  const [response, me, timeline] = await Promise.all([
     authenticatedApi("/deals/" + encodeURIComponent(id)),
     authenticatedApi("/auth/me"),
+    loadTimeline("deals", id),
   ]);
   if (response.status === 404) notFound();
   // Solo un ADMIN reabre o modifica un negocio cerrado; el API lo exige igual (403).
@@ -90,7 +93,7 @@ export default async function DealPage({
       <DealQuotes deal={deal} locked={locked} />
       <div className="contact-detail-grid">
         <div className="contact-detail-main">
-          <DealTimeline deal={deal} />
+          <DealTimeline deal={deal} timeline={timeline} />
         </div>
         <div className="contact-detail-main">
           <DealQualification key={deal.status} deal={deal} locked={locked} />
