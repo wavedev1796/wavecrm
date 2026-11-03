@@ -66,7 +66,7 @@ Mostrar el recorrido cronológico de una relación comercial (contacto o negocio
 - Web: `entries.test.ts`, `actions.test.ts` y `timeline-list.test.tsx` (cada tipo con autor, fecha y tipo; «Ver más» sin duplicados; error que conserva lo cargado y permite reintentar; negocio eliminado sin enlace; nota con `<script>` como texto; mensaje sin acceso), más las pruebas de las dos fichas y de `deal-timeline`.
 - Resultados: 251 pruebas unitarias del API y 355 de la web aprobadas; 60 pruebas de integración aprobadas contra `pruebas`; `pnpm lint` y `pnpm build` aprobados.
 - Playwright contra `pruebas` (`pipeline.spec.ts`, `contactos.spec.ts` y `activities.spec.ts`): 10 de 11 aprobadas. La que falla, `activities.spec.ts:81` (no aparece «Completada» al completar desde la agenda), falla igual sin los cambios de este ticket: es previa (la revisión de develop `bc28c5d` ya la pedía diagnosticar, CRM-24). Cobertura unitaria: API 98,2 % de líneas, web 96,3 % (los archivos nuevos al 100 %; los huecos son de la agenda y del modal de transición).
-- La migración `20261101120000_activity_created_by` está aplicada solo en `pruebas` (2026-11-01).
+- La migración `20261101120000_activity_created_by` está aplicada en `pruebas` (2026-11-01) y en `development` (`prisma migrate status` al día, 2026-11-02).
 
 ### Cómo probarlo a mano
 
@@ -77,7 +77,6 @@ Mostrar el recorrido cronológico de una relación comercial (contacto o negocio
 
 ## Pendientes
 
-- Aplicar la migración `20261101120000_activity_created_by` en `development` (requiere OK del usuario).
 - E2E de completar en la agenda (`activities.spec.ts:81`, CRM-24 de Eduardo): falla también antes de este ticket.
 - La agenda (`GET /activities`) sigue siendo compartida por decisión del Sprint 4: un VENDEDOR puede ver ahí actividades de negocios ajenos.
 - Avisar a Eduardo: migración, campos fuera del detalle de negocio y contacto, alcance de `GET /deals/:id/history` y `createdById` en la agenda.
