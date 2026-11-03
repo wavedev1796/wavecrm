@@ -152,6 +152,12 @@
     display: none;
   }
 }
+/* Después de :hover y :checked para ganarles: la opción deshabilitada no se resalta. */
+.select-control option:disabled {
+  color: var(--wave-muted);
+  background: var(--wave-white);
+  cursor: not-allowed;
+}
 .input::placeholder {
   color: var(--wave-faint);
 }

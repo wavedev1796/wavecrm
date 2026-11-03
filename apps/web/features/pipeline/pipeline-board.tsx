@@ -65,6 +65,12 @@ export function PipelineBoard({
   const [more, setMore] = useState<Record<string, { page: number; deals: Deal[] }>>({});
   const [loading, setLoading] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  /**
+   * Con el selector personalizable (base-select), Chrome 156 entrega el clic sobre la opción ~100 ms después del
+   * change y con él cierra el modal (closedby="any") que el change acababa de abrir. Si el gesto empezó sobre una
+   * opción, el modal se abre en ese clic; con teclado o con la lista nativa (sin opciones en el DOM), en el change.
+   */
+  const optionPress = useRef(false);
   useEffect(() => setMore({}), [stages, lost]);
   useEffect(() => {
     if (editor && !dialog.current?.open) dialog.current?.showModal();
@@ -175,15 +181,30 @@ export function PipelineBoard({
           id={"stage-" + deal.id}
           value={key}
           disabled={pending}
-          onChange={(event) => requestMove(deal, event.target.value)}
+          onPointerDown={(event) => {
+            optionPress.current = event.target instanceof HTMLOptionElement && !event.target.disabled;
+          }}
+          onKeyDown={() => {
+            optionPress.current = false;
+          }}
+          onChange={(event) => {
+            if (!optionPress.current) requestMove(deal, event.target.value);
+          }}
+          onClick={(event) => {
+            if (optionPress.current && event.target instanceof HTMLOptionElement) requestMove(deal, event.target.value);
+            optionPress.current = false;
+          }}
           aria-label={"Mover " + deal.title + " de etapa"}
         >
+          {/* La etapa actual se ve pero no se elige: elegirla no movería nada. */}
           {stages.map((option) => (
-            <option key={option.id} value={option.id}>
+            <option key={option.id} value={option.id} disabled={option.id === key}>
               {option.name}
             </option>
           ))}
-          <option value={LOST}>{TABLERO.perdido}</option>
+          <option value={LOST} disabled={key === LOST}>
+            {TABLERO.perdido}
+          </option>
           <option value={REJECTED}>{TABLERO.rechazado}</option>
         </Select>
       </div>

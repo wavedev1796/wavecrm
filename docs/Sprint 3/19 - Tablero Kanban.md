@@ -130,3 +130,27 @@ Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*), con autor
 ### Validación
 
 - `pipeline-board.test.tsx`, `transition-dialog.test.tsx` y `actions.test.ts`, más dos e2e nuevas en `test/e2e/pipeline.spec.ts`. Cifras en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).
+
+## Selector «Mover a»: el modal se cerraba solo en Chrome 156 (2026-11-03)
+
+Bloque añadido por Zaith Manangón, con autorización del usuario del 2026-11-03.
+
+### Implementación
+
+- `apps/web/features/pipeline/pipeline-board.tsx`:
+  - Si el gesto empieza sobre una opción de la lista (`pointerdown` sobre un `<option>` habilitado), el modal de cambio de etapa se abre en el `click` sobre esa opción y no en el `change`. Con teclado, o con la lista nativa del sistema (sin opciones en el DOM), se sigue abriendo en el `change`. Un `ref` (`optionPress`) recuerda de dónde viene el gesto, y `keydown` lo reinicia.
+  - La opción de la etapa donde está la tarjeta (o «Perdido» en la columna Perdido) sale con `disabled`. Se sigue viendo como valor del selector, pero no se elige.
+- `apps/web/styles/04-controles.css`: `.select-control option:disabled` en `--wave-muted`, fondo blanco y cursor bloqueado, sin el resaltado de `:hover` ni `:checked`. Documentado en `docs/design/TOKENS.md`.
+
+### Decisiones
+
+- **Causa.** En Chrome 156, al elegir una etapa en el selector, la tarjeta no cambiaba y nunca aparecían los requisitos; arrastrando sí funcionaba. El registro de eventos de ese navegador mostró la secuencia: `change` → el modal se abre → ~95 ms después, `cancel` y `close` sobre el `<dialog>` → `click` sobre la opción. El selector personalizable (`appearance: base-select`) entrega el `click` de la opción con retraso. Chrome toma ese final del gesto como un clic fuera del modal recién abierto, que tiene `closedby="any"` (de `FormDialog`), y lo cierra por *light dismiss*. El arrastre y los botones no lo sufren porque abren el modal con el último evento del gesto. En Chrome 152 (navegador integrado de Claude) no se reproduce.
+- **Abrir en el `click` en vez de quitar `closedby="any"`.** `FormDialog` es compartido y el clic en el fondo para cerrar es un comportamiento del sistema. Cambiarlo afectaría a todos los modales, cuando el problema es solo el momento en que el selector abre el suyo. Un `setTimeout` no sirve: el retraso del `click` depende del navegador.
+- **Deshabilitar la etapa actual en vez de ocultarla.** Así no hace falta una opción vacía de relleno: el selector controlado sigue mostrando la etapa actual y la lista la marca como no elegible. Se mantiene la guarda `to === current` en `requestMove`.
+
+### Validación
+
+- `pipeline-board.test.tsx` (15) y el resto de `features/pipeline/` (101/101). Prueba nueva: con `pointerdown` sobre la opción, el `change` no pide la vista previa y el `click` abre el modal una sola vez. La prueba «el selector y el arrastre piden el mismo cambio» exige la etapa actual deshabilitada, y la de métricas exige «Perdido» deshabilitado en la columna Perdido.
+- Navegador integrado (Chrome 152, VENDEDOR): el `change` llega con el modal cerrado y el `click` sobre «Propuesta» abre «Cambiar de etapa» con sus requisitos. Se cerró sin guardar.
+- Chrome 156 del usuario: elegir «Propuesta» en el selector abre el modal con sus requisitos (confirmado por el usuario el 2026-11-03).
+- `pnpm lint`, `tsc --noEmit` de la web y `pnpm build` en verde.

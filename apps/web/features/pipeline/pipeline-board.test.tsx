@@ -104,11 +104,29 @@ test("un movimiento rechazado muestra el error en el modal y conserva la etapa v
   expect(screen.getByLabelText("Mover Cuenta Andina de etapa")).toHaveValue("s1");
 });
 
+test("con ratón, el selector abre el modal en el clic sobre la opción, no en el change", async () => {
+  // Chrome 156 cierra un <dialog closedby="any"> abierto en el change con el clic que llega después sobre la opción.
+  moveTo();
+  view();
+  const selector = screen.getByLabelText("Mover Cuenta Andina de etapa");
+  const ganado = within(selector).getByRole("option", { name: "Ganado" });
+  fireEvent.pointerDown(ganado);
+  fireEvent.change(selector, { target: { value: "s2" } });
+  expect(preview).not.toHaveBeenCalled();
+  fireEvent.click(ganado);
+  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cuenta Andina pasó a Ganado."));
+  expect(preview).toHaveBeenCalledTimes(1);
+  expect(preview).toHaveBeenCalledWith("d1", "s2");
+});
+
 test("el selector y el arrastre piden el mismo cambio con las mismas reglas", async () => {
   moveTo();
   const user = userEvent.setup();
   view();
-  await user.selectOptions(screen.getByLabelText("Mover Cuenta Andina de etapa"), "s2");
+  const selector = screen.getByLabelText("Mover Cuenta Andina de etapa");
+  expect(within(selector).getByRole("option", { name: "Inicial" })).toBeDisabled();
+  expect(within(selector).getByRole("option", { name: "Ganado" })).toBeEnabled();
+  await user.selectOptions(selector, "s2");
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cuenta Andina pasó a Ganado."));
   const bySelect = [preview.mock.calls[0], complete.mock.calls[0]?.slice(0, 3)];
 
@@ -184,6 +202,7 @@ test("las métricas salen del API y los perdidos no suman al valor abierto ni al
   const lost = screen.getByRole("region", { name: "Columna Perdido" });
   expect(within(lost).getByRole("article", { name: "Negocio Cuenta perdida" })).toBeInTheDocument();
   expect(within(lost).getByLabelText("Mover Cuenta perdida de etapa")).toHaveValue("LOST");
+  expect(within(lost).getByRole("option", { name: "Perdido" })).toBeDisabled();
 });
 
 test("ver más pide la página siguiente de la columna, la añade y se reinicia al refrescar", async () => {
