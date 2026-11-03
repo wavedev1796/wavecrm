@@ -23,7 +23,12 @@ export type TimelineEvent = {
   /** `canEdit`: quien mira es el autor o un ADMIN. */
   note?: { id: string; content: string; mentions: Ref[]; editedAt: string | null; canEdit: boolean };
   stage?: { from: Ref | null; to: Ref; reason: string | null };
-  event?: { action: string; changes: Record<string, unknown> | null };
+  event?: {
+    action: string;
+    entityType?: string;
+    changes: Record<string, unknown> | null;
+    activitySubject?: string;
+  };
 };
 export type TimelineApiPage = { data: TimelineEvent[]; meta: { limit: number; nextCursor: string | null } };
 

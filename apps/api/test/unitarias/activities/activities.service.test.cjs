@@ -22,6 +22,7 @@ const base = {
   status: "PENDING",
   subject: "Llamar",
   dueAt: new Date("2026-11-05T15:00:00Z"),
+  updatedAt: new Date("2026-11-03T12:00:00.000Z"),
   reminderAt: null,
   assigneeId: "user-1",
   assignee: { id: "user-1", name: "Ana", email: "ana@example.test" },
@@ -41,7 +42,9 @@ function prismaFor(initial = base) {
       update: async ({ data }) => ({ ...base, ...data }),
       // Como la base: solo escribe si la fila existe y sigue en el estado del where.
       updateMany: async ({ where, data }) =>
-        !activity || (where.status && activity.status !== where.status)
+        !activity ||
+        (where.status && activity.status !== where.status) ||
+        (where.updatedAt && activity.updatedAt?.getTime() !== where.updatedAt.getTime())
           ? { count: 0 }
           : (Object.assign(activity, data), { count: 1 }),
       delete: async () => activity,
@@ -149,6 +152,33 @@ test("rescheduling or reassigning resets a previously delivered reminder", async
       dueAt: { from: "2026-11-05T15:00:00.000Z", to: "2026-11-06T15:00:00.000Z" },
     },
   });
+});
+
+test("editar con una versión obsoleta responde 409 sin crear una auditoría", async () => {
+  const prisma = prismaFor({ ...base, subject: "Asunto actualizado" });
+  await assert.rejects(
+    new ActivitiesService(prisma).update(
+      "activity-1",
+      { subject: "Cambio antiguo", updatedAt: new Date("2026-11-03T11:00:00.000Z") },
+      "user-2",
+    ),
+    (error) => error instanceof ConflictException && /cambió desde que la abriste/.test(error.message),
+  );
+  assert.equal(prisma.audit.length, 0);
+});
+
+test("una edición válida avanza updatedAt al menos un milisegundo", async () => {
+  const prisma = prismaFor();
+  let write;
+  const updateMany = prisma.activity.updateMany;
+  prisma.activity.updateMany = async (args) => ((write = args), updateMany(args));
+  await new ActivitiesService(prisma).update(
+    "activity-1",
+    { subject: "Nueva versión", updatedAt: base.updatedAt },
+    "user-2",
+  );
+  assert.equal(write.where.updatedAt.getTime(), base.updatedAt.getTime());
+  assert.ok(write.data.updatedAt.getTime() > base.updatedAt.getTime());
 });
 
 test("CRM-22: quitar el vencimiento con recordatorio no se valida contra la fecha anterior", async () => {

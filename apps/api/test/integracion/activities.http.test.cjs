@@ -4,6 +4,7 @@ const {
   PASSWORD,
   cleanup,
   createUser,
+  pasaporteDePrueba,
 } = require("../../../../test/datos-de-prueba.cjs");
 const { startApi } = require("./api.cjs");
 
@@ -104,6 +105,105 @@ test("ticket-23: CRUD, asignación, próximas/atrasadas y autenticación por HTT
   activityIds.splice(activityIds.indexOf(upcoming.body.id), 1);
 });
 
+test("CRM-4: una edición obsoleta devuelve 409 y conserva la última versión", async () => {
+  const created = await call("/activities", {
+    method: "POST",
+    body: { type: "TASK", subject: "Versión inicial" },
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  activityIds.push(created.body.id);
+  const firstVersion = created.body.updatedAt;
+  const current = await call(`/activities/${created.body.id}`, {
+    method: "PATCH",
+    body: { subject: "Versión vigente", updatedAt: firstVersion },
+  });
+  assert.equal(current.status, 200, JSON.stringify(current.body));
+  assert.ok(new Date(current.body.updatedAt).getTime() > new Date(firstVersion).getTime());
+  const stale = await call(`/activities/${created.body.id}`, {
+    method: "PATCH",
+    body: { subject: "Versión obsoleta", updatedAt: firstVersion },
+  });
+  assert.equal(stale.status, 409, JSON.stringify(stale.body));
+  assert.match(stale.body.error.message, /cambió desde que la abriste/);
+  assert.equal((await call(`/activities/${created.body.id}`)).body.subject, "Versión vigente");
+});
+
+test("REV-B03: borrar negocio, contacto o empresa conserva y desvincula la actividad", async () => {
+  const pipeline = await api.prisma.pipeline.findFirst({ include: { stages: true } });
+  assert.ok(pipeline?.stages[0], "La base de pruebas debe tener el pipeline de seed.");
+  const suffix = Date.now();
+  let company;
+  let contact;
+  let deal;
+  let activity;
+  try {
+    company = await api.prisma.company.create({
+      data: { name: "Empresa retención " + suffix, ownerId: user.id },
+    });
+    contact = await api.prisma.contact.create({
+      data: {
+        firstName: "Contacto",
+        lastName: "Retención",
+        documentType: "PASAPORTE",
+        documentId: pasaporteDePrueba(),
+        email: `retencion-${suffix}@example.test`,
+        ownerId: user.id,
+        companyId: company.id,
+      },
+    });
+    deal = await api.prisma.deal.create({
+      data: {
+        title: "Negocio retención " + suffix,
+        value: 0,
+        pipelineId: pipeline.id,
+        stageId: pipeline.stages[0].id,
+        ownerId: user.id,
+        companyId: company.id,
+        contactId: contact.id,
+      },
+    });
+    activity = await api.prisma.activity.create({
+      data: {
+        type: "TASK",
+        subject: "Actividad conservada",
+        assigneeId: user.id,
+        createdById: user.id,
+        companyId: company.id,
+        contactId: contact.id,
+        dealId: deal.id,
+      },
+    });
+    activityIds.push(activity.id);
+    await api.prisma.deal.delete({ where: { id: deal.id } });
+    let retained = await api.prisma.activity.findUnique({ where: { id: activity.id } });
+    assert.ok(retained);
+    assert.equal(retained.dealId, null);
+    assert.equal(retained.contactId, contact.id);
+    await api.prisma.contact.delete({ where: { id: contact.id } });
+    retained = await api.prisma.activity.findUnique({ where: { id: activity.id } });
+    assert.ok(retained);
+    assert.equal(retained.contactId, null);
+    assert.equal(retained.companyId, company.id);
+    await api.prisma.company.delete({ where: { id: company.id } });
+    retained = await api.prisma.activity.findUnique({ where: { id: activity.id } });
+    assert.ok(retained);
+    assert.equal(retained.companyId, null);
+  } finally {
+    if (activity) {
+      await api.prisma.activity.deleteMany({ where: { id: activity.id } });
+      activityIds.splice(activityIds.indexOf(activity.id), 1);
+    }
+    if (deal) await api.prisma.deal.deleteMany({ where: { id: deal.id } });
+    if (contact) await api.prisma.contact.deleteMany({ where: { id: contact.id } });
+    if (company) await api.prisma.company.deleteMany({ where: { id: company.id } });
+    // Limpia el registro aislado que dejó una ejecución anterior si el contacto no llegó a crearse.
+    if (!contact)
+      await api.prisma.company.deleteMany({
+        where: { ownerId: user.id, name: { startsWith: "Empresa retención " } },
+      });
+  }
+});
+
 test("ticket-23: dispara un correo de recordatorio y evita volver a enviarlo", async () => {
   const reminderAt = new Date(Date.now() - 60_000);
   const dueAt = new Date(Date.now() + 3_600_000);
@@ -181,6 +281,7 @@ test("CRM-22: día de Ecuador, cancelar sin borrar y traza de quién cambió qu�
   assert.deepEqual(trail[0].changes, {
     dueAt: { from: "2999-03-10T05:00:00.000Z", to: "2999-03-11T05:00:00.000Z" },
   });
+  assert.deepEqual(trail[1].changes, { status: { from: "PENDING", to: "CANCELLED" } });
 });
 
 test("ticket-23: valida fechas de recordatorio y no asigna usuarios inactivos", async () => {

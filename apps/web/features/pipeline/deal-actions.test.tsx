@@ -1,19 +1,21 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import { completeTransitionAction, previewTransitionAction } from "./actions";
+import { completeTransitionAction } from "./actions";
+import { moveTransition, previewTransition } from "./transition-preview";
 import { DealActions } from "./deal-actions";
 import { baseDeal } from "./deal-fixture";
 import type { DealDetail } from "./types";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("./actions", () => ({
-  previewTransitionAction: vi.fn(),
   completeTransitionAction: vi.fn(),
   saveTransitionAction: vi.fn(),
   saveDeal: vi.fn(),
 }));
-const preview = vi.mocked(previewTransitionAction);
+vi.mock("./transition-preview", () => ({ previewTransition: vi.fn(), moveTransition: vi.fn() }));
+const preview = vi.mocked(previewTransition);
+const move = vi.mocked(moveTransition);
 const view = (deal: DealDetail, canReopen = false) =>
   render(<DealActions deal={deal} pipelines={[]} contacts={[]} companies={[]} users={[]} canReopen={canReopen} />);
 const asks = (...codes: string[]) =>
@@ -90,7 +92,7 @@ test("reabrir solo aparece para un ADMIN y pide el motivo", async () => {
 
 test("al completar el cambio avisa y refresca la ficha", async () => {
   preview.mockResolvedValue({ data: { pending: [], quote: null, items: 2 } });
-  vi.mocked(completeTransitionAction).mockResolvedValue({ done: true });
+  move.mockResolvedValue({ done: true });
   const user = userEvent.setup();
   view(baseDeal);
   await user.click(screen.getByRole("button", { name: "Ganar" }));

@@ -73,4 +73,23 @@ Alcance: día sin hora a las 00:00 de Ecuador, `NEXT_ACTIVITY` y «realizada no 
 - La migración también se aplicó en la base compartida de desarrollo configurada en `.env`; Prisma reporta el esquema al día. Producción todavía debe migrarla antes del despliegue.
 - El API local se reinició después de la migración; `GET /api/v1/health` respondió con estado `ok`.
 - El envío real requiere `SMTP_HOST` y las demás variables SMTP existentes. Las pruebas no envían correo real.
-- La prueba Playwright inicia API y web en `4000` y `3000`, según `playwright.config.ts`, y usa solo la base `pruebas`. En la última validación no inició porque ya había un API escuchando en `4000`.
+- La prueba Playwright inicia API y web en `4000` y `3000`, según `playwright.config.ts`, y usa solo la base `pruebas`.
+
+## Cierre de pendientes (2026-11-03)
+
+| Capa | Resultado |
+| --- | --- |
+| API unitarias de actividades y timeline | 23 aprobadas |
+| Web (agenda, acciones y timeline) | 28 aprobadas |
+| Integración HTTP de actividades y timeline contra `pruebas` | 9 aprobadas; incluye auditoría de actividad, concurrencia `409` y REV-B03 |
+| Playwright (`activities.spec.ts`, completar desde agenda) | Aprobado; comprueba DB, toast y «Completada» |
+| `prisma validate`, tipos web y build API | Aprobados |
+
+La migración `20261103120000_activity_unlink_on_delete` se aplicó en `pruebas` y la prueba confirmó que las actividades sobreviven al borrado de negocio, contacto y empresa, con sus vínculos correspondientes en `null`. `prisma migrate status` sigue señalando `20260926220000_restore_password_history_default` como migración presente en la base y ausente del repositorio; no impidió aplicar la migración nueva.
+
+## Selector directo de etapa en Kanban
+
+- Web: 18 pruebas de `pipeline-board.test.tsx` aprobadas, incluidas selección directa, clic sobre la opción, requisitos y errores. (2026-11-03, Zaith: la prueba del `input` nativo salió con el merge del arreglo de CRM-19; ver *Selector «Mover a»* en `docs/Sprint 3/19 - Tablero Kanban.md`.)
+- API: 64 pruebas de `stage-gates.test.cjs` y `pipeline.service.test.cjs` aprobadas.
+- Playwright contra `pruebas`: 2 recorridos aprobados; selección directa sin requisitos, selección con modal, retorno de *Propuesta* a *Negociación* con motivo y arrastre.
+- La vista previa y el movimiento automático sin requisitos usan una ruta JSON autenticada; las transiciones con campos pendientes conservan el guardado del modal y las validaciones del API.

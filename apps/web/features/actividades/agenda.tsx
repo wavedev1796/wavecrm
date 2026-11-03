@@ -1,21 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Activity, Bell, CalendarDays, Check, CircleAlert, CircleCheck, ClipboardList, Clock3, List, Mail, Pencil, Phone, Plus, Trash2, Users, Video, X } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Activity, Ban, Bell, CalendarDays, Check, CircleAlert, CircleCheck, ClipboardList, Clock3, List, Mail, Pencil, Phone, Plus, Trash2, Users, Video, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ESTADO_ACTIVIDAD, TIPO_ACTIVIDAD } from "@/content/catalogos";
-import {
-  completeActivity,
-  deleteActivity,
-  saveActivity,
-} from "./actions";
+import { ACTIVIDADES } from "@/content/actividades";
+import { saveActivity } from "./actions";
 
 export type AgendaActivity = {
   id: string;
+  updatedAt: string;
   type: keyof typeof TIPO_ACTIVIDAD;
   status: "PENDING" | "COMPLETED" | "CANCELLED";
   subject: string;
@@ -78,6 +76,7 @@ export function Agenda({
 }) {
   const [view, setView] = useState(initialView);
   const [period, setPeriod] = useState(focus || "all");
+  const [editing, setEditing] = useState<AgendaActivity | null>(null);
   const router = useRouter();
   const visible = useMemo(
     () =>
@@ -96,19 +95,6 @@ export function Agenda({
       }),
     [activities, period],
   );
-  async function finish(id: string) {
-    const result = await completeActivity(id);
-    notify(result);
-    if (result.ok) router.refresh();
-  }
-  async function remove(id: string) {
-    if (window.confirm("¿Eliminar esta actividad?")) {
-      const result = await deleteActivity(id);
-      notify(result);
-      if (result.ok) router.refresh();
-    }
-  }
-
   return (
     <section className="activities-agenda">
       <div className="activities-toolbar card">
@@ -229,37 +215,35 @@ export function Agenda({
               </div>
               {activity.status === "PENDING" && (
                 <div className="activity-card-actions">
-                  <Button
+                  <ActivityMutationForm
+                    activity={activity}
+                    action="complete"
+                    label="Hecha"
+                    ariaLabel={`Marcar ${activity.subject} como hecha`}
                     variant="secondary"
-                    type="button"
-                    onClick={() => void finish(activity.id)}
-                    aria-label={`Marcar ${activity.subject} como hecha`}
-                  >
-                    <Check aria-hidden />
-                    Hecha
-                  </Button>
-                  <details className="activity-edit">
-                    <summary aria-label={`Editar ${activity.subject}`}>
-                      <Pencil aria-hidden />
-                    </summary>
-                    <form action={async (data) => {
-                      const result = await saveActivity({ ok: false, message: "" }, data);
-                      notify(result);
-                      if (result.ok) router.refresh();
-                    }}>
-                      <input type="hidden" name="id" value={activity.id} />
-                      <ActivityFields activity={activity} owners={owners} />
-                      <Button type="submit">Guardar cambios</Button>
-                    </form>
-                  </details>
+                  ><Check aria-hidden />Hecha</ActivityMutationForm>
+                  <ActivityMutationForm
+                    activity={activity}
+                    action="cancel"
+                    label={ACTIVIDADES.cancelar}
+                    ariaLabel={`${ACTIVIDADES.cancelar} ${activity.subject}`}
+                    confirm={ACTIVIDADES.confirmarCancelar}
+                  ><Ban aria-hidden /></ActivityMutationForm>
                   <Button
                     variant="ghost"
                     type="button"
-                    onClick={() => void remove(activity.id)}
-                    aria-label={`Eliminar ${activity.subject}`}
+                    onClick={() => setEditing(activity)}
+                    aria-label={`Editar ${activity.subject}`}
                   >
-                    <Trash2 aria-hidden />
+                    <Pencil aria-hidden />
                   </Button>
+                  <ActivityMutationForm
+                    activity={activity}
+                    action="delete"
+                    label="Eliminar"
+                    ariaLabel={`Eliminar ${activity.subject}`}
+                    confirm="¿Eliminar esta actividad?"
+                  ><Trash2 aria-hidden /></ActivityMutationForm>
                 </div>
               )}
             </article>
@@ -273,6 +257,18 @@ export function Agenda({
           )}
         </div>
       )}
+      {editing && (
+        <EditActivityDialog
+          activity={editing}
+          owners={owners}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            router.refresh();
+          }}
+          onConflict={() => router.refresh()}
+        />
+      )}
     </section>
   );
 
@@ -282,6 +278,129 @@ export function Agenda({
     else params.delete(key);
     router.push(`/actividades?${params.toString()}`);
   }
+}
+
+function ActivityMutationForm({
+  activity,
+  action,
+  label,
+  ariaLabel,
+  variant = "ghost",
+  confirm,
+  children,
+}: {
+  activity: AgendaActivity;
+  action: "complete" | "cancel" | "delete";
+  label: string;
+  ariaLabel: string;
+  variant?: "ghost" | "secondary";
+  confirm?: string;
+  children: ReactNode;
+}) {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+
+  return (
+    <form
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (confirm && !window.confirm(confirm)) event.preventDefault();
+        else {
+          setPending(true);
+          try {
+            const response = await fetch(`/api/activities/${encodeURIComponent(activity.id)}/${action}`, {
+              method: action === "delete" ? "DELETE" : "PATCH",
+            });
+            const payload = await response.json().catch(() => null) as { ok?: boolean; message?: string; error?: { message?: string | string[] } } | null;
+            const apiMessage = payload?.message ?? payload?.error?.message;
+            const result = {
+              ok: response.ok && payload?.ok === true,
+              message: response.ok
+                ? action === "complete" ? ACTIVIDADES.completada : action === "cancel" ? ACTIVIDADES.cancelada : ACTIVIDADES.eliminada
+                : Array.isArray(apiMessage) ? apiMessage.join(" ") : apiMessage ?? ACTIVIDADES.errorOperacion,
+            };
+            notify(result);
+            if (result.ok) router.refresh();
+          } catch {
+            notify({ ok: false, message: ACTIVIDADES.errorOperacion });
+          } finally {
+            setPending(false);
+          }
+        }
+      }}
+    >
+      <Button
+        type="submit"
+        variant={variant}
+        loading={pending}
+        aria-label={ariaLabel}
+        title={label}
+      >
+        {children}
+      </Button>
+    </form>
+  );
+}
+
+function EditActivityDialog({
+  activity,
+  owners,
+  onClose,
+  onSaved,
+  onConflict,
+}: {
+  activity: AgendaActivity;
+  owners: Owner[];
+  onClose: () => void;
+  onSaved: () => void;
+  onConflict: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  return (
+    <div
+      className="activity-dialog-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className="activity-dialog card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-activity-dialog-title"
+      >
+        <header>
+          <div className="activity-dialog-icon"><Pencil aria-hidden /></div>
+          <div>
+            <h2 id="edit-activity-dialog-title">Editar actividad</h2>
+            <p>Actualiza los detalles y guarda los cambios.</p>
+          </div>
+          <button type="button" aria-label="Cerrar" onClick={onClose}><X aria-hidden /></button>
+        </header>
+        <form action={async (data) => {
+          setSaving(true);
+          try {
+            data.set("id", activity.id);
+            const result = await saveActivity({ ok: false, message: "" }, data);
+            notify(result);
+            if (result.ok) onSaved();
+            else if (result.conflict) {
+              onClose();
+              onConflict();
+            }
+          } finally {
+            setSaving(false);
+          }
+        }}>
+          <ActivityFields activity={activity} owners={owners} />
+          <footer>
+            <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" disabled={saving}><Check aria-hidden />{saving ? "Guardando…" : "Guardar cambios"}</Button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  );
 }
 
 export function NewActivityForm({ owners }: { owners: Owner[] }) {
@@ -320,6 +439,7 @@ function ActivityFields({
 }) {
   return (
     <div className="activity-form-grid">
+      {activity && <input type="hidden" name="updatedAt" value={activity.updatedAt} />}
       <label>
         <span className="activity-field-label"><ClipboardList aria-hidden /> Asunto</span>
         <Input

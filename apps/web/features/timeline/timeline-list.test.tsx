@@ -93,6 +93,26 @@ test("en el contacto, los eventos de un negocio lo enlazan; el negocio eliminado
   expect(screen.queryByRole("button", { name: /Completar/ })).toBeNull();
 });
 
+test("pinta los cambios de auditoría de una actividad como eventos del historial", () => {
+  render(
+    <TimelineList
+      kind="contacts"
+      id="c1"
+      initial={{
+        entries: [entry("EVENT:activity-1", {
+          type: "Cambio en actividad",
+          title: "Actividad cancelada: Llamar al cliente",
+          detail: "Eduardo · 3 nov 2026, 10:00",
+          note: "Estado: Pendiente → Cancelada",
+        })],
+        nextCursor: null,
+      }}
+    />,
+  );
+  expect(screen.getByText("Actividad cancelada: Llamar al cliente")).toBeInTheDocument();
+  expect(screen.getByText("Estado: Pendiente → Cancelada")).toBeInTheDocument();
+});
+
 test("en el negocio, las pendientes se completan aquí y no enlazan al propio negocio", async () => {
   vi.mocked(completeActivityAction).mockResolvedValue({ data: {} });
   const user = userEvent.setup();

@@ -307,37 +307,11 @@
   align-items: center;
   gap: 5px;
 }
+.activity-card-actions form { display: flex; }
 .activity-card-actions .button {
   min-height: 36px;
   padding: 7px 10px;
   font-size: 0.72rem;
-}
-.activity-edit {
-  position: relative;
-}
-.activity-edit > summary {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  color: var(--wave-muted);
-  cursor: pointer;
-  list-style: none;
-}
-.activity-edit[open] > form {
-  position: absolute;
-  top: 42px;
-  right: 0;
-  z-index: 5;
-  display: grid;
-  width: min(560px, 90vw);
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--wave-line);
-  border-radius: 14px;
-  background: white;
-  box-shadow: var(--shadow-md);
 }
 .activity-dialog form > footer { display: flex; justify-content: flex-end; gap: 9px; padding-top: 4px; }
 .activity-dialog form > footer .button { display: inline-flex; align-items: center; gap: 7px; }

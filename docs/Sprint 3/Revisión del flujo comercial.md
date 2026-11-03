@@ -101,7 +101,8 @@ El pedido no trae criterios escritos; salen de las 8 observaciones y de las deci
 - **Tablero** (`features/pipeline/pipeline-board.tsx`):
   - Zona **Rechazado** con la cantidad y *Ver papelera*.
   - «Rechazado» en el selector de la tarjeta.
-  - Sin `router.refresh()`: la server action ya revalida.
+  - El selector de etapa comparte con el arrastre la vista previa del API y sus validaciones; al elegir *Perdido* o *Rechazado* solicita el motivo específico antes de guardar. Conserva el componente `Select` y los estilos Wave.
+  - La vista previa y el movimiento automático sin requisitos usan una ruta JSON autenticada; al completar ese movimiento se refresca el tablero. Las transiciones con campos pendientes se guardan desde el modal y revalidan las rutas.
 - **Papelera**:
   - Archivos: `apps/web/app/(dashboard)/pipeline/papelera/{page,loading,page.test}.tsx` y `features/pipeline/rejected-trash.tsx`.
   - Tabla con casillas, *Seleccionar todos*, *Eliminar seleccionados (n)* con confirmación y *Reabrir* (solo ADMIN).
