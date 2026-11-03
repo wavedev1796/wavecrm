@@ -88,10 +88,13 @@ Representar actividades y seguimiento con fechas, responsables y vínculos comer
 2. En la agenda, crear una actividad para hoy a las 20:00: el timeline del negocio muestra el día de hoy.
 3. `PATCH /api/v1/activities/:id/cancel` sobre una pendiente: responde `200` con `CANCELLED`; repetirlo responde `409`. La fila sigue en el timeline como «Cancelada».
 
-## Pendientes
+## Cierre del Sprint 4 (2026-11-03)
 
-- Producción debe recibir `20261102120000_activity_ecuador_days` antes de desplegar esta versión. `pruebas` y `development` tienen además `20260926220000_restore_password_history_default`, que no está en esta rama.
-- Botón *Cancelar* en la agenda web (CRM-24, Eduardo) y mostrar en el timeline los eventos de auditoría de la actividad (quién completó, canceló o reprogramó).
-- REV-B03: borrar un contacto, empresa o negocio borra sus actividades por `onDelete: Cascade`; definir la política de archivo antes de cambiar las relaciones.
-- Control de versión en edición concurrente (revisión de CRM-23).
-- Avisar a Eduardo: migración de datos, ruta de cancelar, traza en `AuditLog`, actor en las rutas y días sin hora desde la ficha.
+- CRM-24 agregó cancelar en agenda y concurrencia optimista (`updatedAt`; una versión desactualizada responde `409` y refresca la agenda). La versión avanza al menos 1 ms para que dos ediciones en el mismo milisegundo no compartan versión.
+- CRM-25 muestra los eventos de auditoría de actividades con el alcance existente del timeline.
+- REV-B03 (decisión de Eduardo García): conservar las actividades y desvincularlas al borrar el negocio, contacto o empresa. Las tres relaciones usan `onDelete: SetNull`; migración `20261103120000_activity_unlink_on_delete`, aplicada y validada en `pruebas`.
+- El E2E de completar desde la agenda quedó corregido: el flujo usa la ruta interna autenticada del API y verifica la fila persistida y la etiqueta «Completada».
+
+## Pendientes de despliegue
+
+- Producción debe recibir `20261102120000_activity_ecuador_days` y `20261103120000_activity_unlink_on_delete` antes del despliegue. `pruebas` y `development` tienen además `20260926220000_restore_password_history_default`, que no está en esta rama.

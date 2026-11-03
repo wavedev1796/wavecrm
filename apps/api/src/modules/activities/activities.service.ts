@@ -103,6 +103,11 @@ export class ActivitiesService {
       actorId,
       {
         ...data,
+        // @updatedAt tiene precisión de milisegundos: avanzar al menos 1 ms evita que dos escrituras
+        // dentro del mismo milisegundo conserven la misma versión y dejen pasar una edición obsoleta.
+        ...(dto.updatedAt && {
+          updatedAt: new Date(Math.max(Date.now(), dto.updatedAt.getTime() + 1)),
+        }),
         ...((dto.reminderAt !== undefined ||
           dto.dueAt !== undefined ||
           dto.assigneeId !== undefined) && {
@@ -111,6 +116,7 @@ export class ActivitiesService {
         }),
       },
       changes,
+      dto.updatedAt ?? current.updatedAt,
     );
   }
 
@@ -118,7 +124,7 @@ export class ActivitiesService {
     return this.whilePending(id, "COMPLETED", actorId, {
       status: "COMPLETED",
       completedAt: new Date(),
-    });
+    }, { status: { from: "PENDING", to: "COMPLETED" } });
   }
 
   /** Cancelar conserva la actividad (y su historial) y apaga su recordatorio; eliminar la borra. */
@@ -126,7 +132,7 @@ export class ActivitiesService {
     return this.whilePending(id, "CANCELLED", actorId, {
       status: "CANCELLED",
       reminderClaimedAt: null,
-    });
+    }, { status: { from: "PENDING", to: "CANCELLED" } });
   }
 
   async remove(id: string, actorId: string) {
@@ -164,20 +170,22 @@ export class ActivitiesService {
     actorId: string,
     data: Prisma.ActivityUncheckedUpdateManyInput,
     changes: Prisma.InputJsonObject = {},
+    expectedUpdatedAt?: Date,
   ) {
     return this.prisma.$transaction(async (tx) => {
       const { count } = await tx.activity.updateMany({
-        where: { id, status: "PENDING" },
+        where: { id, status: "PENDING", ...(expectedUpdatedAt && { updatedAt: expectedUpdatedAt }) },
         data,
       });
       if (!count) {
         const exists = await tx.activity.findUnique({
           where: { id },
-          select: { id: true },
+          select: { id: true, status: true, updatedAt: true },
         });
-        throw exists
-          ? new ConflictException("La actividad ya no está pendiente.")
-          : new NotFoundException("Actividad no encontrada.");
+        if (!exists) throw new NotFoundException("Actividad no encontrada.");
+        if (expectedUpdatedAt && exists.updatedAt?.getTime() !== expectedUpdatedAt.getTime())
+          throw new ConflictException("La actividad cambió desde que la abriste. Se recargó la versión más reciente.");
+        throw new ConflictException("La actividad ya no está pendiente.");
       }
       await tx.auditLog.create({
         data: { action, entityType: "Activity", entityId: id, userId: actorId, changes },

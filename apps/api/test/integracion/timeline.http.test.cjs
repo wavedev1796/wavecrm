@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const { PASSWORD, cedulaDePrueba, cleanup, createUser } = require("../../../../test/datos-de-prueba.cjs");
 const { startApi } = require("./api.cjs");
 
-let api, admin, seller, adminToken, sellerToken, pipeline, contact, deal;
+let api, admin, seller, adminToken, sellerToken, pipeline, contact, deal, auditedActivity;
 const T = new Date("2026-10-30T15:00:00.000Z");
 const login = async (user) =>
   (await api.call("/auth/login", { method: "POST", body: { email: user.email, password: PASSWORD } })).body.accessToken;
@@ -35,10 +35,22 @@ before(async () => {
     data: { title: "Negocio Línea", value: 0, pipelineId: pipeline.id, stageId: stage.id, contactId: contact.id, ownerId: admin.id },
   });
   // Varios eventos en el mismo instante: el desempate por id decide el orden.
-  for (const subject of ["Uno", "Dos", "Tres"])
-    await api.prisma.activity.create({
+  for (const subject of ["Uno", "Dos", "Tres"]) {
+    const activity = await api.prisma.activity.create({
       data: { type: "CALL", subject, dealId: deal.id, contactId: contact.id, createdById: admin.id, assigneeId: seller.id, createdAt: T },
     });
+    if (subject === "Uno") auditedActivity = activity;
+  }
+  await api.prisma.auditLog.create({
+    data: {
+      action: "UPDATED",
+      entityType: "Activity",
+      entityId: auditedActivity.id,
+      userId: admin.id,
+      changes: { subject: { from: "Uno", to: "Uno actualizado" } },
+      createdAt: T,
+    },
+  });
   await api.prisma.activity.create({
     data: { type: "TASK", subject: "Solo del contacto", contactId: contact.id, assigneeId: seller.id, createdAt: T },
   });
@@ -54,6 +66,8 @@ after(async () => {
   if (!api) return;
   if (deal) {
     await api.prisma.auditLog.deleteMany({ where: { entityType: "Deal", entityId: deal.id } });
+    if (auditedActivity)
+      await api.prisma.auditLog.deleteMany({ where: { entityType: "Activity", entityId: auditedActivity.id } });
     await api.prisma.deal.deleteMany({ where: { id: deal.id } });
   }
   if (contact) await api.prisma.activity.deleteMany({ where: { contactId: contact.id } });
@@ -79,8 +93,16 @@ test("ADMIN pagina eventos del mismo instante sin repetir ni omitir", async () =
   assert.equal(all.status, 200, JSON.stringify(all.body));
   assert.deepEqual(all.body.meta, { limit: 50, nextCursor: null });
   const expected = all.body.data.map((e) => e.id);
-  assert.equal(expected.length, 5);
-  assert.deepEqual(all.body.data.map((e) => e.kind), ["STAGE", "EVENT", "ACTIVITY", "ACTIVITY", "ACTIVITY"]);
+  assert.equal(expected.length, 6);
+  assert.deepEqual(all.body.data.map((e) => e.kind).sort(), ["ACTIVITY", "ACTIVITY", "ACTIVITY", "EVENT", "EVENT", "STAGE"]);
+  const activityEvent = all.body.data.find((e) => e.event?.entityType === "Activity");
+  assert.deepEqual(activityEvent.event, {
+    action: "UPDATED",
+    entityType: "Activity",
+    changes: { subject: { from: "Uno", to: "Uno actualizado" } },
+    activitySubject: "Uno",
+  });
+  assert.deepEqual(activityEvent.deal, { id: deal.id, title: deal.title });
   assert.ok(all.body.data.every((e) => e.at === T.toISOString() && e.author?.id === admin.id));
   const ids = [];
   let cursor = "";
@@ -105,9 +127,11 @@ test("contacto: incluye sus negocios y lo suyo sin negocio; valida cursor y lím
   assert.deepEqual(Object.keys(own.activity).sort(), ["assignee", "completedAt", "description", "dueAt", "id", "status", "subject", "type"]);
   const move = response.body.data.find((e) => e.kind === "STAGE");
   assert.deepEqual([move.deal, move.stage.from, move.stage.to.name, move.stage.reason], [{ id: deal.id, title: "Negocio Línea" }, null, "Inicial", null]);
-  const won = response.body.data.find((e) => e.kind === "EVENT");
-  assert.deepEqual(won.event, { action: "WON", changes: { closedAt: T.toISOString() } });
-  assert.equal(response.body.data.length, 6);
+  const won = response.body.data.find((e) => e.event?.entityType === "Deal");
+  assert.deepEqual(won.event, { action: "WON", entityType: "Deal", changes: { closedAt: T.toISOString() } });
+  assert.equal(response.body.data.length, 7);
+  const activityEvent = response.body.data.find((e) => e.event?.entityType === "Activity");
+  assert.equal(activityEvent.event.activitySubject, "Uno");
 
   const bad = await asAdmin("/contacts/" + contact.id + "/timeline?cursor=nope");
   assert.deepEqual([bad.status, bad.body.error.message], [400, "El cursor no es válido."]);

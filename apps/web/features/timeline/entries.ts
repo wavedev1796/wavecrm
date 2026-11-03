@@ -37,6 +37,22 @@ function toEntry(event: TimelineEvent): TimelineEntry | null {
   const by = `${event.author?.name ?? texto.sistema} · ${formatDateTime(event.at)}`;
   const base = { id: event.id, deal: event.deal, detail: by };
   const { activity, note, stage } = event;
+  if (event.kind === "EVENT" && event.event?.entityType === "Activity") {
+    const titles: Record<string, string> = {
+      UPDATED: texto.actividades.actualizada,
+      COMPLETED: texto.actividades.completada,
+      CANCELLED: texto.actividades.cancelada,
+      DELETED: texto.actividades.eliminada,
+    };
+    const label = titles[event.event.action];
+    if (!label) return null;
+    return {
+      ...base,
+      type: texto.tipos.ACTIVITY_EVENT,
+      title: `${label}: ${event.event.activitySubject || texto.actividades.sinAsunto}`,
+      note: describeActivityChanges(event.event.changes),
+    };
+  }
   if (event.kind === "ACTIVITY" && activity)
     return {
       ...base,
@@ -53,6 +69,33 @@ function toEntry(event: TimelineEvent): TimelineEntry | null {
       note: activity.description,
       ...(activity.status === "PENDING" && { pending: { id: activity.id, subject: activity.subject } }),
     };
+
+function describeActivityChanges(changes: Record<string, unknown> | null) {
+  if (!changes) return null;
+  const details = Object.entries(changes).flatMap(([key, raw]) => {
+    const label = texto.actividades.cambios[key];
+    if (!label || !raw || typeof raw !== "object") return [];
+    const values = raw as { from?: unknown; to?: unknown };
+    if (key === "subject")
+      return [`${label}: ${String(values.from ?? "Sin asunto")} → ${String(values.to ?? "Sin asunto")}`];
+    if (key === "status") {
+      const from = typeof values.from === "string" && values.from in ESTADO_ACTIVIDAD
+        ? ESTADO_ACTIVIDAD[values.from as keyof typeof ESTADO_ACTIVIDAD]
+        : String(values.from ?? "");
+      const to = typeof values.to === "string" && values.to in ESTADO_ACTIVIDAD
+        ? ESTADO_ACTIVIDAD[values.to as keyof typeof ESTADO_ACTIVIDAD]
+        : String(values.to ?? "");
+      return [`${label}: ${from} → ${to}`];
+    }
+    if (key === "dueAt" || key === "reminderAt") {
+      const from = typeof values.from === "string" ? formatDateTime(values.from) : "Sin fecha";
+      const to = typeof values.to === "string" ? formatDateTime(values.to) : "Sin fecha";
+      return [`${label}: ${from} → ${to}`];
+    }
+    return [`${label} actualizado`];
+  });
+  return details.length ? details.join(" · ") : null;
+}
   if (event.kind === "NOTE" && note)
     return {
       ...base,

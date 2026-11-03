@@ -26,6 +26,7 @@ Administrar actividades comerciales y sus recordatorios desde una API autenticad
 - CRM-22 (2026-11-02): las fechas de una actividad son instantes y un día sin hora es las 00:00 de Ecuador, en la ficha y en la agenda (migración de datos `20261102120000_activity_ecuador_days`, aplicada en `pruebas` y `development`). Completar, cancelar (`PATCH /activities/:id/cancel`, nuevo) y editar solo escriben si la actividad sigue pendiente, y cada cambio o borrado deja quién y cuándo en `AuditLog`.
 - CRM-25 (2026-11-01): el historial de un negocio o contacto sale de `GET /deals|contacts/:id/timeline`, paginado por cursor estable. Un VENDEDOR solo ve el historial de lo que tiene a su cargo; las fichas y la agenda siguen compartidas. Las actividades registran a su autor (`createdById`).
 - CRM-26 (2026-11-02): notas en negocios y contactos (`POST /deals|contacts/:id/notes`, `PATCH|DELETE /notes/:id`) con el alcance del historial; editar o eliminar es del autor o de un ADMIN, y queda en `AuditLog`. Las menciones avisan por correo una sola vez (`NoteMention.notifiedAt`) con el enlace a la ficha y sin el texto: mencionar no da acceso. Migración `20261102130000_note_mentions`.
+- Cierre de pendientes (2026-11-03): la agenda permite cancelar; las ediciones envían `updatedAt` y devuelven `409` ante una versión obsoleta; el timeline incluye auditoría de actividades y conserva el alcance de VENDEDOR. Se eligió conservar las actividades y desvincularlas al borrar negocio, contacto o empresa (`SetNull`, migración `20261103120000_activity_unlink_on_delete`, aplicada y probada en `pruebas`).
 
 ## Validación
 
@@ -34,6 +35,7 @@ Administrar actividades comerciales y sus recordatorios desde una API autenticad
 - El E2E de Playwright cubre alta, asignación, filtros, calendario, completar y persistencia; no se pudo iniciar en la última validación porque el puerto 4000 ya estaba ocupado.
 - `pnpm lint` y `pnpm build` aprobados. El esquema Prisma es válido.
 - La migración `20261031120000_activity_reminders` está aplicada en `pruebas` y en la base compartida de desarrollo configurada en `.env` (2026-10-31). Prisma confirma que el esquema está al día; producción debe migrarse antes de desplegar esta versión.
+- Validación del cierre 2026-11-03: E2E de completar desde agenda aprobado; 23 pruebas unitarias API, 28 web y 9 pruebas HTTP de actividades/timeline aprobadas; `prisma validate`, tipos web y build API aprobados. La migración REV-B03 se aplicó en `pruebas`.
 - Después de aplicar la migración en desarrollo, el API se reinició y `GET /api/v1/health` respondió con estado `ok`.
 - Detalle y comandos en [Pruebas del Sprint 4](../Calidad/Pruebas%20del%20Sprint%204.md).
 

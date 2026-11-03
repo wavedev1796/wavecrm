@@ -53,6 +53,7 @@ export function PipelineBoard({
 }: Readonly<Props>) {
   const router = useRouter();
   const dialog = useRef<HTMLDialogElement>(null);
+  const selectedMove = useRef<string | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [dragged, setDragged] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
@@ -71,6 +72,7 @@ export function PipelineBoard({
   }, [editor]);
   const close = () => {
     dialog.current?.close();
+    selectedMove.current = null;
     setEditor(null);
     setDeleteError("");
   };
@@ -92,7 +94,16 @@ export function PipelineBoard({
     const current = deal.status === "LOST" ? LOST : deal.stageId;
     if (pending || to === current) return;
     setFeedback(null);
+    // Abre el diálogo en el mismo evento del selector/arrastre. Así el navegador no alcanza a
+    // restaurar el valor controlado del <select> antes de que se vea el flujo de validación.
+    if (!dialog.current?.open) dialog.current?.showModal();
     setEditor({ kind: "transition", deal, to, targetName: targetName(to) });
+    return true;
+  }
+  function selectMove(deal: Deal, to: string) {
+    const key = deal.id + ":" + to;
+    if (selectedMove.current === key) return;
+    if (requestMove(deal, to)) selectedMove.current = key;
   }
   function loadMore(key: string) {
     const page = (more[key]?.page ?? 1) + 1;
@@ -175,7 +186,15 @@ export function PipelineBoard({
           id={"stage-" + deal.id}
           value={key}
           disabled={pending}
-          onChange={(event) => requestMove(deal, event.target.value)}
+          onInput={(event) => {
+            event.stopPropagation();
+            selectMove(deal, event.currentTarget.value);
+          }}
+          onChange={(event) => {
+            event.stopPropagation();
+            selectMove(deal, event.currentTarget.value);
+          }}
+          onBlur={(event) => selectMove(deal, event.currentTarget.value)}
           aria-label={"Mover " + deal.title + " de etapa"}
         >
           {stages.map((option) => (
@@ -397,6 +416,7 @@ export function PipelineBoard({
         label={title}
         closeLabel={PIPELINE.close}
         onClose={() => {
+          selectedMove.current = null;
           setEditor(null);
           setDeleteError("");
         }}

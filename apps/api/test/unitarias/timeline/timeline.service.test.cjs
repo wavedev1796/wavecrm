@@ -161,7 +161,26 @@ test("el autor de una actividad es quien la registró o, en las antiguas, su res
   });
   assert.deepEqual(byId["NOTE:n1"].note, { id: "n1", content: "Nota", mentions: [otro], editedAt: null, canEdit: true });
   assert.deepEqual(byId["STAGE:st1"].stage, { from: null, to: { id: "s1", name: "Nuevo" }, reason: null });
-  assert.deepEqual(byId["EVENT:ev1"].event, { action: "WON", changes: { closedAt: "x" } });
+  assert.deepEqual(byId["EVENT:ev1"].event, { action: "WON", entityType: "Deal", changes: { closedAt: "x" } });
+});
+
+test("el timeline incluye auditoría de actividades vinculadas y limita la de contacto por propietario", async () => {
+  const { service, rows } = db();
+  rows.auditLog.push(
+    { id: "activity-update", entityType: "Activity", entityId: "act1", action: "UPDATED", changes: { subject: { from: "Llamar", to: "Llamar hoy" } }, createdAt: new Date("2026-11-02T15:00:00Z"), user: ana },
+    { id: "activity-hidden", entityType: "Activity", entityId: "act3", action: "CANCELLED", changes: { status: { from: "PENDING", to: "CANCELLED" } }, createdAt: new Date("2026-11-02T14:00:00Z"), user: otro },
+    { id: "activity-delete", entityType: "Activity", entityId: "gone", action: "DELETED", changes: { subject: "Borrada", dealId: "d1", contactId: "c1" }, createdAt: new Date("2026-11-02T13:00:00Z"), user: ana },
+  );
+  const dealPage = await service.forDeal("d1", vera, { limit: 50 });
+  const dealEvents = dealPage.data.filter((entry) => entry.event?.entityType === "Activity");
+  assert.deepEqual(dealEvents.map((entry) => entry.id), ["EVENT:activity-update", "EVENT:activity-delete"]);
+  assert.equal(dealEvents[0].event.activitySubject, "Llamar act1");
+  assert.equal(dealEvents[1].event.activitySubject, "Borrada");
+  const contactPage = await service.forContact("c1", vera, { limit: 50 });
+  assert.deepEqual(
+    contactPage.data.filter((entry) => entry.event?.entityType === "Activity").map((entry) => entry.id),
+    ["EVENT:activity-update", "EVENT:activity-delete"],
+  );
 });
 
 test("CRM-26: una nota se puede editar desde el timeline solo si quien mira es su autor o ADMIN", async () => {

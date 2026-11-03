@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { ActivityStatus, ActivityType, Prisma } from "@wave/database";
+import { Prisma } from "@wave/database";
+import type { ActivityStatus, ActivityType } from "@wave/database";
 import { PrismaService } from "../prisma/prisma.service";
 import { ownerScope, type Actor } from "../pipeline/pipeline.service";
 import type { TimelineQueryDto } from "./timeline.dto";
@@ -29,7 +30,12 @@ export type TimelineEvent = {
   /** `canEdit`: quien mira es el autor o un ADMIN (el API lo vuelve a exigir al editar o borrar). */
   note?: { id: string; content: string; mentions: Ref[]; editedAt: Date | null; canEdit: boolean };
   stage?: { from: Ref | null; to: Ref; reason: string | null };
-  event?: { action: string; changes: Record<string, unknown> | null };
+  event?: {
+    action: string;
+    entityType: string;
+    changes: Record<string, unknown> | null;
+    activitySubject?: string;
+  };
 };
 /** Filtro de cada fuente para un negocio o un contacto, ya con el alcance del usuario. */
 type Sources = {
@@ -37,6 +43,7 @@ type Sources = {
   note: Prisma.NoteWhereInput;
   stage: Prisma.DealStageHistoryWhereInput;
   audit: Prisma.AuditLogWhereInput;
+  activityRefs: { id: string; subject: string; dealId: string | null }[];
   deals: DealRef[];
 };
 
@@ -56,12 +63,29 @@ export class TimelineService {
       select: { id: true, title: true },
     });
     if (!deal) throw new NotFoundException("Negocio no encontrado.");
+    const activities = await this.prisma.activity.findMany({
+      where: { dealId: id },
+      select: { id: true, subject: true, dealId: true },
+    });
+    const activityIds = activities.map((activity) => activity.id);
     return this.page(
       {
         activity: { dealId: id },
         note: { dealId: id },
         stage: { dealId: id },
-        audit: { entityType: "Deal", entityId: id },
+        audit: {
+          OR: [
+            { entityType: "Deal", entityId: id },
+            {
+              entityType: "Activity",
+              OR: [
+                { entityId: { in: activityIds } },
+                { action: "DELETED", changes: { path: ["dealId"], equals: id } },
+              ],
+            },
+          ],
+        },
+        activityRefs: activities,
         deals: [deal],
       },
       cursor,
@@ -89,6 +113,12 @@ export class TimelineService {
       ? { contactId: id }
       : { contactId: id, OR: [{ dealId: null }, { deal: { ownerId: actor.id } }] };
     const linked = { OR: [own, { dealId: { in: dealIds } }] };
+    const visibleDealAudit = dealIds.map((dealId) => ({ changes: { path: ["dealId"], equals: dealId } }));
+    const activities = await this.prisma.activity.findMany({
+      where: linked,
+      select: { id: true, subject: true, dealId: true },
+    });
+    const activityIds = activities.map((activity) => activity.id);
     // Un negocio borrado desde la papelera deja su copia en la auditoría; VENDEDOR la ve si era suyo (las filas sin ownerId, solo ADMIN).
     const deleted: Prisma.AuditLogWhereInput = {
       action: "DELETED",
@@ -102,7 +132,35 @@ export class TimelineService {
         activity: linked,
         note: linked,
         stage: { dealId: { in: dealIds } },
-        audit: { entityType: "Deal", OR: [{ entityId: { in: dealIds } }, deleted] },
+        audit: {
+          OR: [
+            { entityType: "Deal", OR: [{ entityId: { in: dealIds } }, deleted] },
+            {
+              entityType: "Activity",
+              OR: [
+                { entityId: { in: activityIds } },
+                {
+                  action: "DELETED",
+                  OR: [
+                    ...visibleDealAudit,
+                    {
+                      AND: [
+                        { changes: { path: ["contactId"], equals: id } },
+                        {
+                          OR: [
+                            { changes: { path: ["dealId"], equals: Prisma.JsonNull } },
+                            ...visibleDealAudit,
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        activityRefs: activities,
         deals,
       },
       cursor,
@@ -150,12 +208,14 @@ export class TimelineService {
       }),
       this.prisma.auditLog.findMany({
         where: { AND: [sources.audit, keyset<Prisma.AuditLogWhereInput>("EVENT", "createdAt", cursor)] },
-        select: { id: true, action: true, changes: true, createdAt: true, entityId: true, user: person },
+        select: { id: true, action: true, entityType: true, changes: true, createdAt: true, entityId: true, user: person },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take,
       }),
     ]);
     const titles = new Map(sources.deals.map((deal) => [deal.id, deal]));
+    const activitySubjects = new Map(sources.activityRefs.map((activity) => [activity.id, activity.subject]));
+    const activityDeals = new Map(sources.activityRefs.map((activity) => [activity.id, activity.dealId]));
     const events = [
       ...activities.map(
         (a): TimelineEvent => ({
@@ -209,9 +269,18 @@ export class TimelineService {
           kind: "EVENT",
           at: l.createdAt,
           author: l.user,
-          // Un negocio borrado ya no está entre los visibles: queda sin enlace.
-          deal: titles.get(l.entityId) ?? null,
-          event: { action: l.action, changes: l.changes as Record<string, unknown> | null },
+          // Un registro borrado ya no está entre los visibles: queda sin enlace.
+          deal: l.entityType === "Activity"
+            ? titles.get(activityDeals.get(l.entityId) ?? deletedActivityDealId(l.changes) ?? "") ?? null
+            : titles.get(l.entityId) ?? null,
+          event: {
+            action: l.action,
+            entityType: l.entityType,
+            changes: l.changes as Record<string, unknown> | null,
+            ...(l.entityType === "Activity" && {
+              activitySubject: activitySubjects.get(l.entityId) ?? deletedActivitySubject(l.changes),
+            }),
+          },
         }),
       ),
     ].sort(
@@ -244,6 +313,20 @@ function encodeCursor(event: TimelineEvent) {
   return Buffer.from(JSON.stringify({ at: event.at.toISOString(), id: event.id })).toString(
     "base64url",
   );
+}
+
+function deletedActivitySubject(changes: Prisma.JsonValue): string | undefined {
+  if (!changes || typeof changes !== "object" || Array.isArray(changes)) return undefined;
+  const subject = changes.subject;
+  if (typeof subject === "string") return subject;
+  if (subject && typeof subject === "object" && !Array.isArray(subject) && typeof subject.to === "string")
+    return subject.to;
+  return undefined;
+}
+
+function deletedActivityDealId(changes: Prisma.JsonValue): string | undefined {
+  if (!changes || typeof changes !== "object" || Array.isArray(changes)) return undefined;
+  return typeof changes.dealId === "string" ? changes.dealId : undefined;
 }
 
 function decodeCursor(raw?: string): Cursor | undefined {

@@ -7,13 +7,12 @@ import {
   dealHistoryAction,
   deleteDealAction,
   loadColumnAction,
-  previewTransitionAction,
 } from "./actions";
+import { moveTransition, previewTransition } from "./transition-preview";
 import type { Board, Deal, Stage } from "./types";
-const router = vi.hoisted(() => ({ push: vi.fn() }));
+const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("./actions", () => ({
-  previewTransitionAction: vi.fn(),
   completeTransitionAction: vi.fn(),
   loadColumnAction: vi.fn(),
   saveDeal: vi.fn(),
@@ -21,7 +20,9 @@ vi.mock("./actions", () => ({
   dealHistoryAction: vi.fn().mockResolvedValue({ data: [] }),
   deleteDealAction: vi.fn(),
 }));
-const preview = vi.mocked(previewTransitionAction);
+vi.mock("./transition-preview", () => ({ previewTransition: vi.fn(), moveTransition: vi.fn() }));
+const preview = vi.mocked(previewTransition);
+const move = vi.mocked(moveTransition);
 const complete = vi.mocked(completeTransitionAction);
 const deal: Deal = {
   id: "d1",
@@ -62,7 +63,7 @@ function view(data = board()) {
 }
 const moveTo = () => {
   preview.mockResolvedValue({ data: { pending: [], quote: null, items: 0 } });
-  complete.mockResolvedValue({ done: true });
+  move.mockResolvedValue({ done: true });
 };
 
 test("crear desde una columna abre el modal con esa etapa y controles Wave", async () => {
@@ -76,7 +77,6 @@ test("crear desde una columna abre el modal con esa etapa y controles Wave", asy
   expect(within(modal).getByLabelText("Monto (USD)")).toHaveClass("input");
   expect(within(modal).queryByLabelText("Estado", { exact: true })).toBeNull();
 });
-
 test("el titulo de la tarjeta abre la ficha del negocio", () => {
   view();
   expect(screen.getByRole("link", { name: "Cuenta Andina" })).toHaveAttribute("href", "/pipeline/d1");
@@ -110,14 +110,14 @@ test("el selector y el arrastre piden el mismo cambio con las mismas reglas", as
   view();
   await user.selectOptions(screen.getByLabelText("Mover Cuenta Andina de etapa"), "s2");
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cuenta Andina pasó a Ganado."));
-  const bySelect = [preview.mock.calls[0], complete.mock.calls[0]?.slice(0, 3)];
+  const bySelect = [preview.mock.calls[0], move.mock.calls[0]];
 
   preview.mockClear();
-  complete.mockClear();
+  move.mockClear();
   const card = screen.getByRole("article", { name: "Negocio Cuenta Andina" });
   const target = screen.getByRole("region", { name: "Etapa Ganado" });
   const dataTransfer = { setData: vi.fn(), dropEffect: "", effectAllowed: "" };
-  fireEvent.dragStart(card, { dataTransfer });
+  fireEvent.dragStart(within(card).getByLabelText("Arrastrar tarjeta"), { dataTransfer });
   expect(card).toHaveClass("deal-card--dragging");
   fireEvent.dragOver(target, { dataTransfer });
   expect(target).toHaveClass("pipeline-column--over");
@@ -125,16 +125,93 @@ test("el selector y el arrastre piden el mismo cambio con las mismas reglas", as
   expect(target).not.toHaveClass("pipeline-column--over");
   fireEvent.dragOver(target, { dataTransfer });
   fireEvent.drop(target, { dataTransfer });
-  await waitFor(() => expect(complete).toHaveBeenCalled());
-  expect([preview.mock.calls[0], complete.mock.calls[0]?.slice(0, 3)]).toEqual(bySelect);
+  await waitFor(() => expect(move).toHaveBeenCalled());
+  expect([preview.mock.calls[0], move.mock.calls[0]]).toEqual(bySelect);
   expect(bySelect).toEqual([["d1", "s2"], ["d1", "s2", "s1"]]);
   expect(dataTransfer.setData).toHaveBeenCalledWith("text/plain", "d1");
 
-  fireEvent.dragStart(card, { dataTransfer });
+  fireEvent.dragStart(within(card).getByLabelText("Arrastrar tarjeta"), { dataTransfer });
   fireEvent.dragEnd(card);
   expect(card).not.toHaveClass("deal-card--dragging");
   fireEvent.drop(screen.getByRole("region", { name: "Etapa Inicial" }), { dataTransfer });
   expect(preview).toHaveBeenCalledTimes(1);
+});
+
+test("seleccionar una etapa anterior mueve el negocio desde la tarjeta", async () => {
+  const proposal: Stage = {
+    id: "s3", name: "Propuesta", color: null, position: 2, probability: 70,
+    count: 1, value: "1250.25", deals: [{ ...deal, stageId: "s3" }],
+  };
+  preview.mockResolvedValue({ data: { pending: [], quote: null, items: 0 } });
+  move.mockResolvedValue({ done: true });
+  const user = userEvent.setup();
+  view(board({ stages: [
+    { ...stages[0]!, deals: [] },
+    { ...stages[1]!, id: "s2", name: "Negociación", probability: 45, deals: [] },
+    proposal,
+  ] }));
+
+  await user.selectOptions(screen.getByLabelText("Mover Cuenta Andina de etapa"), "s2");
+
+  await waitFor(() => expect(move).toHaveBeenCalledWith("d1", "s2", "s3"));
+  expect(await screen.findByRole("status")).toHaveTextContent("Cuenta Andina pasó a Negociación.");
+});
+
+test("el evento nativo input del selector abre una sola transición con requisitos", async () => {
+  preview.mockResolvedValue({
+    data: { pending: [{ code: "NEED", message: "Documenta la necesidad del cliente." }], quote: null, items: 0 },
+  });
+  const user = userEvent.setup();
+  view();
+  const select = screen.getByLabelText("Mover Cuenta Andina de etapa");
+
+  fireEvent.input(select, { target: { value: "s2" } });
+  expect(await screen.findByRole("dialog", { name: "Cambiar de etapa" })).toBeInTheDocument();
+  await waitFor(() => expect(preview).toHaveBeenCalledTimes(1));
+  expect(screen.getByText("Documenta la necesidad del cliente.")).toBeInTheDocument();
+  fireEvent.change(select, { target: { value: "s2" } });
+  await waitFor(() => expect(preview).toHaveBeenCalledTimes(1));
+  expect(complete).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Cancelar" }));
+});
+
+test("elegir Perdido desde el selector pide el motivo antes de guardar", async () => {
+  preview.mockResolvedValue({
+    data: { pending: [{ code: "LOSS_REASON", message: "Elige el motivo de la pérdida." }], quote: null, items: 0 },
+  });
+  complete.mockResolvedValue({ done: true });
+  const user = userEvent.setup();
+  view();
+
+  await user.selectOptions(screen.getByLabelText("Mover Cuenta Andina de etapa"), "LOST");
+  const modal = await screen.findByRole("dialog", { name: "Cambiar de etapa" });
+  expect(within(modal).getByText("Elige el motivo de la pérdida.")).toBeInTheDocument();
+  expect(within(modal).getByLabelText("Motivo de la pérdida")).toHaveClass("select-control");
+  expect(screen.getByLabelText("Mover Cuenta Andina de etapa")).toHaveValue("s1");
+  expect(complete).not.toHaveBeenCalled();
+
+  await user.selectOptions(within(modal).getByLabelText("Motivo de la pérdida"), "NEED_POSTPONED");
+  await user.click(within(modal).getByRole("button", { name: "Guardar y continuar" }));
+  await waitFor(() => expect(complete).toHaveBeenCalledWith("d1", "LOST", "s1", expect.any(FormData)));
+  expect(complete.mock.calls[0]?.[3].get("lossReason")).toBe("NEED_POSTPONED");
+  expect(await screen.findByRole("status")).toHaveTextContent("Cuenta Andina pasó a Perdido.");
+});
+
+test("elegir Rechazado desde el selector exige su motivo específico", async () => {
+  preview.mockResolvedValue({
+    data: { pending: [{ code: "REJECTION_REASON", message: "Elige el motivo del rechazo." }], quote: null, items: 0 },
+  });
+  complete.mockResolvedValue({ done: true });
+  const user = userEvent.setup();
+  view();
+
+  await user.selectOptions(screen.getByLabelText("Mover Cuenta Andina de etapa"), "REJECTED");
+  const modal = await screen.findByRole("dialog", { name: "Cambiar de etapa" });
+  expect(within(modal).getByText("Elige el motivo del rechazo.")).toBeInTheDocument();
+  expect(within(modal).getByText(/Se invalidará el proceso/)).toBeInTheDocument();
+  expect(within(modal).getByLabelText("Motivo del rechazo")).toHaveClass("select-control");
+  expect(screen.getByLabelText("Mover Cuenta Andina de etapa")).toHaveValue("s1");
+  expect(complete).not.toHaveBeenCalled();
 });
 
 test("soltar una tarjeta en Perdido abre el modal con el motivo de la pérdida", async () => {
@@ -143,7 +220,7 @@ test("soltar una tarjeta en Perdido abre el modal con el motivo de la pérdida",
   });
   view();
   const dataTransfer = { setData: vi.fn(), dropEffect: "", effectAllowed: "" };
-  fireEvent.dragStart(screen.getByRole("article", { name: "Negocio Cuenta Andina" }), { dataTransfer });
+  fireEvent.dragStart(within(screen.getByRole("article", { name: "Negocio Cuenta Andina" })).getByLabelText("Arrastrar tarjeta"), { dataTransfer });
   fireEvent.dragOver(screen.getByRole("region", { name: "Columna Perdido" }), { dataTransfer });
   fireEvent.drop(screen.getByRole("region", { name: "Columna Perdido" }), { dataTransfer });
   expect(await screen.findByLabelText("Motivo de la pérdida")).toBeInTheDocument();
@@ -160,7 +237,7 @@ test("la zona Rechazado cuenta la papelera, enlaza a ella y al soltar pide el mo
   expect(within(zone).getByRole("link", { name: "Ver papelera" })).toHaveAttribute("href", "/pipeline/papelera");
   expect(within(screen.getByLabelText("Mover Cuenta Andina de etapa")).getByRole("option", { name: "Rechazado" })).toBeInTheDocument();
   const dataTransfer = { setData: vi.fn(), dropEffect: "", effectAllowed: "" };
-  fireEvent.dragStart(screen.getByRole("article", { name: "Negocio Cuenta Andina" }), { dataTransfer });
+  fireEvent.dragStart(within(screen.getByRole("article", { name: "Negocio Cuenta Andina" })).getByLabelText("Arrastrar tarjeta"), { dataTransfer });
   fireEvent.dragOver(zone, { dataTransfer });
   expect(zone).toHaveClass("pipeline-column--over");
   fireEvent.drop(zone, { dataTransfer });

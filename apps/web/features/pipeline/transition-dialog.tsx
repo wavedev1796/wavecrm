@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { MOTIVO_CIERRE, TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { TRANSICION } from "@/content/pipeline";
-import { completeTransitionAction, previewTransitionAction, saveTransitionAction } from "./actions";
+import { completeTransitionAction, saveTransitionAction } from "./actions";
+import { moveTransition, previewTransition } from "./transition-preview";
 import { todayEcuador } from "./deal-validation";
 import type { Deal, Option, Preview } from "./types";
 
@@ -59,20 +60,24 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
   const href = "/pipeline/" + deal.id;
   const toFicha = onlyInFicha(preview);
   // StrictMode (desarrollo) monta el efecto dos veces: la segunda reutiliza la misma vista previa.
-  const opening = useRef<ReturnType<typeof previewTransitionAction>>(null);
+  const opening = useRef<ReturnType<typeof previewTransition>>(null);
 
   useEffect(() => {
     let current = true;
     void (async () => {
-      const result = await (opening.current ??= previewTransitionAction(deal.id, to));
+      const result = await (opening.current ??= previewTransition(deal.id, to));
       if (!current) return;
       if (!result.data) return setError(result.error ?? "");
       if (result.data.pending.length) return setPreview(result.data);
-      const moved = await completeTransitionAction(deal.id, to, deal.stageId, new FormData());
+      const moved = await moveTransition(deal.id, to, deal.stageId);
       if (!current) return;
-      if (moved.done) return onDone(message);
+      if (moved.done) {
+        onDone(message);
+        router.refresh();
+        return;
+      }
       setError(moved.error ?? "");
-      const again = await previewTransitionAction(deal.id, to);
+      const again = await previewTransition(deal.id, to);
       if (current && again.data) setPreview(again.data);
     })();
     return () => {
@@ -95,7 +100,7 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
       if (result.done) return onDone(message);
       setError(result.error ?? "");
       // Lo guardado antes del error ya cuenta: se vuelve a preguntar qué falta.
-      const next = await previewTransitionAction(deal.id, to);
+      const next = await previewTransition(deal.id, to);
       if (next.data) setPreview(next.data);
     });
 

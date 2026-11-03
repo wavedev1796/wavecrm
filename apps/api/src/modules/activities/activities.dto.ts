@@ -87,7 +87,12 @@ export class CreateActivityDto {
   dealId?: string;
 }
 
-export class UpdateActivityDto extends PartialType(CreateActivityDto) {}
+export class UpdateActivityDto extends PartialType(CreateActivityDto) {
+  @ApiPropertyOptional({ format: "date-time", description: "Versión leída por el formulario" })
+  @IsOptional()
+  @date("la versión de la actividad")
+  updatedAt?: Date;
+}
 
 export class ListActivitiesDto {
   @ApiPropertyOptional({ enum: ACTIVITY_TYPES })

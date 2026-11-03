@@ -76,6 +76,32 @@ test("una actividad realizada no se completa ni muestra vencimiento", () => {
   expect(done?.detail).not.toMatch(/Vence/);
 });
 
+test("muestra en el historial quién completó, canceló, editó o borró una actividad y qué cambió", () => {
+  const entries = toEntries([
+    event("EVENT:done", at("04"), {
+      event: { entityType: "Activity", action: "COMPLETED", activitySubject: "Llamar a Ana", changes: { status: { from: "PENDING", to: "COMPLETED" } } },
+    }),
+    event("EVENT:cancel", at("03"), {
+      event: { entityType: "Activity", action: "CANCELLED", activitySubject: "Enviar correo", changes: { status: { from: "PENDING", to: "CANCELLED" } } },
+    }),
+    event("EVENT:update", at("02"), {
+      event: { entityType: "Activity", action: "UPDATED", activitySubject: "Visita", changes: { dueAt: { from: "2026-10-02T15:00:00.000Z", to: "2026-10-05T15:00:00.000Z" } } },
+    }),
+    event("EVENT:delete", at("01"), {
+      event: { entityType: "Activity", action: "DELETED", activitySubject: "Actividad antigua", changes: { subject: "Actividad antigua" } },
+    }),
+  ]);
+  expect(entries.map(({ title }) => title)).toEqual([
+    "Actividad completada: Llamar a Ana",
+    "Actividad cancelada: Enviar correo",
+    "Actividad actualizada: Visita",
+    "Actividad eliminada: Actividad antigua",
+  ]);
+  expect(entries[0]?.note).toBe("Estado: Pendiente → Completada");
+  expect(entries[2]?.note).toMatch(/^Vencimiento: .* → /);
+  expect(entries.every((entry) => entry.type === "Cambio en actividad")).toBe(true);
+});
+
 test("cierres, propuestas, reapertura y borrado dejan su evento; lo desconocido se omite", () => {
   const entries = toEntries([
     action("e1", "QUOTE_SENT", { quoteNumber: "COT-000001", total: "135.00", validUntil: "2026-11-30T00:00:00.000Z" }, "10"),
