@@ -23,6 +23,9 @@ async function startApi() {
       sendActivityReminder: async (recipient, subject, dueAt) => {
         inbox.push({ ...recipient, subject, dueAt, kind: "activity-reminder" });
       },
+      sendMention: async (recipient, author, record, path) => {
+        inbox.push({ ...recipient, author, record, path, kind: "mention" });
+      },
     })
     .compile();
   const app = moduleRef.createNestApplication({ logger: false });

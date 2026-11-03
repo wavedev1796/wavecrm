@@ -93,7 +93,7 @@ export default async function DealPage({
       <DealQuotes deal={deal} locked={locked} />
       <div className="contact-detail-grid">
         <div className="contact-detail-main">
-          <DealTimeline deal={deal} timeline={timeline} />
+          <DealTimeline deal={deal} timeline={timeline} members={options.users} />
         </div>
         <div className="contact-detail-main">
           <DealQualification key={deal.status} deal={deal} locked={locked} />

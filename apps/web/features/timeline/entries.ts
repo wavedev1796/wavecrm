@@ -53,7 +53,23 @@ function toEntry(event: TimelineEvent): TimelineEntry | null {
       note: activity.description,
       ...(activity.status === "PENDING" && { pending: { id: activity.id, subject: activity.subject } }),
     };
-  if (event.kind === "NOTE" && note) return { ...base, type: texto.tipos.NOTE, title: texto.nota, note: note.content };
+  if (event.kind === "NOTE" && note)
+    return {
+      ...base,
+      type: texto.tipos.NOTE,
+      title: texto.nota,
+      detail: [
+        by,
+        note.editedAt && texto.editada,
+        note.mentions.length > 0 && texto.menciona(note.mentions.map((m) => m.name).join(", ")),
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      note: note.content,
+      ...(note.canEdit && {
+        editable: { id: note.id, content: note.content, mentionIds: note.mentions.map((m) => m.id) },
+      }),
+    };
   if (event.kind === "STAGE" && stage)
     return {
       ...base,

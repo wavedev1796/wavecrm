@@ -20,7 +20,8 @@ export type TimelineEvent = {
     completedAt: string | null;
     assignee: Ref | null;
   };
-  note?: { id: string; content: string };
+  /** `canEdit`: quien mira es el autor o un ADMIN. */
+  note?: { id: string; content: string; mentions: Ref[]; editedAt: string | null; canEdit: boolean };
   stage?: { from: Ref | null; to: Ref; reason: string | null };
   event?: { action: string; changes: Record<string, unknown> | null };
 };
@@ -51,6 +52,19 @@ export type TimelineEntry = {
   note: string | null;
   deal: { id: string; title: string } | null;
   pending?: { id: string; subject: string };
+  /** Nota que quien mira puede editar o eliminar, con su texto y menciones actuales. */
+  editable?: EditableNote;
+};
+export type EditableNote = { id: string; content: string; mentionIds: string[] };
+/** Miembro activo que se puede mencionar (`GET /pipeline/owners`). */
+export type Member = { id: string; name: string };
+/** Formulario de nota: lo escrito vuelve siempre, así un fallo no lo borra. */
+export type NoteFormState = {
+  content: string;
+  mentionIds: string[];
+  fieldErrors?: { content?: string };
+  error?: string;
+  saved?: true;
 };
 /** Una página del historial, o por qué no se pudo leer (`forbidden`: el API respondió 404). */
 export type TimelineResult =

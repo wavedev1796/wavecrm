@@ -9,7 +9,11 @@ const action = (id: string, name: string, changes: object | null, day: string) =
 test("cada tipo lleva su etiqueta, título, autor y fecha, en el orden del API", () => {
   const entries = toEntries([
     pendingCall,
-    event("NOTE:n1", at("02"), { kind: "NOTE", author: null, note: { id: "n1", content: "Prefiere <b>correo</b>" } }),
+    event("NOTE:n1", at("02"), {
+      kind: "NOTE",
+      author: null,
+      note: { id: "n1", content: "Prefiere <b>correo</b>", mentions: [], editedAt: null, canEdit: false },
+    }),
     event("STAGE:h1", at("01"), { kind: "STAGE", stage: { from: null, to: { id: "s1", name: "Propuesta" }, reason: null } }),
     event("STAGE:h2", at("01"), {
       kind: "STAGE",
@@ -25,9 +29,30 @@ test("cada tipo lleva su etiqueta, título, autor y fecha, en el orden del API",
   });
   expect(entries[0]?.detail).toMatch(/^Pendiente · Zaith · 3 oct.* 2026.*7:00.* · Vence el 12 oct.* 2026$/);
   expect(entries[1]).toMatchObject({ type: "Nota", title: "Nota registrada", note: "Prefiere <b>correo</b>" });
-  expect(entries[1]?.detail).toMatch(/^Usuario no disponible · /);
+  expect(entries[1]?.detail).toMatch(/^Usuario no disponible · [^·]+$/);
+  expect(entries[1]?.editable).toBeUndefined();
   expect(entries[2]).toMatchObject({ type: "Cambio de etapa", title: "Creado en Propuesta", note: null });
   expect(entries[3]).toMatchObject({ title: "Negociación → Contactado", note: "Motivo: El cliente pausó la compra" });
+});
+
+test("CRM-26: una nota editada y con menciones lo dice; si quien mira puede, trae lo necesario para editarla", () => {
+  const [note] = toEntries([
+    event("NOTE:n2", at("05"), {
+      kind: "NOTE",
+      note: {
+        id: "n2",
+        content: "Revisar precio",
+        mentions: [
+          { id: "u2", name: "Luis" },
+          { id: "u3", name: "Ana" },
+        ],
+        editedAt: at("06"),
+        canEdit: true,
+      },
+    }),
+  ]);
+  expect(note?.detail).toMatch(/^Zaith · 5 oct.* · Editada · Menciona a Luis, Ana$/);
+  expect(note?.editable).toEqual({ id: "n2", content: "Revisar precio", mentionIds: ["u2", "u3"] });
 });
 
 test("una actividad realizada no se completa ni muestra vencimiento", () => {

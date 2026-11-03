@@ -102,6 +102,7 @@ model User {
   assignedActivities Activity[]  @relation("ActivityAssignee")
   createdActivities  Activity[]  @relation("ActivityCreator")
   notes              Note[]
+  noteMentions       NoteMention[]
   auditLogs          AuditLog[]
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
@@ -341,12 +342,28 @@ model Note {
   contact   Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
   dealId    String?
   deal      Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  mentions  NoteMention[]
+  /// Última edición del texto o de las menciones; null si nunca se editó.
+  editedAt  DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([authorId])
   @@index([contactId])
   @@index([dealId])
+}
+
+/// Miembro mencionado en una nota. `notifiedAt` marca el aviso enviado: se avisa una sola vez.
+model NoteMention {
+  noteId     String
+  note       Note      @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@id([noteId, userId])
+  @@index([userId])
 }
 
 model Attachment {

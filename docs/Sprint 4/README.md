@@ -14,6 +14,7 @@ Administrar actividades comerciales y sus recordatorios desde una API autenticad
 | CRM-23 | [API Actividades + recordatorios](23 - API Actividades - recordatorios.md) | Eduardo Garcia | Completo (4/4 criterios) |
 | CRM-24 | [Agenda de actividades](24 - Agenda de actividades.md) | Eduardo Garcia | Completo (3/3 criterios) |
 | CRM-25 | [Timeline por contacto/negocio](25 - Timeline por contacto-negocio.md) | Zaith Manangón | Completo (4/4 criterios) |
+| CRM-26 | [Notas y menciones](26 - Notas y menciones.md) | Zaith Manangón | Completo (4/4 criterios) |
 
 ## Decisiones
 
@@ -24,6 +25,7 @@ Administrar actividades comerciales y sus recordatorios desde una API autenticad
 - La actividad requiere vencimiento si tiene recordatorio, y la fecha del recordatorio no puede ser posterior al vencimiento.
 - CRM-22 (2026-11-02): las fechas de una actividad son instantes y un día sin hora es las 00:00 de Ecuador, en la ficha y en la agenda (migración de datos `20261102120000_activity_ecuador_days`, aplicada en `pruebas` y `development`). Completar, cancelar (`PATCH /activities/:id/cancel`, nuevo) y editar solo escriben si la actividad sigue pendiente, y cada cambio o borrado deja quién y cuándo en `AuditLog`.
 - CRM-25 (2026-11-01): el historial de un negocio o contacto sale de `GET /deals|contacts/:id/timeline`, paginado por cursor estable. Un VENDEDOR solo ve el historial de lo que tiene a su cargo; las fichas y la agenda siguen compartidas. Las actividades registran a su autor (`createdById`).
+- CRM-26 (2026-11-02): notas en negocios y contactos (`POST /deals|contacts/:id/notes`, `PATCH|DELETE /notes/:id`) con el alcance del historial; editar o eliminar es del autor o de un ADMIN, y queda en `AuditLog`. Las menciones avisan por correo una sola vez (`NoteMention.notifiedAt`) con el enlace a la ficha y sin el texto: mencionar no da acceso. Migración `20261102130000_note_mentions`.
 
 ## Validación
 

@@ -22,21 +22,26 @@ import { companyLabel } from "../../../../features/contactos/contact-form-state"
 import type { ContactDetail } from "../../../../features/contactos/types";
 import { DealJourney } from "../../../../features/pipeline/deal-journey";
 import { loadTimeline } from "../../../../features/timeline/actions";
+import { NoteForm } from "../../../../features/timeline/note-form";
 import { TimelineList } from "../../../../features/timeline/timeline-list";
+import type { Member } from "../../../../features/timeline/types";
 
 export default async function ContactDetailPage({
   params,
 }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params;
   // El historial se pide aparte (paginado y con su propio alcance): un 404 suyo no oculta la ficha.
-  const [response, timeline] = await Promise.all([
+  const [response, timeline, owners] = await Promise.all([
     authenticatedApi(`/contacts/${encodeURIComponent(id)}`),
     loadTimeline("contacts", id),
+    authenticatedApi("/pipeline/owners"),
   ]);
   if (response.status === 404) notFound();
   const texto = CONTACTOS.ficha;
   if (!response.ok) return <p role="alert">{texto.errorCarga}</p>;
   const contact = (await response.json()) as ContactDetail;
+  // Sin la lista de miembros, la nota se escribe igual, solo sin menciones.
+  const members = owners.ok ? ((await owners.json()) as Member[]) : [];
   const phone = splitPhone(contact.phone);
   const values = {
     firstName: contact.firstName,
@@ -130,7 +135,8 @@ export default async function ContactDetailPage({
               <CalendarDays />
               {TIMELINE.historial}
             </h3>
-            <TimelineList kind="contacts" id={contact.id} initial={timeline} />
+            <NoteForm kind="contacts" id={contact.id} members={members} />
+            <TimelineList kind="contacts" id={contact.id} initial={timeline} members={members} />
           </Card>
         </div>
         <ContactForm id={contact.id} initialValues={values} />

@@ -62,7 +62,7 @@ function db() {
       deal: deal(a.dealId),
     })),
     note: [
-      { id: "n1", dealId: "d1", contactId: null, content: "Nota", createdAt: T, author: ana, deal: deal("d1") },
+      { id: "n1", dealId: "d1", contactId: null, content: "Nota", createdAt: T, editedAt: null, authorId: "u1", author: ana, mentions: [{ user: otro }], deal: deal("d1") },
     ],
     dealStageHistory: [
       { id: "st1", dealId: "d1", changedAt: T, fromStage: null, toStage: { id: "s1", name: "Nuevo" }, changedBy: ana, reason: null, deal: deal("d1") },
@@ -159,9 +159,18 @@ test("el autor de una actividad es quien la registró o, en las antiguas, su res
     completedAt: null,
     assignee: otro,
   });
-  assert.deepEqual(byId["NOTE:n1"].note, { id: "n1", content: "Nota" });
+  assert.deepEqual(byId["NOTE:n1"].note, { id: "n1", content: "Nota", mentions: [otro], editedAt: null, canEdit: true });
   assert.deepEqual(byId["STAGE:st1"].stage, { from: null, to: { id: "s1", name: "Nuevo" }, reason: null });
   assert.deepEqual(byId["EVENT:ev1"].event, { action: "WON", changes: { closedAt: "x" } });
+});
+
+test("CRM-26: una nota se puede editar desde el timeline solo si quien mira es su autor o ADMIN", async () => {
+  const { service, rows } = db();
+  rows.note[0].authorId = "u2";
+  const note = async (actor) =>
+    (await service.forDeal("d1", actor, { limit: 20 })).data.find((e) => e.kind === "NOTE").note.canEdit;
+  assert.equal(await note(vera), false);
+  assert.equal(await note(admin), true);
 });
 
 test("VENDEDOR recibe 404 en negocios y contactos ajenos o sin responsable; ADMIN los ve", async () => {

@@ -8,15 +8,22 @@ import { COMUN } from "@/content/comun";
 import { TIMELINE } from "@/content/timeline";
 import { CompleteButton } from "../pipeline/activity-actions";
 import { loadTimeline } from "./actions";
-import type { TimelineEntry, TimelineResult } from "./types";
+import { NoteControls } from "./note-form";
+import type { Member, TimelineEntry, TimelineResult } from "./types";
 
-type Props = Readonly<{ kind: "deals" | "contacts"; id: string; initial: TimelineResult }>;
+type Props = Readonly<{
+  kind: "deals" | "contacts";
+  id: string;
+  initial: TimelineResult;
+  /** Miembros que se pueden mencionar al editar una nota. */
+  members?: Member[];
+}>;
 
 /**
  * Historial paginado. La primera página llega del servidor ya formateada; «Ver más» agrega las siguientes.
  * En el negocio, las actividades pendientes se completan aquí; en el contacto, cada evento enlaza a su negocio.
  */
-export function TimelineList({ kind, id, initial }: Props) {
+export function TimelineList({ kind, id, initial, members = [] }: Props) {
   const texto = TIMELINE;
   const failure = "error" in initial ? initial : null;
   const first = "error" in initial ? null : initial;
@@ -60,6 +67,14 @@ export function TimelineList({ kind, id, initial }: Props) {
                 {entry.note && <p>{entry.note}</p>}
               </div>
               {kind === "deals" && entry.pending && <CompleteButton dealId={id} activity={entry.pending} />}
+              {/* key: si la nota cambió (guardada aquí o por otra persona), los controles parten de lo nuevo. */}
+              {entry.editable && (
+                <NoteControls
+                  key={entry.editable.content + entry.editable.mentionIds.join()}
+                  note={entry.editable}
+                  members={members}
+                />
+              )}
             </li>
           ))}
         </ol>

@@ -8,6 +8,7 @@ import { TimelineList } from "./timeline-list";
 
 vi.mock("./actions", () => ({ loadTimeline: vi.fn() }));
 vi.mock("../pipeline/actions", () => ({ createActivityAction: vi.fn(), completeActivityAction: vi.fn() }));
+vi.mock("./note-actions", () => ({ createNote: vi.fn(), updateNote: vi.fn(), deleteNote: vi.fn() }));
 const load = vi.mocked(loadTimeline);
 const items = () => screen.getAllByRole("listitem").map((li) => li.textContent);
 
@@ -108,6 +109,28 @@ test("en el negocio, las pendientes se completan aquí y no enlazan al propio ne
   expect(screen.queryByRole("link")).toBeNull();
   await user.click(screen.getByRole("button", { name: "Completar Llamar" }));
   expect(completeActivityAction).toHaveBeenCalledWith("d1", "a1");
+});
+
+test("CRM-26: solo las notas editables muestran editar y eliminar, con los miembros para mencionar", async () => {
+  const user = userEvent.setup();
+  render(
+    <TimelineList
+      kind="contacts"
+      id="c1"
+      members={[{ id: "u2", name: "Luis" }]}
+      initial={{
+        entries: [
+          entry("NOTE:n1", { note: "Mía", editable: { id: "n1", content: "Mía", mentionIds: [] } }),
+          entry("NOTE:n2", { note: "De otro" }),
+        ],
+        nextCursor: null,
+      }}
+    />,
+  );
+  expect(screen.getAllByRole("button", { name: "Editar la nota" })).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: "Eliminar la nota" })).toHaveLength(1);
+  await user.click(screen.getByRole("button", { name: "Editar la nota" }));
+  expect(screen.getByRole("checkbox", { name: "Luis" })).not.toBeChecked();
 });
 
 test("sin acceso muestra el aviso; con otro error, la alerta; vacío, el mensaje de vacío", () => {

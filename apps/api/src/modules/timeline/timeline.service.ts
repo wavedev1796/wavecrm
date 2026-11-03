@@ -26,7 +26,8 @@ export type TimelineEvent = {
     completedAt: Date | null;
     assignee: Ref | null;
   };
-  note?: { id: string; content: string };
+  /** `canEdit`: quien mira es el autor o un ADMIN (el API lo vuelve a exigir al editar o borrar). */
+  note?: { id: string; content: string; mentions: Ref[]; editedAt: Date | null; canEdit: boolean };
   stage?: { from: Ref | null; to: Ref; reason: string | null };
   event?: { action: string; changes: Record<string, unknown> | null };
 };
@@ -65,6 +66,7 @@ export class TimelineService {
       },
       cursor,
       query.limit,
+      actor,
     );
   }
 
@@ -105,6 +107,7 @@ export class TimelineService {
       },
       cursor,
       query.limit,
+      actor,
     );
   }
 
@@ -113,7 +116,7 @@ export class TimelineService {
    * ponytail: lee hasta 4×(limit+1) filas por página; una vista SQL con UNION si las fuentes crecen mucho.
    * Los ids son cuid ([0-9a-z]): se comparan igual en JS y en Postgres, así el desempate coincide.
    */
-  private async page(sources: Sources, cursor: Cursor | undefined, limit: number) {
+  private async page(sources: Sources, cursor: Cursor | undefined, limit: number, actor: Actor) {
     const take = limit + 1;
     const [activities, notes, moves, logs] = await Promise.all([
       this.prisma.activity.findMany({
@@ -124,7 +127,11 @@ export class TimelineService {
       }),
       this.prisma.note.findMany({
         where: { AND: [sources.note, keyset<Prisma.NoteWhereInput>("NOTE", "createdAt", cursor)] },
-        include: { author: person, deal: dealRef },
+        include: {
+          author: person,
+          deal: dealRef,
+          mentions: { select: { user: person }, orderBy: { createdAt: "asc" } },
+        },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take,
       }),
@@ -177,7 +184,13 @@ export class TimelineService {
           at: n.createdAt,
           author: n.author,
           deal: n.deal,
-          note: { id: n.id, content: n.content },
+          note: {
+            id: n.id,
+            content: n.content,
+            mentions: n.mentions.map((mention) => mention.user),
+            editedAt: n.editedAt,
+            canEdit: actor.role === "ADMIN" || n.authorId === actor.id,
+          },
         }),
       ),
       ...moves.map(
