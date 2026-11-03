@@ -54,6 +54,19 @@ pnpm.cmd exec dotenv -e .env.test.local -- pnpm.cmd --filter @wave/database migr
 
 Alcance: orden estable y paginación por cursor sin repetir ni omitir empates, autor de cada evento, alcance de VENDEDOR (`404` en lo ajeno, también en `GET /deals/:id/history`), negocio eliminado sin enlace y notas como texto. La migración `20261101120000_activity_created_by` está aplicada solo en `pruebas`.
 
+## CRM-22 — Modelo Actividad (2026-11-02)
+
+| Capa | Resultado |
+| --- | --- |
+| API unitarias | 258 aprobadas (7 nuevas de CRM-22 en `unitarias/activities/` y `unitarias/pipeline/`) |
+| Web (Vitest) | 355 aprobadas |
+| Integración HTTP contra `pruebas` | 61 aprobadas (1 nueva de CRM-22 en `activities.http.test.cjs`) |
+| Navegador (Playwright) | No se corrió: el servidor de desarrollo ocupaba `3000` y `4000` (`reuseExistingServer: false`) |
+| `pnpm lint` | Aprobado |
+| Build | `shared`, `database` (tsc), `api` (`nest build`) y tipos de `web` aprobados; `prisma generate` y `next build` no se corrieron porque el servidor de desarrollo tenía tomado el motor de Prisma (`EPERM`) y el `.next` |
+
+Alcance: día sin hora a las 00:00 de Ecuador, `NEXT_ACTIVITY` y «realizada no futura» con el día de Ecuador, cancelar sin borrar, `409` al repetir completar o cancelar, traza en `AuditLog` (`UPDATED` con `from`/`to`, `COMPLETED`, `CANCELLED`, `DELETED`) y negocio rechazado sin actividades nuevas. La migración `20261102120000_activity_ecuador_days` está aplicada en `pruebas` y en `development` (2026-11-02).
+
 ## Entorno
 
 - La migración `20261031120000_activity_reminders` quedó aplicada en la rama `pruebas` de Neon.

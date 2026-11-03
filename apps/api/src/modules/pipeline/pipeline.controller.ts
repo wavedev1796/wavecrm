@@ -143,8 +143,9 @@ export class PipelineController {
   @Patch("deals/:id/activities/:activityId/complete") completeActivity(
     @Param("id") id: string,
     @Param("activityId") activityId: string,
+    @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
-    return this.service.completeActivity(id, activityId);
+    return this.service.completeActivity(id, activityId, user.sub);
   }
   @Post("deals/:id/win") @HttpCode(200) win(
     @Param("id") id: string,

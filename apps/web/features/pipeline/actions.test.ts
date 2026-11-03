@@ -209,8 +209,9 @@ test("completar una transicion encadena los datos y termina moviendo con la etap
       "PATCH",
       { contactId: "c1", need: "Tienda en línea", budget: 5000.5, expectedClose: "2026-11-30T00:00:00.000Z" },
     ],
-    ["/deals/d1/activities", "POST", { type: "CALL", subject: "Primera llamada", completedAt: "2026-10-01T00:00:00.000Z" }],
-    ["/deals/d1/activities", "POST", { type: "MEETING", subject: "Demo", dueAt: "2026-10-25T00:00:00.000Z" }],
+    // Las fechas de actividades viajan como día: el API las fija a las 00:00 de Ecuador (CRM-22).
+    ["/deals/d1/activities", "POST", { type: "CALL", subject: "Primera llamada", completedAt: "2026-10-01" }],
+    ["/deals/d1/activities", "POST", { type: "MEETING", subject: "Demo", dueAt: "2026-10-25" }],
     ["/deals/d1/quotes", "POST", { validUntil: "2026-11-30T00:00:00.000Z", sentAt: "2026-10-18T00:00:00.000Z" }],
     ["/deals/d1/quotes/q%201/accept", "POST", { acceptedAt: "2026-10-18T00:00:00.000Z", acceptanceNote: "Orden de compra" }],
     ["/deals/d1/move", "PATCH", { stageId: "s2", fromStageId: "s1", reason: "Revisar" }],
@@ -233,7 +234,7 @@ test("rechazar va a su ruta; perder agenda el seguimiento solo si tiene asunto",
     [
       "/deals/d1/lose",
       "POST",
-      { lossReason: "NEED_POSTPONED", followUp: { type: "CALL", subject: "Retomar", dueAt: "2027-01-18T00:00:00.000Z" }, fromStageId: "s2" },
+      { lossReason: "NEED_POSTPONED", followUp: { type: "CALL", subject: "Retomar", dueAt: "2027-01-18" }, fromStageId: "s2" },
     ],
     ["/deals/d1/lose", "POST", { lossReason: "NO_BUDGET", fromStageId: "s2" }],
   ]);
@@ -393,10 +394,10 @@ test("una actividad ya realizada se envia como completada en su fecha o en la de
   expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body))).toEqual({
     type: "CALL",
     subject: "Llamada",
-    completedAt: "2026-10-01T00:00:00.000Z",
+    completedAt: "2026-10-01",
   });
   await createActivityAction("d1", activityState, activity({ type: "CALL", subject: "Llamada", done: "on" }));
-  expect(JSON.parse(String(api.mock.calls[1]?.[1]?.body)).completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T00:00:00.000Z$/);
+  expect(JSON.parse(String(api.mock.calls[1]?.[1]?.body)).completedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 });
 
 test("registrar una actividad limpia el formulario y omite fecha y nota vacias", async () => {
@@ -414,7 +415,7 @@ test("registrar una actividad limpia el formulario y omite fecha y nota vacias",
   expect(JSON.parse(String(api.mock.calls[1]?.[1]?.body))).toEqual({
     type: "TASK",
     subject: "Enviar",
-    dueAt: "2026-10-20T00:00:00.000Z",
+    dueAt: "2026-10-20",
     description: "Nota",
   });
 });

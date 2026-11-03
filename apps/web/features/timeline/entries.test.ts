@@ -40,7 +40,7 @@ test("una actividad realizada no se completa ni muestra vencimiento", () => {
         status: "COMPLETED",
         subject: "Demo",
         description: "Fue bien",
-        dueAt: "2026-10-04T00:00:00.000Z",
+        dueAt: "2026-10-04T05:00:00.000Z",
         completedAt: at("04"),
         assignee: null,
       },

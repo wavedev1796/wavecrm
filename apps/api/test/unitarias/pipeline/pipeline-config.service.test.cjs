@@ -262,15 +262,16 @@ test("eliminar, ver ficha e historial de un negocio", async () => {
 
 test("completar actividad: solo una pendiente y con fecha de cierre", async () => {
   await assert.rejects(
-    mockPrisma({ activity: { findFirst: { status: "COMPLETED" } } }).service.completeActivity("d1", "a1"),
+    mockPrisma({ activity: { findFirst: { status: "COMPLETED" } } }).service.completeActivity("d1", "a1", "u1"),
     ConflictException,
   );
-  const { service } = mockPrisma({
+  const { service, called } = mockPrisma({
     activity: { findFirst: { status: "PENDING" }, update: ({ data }) => data },
   });
-  const done = await service.completeActivity("d1", "a1");
+  const done = await service.completeActivity("d1", "a1", "u1");
   assert.equal(done.status, "COMPLETED");
   assert.ok(done.completedAt instanceof Date);
+  assert.equal(called("auditLog.create")[0].data.userId, "u1");
 });
 
 test("los errores de Prisma se traducen a respuestas HTTP claras", async () => {
@@ -311,7 +312,7 @@ test("el controlador delega cada ruta en el servicio con el usuario del token", 
   c.previewTransition("d1", { to: "s2" }, user);
   c.history("d1", user);
   c.createActivity("d1", { type: "CALL" }, user);
-  c.completeActivity("d1", "a1");
+  c.completeActivity("d1", "a1", user);
   c.win("d1", { closedAt: undefined }, user);
   c.lose("d1", { lossReason: "NEGOTIATION" }, user);
   c.reopen("d1", { reason: "Error" }, user);

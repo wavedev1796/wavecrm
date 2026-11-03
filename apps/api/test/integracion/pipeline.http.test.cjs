@@ -416,12 +416,13 @@ test("perdido con seguimiento → rechazado por un vendedor → papelera; la pro
   assert.equal(events[0].changes.total, "230.00");
 
   assert.equal((await call(path + "/lose", { method: "POST", body: { lossReason: "DO_NOT_CONTACT" } })).status, 400);
-  const followUp = { type: "CALL", subject: "Retomar en temporada", dueAt: nextMonth };
+  // Como la web: el día del seguimiento sin hora, que el API guarda a las 00:00 de Ecuador (CRM-22).
+  const followUp = { type: "CALL", subject: "Retomar en temporada", dueAt: nextMonth.slice(0, 10) };
   const lost = await call(path + "/lose", { method: "POST", body: { lossReason: "NEED_POSTPONED", followUp } });
   assert.equal(lost.status, 200, JSON.stringify(lost.body));
   assert.deepEqual([lost.body.status, lost.body.quotes[0].status], ["LOST", "SENT"]);
   const pending = (await activities(path)).find((a) => a.subject === followUp.subject);
-  assert.deepEqual([pending.status, pending.dueAt], ["PENDING", nextMonth]);
+  assert.deepEqual([pending.status, pending.dueAt], ["PENDING", followUp.dueAt + "T05:00:00.000Z"]);
 
   assert.equal((await call(path + "/reject", { method: "POST", body: { lossReason: "BUDGET" } })).status, 400);
   const rejected = await call(path + "/reject", { method: "POST", body: { lossReason: "DO_NOT_CONTACT" } });

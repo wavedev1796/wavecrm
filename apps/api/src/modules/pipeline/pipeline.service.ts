@@ -27,6 +27,7 @@ import {
   BOARD_PAGE,
   dealMetrics,
   dealTotals,
+  ecuadorDayStart,
   ecuadorToday,
   MAX_DEAL_VALUE,
   nextQuoteNumber,
@@ -607,7 +608,7 @@ export class PipelineService {
       if (deal.status === "REJECTED")
         throw new ConflictException("Reabre el negocio para registrar actividades.");
       const { completedAt, ...fields } = dto;
-      if (completedAt && toDay(completedAt) > ecuadorToday())
+      if (completedAt && ecuadorToday(completedAt) > ecuadorToday())
         throw new BadRequestException(
           "Una actividad ya realizada no puede tener fecha futura.",
         );
@@ -626,7 +627,7 @@ export class PipelineService {
       });
     });
   }
-  completeActivity(dealId: string, activityId: string) {
+  completeActivity(dealId: string, activityId: string, actorId: string) {
     return this.write(async (tx) => {
       const activity = await tx.activity.findFirst({
         where: { id: activityId, dealId },
@@ -634,6 +635,10 @@ export class PipelineService {
       if (!activity) throw new NotFoundException("Actividad no encontrada.");
       if (activity.status !== "PENDING")
         throw new ConflictException("La actividad ya no está pendiente.");
+      // Quién la completó queda en la auditoría, igual que desde la agenda.
+      await tx.auditLog.create({
+        data: { action: "COMPLETED", entityType: "Activity", entityId: activityId, userId: actorId },
+      });
       return tx.activity.update({
         where: { id: activityId },
         data: { status: "COMPLETED", completedAt: new Date() },
@@ -816,7 +821,11 @@ export class PipelineService {
         },
       }),
       tx.activity.count({
-        where: { dealId: deal.id, status: "PENDING", dueAt: { gte: today } },
+        where: {
+          dealId: deal.id,
+          status: "PENDING",
+          dueAt: { gte: ecuadorDayStart(today) },
+        },
       }),
     ]);
     const quote = deal.quotes[0];
@@ -851,7 +860,7 @@ export class PipelineService {
     if (target.kind === "lost") {
       const lossDetail = input.lossDetail ?? null;
       const followUp = input.followUp;
-      if (followUp && toDay(followUp.dueAt) < ecuadorToday())
+      if (followUp && ecuadorToday(followUp.dueAt) < ecuadorToday())
         throw new BadRequestException("El seguimiento debe ser de hoy en adelante.");
       await tx.deal.update({
         where: { id },
@@ -877,7 +886,7 @@ export class PipelineService {
       await this.audit(tx, id, "LOST", actor.id, {
         lossReason: input.lossReason ?? null,
         lossDetail,
-        followUpAt: followUp ? toDay(followUp.dueAt).toISOString() : null,
+        followUpAt: followUp ? ecuadorToday(followUp.dueAt).toISOString() : null,
       });
       return;
     }

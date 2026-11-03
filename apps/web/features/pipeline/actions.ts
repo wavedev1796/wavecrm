@@ -30,6 +30,8 @@ import {
 
 const dealPath = (id: string, rest = "") =>
   "/deals/" + encodeURIComponent(id) + rest;
+// Fechas del negocio y de propuestas: día a las 00:00 UTC. Las de actividades viajan como día ("2026-11-05")
+// y el API las fija a las 00:00 de Ecuador, igual que la agenda.
 const utcDay = (day: string) => day + "T00:00:00.000Z";
 
 function refresh() {
@@ -249,14 +251,14 @@ function transitionSteps(dealId: string, form: FormData) {
       {
         type: text("interactionType"),
         subject: text("interactionSubject"),
-        completedAt: utcDay(text("interactionDay")),
+        completedAt: text("interactionDay"),
       },
     ]);
   if (text("nextSubject"))
     steps.push([
       dealPath(dealId, "/activities"),
       "POST",
-      { type: text("nextType"), subject: text("nextSubject"), dueAt: utcDay(text("nextDay")) },
+      { type: text("nextType"), subject: text("nextSubject"), dueAt: text("nextDay") },
     ]);
   if (text("validUntil"))
     steps.push([
@@ -308,7 +310,7 @@ export async function completeTransitionAction(
     lossReason: text("lossReason") || undefined,
     lossDetail: text("lossDetail") || undefined,
     followUp: text("followUpSubject")
-      ? { type: text("followUpType"), subject: text("followUpSubject"), dueAt: utcDay(text("followUpDay")) }
+      ? { type: text("followUpType"), subject: text("followUpSubject"), dueAt: text("followUpDay") }
       : undefined,
   };
   const route = TRANSITION_ROUTES[to as keyof typeof TRANSITION_ROUTES];
@@ -385,12 +387,12 @@ export async function createActivityAction(
     fieldErrors.description = texto.notaLarga;
   if (Object.keys(fieldErrors).length) return { values, fieldErrors };
   // "Ya se realizó": la fecha es la de la actividad hecha (hoy si se deja vacía), no un vencimiento.
-  const day = values.dueAt && utcDay(values.dueAt);
+  const day = values.dueAt;
   const result = await request(dealPath(dealId, "/activities"), "POST", {
     type: values.type,
     subject: values.subject,
     ...(values.done
-      ? { completedAt: day || utcDay(todayEcuador()) }
+      ? { completedAt: day || todayEcuador() }
       : day && { dueAt: day }),
     ...(values.description && { description: values.description }),
   });

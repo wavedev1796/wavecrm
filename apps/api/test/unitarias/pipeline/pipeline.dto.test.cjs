@@ -122,7 +122,11 @@ test("perder y rechazar aceptan solo sus motivos; el seguimiento es opcional y s
   assert.deepEqual(await errors(RejectDealDto, { lossReason: "OTHER" }), { lossDetail: "Ingresa el detalle del motivo." });
   const followUp = { type: "CALL", subject: "Retomar", dueAt: "2027-01-18" };
   assert.deepEqual(await errors(LoseDealDto, { lossReason: "NEED_POSTPONED", followUp }), {});
-  assert.ok(plainToInstance(LoseDealDto, { lossReason: "NEED_POSTPONED", followUp }).followUp.dueAt instanceof Date);
+  // CRM-22: el día del seguimiento es las 00:00 de Ecuador, igual que en la agenda.
+  assert.equal(
+    plainToInstance(LoseDealDto, { lossReason: "NEED_POSTPONED", followUp }).followUp.dueAt.toISOString(),
+    "2027-01-18T05:00:00.000Z",
+  );
   assert.deepEqual(await errors(LoseDealDto, { lossReason: "NEED_POSTPONED", followUp: { ...followUp, type: "FAX" } }), {
     followUp: "Elige el tipo del seguimiento.",
   });

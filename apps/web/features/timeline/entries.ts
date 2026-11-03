@@ -1,7 +1,7 @@
 import { ESTADO_ACTIVIDAD, MOTIVO_CIERRE, TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { TABLERO } from "@/content/pipeline";
 import { TIMELINE } from "@/content/timeline";
-import { formatDateTime, formatDay, formatMoney } from "@/lib/format";
+import { formatDate, formatDateTime, formatDay, formatMoney } from "@/lib/format";
 import type { EventChanges, TimelineEntry, TimelineEvent } from "./types";
 
 // Se arma solo en el servidor (la página y loadTimeline): las fechas salen formateadas una vez y no
@@ -45,7 +45,8 @@ function toEntry(event: TimelineEvent): TimelineEntry | null {
       detail: [
         ESTADO_ACTIVIDAD[activity.status],
         by,
-        activity.status === "PENDING" && activity.dueAt && texto.vence(formatDay(activity.dueAt)),
+        // dueAt es un instante (un día sin hora es 00:00 de Ecuador): se pinta en zona Ecuador, como la agenda.
+        activity.status === "PENDING" && activity.dueAt && texto.vence(formatDate(activity.dueAt)),
       ]
         .filter(Boolean)
         .join(" · "),

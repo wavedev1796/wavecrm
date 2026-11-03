@@ -55,15 +55,28 @@ export class ActivitiesController {
   @Patch(":id") update(
     @Param("id") id: string,
     @Body() dto: UpdateActivityDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.activities.update(id, dto);
+    return this.activities.update(id, dto, user.sub);
   }
 
-  @Patch(":id/complete") complete(@Param("id") id: string) {
-    return this.activities.complete(id);
+  @Patch(":id/complete") complete(
+    @Param("id") id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.activities.complete(id, user.sub);
   }
 
-  @Delete(":id") @HttpCode(204) remove(@Param("id") id: string) {
-    return this.activities.remove(id);
+  @Patch(":id/cancel")
+  @ApiOperation({ summary: "Cancela una actividad pendiente y conserva su historial" })
+  cancel(@Param("id") id: string, @CurrentUser() user: JwtPayload) {
+    return this.activities.cancel(id, user.sub);
+  }
+
+  @Delete(":id") @HttpCode(204) remove(
+    @Param("id") id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.activities.remove(id, user.sub);
   }
 }

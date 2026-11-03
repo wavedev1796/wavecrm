@@ -22,7 +22,11 @@ const text = (label: string, max: number, min = 1) =>
     }),
   );
 
-const date = (label: string) =>
+/**
+ * Fecha de una actividad (agenda y ficha del negocio). Un día sin hora ("2026-11-05") es las 00:00 de
+ * Ecuador, no de UTC: así la agenda, la ficha y el timeline lo muestran el mismo día.
+ */
+export const activityDate = (message: string) =>
   applyDecorators(
     Transform(({ value }) => {
       if (
@@ -30,11 +34,13 @@ const date = (label: string) =>
         !/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(value)
       )
         return value;
-      const parsed = new Date(value);
+      // ponytail: Ecuador continental está en UTC-5 todo el año (sin horario de verano).
+      const parsed = new Date(value.length === 10 ? `${value}T00:00:00-05:00` : value);
       return Number.isNaN(parsed.getTime()) ? value : parsed;
     }),
-    IsDate({ message: `Ingresa ${label} válido.` }),
+    IsDate({ message }),
   );
+const date = (label: string) => activityDate(`Ingresa ${label} válido.`);
 
 export class CreateActivityDto {
   @ApiProperty({ enum: ACTIVITY_TYPES })

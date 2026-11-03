@@ -1,5 +1,6 @@
 import { applyDecorators } from "@nestjs/common";
 import { PaginationDto } from "../../common/dto/pagination.dto";
+import { activityDate } from "../activities/activities.dto";
 import { MAX_DEAL_VALUE } from "./deal-rules";
 import {
   ApiProperty,
@@ -218,7 +219,7 @@ export class FollowUpDto {
   @text("el asunto del seguimiento", 160, 2)
   subject!: string;
   @ApiProperty({ example: "2027-01-25" })
-  @isoDate("Ingresa la fecha del seguimiento.")
+  @activityDate("Ingresa la fecha del seguimiento.")
   dueAt!: Date;
 }
 export class LoseDealDto extends FromStageDto {
@@ -286,7 +287,7 @@ export class CreateDealActivityDto {
   subject!: string;
   @ApiPropertyOptional()
   @IsOptional()
-  @isoDate("Ingresa una fecha válida.")
+  @activityDate("Ingresa una fecha válida.")
   dueAt?: Date;
   @ApiPropertyOptional()
   @IsOptional()
@@ -294,7 +295,7 @@ export class CreateDealActivityDto {
   description?: string;
   @ApiPropertyOptional({ description: "Con fecha, la actividad se registra como ya realizada" })
   @IsOptional()
-  @isoDate("Ingresa una fecha válida.")
+  @activityDate("Ingresa una fecha válida.")
   completedAt?: Date;
 }
 export class CreateQuoteDto {

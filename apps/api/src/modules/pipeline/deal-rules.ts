@@ -62,5 +62,12 @@ export const toDay = (date: Date) =>
   new Date(date.toISOString().slice(0, 10) + "T00:00:00.000Z");
 
 // ponytail: Ecuador continental está en UTC-5 todo el año (sin horario de verano).
+const ECUADOR_OFFSET = 5 * 60 * 60 * 1000;
+
+/** Día de Ecuador de un instante (hoy, por defecto), guardado como `toDay`. */
 export const ecuadorToday = (now = new Date()) =>
-  toDay(new Date(now.getTime() - 5 * 60 * 60 * 1000));
+  toDay(new Date(now.getTime() - ECUADOR_OFFSET));
+
+/** Instante en que empieza en Ecuador un día guardado como `toDay`: desde ahí cuenta una actividad de ese día. */
+export const ecuadorDayStart = (day: Date) =>
+  new Date(day.getTime() + ECUADOR_OFFSET);

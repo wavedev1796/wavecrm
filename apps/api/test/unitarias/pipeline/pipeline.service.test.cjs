@@ -16,6 +16,9 @@ const item = (quantity, unitPrice, taxRate) => ({ quantity, unitPrice, taxRate }
 const vendedor = { id: "user-1", role: "VENDEDOR" };
 const admin = { id: "admin-1", role: "ADMIN" };
 const day = (iso) => new Date(iso + "T00:00:00.000Z");
+// CRM-22: así llega del DTO un día de actividad, a las 00:00 de Ecuador.
+const ecDay = (iso) => new Date(iso + "T00:00:00-05:00");
+const todayEc = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guayaquil" }).format(new Date());
 
 /**
  * Prisma en memoria con lo que lee y escribe el servicio. `$transaction` copia el estado y lo
@@ -212,6 +215,17 @@ test("avanzar sin requisitos responde 422 con los códigos y no escribe nada", a
   assert.equal(state.history.length, 0);
 });
 
+test("CRM-22: la próxima actividad cuenta desde las 00:00 de Ecuador, no de UTC", async () => {
+  const startOfToday = new Date(`${todayEc}T00:00:00-05:00`);
+  // Ayer a las 22:00 en Ecuador ya es hoy en UTC: antes contaba como próxima.
+  const yesterdayLate = new Date(startOfToday.getTime() - 2 * 60 * 60 * 1000);
+  const late = mockPrisma({ deal: { need: ready.need }, activities: [{ status: "PENDING", type: "CALL", dueAt: yesterdayLate }] });
+  assert.deepEqual(await codesOf(service(late.prisma).transition("deal-1", "stage-n", {}, vendedor)), ["NEXT_ACTIVITY"]);
+  const today = mockPrisma({ deal: { need: ready.need }, activities: [{ status: "PENDING", type: "CALL", dueAt: startOfToday }] });
+  const moved = await service(today.prisma).transition("deal-1", "stage-n", { fromStageId: "stage-a" }, vendedor);
+  assert.equal(moved.stageId, "stage-n");
+});
+
 test("retroceder exige motivo y lo guarda en el historial sin borrar datos", async () => {
   const { prisma, state } = mockPrisma({ stageId: "stage-n", deal: { need: ready.need } });
   assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "stage-a", {}, vendedor)), ["REASON"]);
@@ -283,7 +297,7 @@ test("perder guarda motivo y fecha sin mover la etapa; solo desde abierto", asyn
 
 test("perder con seguimiento lo agenda con contacto y empresa y conserva la propuesta", async () => {
   const { prisma, state } = mockPrisma({ quotes: [{ number: "COT-000002", status: "SENT", total: "115.00" }] });
-  const followUp = { type: "CALL", subject: "Retomar", dueAt: day("2999-01-18") };
+  const followUp = { type: "CALL", subject: "Retomar", dueAt: ecDay("2999-01-18") };
   await assert.rejects(
     service(prisma).transition("deal-1", "LOST", { lossReason: "NEED_POSTPONED", followUp: { ...followUp, dueAt: day("2000-01-01") } }, vendedor),
     BadRequestException,
@@ -507,7 +521,16 @@ test("CRM-20: la actividad del negocio copia contacto y empresa y la asigna a qu
     [created.dealId, created.companyId, created.contactId, created.assigneeId, created.createdById],
     ["deal-1", "company-1", "contact-1", "user-1", "user-1"],
   );
-  await assert.rejects(service(prisma).completeActivity("deal-1", "ajena"), NotFoundException);
+  await assert.rejects(service(prisma).completeActivity("deal-1", "ajena", "user-1"), NotFoundException);
+});
+
+test("CRM-22: completar desde la ficha deja en la auditoría quién la completó", async () => {
+  const { prisma, state } = mockPrisma();
+  prisma.activity.findFirst = async () => ({ id: "act-1", dealId: "deal-1", status: "PENDING" });
+  prisma.activity.update = async ({ data }) => data;
+  const done = await service(prisma).completeActivity("deal-1", "act-1", "user-1");
+  assert.equal(done.status, "COMPLETED");
+  assert.deepEqual(state.audit, [{ action: "COMPLETED", entityType: "Activity", entityId: "act-1", userId: "user-1" }]);
 });
 
 const future = day("2999-01-31");
@@ -612,11 +635,18 @@ test("una actividad ya realizada nace completada y no admite fecha futura", asyn
   const { prisma } = mockPrisma();
   const done = await service(prisma).createActivity(
     "deal-1",
-    { type: "CALL", subject: "Primera llamada", completedAt: day("2026-10-01") },
+    { type: "CALL", subject: "Primera llamada", completedAt: ecDay("2026-10-01") },
     "user-1",
   );
   assert.equal(done.status, "COMPLETED");
-  assert.equal(done.completedAt.toISOString(), "2026-10-01T00:00:00.000Z");
+  assert.equal(done.completedAt.toISOString(), "2026-10-01T05:00:00.000Z");
+  // CRM-22: hoy a las 23:00 en Ecuador ya es mañana en UTC, pero sigue siendo hoy.
+  const lateToday = await service(prisma).createActivity(
+    "deal-1",
+    { type: "CALL", subject: "Llamada tarde", completedAt: new Date(`${todayEc}T23:00:00-05:00`) },
+    "user-1",
+  );
+  assert.equal(lateToday.status, "COMPLETED");
   await assert.rejects(
     service(prisma).createActivity("deal-1", { type: "CALL", subject: "Llamada", completedAt: future }, "user-1"),
     BadRequestException,

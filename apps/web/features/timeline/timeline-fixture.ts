@@ -20,7 +20,8 @@ export const pendingCall = event("ACTIVITY:a1", "2026-10-03T12:00:00.000Z", {
     status: "PENDING",
     subject: "Llamar a Maria",
     description: null,
-    dueAt: "2026-10-12T00:00:00.000Z",
+    // Un día sin hora se guarda a las 00:00 de Ecuador (CRM-22).
+    dueAt: "2026-10-12T05:00:00.000Z",
     completedAt: null,
     assignee: zaith,
   },

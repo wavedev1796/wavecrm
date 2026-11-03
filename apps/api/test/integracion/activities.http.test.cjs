@@ -138,6 +138,51 @@ test("ticket-23: dispara un correo de recordatorio y evita volver a enviarlo", a
   assert.ok(delivered.body.reminderSentAt);
 });
 
+test("CRM-22: día de Ecuador, cancelar sin borrar y traza de quién cambió qué", async () => {
+  const created = await call("/activities", {
+    method: "POST",
+    body: { type: "TASK", subject: "Enviar contrato", dueAt: "2999-03-10" },
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  activityIds.push(created.body.id);
+  assert.equal(created.body.dueAt, "2999-03-10T05:00:00.000Z");
+  const moved = await call(`/activities/${created.body.id}`, {
+    method: "PATCH",
+    body: { dueAt: "2999-03-11" },
+  });
+  assert.equal(moved.body.dueAt, "2999-03-11T05:00:00.000Z");
+  const cancelled = await call(`/activities/${created.body.id}/cancel`, {
+    method: "PATCH",
+  });
+  assert.equal(cancelled.status, 200);
+  assert.equal(cancelled.body.status, "CANCELLED");
+  for (const action of ["cancel", "complete"])
+    assert.equal(
+      (await call(`/activities/${created.body.id}/${action}`, { method: "PATCH" }))
+        .status,
+      409,
+    );
+  assert.equal(
+    (await call(`/activities/c${"0".repeat(24)}/cancel`, { method: "PATCH" }))
+      .status,
+    404,
+  );
+  const trail = await api.prisma.auditLog.findMany({
+    where: { entityType: "Activity", entityId: created.body.id },
+    orderBy: { createdAt: "asc" },
+  });
+  assert.deepEqual(
+    trail.map((entry) => [entry.action, entry.userId]),
+    [
+      ["UPDATED", user.id],
+      ["CANCELLED", user.id],
+    ],
+  );
+  assert.deepEqual(trail[0].changes, {
+    dueAt: { from: "2999-03-10T05:00:00.000Z", to: "2999-03-11T05:00:00.000Z" },
+  });
+});
+
 test("ticket-23: valida fechas de recordatorio y no asigna usuarios inactivos", async () => {
   const invalidDate = await call("/activities", {
     method: "POST",
