@@ -52,30 +52,30 @@ export function DealActions({ deal, canReopen, ...options }: Readonly<Props>) {
     <div className="deal-actions">
       {open && (
         <>
-          <Button onClick={() => setMode("WON")}>
+          <Button className="action-button action-button--success" onClick={() => setMode("WON")}>
             <Trophy aria-hidden />
             {acciones.ganar}
           </Button>
-          <Button variant="secondary" onClick={() => setMode("LOST")}>
+          <Button variant="secondary" className="action-button action-button--delete" onClick={() => setMode("LOST")}>
             <ThumbsDown aria-hidden />
             {acciones.perder}
           </Button>
         </>
       )}
       {(open || deal.status === "LOST") && (
-        <Button variant="secondary" onClick={() => setMode("REJECTED")}>
+        <Button variant="secondary" className="action-button action-button--cancel" onClick={() => setMode("REJECTED")}>
           <Ban aria-hidden />
           {acciones.rechazar}
         </Button>
       )}
       {!open && canReopen && (
-        <Button variant="secondary" onClick={() => setMode("REOPEN")}>
+        <Button variant="secondary" className="action-button action-button--restore" onClick={() => setMode("REOPEN")}>
           <RotateCcw aria-hidden />
           {acciones.reabrir}
         </Button>
       )}
       {(open || canReopen) && (
-        <Button variant="ghost" onClick={() => setMode("edit")}>
+        <Button variant="ghost" className="action-button action-button--edit" onClick={() => setMode("edit")}>
           <Pencil aria-hidden />
           {acciones.editar}
         </Button>

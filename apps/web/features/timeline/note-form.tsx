@@ -70,7 +70,7 @@ export function NoteForm({
       {state.saved && <Alert tone="success">{texto.guardada}</Alert>}
       {state.error && <Alert tone="error">{state.error}</Alert>}
       <NoteFields prefix="note-new" state={state} error={error("content")} members={members} />
-      <Button type="submit" loading={pending}>
+      <Button type="submit" loading={pending} className="action-button action-button--success">
         {texto.guardar}
       </Button>
     </form>
@@ -98,7 +98,7 @@ export function NoteControls({ note, members }: Readonly<{ note: EditableNote; m
         {state.error && <Alert tone="error">{state.error}</Alert>}
         <NoteFields prefix={"note-" + note.id} state={state} error={error("content")} members={members} />
         <div className="note-actions">
-          <Button type="submit" loading={pending}>
+      <Button type="submit" loading={pending} className="action-button action-button--success">
             {texto.guardarCambios}
           </Button>
           <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
@@ -117,11 +117,11 @@ export function NoteControls({ note, members }: Readonly<{ note: EditableNote; m
   return (
     <div className="note-actions">
       {state.saved && <Alert tone="success">{texto.actualizada}</Alert>}
-      <Button type="button" variant="ghost" aria-label={texto.editarNota} onClick={() => setEditing(true)}>
+      <Button type="button" variant="ghost" className="action-button action-button--edit" aria-label={texto.editarNota} onClick={() => setEditing(true)}>
         <Pencil aria-hidden />
         {texto.editar}
       </Button>
-      <Button type="button" variant="ghost" loading={deleting} aria-label={texto.eliminarNota} onClick={remove}>
+      <Button type="button" variant="ghost" className="action-button action-button--delete" loading={deleting} aria-label={texto.eliminarNota} onClick={remove}>
         <Trash2 aria-hidden />
         {texto.eliminar}
       </Button>

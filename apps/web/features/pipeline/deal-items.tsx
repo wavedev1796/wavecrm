@@ -119,7 +119,7 @@ export function DealItems({
                   <td className="deal-items-remove">
                     <button
                       type="button"
-                      className="icon-button"
+                      className="icon-button icon-button--delete"
                       aria-label={texto.quitar(index + 1)}
                       onClick={() => {
                         setRows(rows.filter((other) => other.key !== row.key));

@@ -178,6 +178,9 @@
   .contact-detail-grid {
     grid-template-columns: 1fr;
   }
+  .company-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .contact-list-header {
     align-items: flex-start;
     flex-direction: column;
@@ -306,6 +309,71 @@
   }
   .calendar-day small {
     font-size: 0.56rem;
+  }
+}
+
+/* La anchura disponible de la agenda puede ser menor que la ventana cuando está en pantalla dividida. */
+@container activities (max-width: 860px) {
+  .activities-intro {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .activities-intro > .button {
+    align-self: flex-start;
+  }
+  .activities-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .activities-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .activities-filters label:first-child {
+    grid-column: 1 / -1;
+  }
+  .activities-filters select {
+    min-width: 0;
+    width: 100%;
+  }
+  .activities-view-toggle {
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+@container activities (max-width: 520px) {
+  .activities-summary {
+    grid-template-columns: 1fr;
+  }
+  .activities-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .activities-filters label:first-child {
+    grid-column: auto;
+  }
+  .activities-view-toggle .button {
+    min-width: 0;
+    flex: 1;
+  }
+}
+@container activities (max-width: 760px) {
+  .activity-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+  }
+  .activity-card-date {
+    grid-column: 1;
+    display: flex;
+    gap: 8px;
+  }
+  .activity-card-main {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .activity-card-actions {
+    grid-column: 2;
+    grid-row: 1;
   }
 }
 

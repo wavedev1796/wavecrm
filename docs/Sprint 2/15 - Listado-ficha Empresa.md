@@ -107,3 +107,15 @@ Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*, Sprint 3),
 ### Validación
 
 - `deal-journey.test.tsx` y la e2e *perdido con seguimiento → rechazado* (abre la ficha del contacto).
+
+## Distribución de ficha y edición en diálogo (2026-11-07)
+
+### Implementación
+
+- La ficha organiza los datos de empresa en una columna izquierda y agrupa contactos, negocios e historial a la derecha. En pantallas estrechas las columnas se apilan.
+- La edición dejó de ocupar una columna fija. `CompanyEditDialog` abre el formulario existente en un diálogo, conserva sus validaciones y muestra una confirmación al guardar; al cerrar, refresca la ficha con los datos actuales.
+- La vista de edición reutiliza el sistema de diálogo y los colores semánticos de acciones definidos para la web.
+
+### Verificación
+
+- TypeScript web, ESLint y `git diff --check` aprobados. No se ejecutaron pruebas automatizadas para este ajuste.

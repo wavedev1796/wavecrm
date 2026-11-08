@@ -125,6 +125,7 @@
   flex-direction: column;
   gap: 18px;
   width: 100%;
+  container: activities / inline-size;
 }
 .activities-intro {
   display: flex;
@@ -414,7 +415,8 @@
 .contact-profile > div:nth-child(2) {
   flex: 1;
 }
-.contact-profile span,
+.contact-profile > div:nth-child(2) > span,
+.contact-profile .contact-tags span,
 .contact-profile p {
   color: var(--wave-muted);
   font-size: 0.74rem;
@@ -436,6 +438,23 @@
   grid-template-columns: minmax(0, 1.25fr) minmax(340px, 0.75fr);
   align-items: start;
   gap: 16px;
+}
+.company-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: start;
+  gap: 16px;
+}
+.company-detail-column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
+}
+.company-edit-feedback {
+  margin: 0;
+  align-self: center;
+  white-space: nowrap;
 }
 .contact-detail-main {
   display: flex;

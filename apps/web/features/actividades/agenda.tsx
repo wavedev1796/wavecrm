@@ -221,6 +221,7 @@ export function Agenda({
                     label="Hecha"
                     ariaLabel={`Marcar ${activity.subject} como hecha`}
                     variant="secondary"
+                    actionClass="action-button--success"
                   ><Check aria-hidden />Hecha</ActivityMutationForm>
                   <ActivityMutationForm
                     activity={activity}
@@ -228,9 +229,11 @@ export function Agenda({
                     label={ACTIVIDADES.cancelar}
                     ariaLabel={`${ACTIVIDADES.cancelar} ${activity.subject}`}
                     confirm={ACTIVIDADES.confirmarCancelar}
+                    actionClass="action-button--cancel"
                   ><Ban aria-hidden /></ActivityMutationForm>
                   <Button
                     variant="ghost"
+                    className="action-button action-button--edit"
                     type="button"
                     onClick={() => setEditing(activity)}
                     aria-label={`Editar ${activity.subject}`}
@@ -243,6 +246,7 @@ export function Agenda({
                     label="Eliminar"
                     ariaLabel={`Eliminar ${activity.subject}`}
                     confirm="¿Eliminar esta actividad?"
+                    actionClass="action-button--delete"
                   ><Trash2 aria-hidden /></ActivityMutationForm>
                 </div>
               )}
@@ -287,6 +291,7 @@ function ActivityMutationForm({
   ariaLabel,
   variant = "ghost",
   confirm,
+  actionClass,
   children,
 }: {
   activity: AgendaActivity;
@@ -295,6 +300,7 @@ function ActivityMutationForm({
   ariaLabel: string;
   variant?: "ghost" | "secondary";
   confirm?: string;
+  actionClass: string;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -332,6 +338,7 @@ function ActivityMutationForm({
       <Button
         type="submit"
         variant={variant}
+        className={`action-button ${actionClass}`}
         loading={pending}
         aria-label={ariaLabel}
         title={label}
@@ -395,7 +402,7 @@ function EditActivityDialog({
           <ActivityFields activity={activity} owners={owners} />
           <footer>
             <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" disabled={saving}><Check aria-hidden />{saving ? "Guardando…" : "Guardar cambios"}</Button>
+            <Button type="submit" disabled={saving} className="action-button action-button--success"><Check aria-hidden />{saving ? "Guardando…" : "Guardar cambios"}</Button>
           </footer>
         </form>
       </section>
@@ -422,7 +429,7 @@ export function NewActivityForm({ owners }: { owners: Owner[] }) {
             } finally { setSaving(false); }
           }}>
             <ActivityFields owners={owners} />
-            <footer><Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button><Button type="submit" disabled={saving}><Plus aria-hidden />{saving ? "Guardando…" : "Guardar actividad"}</Button></footer>
+            <footer><Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button><Button type="submit" disabled={saving} className="action-button action-button--success"><Plus aria-hidden />{saving ? "Guardando…" : "Guardar actividad"}</Button></footer>
           </form>
         </section>
       </div>}

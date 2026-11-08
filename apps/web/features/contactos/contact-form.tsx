@@ -194,7 +194,7 @@ export function ContactForm({
             {texto.cancelar}
           </Button>
         )}
-        <Button type="submit" loading={pending}>
+        <Button type="submit" loading={pending} className="action-button action-button--success">
           <Check aria-hidden />
           {id ? texto.guardar : texto.crear}
         </Button>

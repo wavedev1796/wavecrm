@@ -36,6 +36,12 @@ Permitir que el equipo organice sus actividades comerciales desde una agenda cla
 - La fecha se muestra en la zona horaria `America/Guayaquil`. La lista compacta y los controles se reorganizan para pantallas móviles.
 - Se reutilizan `Badge`, `Button`, `Input` y `Select` de Wave y los catálogos compartidos de tipo y estado.
 
+## Ajuste responsive y acciones (2026-11-07)
+
+- La agenda usa consultas de contenedor para adaptarse al ancho real de su panel. En paneles medianos los filtros se distribuyen en dos columnas y la vista queda debajo; en anchos de teléfono los filtros y el resumen pasan a una columna, y las tarjetas reordenan fecha, acciones y detalle. Esto cubre ventanas divididas aunque el viewport completo sea ancho.
+- Los iconos de completar, cancelar, editar y eliminar usan colores semánticos compartidos definidos en `styles/04-controles.css`.
+- Verificación estática del cambio: TypeScript web, ESLint y `git diff --check`. No se ejecutaron pruebas automatizadas para este ajuste.
+
 ## Validación
 
 - 6 pruebas de agenda en `apps/web/features/actividades/agenda.test.tsx`: lista y completar, filtros y calendario, edición/eliminación, alta y avisos emergentes de éxito/error.
