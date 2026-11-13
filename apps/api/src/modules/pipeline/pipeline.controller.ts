@@ -17,6 +17,10 @@ import {
   AcceptQuoteDto,
   BoardQueryDto,
   CreateQuoteDto,
+  CreateProductDto,
+  ListQuotesDto,
+  ListProductsDto,
+  RejectQuoteDto,
   ListDealsDto,
   CreateDealActivityDto,
   CreateDealDto,
@@ -31,6 +35,7 @@ import {
   TransitionQueryDto,
   UpdateDealDto,
   UpdatePipelineDto,
+  UpdateProductDto,
   UpdateStageDto,
   WinDealDto,
 } from "./pipeline.dto";
@@ -43,6 +48,40 @@ const actor = (user: JwtPayload): Actor => ({ id: user.sub, role: user.role });
 @Controller()
 export class PipelineController {
   constructor(private readonly service: PipelineService) {}
+  @Get("products") listProducts(
+    @Query() query: ListProductsDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.listProducts(query, actor(user));
+  }
+  @Get("products/:id") getProduct(
+    @Param("id") id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.findProduct(id, actor(user));
+  }
+  @Post("products") createProduct(
+    @Body() dto: CreateProductDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.createProduct(dto, actor(user));
+  }
+  @Patch("products/:id") updateProduct(
+    @Param("id") id: string,
+    @Body() dto: UpdateProductDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.updateProduct(id, dto, actor(user));
+  }
+  @Get("quotes") listQuotes(
+    @Query() query: ListQuotesDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.listQuotes(query, actor(user));
+  }
+  @Get("quotes/:id") getQuote(@Param("id") id: string, @CurrentUser() user: JwtPayload): Promise<unknown> {
+    return this.service.findQuote(id, actor(user));
+  }
   @Get("pipeline/owners") owners(): Promise<unknown> {
     return this.service.listOwners();
   }
@@ -119,6 +158,14 @@ export class PipelineController {
     @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
     return this.service.acceptQuote(id, quoteId, dto, actor(user));
+  }
+  @Post("deals/:id/quotes/:quoteId/reject") @HttpCode(200) rejectQuote(
+    @Param("id") id: string,
+    @Param("quoteId") quoteId: string,
+    @Body() dto: RejectQuoteDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.rejectQuote(id, quoteId, dto, actor(user));
   }
   @Get("deals/:id/transition") previewTransition(
     @Param("id") id: string,

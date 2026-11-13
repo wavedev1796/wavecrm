@@ -263,7 +263,7 @@ function transitionSteps(dealId: string, form: FormData) {
     steps.push([
       dealPath(dealId, "/quotes"),
       "POST",
-      { validUntil: utcDay(text("validUntil")), ...(text("sentAt") && { sentAt: utcDay(text("sentAt")) }) },
+      { requestKey: text("requestKey"), validUntil: utcDay(text("validUntil")), ...(text("sentAt") && { sentAt: utcDay(text("sentAt")) }) },
     ]);
   if (text("acceptedAt") && text("quoteId"))
     steps.push([
@@ -357,8 +357,12 @@ export async function qualifyDealAction(
 export async function createQuoteAction(dealId: string, form: FormData) {
   const validUntil = formText(form, "validUntil");
   const sentAt = formText(form, "sentAt");
+  const requestKey = formText(form, "requestKey");
   if (!isDay(validUntil) || (sentAt && !isDay(sentAt))) return { error: PIPELINE.dateInvalid };
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestKey))
+    return { error: PIPELINE.dateInvalid };
   return request(dealPath(dealId, "/quotes"), "POST", {
+    requestKey,
     validUntil: utcDay(validUntil),
     ...(sentAt && { sentAt: utcDay(sentAt) }),
   });

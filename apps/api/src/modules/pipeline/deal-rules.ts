@@ -4,6 +4,7 @@ type Line = {
   quantity: Prisma.Decimal.Value;
   unitPrice: Prisma.Decimal.Value;
   taxRate: number;
+  discountRate?: number;
 };
 
 /** Tarjetas por columna en el tablero; "Ver más" trae la página siguiente. */
@@ -37,9 +38,10 @@ export function dealTotals(items: readonly Line[]) {
   const bases = new Map<number, Prisma.Decimal>();
   let subtotal = zero;
   for (const item of items) {
-    const line = new Prisma.Decimal(item.quantity)
+    const gross = new Prisma.Decimal(item.quantity)
       .times(item.unitPrice)
       .toDecimalPlaces(2);
+    const line = gross.times(100 - (item.discountRate ?? 0)).dividedBy(100).toDecimalPlaces(2);
     subtotal = subtotal.plus(line);
     bases.set(item.taxRate, (bases.get(item.taxRate) ?? zero).plus(line));
   }

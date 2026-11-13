@@ -76,6 +76,7 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
   const toFicha = onlyInFicha(preview);
   // StrictMode (desarrollo) monta el efecto dos veces: la segunda reutiliza la misma vista previa.
   const opening = useRef<ReturnType<typeof previewTransition>>(null);
+  const requestKey = useRef<string | null>(null);
 
   useEffect(() => {
     let current = true;
@@ -93,7 +94,11 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const submit = (form: FormData) =>
+  const submit = (form: FormData) => {
+    if (form.get("validUntil")) {
+      requestKey.current ??= crypto.randomUUID();
+      form.set("requestKey", requestKey.current);
+    }
     startTransition(async () => {
       setError("");
       if (toFicha) {
@@ -104,6 +109,7 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
       }
       const result = await completeTransitionAction(deal.id, to, deal.stageId, form);
       if (result.done) {
+        requestKey.current = null;
         onDone(result.warning ?? message);
         return router.refresh();
       }
@@ -112,6 +118,7 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
       const next = await previewTransition(deal.id, to);
       if (next.data) setPreview(next.data);
     });
+  };
 
   const cancel = (
     <Button variant="secondary" type="button" disabled={pending} onClick={onCancel}>
