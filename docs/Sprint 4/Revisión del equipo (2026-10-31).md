@@ -1,6 +1,6 @@
 # Revisión del equipo (2026-10-31)
 
-**Responsable:** Zaith Manangón · **Estado:** Parcial (12/16 criterios). Bloque 1 (P0, P2, P5, P7, P10, P15) hecho el 2026-11-11, y los bloques 2 (P14) y 3 (P1, P4, P6, P8, P9) el 2026-11-13. La migración del bloque 3 está en `pruebas` y en `development` (OK del usuario, 2026-11-13). Diseño aprobado por el usuario el 2026-11-11, con OK para tocar el módulo de pipeline de Eduardo (CRM-17 a CRM-19) y sumar iconos a sus formularios de contactos y empresas. P13 (sus fichas) sigue necesitando OK propio.
+**Responsable:** Zaith Manangón · **Estado:** Parcial (15/16 criterios). Bloque 1 (P0, P2, P5, P7, P10, P15) hecho el 2026-11-11, y los bloques 2 (P14), 3 (P1, P4, P6, P8, P9) y 4 (P3, P11, P12) el 2026-11-13. Falta P13 (bloque 5). La migración del bloque 3 está en `pruebas` y en `development` (OK del usuario, 2026-11-13). Diseño aprobado por el usuario el 2026-11-11, con OK para tocar el módulo de pipeline de Eduardo (CRM-17 a CRM-19) y sumar iconos a sus formularios de contactos y empresas. P13 (sus fichas) sigue necesitando OK propio.
 
 ## Objetivo
 
@@ -13,7 +13,7 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 - [x] **P0. Monto en formato de Ecuador.** El punto de miles es opcional (`8000` y `8.000` son lo mismo) y solo la coma separa los centavos (`8.000,50`). La regla es la misma en todos los campos de dinero.
 - [x] **P1. Días sin actividad configurables.** Un ADMIN define por etapa cuántos días sin actividad marcan un negocio *En riesgo*. La tarjeta del tablero y la ficha lo muestran.
 - [x] **P2. Rechazo reversible.** El botón *Rechazar* pasa a llamarse *Enmendar*, con icono. Deshacerlo devuelve el negocio a la etapa donde estaba, con todos sus datos.
-- [ ] **P3. Historial por campo (estilo Frappe).** La ficha muestra cada cambio del negocio como «campo: antes → después», con autor y fecha.
+- [x] **P3. Historial por campo (estilo Frappe).** La ficha muestra cada cambio del negocio como «campo: antes → después», con autor y fecha.
 - [x] **P4. Viabilidad del vendedor.** La tarjeta *Calificación* registra si el negocio es viable y la evidencia que lo respalda. Sin esa evidencia no se puede ganar.
 - [x] **P5. Barra de avance.** El selector de etapa deshabilitado del formulario se reemplaza por una barra de porcentaje con el color de cada etapa.
 - [x] **P6. Abonos.** La ficha registra pagos con monto, fecha y nota, sin archivo adjunto, y muestra el total abonado y el saldo pendiente.
@@ -21,8 +21,8 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 - [x] **P8. Comprobación del pago.** El último paso para ganar pregunta «¿Se comprobó el pago?» (Sí/No). Con *No* el negocio no se gana.
 - [x] **P9. Motivo de pérdida.** Al perder se elige el motivo de una lista que empieza por los más probables, entre ellos el nuevo *No realizó el pago*.
 - [x] **P10. Reversar.** *Reabrir* pasa a llamarse *Reversar* en el tablero, la ficha y la papelera.
-- [ ] **P11. Estados por rol.** Las acciones de estado respetan la tabla de roles de *Decisiones*, en el API (`403`) y en la web (botones ocultos).
-- [ ] **P12. Notas por correo.** Cada nota nueva avisa por correo al responsable del negocio, además de a los mencionados.
+- [x] **P11. Estados por rol.** Las acciones de estado respetan la tabla de roles de *Decisiones*, en el API (`403`) y en la web (botones ocultos).
+- [x] **P12. Notas por correo.** Cada nota nueva avisa por correo al responsable del negocio, además de a los mencionados.
 - [ ] **P13. Productos por cliente.** La ficha del contacto y la de la empresa listan los productos de sus negocios ganados.
 - [x] **P14. Actividades del negocio en la agenda.** La ficha del negocio registra actividades con el mismo formulario de la agenda (responsable, vencimiento con hora, recordatorio por correo), ya vinculadas al negocio. Desde la agenda se abre el negocio, y desde el negocio, su agenda filtrada.
 - [x] **P15. Iconos en los formularios.** Cada campo de cada formulario lleva un icono antes de su etiqueta, como el formulario *Registrar actividad* de la agenda.
@@ -145,6 +145,31 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 - Web: `deal-payments.test.tsx` (nueva), `actions.test.ts`, `transition-dialog.test.tsx`, `pipeline-board.test.tsx`, `pipeline-settings.test.tsx`, `entries.test.ts` y `app/(dashboard)/pipeline/[id]/page.test.tsx`.
 - E2E: `test/e2e/pipeline.spec.ts` llena la viabilidad y el pago al ganar, y comprueba el error con *No*.
 
+### Bloque 4 (2026-11-13): P3, P11, P12
+
+**P3. Historial por campo**
+
+- `apps/api/src/modules/pipeline/deal-rules.ts`: `dealChanges(antes, después)` devuelve `{ campo: { from, to } }` con lo que se ve del negocio (nombres de contacto, empresa y responsable, montos con dos decimales y fechas ISO).
+- `apps/api/src/modules/pipeline/pipeline.service.ts`: `updateDeal` lee el negocio con sus nombres, guarda y escribe `UPDATED` en `AuditLog` si cambió algo. `saveItems` escribe `UPDATED` con el valor cuando los productos lo cambian.
+- `apps/web/features/timeline/entries.ts`: evento *Negocio editado* con `describeDealChanges()`, una línea «Campo: antes → después» por campo.
+- `apps/web/content/timeline.ts`: `TIMELINE.negocio` (título, «Sin dato», Sí/No y etiquetas de cada campo).
+
+**P12. Notas por correo**
+
+- `apps/api/src/modules/mailer/mailer.service.ts`: `sendNoteToOwner()`.
+- `apps/api/src/modules/notes/notes.service.ts`: `notify(noteId, created)` avisa al responsable del negocio o del contacto cuando la nota es nueva.
+
+**P11. Estados por rol**
+
+- `apps/web/app/(dashboard)/pipeline/page.tsx`: lee el rol con `/auth/me` y pasa `isAdmin` al tablero y a *Configurar pipeline*.
+- `apps/web/features/pipeline/pipeline-board.tsx`: para un VENDEDOR, la tarjeta de un cerrado no se arrastra ni muestra *Editar* ni *Eliminar*. La de un ganado tiene el selector deshabilitado; la de un perdido solo permite *Rechazado*.
+- `apps/web/features/pipeline/pipeline-settings.tsx`: prop `isAdmin`. Para un VENDEDOR, *Días sin actividad* y los requisitos se ven deshabilitados y viajan en campos ocultos con lo guardado.
+
+**Pruebas**
+
+- API: `deal-rules.test.cjs` (`dealChanges`), `pipeline.service.test.cjs` (edición campo por campo y valor al guardar productos), `notes.service.test.cjs` (aviso al responsable), `mailer.service.test.cjs` (`sendNoteToOwner`) e integración `pipeline.http.test.cjs` (la edición y el valor de los productos en el historial).
+- Web: `entries.test.ts` (*Negocio editado*), `pipeline-board.test.tsx` y `pipeline-settings.test.tsx` (VENDEDOR y ADMIN).
+
 ## Decisiones
 
 ### Respuestas del usuario (2026-11-11)
@@ -184,6 +209,15 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 - `AuditLog.changes` ya guarda el antes y el después de cada edición. Se agrega a `GET /deals/:id/timeline` una entrada `FIELD_CHANGE` por campo cambiado, con su etiqueta de `content/catalogos.ts`.
 - Lo que hoy se guarda sin el antes (si lo hay) se completa en `updateDeal` para que cada cambio tenga los dos valores. No se crea un modelo nuevo.
 
+**Al implementar (2026-11-13):**
+
+- *Corrección del plan:* `updateDeal` no escribía nada en `AuditLog`; solo las actividades guardaban su antes y su después. Ahora el negocio usa el mismo formato (`{ campo: { from, to } }`, acción `UPDATED`).
+- *Mi decisión:* una sola entrada *Negocio editado* por guardado, con una línea por campo, en vez de una entrada `FIELD_CHANGE` por campo. Así el API del timeline no cambia (ya devuelve los eventos de `AuditLog`) y un guardado se lee como un solo cambio.
+- Se guardan los nombres de contacto, empresa y responsable, no sus ids: el historial se lee igual aunque luego se renombren o se borren.
+- La etapa no entra: su cambio ya está en `DealStageHistory` (*Movido de … a …*). El valor que recalculan los productos sí entra.
+- *Mi decisión:* en la web, los textos largos (necesidad, evidencia…) se cortan a 80 caracteres. El texto completo sigue en la ficha.
+- Las ediciones anteriores a este cambio no tienen historial: no había nada guardado para reconstruirlas.
+
 ### P4. Viabilidad
 
 - `Deal.viable Boolean?` y `Deal.viabilityNote String?` en la tarjeta *Calificación*.
@@ -218,6 +252,11 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 - *Mi decisión:* si la nota falla (por ejemplo, un VENDEDOR sin acceso al historial de ese negocio), el movimiento no se deshace: el aviso dice que el negocio cambió de etapa pero la observación no se guardó.
 - En *Guardar e ir a la ficha* (requisitos que solo se completan en la ficha) no se ofrece la observación, porque ahí todavía no se mueve nada.
 - `notes.service.ts` avisa también al responsable del negocio (o del contacto) si no es el autor, con el mismo correo sin el texto de CRM-26 y una sola vez.
+- **P12 al implementar (2026-11-13):**
+  - El aviso sale al crear la nota, no al editarla.
+  - No se envía si el responsable la escribió, si ya lo mencionaron (recibe el correo de la mención) o si su cuenta está inactiva.
+  - Es un correo propio, `sendNoteToOwner()`: «{autor} escribió una nota en el negocio «…»». A diferencia de la mención, el asunto nombra el registro, porque el responsable sí tiene acceso. Tampoco lleva el texto de la nota.
+  - Si el envío falla, la nota se guarda igual y queda un aviso en el log. No se reintenta, porque no hay una edición que lo dispare como en las menciones.
 
 ### P9. Motivos de pérdida
 
@@ -235,6 +274,14 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 | Registrar un abono | Sí | Sí |
 | Borrar un abono | No | Sí |
 | Configurar etapas (días, requisitos) | No | Sí |
+
+**Al implementar (2026-11-13):**
+
+- El API ya cumplía la tabla: `assertCanChange` (cerrados), `deletePayment` y `assertCanSetRequirements`. Faltaba la web.
+- *Mi decisión:* en el tablero, un VENDEDOR ve las tarjetas cerradas sin *Editar*, *Eliminar* ni arrastre. De un perdido solo puede pasarlo a *Rechazado*, que el API ya le permitía. *Historial* sigue disponible.
+- *Mi decisión:* *Configurar pipeline* sigue abierto para un VENDEDOR (nombre, probabilidad, orden y color), como antes. Los días y los requisitos se ven deshabilitados.
+  - Un control deshabilitado no viaja en el formulario. Por eso unos campos ocultos reenvían lo guardado, para que el API no lo lea como un cambio (`403`).
+- El tablero lee el rol con `/auth/me`, como la ficha y la papelera. Si no se puede leer, se trata como VENDEDOR.
 
 ### P13. Productos por cliente
 
@@ -336,11 +383,22 @@ Hoy los dos formularios guardan en la misma tabla `Activity`, pero son distintos
 - `graphify update .` corrido.
 - **Revisión visual y E2E: pendientes.**
 
+### Bloque 4 (2026-11-13)
+
+- **Sin migración:** `AuditLog` ya admitía la acción `UPDATED` y un `changes` libre.
+- **API:** 278 de 278 unitarias aprobadas. Integración contra `pruebas`: `pipeline.http.test.cjs`, `notes.http.test.cjs` y `timeline.http.test.cjs`, 19 de 19.
+  - En la primera corrida falló la prueba de la propuesta, porque el historial ya traía el cambio de valor de los productos (esperado, P3). Dos pruebas posteriores fallaron en cadena porque esa dejó su negocio en el pipeline. Ajustada la expectativa, pasaron todas.
+- **Web (Vitest):** 88 archivos y 405 pruebas aprobadas.
+- **Lint y tipos:** `pnpm lint` (exit 0), `tsc --noEmit` de la web sin errores y `nest build` del API aprobado.
+- `graphify update .` corrido.
+- **Revisión visual y E2E: pendientes**, por el mismo motivo de los bloques anteriores.
+
 ## Pendientes
 
 - Correr `pnpm build` completo con el `pnpm run dev` detenido.
-- Revisar en el navegador los iconos, la barra, el modal y el diálogo de actividad de la ficha, la viabilidad, el pago, los abonos y el aviso *En riesgo*, y ejecutar el E2E del pipeline (`test/e2e/pipeline.spec.ts`). Hace falta el `pnpm run dev` y una sesión iniciada.
-- Confirmar con el equipo la tabla de roles de P11 (incluido que solo un ADMIN borre abonos) y si la viabilidad (P4) se exige antes de llegar a Propuesta.
+- Revisar en el navegador los iconos, la barra, el modal y el diálogo de actividad de la ficha, la viabilidad, el pago, los abonos, el aviso *En riesgo*, el historial *Negocio editado* y el tablero con una cuenta VENDEDOR. Ejecutar el E2E del pipeline (`test/e2e/pipeline.spec.ts`). Hace falta el `pnpm run dev` y una sesión iniciada.
+- Confirmar con el equipo la tabla de roles de P11 (incluido que solo un ADMIN borre abonos, y que un VENDEDOR siga pudiendo cambiar nombre, probabilidad, orden y color de las etapas) y si la viabilidad (P4) se exige antes de llegar a Propuesta.
+- P13 (bloque 5): necesita OK para tocar las fichas de contactos y empresas de Eduardo.
 - Avisar a Eduardo:
   - Cambios en su módulo de pipeline. El modal de transición ya no mueve directo: siempre confirma con observación opcional. Se borraron `moveTransition()` y el `POST` de `app/api/pipeline/deals/[id]/transition`.
   - El monto usa coma decimal.
@@ -350,4 +408,7 @@ Hoy los dos formularios guardan en la misma tabla `Activity`, pero son distintos
   - Ganar y mover a una etapa de 100 % exigen `paymentConfirmed: true` y la viabilidad. Se ajustaron sus pruebas de integración (`pipeline.http.test.cjs`).
   - `CreateStageDto` suma `staleDays`, y la ficha del negocio devuelve `payments`, `balance`, `idleDays` y `atRisk` (el tablero, `idleDays` y `atRisk`).
   - `LOSS_REASONS` cambió de orden y `TRANSITION_CHECKS` suma `VIABILITY` y `PAYMENT_CONFIRMED`.
+  - Bloque 4: editar un negocio y guardar productos que cambian el valor escriben `UPDATED` en `AuditLog`; se ajustó su prueba de integración de la propuesta.
+  - `PipelineBoard` y `PipelineSettings` reciben `isAdmin`, y la página del tablero pide `/auth/me`.
+  - Cada nota nueva avisa por correo al responsable del registro (`sendNoteToOwner`).
   - Si se aprueba P13, cambios en sus fichas.

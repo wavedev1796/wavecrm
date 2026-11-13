@@ -166,3 +166,27 @@ test("P6 y P8: los abonos dejan su evento y el ganado dice si se comprobó el pa
     [expect.stringMatching(/^Abono de .*0,00 registrado$/), null],
   ]);
 });
+
+test("P3: editar el negocio muestra «campo: antes → después» por línea, con montos, fechas y Sí/No legibles", () => {
+  const largo = "x".repeat(120);
+  const [entry] = toEntries([
+    action("e1", "UPDATED", {
+      title: { from: "Contrato", to: "Contrato anual" },
+      value: { from: "100.00", to: "1250.50" },
+      owner: { from: "Luis", to: null },
+      expectedClose: { from: null, to: "2026-12-01T00:00:00.000Z" },
+      viable: { from: null, to: true },
+      need: { from: null, to: largo },
+      desconocido: { from: 1, to: 2 },
+    }, "14"),
+  ]);
+  expect(entry!.title).toBe("Negocio editado");
+  const lines = entry!.note!.split("\n");
+  expect(lines).toHaveLength(6);
+  expect(lines[0]).toBe("Nombre: Contrato → Contrato anual");
+  expect(lines[1]).toMatch(/^Valor: .*100,00 → .*1\.250,50$/);
+  expect(lines[2]).toBe("Responsable: Luis → Sin dato");
+  expect(lines[3]).toMatch(/^Cierre estimado: Sin dato → 1 dic.* 2026$/);
+  expect(lines[4]).toBe("Viable: Sin dato → Sí");
+  expect(lines[5]).toBe(`Necesidad: Sin dato → ${"x".repeat(79)}…`);
+});

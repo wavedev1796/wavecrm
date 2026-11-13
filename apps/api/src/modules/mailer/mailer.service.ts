@@ -88,6 +88,19 @@ export class MailerService {
     });
   }
 
+  /** P12: nota nueva en un registro a cargo de quien recibe. Sin el texto, igual que la mención. */
+  sendNoteToOwner(recipient: Recipient, author: string, record: string, path: string) {
+    return this.send(recipient, {
+      path,
+      subject: `${author} escribió una nota en el ${record}`,
+      heading: "Nueva nota en un registro a tu cargo",
+      intro: `${author} escribió una nota en el ${record}.`,
+      action: "Abrir la ficha",
+      expiry: "Recibes este aviso porque eres responsable de este registro.",
+      footer: "Te avisamos una vez por cada nota nueva.",
+    });
+  }
+
   private async send(recipient: Recipient, message: Message, token?: string) {
     const appUrl =
       this.config.get<string>("APP_URL") ?? "http://localhost:3000";

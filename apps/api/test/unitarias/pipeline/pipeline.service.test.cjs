@@ -717,7 +717,28 @@ test("guardar productos con otros importes deja la propuesta desactualizada, sin
   await service(prisma).saveItems("deal-1", [{ description: "Web", quantity: 2, unitPrice: 100, taxRate: 15 }], vendedor);
   assert.equal(state.quotes.length, 1);
   assert.equal(state.quotes[0].status, "SUPERSEDED");
-  assert.deepEqual(state.audit.map((a) => [a.action, a.changes]), [["QUOTE_SUPERSEDED", { quoteNumber: "COT-000001" }]]);
+  // P3: el valor que recalculan los productos también queda en el historial.
+  assert.deepEqual(state.audit.map((a) => [a.action, a.changes]), [
+    ["UPDATED", { value: { from: "100.00", to: "200.00" } }],
+    ["QUOTE_SUPERSEDED", { quoteNumber: "COT-000001" }],
+  ]);
+});
+
+test("P3: editar el negocio guarda cada campo cambiado con su antes y su después", async () => {
+  const { prisma, state } = mockPrisma();
+  await service(prisma).updateDeal("deal-1", { need: "Catálogo nuevo", decisionMaker: "Gerente", budget: 900 }, vendedor);
+  const [edit] = state.audit.filter((a) => a.action === "UPDATED");
+  assert.equal(edit.entityType, "Deal");
+  assert.equal(edit.userId, "user-1");
+  assert.deepEqual(edit.changes, {
+    need: { from: null, to: "Catálogo nuevo" },
+    decisionMaker: { from: null, to: "Gerente" },
+    budget: { from: null, to: "900.00" },
+  });
+  // Guardar sin cambios no deja una fila vacía.
+  const before = state.audit.length;
+  await service(prisma).updateDeal("deal-1", { need: "Catálogo nuevo" }, vendedor);
+  assert.equal(state.audit.length, before);
 });
 
 test("una actividad ya realizada nace completada y no admite fecha futura", async () => {

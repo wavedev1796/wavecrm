@@ -99,6 +99,52 @@ export function staleness(
   return { idleDays, atRisk: deal.status === "OPEN" && limit != null && idleDays > limit };
 }
 
+type Editable = {
+  title: string;
+  value: Prisma.Decimal.Value;
+  expectedClose?: Date | null;
+  need?: string | null;
+  solution?: string | null;
+  budget?: Prisma.Decimal.Value | null;
+  budgetNote?: string | null;
+  decisionMaker?: string | null;
+  viable?: boolean | null;
+  viabilityNote?: string | null;
+  contact?: { firstName: string; lastName: string } | null;
+  company?: { name: string } | null;
+  owner?: { name: string } | null;
+};
+const money = (value: Prisma.Decimal.Value | null | undefined) =>
+  value == null ? null : new Prisma.Decimal(value).toFixed(2);
+/** Lo que se ve de un negocio al editarlo: montos con dos decimales, fechas ISO y nombres en vez de ids. */
+const view = (deal: Editable) => ({
+  title: deal.title,
+  value: money(deal.value),
+  contact: deal.contact ? `${deal.contact.firstName} ${deal.contact.lastName}` : null,
+  company: deal.company?.name ?? null,
+  owner: deal.owner?.name ?? null,
+  expectedClose: deal.expectedClose ? new Date(deal.expectedClose).toISOString() : null,
+  need: deal.need ?? null,
+  solution: deal.solution ?? null,
+  budget: money(deal.budget),
+  budgetNote: deal.budgetNote ?? null,
+  decisionMaker: deal.decisionMaker ?? null,
+  viable: deal.viable ?? null,
+  viabilityNote: deal.viabilityNote ?? null,
+});
+/**
+ * Historial por campo (P3): `{ campo: { from, to } }` con lo que cambió al editar el negocio, listo para
+ * el AuditLog. La etapa no entra: su cambio ya queda en DealStageHistory.
+ */
+export function dealChanges(before: Editable, after: Editable) {
+  const [from, to] = [view(before), view(after)];
+  return Object.fromEntries(
+    (Object.keys(from) as (keyof typeof from)[])
+      .filter((key) => from[key] !== to[key])
+      .map((key) => [key, { from: from[key], to: to[key] }]),
+  );
+}
+
 /** Instante en que empieza en Ecuador un día guardado como `toDay`: desde ahí cuenta una actividad de ese día. */
 export const ecuadorDayStart = (day: Date) =>
   new Date(day.getTime() + ECUADOR_OFFSET);

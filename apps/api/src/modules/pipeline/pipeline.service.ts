@@ -32,6 +32,7 @@ import {
 } from "./pipeline.dto";
 import {
   BOARD_PAGE,
+  dealChanges,
   dealMetrics,
   dealTotals,
   ecuadorDayStart,
@@ -481,9 +482,10 @@ export class PipelineService {
   }
   updateDeal(id: string, dto: UpdateDealDto, actor: Actor) {
     return this.write(async (tx) => {
+      const names = { contact: dealInclude.contact, company: dealInclude.company, owner: dealInclude.owner };
       const current = await tx.deal.findUnique({
         where: { id },
-        include: { stage: true, _count: { select: { items: true } } },
+        include: { stage: true, _count: { select: { items: true } }, ...names },
       });
       if (!current) throw new NotFoundException("Negocio no encontrado.");
       this.assertCanChange(current, actor);
@@ -505,7 +507,10 @@ export class PipelineService {
       const { stageId = current.stageId, pipelineId = current.pipelineId, ...fields } = dto;
       await this.requireStage(tx, stageId, pipelineId);
       if (dto.ownerId !== undefined) await this.requireOwner(tx, dto.ownerId);
-      await tx.deal.update({ where: { id }, data: fields });
+      const updated = await tx.deal.update({ where: { id }, data: fields, include: names });
+      // P3: cada campo editado queda con su antes y su después en el historial.
+      const changes = dealChanges(current, updated);
+      if (Object.keys(changes).length) await this.audit(tx, id, "UPDATED", actor.id, changes);
       // Cambiar la etapa al editar pasa por las mismas reglas que el tablero, ya con los datos recién guardados.
       if (stageId !== current.stageId || pipelineId !== current.pipelineId)
         await this.applyTransition(tx, id, stageId, { pipelineId }, actor);
@@ -606,8 +611,12 @@ export class PipelineService {
         data: normalizedItems.map((item, position) => ({ ...item, dealId: id, position })),
       });
       // Sin productos el monto vuelve a escribirse a mano y conserva el último valor.
-      if (items.length)
+      if (items.length && !subtotal.equals(deal.value)) {
         await tx.deal.update({ where: { id }, data: { value: subtotal } });
+        await this.audit(tx, id, "UPDATED", actor.id, {
+          value: { from: new Prisma.Decimal(deal.value).toFixed(2), to: subtotal.toFixed(2) },
+        });
+      }
       // Una propuesta con otros importes deja de valer.
       const live = await this.liveQuotes(tx, id);
       await this.supersede(
@@ -1311,7 +1320,8 @@ export class PipelineService {
       | "QUOTE_REJECTED"
       | "QUOTE_SUPERSEDED"
       | "PAYMENT_ADDED"
-      | "PAYMENT_DELETED",
+      | "PAYMENT_DELETED"
+      | "UPDATED",
     userId: string,
     changes: Prisma.InputJsonObject,
   ) {

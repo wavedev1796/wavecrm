@@ -148,6 +148,11 @@ test("CRM-26: el aviso de mención enlaza a la ficha, escapa el HTML y no lleva 
   assert.match(message.text, /https:\/\/crm\.example\/pipeline\/d1/);
   assert.match(message.html, /Ana &lt;b&gt; te mencionó en una nota del negocio «Licencias»/);
   assert.doesNotMatch(message.text, /\?token=/);
+  // P12: el aviso al responsable enlaza a la misma ficha.
+  await mailer.sendNoteToOwner({ email: "eva@empresa.ec", name: "Eva" }, "Ana", "negocio «Licencias»", "/pipeline/d1");
+  assert.equal(message.subject, "Ana escribió una nota en el negocio «Licencias»");
+  assert.match(message.text, /https:\/\/crm\.example\/pipeline\/d1/);
+  assert.match(message.html, /eres responsable de este registro/);
 });
 
 test("el puerto 587 por defecto no usa TLS directo y un fallo de envío responde 503", async (t) => {

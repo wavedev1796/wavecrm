@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Alert } from "@/components/ui/alert";
+import { authenticatedApi } from "@/lib/authenticated-api";
 import { PipelineBoard } from "../../../features/pipeline/pipeline-board";
 import { PipelineSettings } from "../../../features/pipeline/pipeline-settings";
 import { dealFormOptions, get } from "../../../features/pipeline/data";
@@ -17,18 +18,22 @@ export default async function PipelinePage({
       ? "?pipelineId=" + encodeURIComponent(params.pipelineId)
       : "";
     // En paralelo: sin pipelineId el API abre el principal. Sin pipelines, el 404 del tablero no importa.
-    const [options, board] = await Promise.allSettled([
+    const [options, board, me] = await Promise.allSettled([
       dealFormOptions(),
       get<Board>("/deals/board" + query),
+      authenticatedApi("/auth/me"),
     ]);
     if (options.status === "rejected") throw options.reason;
+    // P11: lo que el API niega a un VENDEDOR (403) no se le muestra. Si no se sabe el rol, se asume VENDEDOR.
+    const isAdmin =
+      me.status === "fulfilled" && me.value.ok && ((await me.value.json()) as { role?: string }).role === "ADMIN";
     if (!options.value.pipelines.length)
       return (
         <div className="pipeline-page">
           <Alert tone="note">
             Crea tu primer pipeline y agrega sus etapas para comenzar.
           </Alert>
-          <PipelineSettings pipelines={[]} pipelineId="" />
+          <PipelineSettings pipelines={[]} pipelineId="" isAdmin={isAdmin} />
         </div>
       );
     if (board.status === "rejected") throw board.reason;
@@ -37,6 +42,7 @@ export default async function PipelinePage({
         key={board.value.pipeline.id}
         {...board.value}
         {...options.value}
+        isAdmin={isAdmin}
       />
     );
   } catch (error) {

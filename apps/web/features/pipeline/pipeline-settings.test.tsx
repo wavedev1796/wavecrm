@@ -34,9 +34,9 @@ beforeEach(() => {
   configure.mockResolvedValue({ data: { id: "p9" } });
 });
 
-async function open(pipelineId = "p1") {
+async function open(pipelineId = "p1", isAdmin = true) {
   const user = userEvent.setup();
-  render(<PipelineSettings pipelines={pipelines} pipelineId={pipelineId} />);
+  render(<PipelineSettings pipelines={pipelines} pipelineId={pipelineId} isAdmin={isAdmin} />);
   await user.click(screen.getByRole("button", { name: "Configurar pipeline" }));
   return { user, dialog: screen.getByRole("dialog", { name: "Configurar pipeline" }) };
 }
@@ -129,4 +129,22 @@ test("una etapa envía los requisitos marcados para entrar a ella", async () => 
   await user.click(within(dialog).getByRole("button", { name: "Guardar etapa" }));
   await waitFor(() => expect(configure).toHaveBeenCalled());
   expect((configure.mock.calls.at(-1)![2] as FormData).getAll("requirements")).toEqual(["NEED", "PROPOSAL_SENT"]);
+});
+
+test("P11: un VENDEDOR ve los días y los requisitos sin poder cambiarlos, y guardar reenvía lo guardado", async () => {
+  const withRequirements: Pipeline[] = [
+    { ...pipelines[0]!, stages: [pipelines[0]!.stages[0]!, { ...pipelines[0]!.stages[1]!, requirements: ["NEED"] }] },
+  ];
+  const user = userEvent.setup();
+  render(<PipelineSettings pipelines={withRequirements} pipelineId="p1" />);
+  await user.click(screen.getByRole("button", { name: "Configurar pipeline" }));
+  const dialog = screen.getByRole("dialog", { name: "Configurar pipeline" });
+  await user.selectOptions(within(dialog).getByLabelText("Etapa a configurar"), "s2");
+  expect(within(dialog).getByLabelText("Días sin actividad")).toBeDisabled();
+  const group = within(dialog).getByRole("group", { name: "Requisitos para entrar a esta etapa" });
+  expect(within(group).getByRole("checkbox", { name: "Necesidad documentada" })).toBeDisabled();
+  await user.click(within(dialog).getByRole("button", { name: "Guardar etapa" }));
+  await waitFor(() => expect(configure).toHaveBeenCalled());
+  const form = configure.mock.calls.at(-1)![2] as FormData;
+  expect([form.get("staleDays"), form.getAll("requirements")]).toEqual(["7", ["NEED"]]);
 });

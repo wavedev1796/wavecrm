@@ -25,9 +25,12 @@ const COLORS = [
 export function PipelineSettings({
   pipelines,
   pipelineId,
+  isAdmin = false,
 }: Readonly<{
   pipelines: Pipeline[];
   pipelineId: string;
+  /** P11: los días sin actividad y los requisitos solo los cambia un ADMIN; los demás los ven sin poder editarlos. */
+  isAdmin?: boolean;
 }>) {
   const dialog = useRef<HTMLDialogElement>(null);
   const router = useRouter();
@@ -279,13 +282,24 @@ export function PipelineSettings({
                           step={1}
                           defaultValue={stage?.staleDays ?? ""}
                           aria-describedby="stage-staleDays-ayuda"
+                          disabled={!isAdmin}
                         />
                       </Field>
                     </div>
                     <p id="stage-staleDays-ayuda" className="deal-form-hint">
                       {PIPELINE.diasSinActividad.ayuda}
                     </p>
-                    <fieldset className="pipeline-requirements">
+                    {/* ponytail: un control deshabilitado no viaja en el formulario; estos ocultos reenvían lo
+                        guardado para que el API no lo lea como un cambio (403) al guardar nombre, color u orden. */}
+                    {!isAdmin && stage && (
+                      <>
+                        {stage.staleDays != null && <input type="hidden" name="staleDays" value={stage.staleDays} />}
+                        {stage.requirements?.map((code) => (
+                          <input key={code} type="hidden" name="requirements" value={code} />
+                        ))}
+                      </>
+                    )}
+                    <fieldset className="pipeline-requirements" disabled={!isAdmin}>
                       <legend>{PIPELINE.requisitos.titulo}</legend>
                       {STAGE_REQUIREMENTS.map((code) => (
                         <label key={code}>

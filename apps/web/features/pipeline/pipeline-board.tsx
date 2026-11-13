@@ -32,6 +32,8 @@ type Props = Board & {
   contacts: Option[];
   companies: Option[];
   users: Option[];
+  /** P11: solo un ADMIN reversa, edita o borra un negocio cerrado y configura días y requisitos de las etapas. */
+  isAdmin?: boolean;
 };
 type Editor =
   | { kind: "new"; stageId: string }
@@ -51,6 +53,7 @@ export function PipelineBoard({
   contacts,
   companies,
   users,
+  isAdmin = false,
 }: Readonly<Props>) {
   const router = useRouter();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -134,12 +137,14 @@ export function PipelineBoard({
       if (deal) requestMove(deal, key);
     },
   });
+  // P11: un cerrado es de solo lectura para un VENDEDOR (el API responde 403); de un perdido solo puede enmendarlo.
+  const locked = (deal: Deal) => deal.status !== "OPEN" && !isAdmin;
   const card = (deal: Deal, key: string) => (
     <article
       key={deal.id}
       aria-label={"Negocio " + deal.title}
       className={"card deal-card" + (dragged === deal.id ? " deal-card--dragging" : "")}
-      draggable={!pending}
+      draggable={!pending && !locked(deal)}
       onDragStart={(event) => {
         event.dataTransfer.setData("text/plain", deal.id);
         event.dataTransfer.effectAllowed = "move";
@@ -154,7 +159,7 @@ export function PipelineBoard({
         <Link className="deal-title" href={"/pipeline/" + deal.id}>
           {deal.title}
         </Link>
-        <GripVertical aria-label="Arrastrar tarjeta" className="deal-grip" />
+        {!locked(deal) && <GripVertical aria-label="Arrastrar tarjeta" className="deal-grip" />}
       </div>
       {deal.atRisk && (
         <p className="deal-risk" title={TABLERO.sinActividad(deal.idleDays ?? 0)}>
@@ -187,7 +192,7 @@ export function PipelineBoard({
         <Select
           id={"stage-" + deal.id}
           value={key}
-          disabled={pending}
+          disabled={pending || (locked(deal) && deal.status !== "LOST")}
           onPointerDown={(event) => {
             optionPress.current = event.target instanceof HTMLOptionElement && !event.target.disabled;
           }}
@@ -205,7 +210,7 @@ export function PipelineBoard({
         >
           {/* La etapa actual se ve pero no se elige: elegirla no movería nada. */}
           {stages.map((option) => (
-            <option key={option.id} value={option.id} disabled={option.id === key}>
+            <option key={option.id} value={option.id} disabled={option.id === key || locked(deal)}>
               {option.name}
             </option>
           ))}
@@ -216,22 +221,26 @@ export function PipelineBoard({
         </Select>
       </div>
       <div className="deal-card-actions">
-        <Button variant="ghost" className="action-button action-button--edit" onClick={() => setEditor({ kind: "edit", deal })}>
-          <Pencil aria-hidden />
-          Editar
-        </Button>
+        {!locked(deal) && (
+          <Button variant="ghost" className="action-button action-button--edit" onClick={() => setEditor({ kind: "edit", deal })}>
+            <Pencil aria-hidden />
+            Editar
+          </Button>
+        )}
         <Button variant="ghost" className="action-button action-button--history" onClick={() => setEditor({ kind: "history", deal })}>
           <History aria-hidden />
           Historial
         </Button>
-        <button
-          type="button"
-          className="icon-button icon-button--delete"
-          aria-label={"Eliminar " + deal.title}
-          onClick={() => setEditor({ kind: "delete", deal })}
-        >
-          <Trash2 aria-hidden />
-        </button>
+        {!locked(deal) && (
+          <button
+            type="button"
+            className="icon-button icon-button--delete"
+            aria-label={"Eliminar " + deal.title}
+            onClick={() => setEditor({ kind: "delete", deal })}
+          >
+            <Trash2 aria-hidden />
+          </button>
+        )}
       </div>
     </article>
   );
@@ -286,7 +295,7 @@ export function PipelineBoard({
           </Select>
         </div>
         <div className="pipeline-toolbar-actions">
-          <PipelineSettings pipelines={pipelines} pipelineId={pipeline.id} />
+          <PipelineSettings pipelines={pipelines} pipelineId={pipeline.id} isAdmin={isAdmin} />
           <Button
             disabled={!stages.length || pending}
             onClick={() => setEditor({ kind: "new", stageId: stages[0]?.id ?? "" })}

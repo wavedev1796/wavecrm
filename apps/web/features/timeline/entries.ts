@@ -33,7 +33,30 @@ const EVENTS: Record<string, (c: EventChanges) => [string, string | null]> = {
   QUOTE_SUPERSEDED: (c) => [texto.propuestaDesactualizada(c.quoteNumber ?? ""), null],
   // Borrado desde la papelera: el AuditLog guarda una copia del negocio rechazado, con su motivo.
   DELETED: (c) => [texto.eliminado(c.title ?? ""), notes(reason(c.lossReason && MOTIVO_CIERRE[c.lossReason]), c.lossDetail)],
+  // Las ediciones de una actividad se resuelven antes (entityType Activity): aquí solo llegan las del negocio.
+  UPDATED: (c) => [texto.negocio.editado, describeDealChanges(c)],
 };
+
+// ponytail: corta los textos largos (necesidad, evidencia…) a 80 caracteres; el valor completo está en la ficha.
+const short = (text: string) => (text.length > 80 ? text.slice(0, 79) + "…" : text);
+function dealValue(key: string, value: unknown) {
+  if (value === null || value === undefined || value === "") return texto.negocio.sinDato;
+  if (typeof value === "boolean") return value ? texto.negocio.si : texto.negocio.no;
+  if (key === "value" || key === "budget") return formatMoney(String(value));
+  if (key === "expectedClose") return formatDay(String(value));
+  return short(String(value));
+}
+
+/** P3: una línea «Campo: antes → después» por campo editado, en el orden en que los guarda el API. */
+export function describeDealChanges(changes: Record<string, unknown>) {
+  const lines = Object.entries(changes).flatMap(([key, raw]) => {
+    const label = texto.negocio.campos[key];
+    if (!label || !raw || typeof raw !== "object") return [];
+    const { from, to } = raw as { from?: unknown; to?: unknown };
+    return [`${label}: ${dealValue(key, from)} → ${dealValue(key, to)}`];
+  });
+  return lines.length ? lines.join("\n") : null;
+}
 
 export function describeActivityChanges(changes: Record<string, unknown> | null) {
   if (!changes) return null;

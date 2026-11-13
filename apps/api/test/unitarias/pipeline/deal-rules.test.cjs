@@ -2,6 +2,7 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const {
   BOARD_PAGE,
+  dealChanges,
   dealMetrics,
   dealTotals,
   ecuadorToday,
@@ -92,4 +93,25 @@ test("P1: días sin actividad en días de Ecuador; solo un abierto con límite e
   assert.deepEqual(staleness(deal("OPEN", null), null, today), { idleDays: 12, atRisk: false });
   assert.deepEqual(staleness(deal("WON", 1), null, today), { idleDays: 12, atRisk: false });
   assert.deepEqual(staleness(deal("LOST", 1), null, today), { idleDays: 12, atRisk: false });
+});
+
+test("P3: dealChanges compara lo que se ve (nombres, montos, fechas) y omite lo que no cambió", () => {
+  const before = {
+    title: "Contrato",
+    value: 100,
+    expectedClose: new Date("2026-12-01T00:00:00.000Z"),
+    budget: null,
+    viable: null,
+    contact: { firstName: "Ana", lastName: "Paz" },
+    company: { name: "Acme" },
+    owner: { name: "Luis" },
+  };
+  const after = { ...before, value: "100.00", budget: 900, viable: true, owner: { name: "Eva" }, contact: null };
+  assert.deepEqual(dealChanges(before, after), {
+    contact: { from: "Ana Paz", to: null },
+    owner: { from: "Luis", to: "Eva" },
+    budget: { from: null, to: "900.00" },
+    viable: { from: null, to: true },
+  });
+  assert.deepEqual(dealChanges(before, { ...before }), {});
 });

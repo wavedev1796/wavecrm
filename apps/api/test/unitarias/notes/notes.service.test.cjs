@@ -36,8 +36,8 @@ function setup({ failMail = false } = {}) {
   const full = (note) => ({
     ...note,
     author: person(note.authorId),
-    deal: note.dealId ? deals[note.dealId] : null,
-    contact: note.contactId ? contacts[note.contactId] : null,
+    deal: note.dealId ? { ...deals[note.dealId], owner: USERS[deals[note.dealId].ownerId] } : null,
+    contact: note.contactId ? { ...contacts[note.contactId], owner: USERS[contacts[note.contactId].ownerId] } : null,
     mentions: mentions
       .filter((m) => m.noteId === note.id)
       .map((m) => ({ ...m, user: { ...person(m.userId), email: USERS[m.userId].email } })),
@@ -92,9 +92,38 @@ function setup({ failMail = false } = {}) {
       if (failMail) throw new ServiceUnavailableException("No se pudo enviar el correo.");
       sent.push(args);
     },
+    sendNoteToOwner: async (...args) => {
+      if (failMail) throw new ServiceUnavailableException("No se pudo enviar el correo.");
+      owners.push(args);
+    },
   };
-  return { service: new NotesService(prisma, mailer), notes, audit, sent, mentions: () => mentions };
+  const owners = [];
+  return { service: new NotesService(prisma, mailer), notes, audit, sent, owners, mentions: () => mentions };
 }
+
+test("P12: una nota nueva avisa una vez al responsable, salvo que la escriba él o ya esté mencionado", async () => {
+  const { service, sent, owners } = setup();
+  const note = await service.createForDeal("deal-ana", ADMIN, { content: "Llamar al cliente" });
+  assert.deepEqual(
+    owners.map(([to, author, record, path]) => [to.id, author, record, path]),
+    [["ana", "Admin", "negocio «Licencias»", "/pipeline/deal-ana"]],
+  );
+  assert.ok(!owners.flat().some((part) => typeof part === "string" && part.includes("Llamar")), "sin el texto");
+  // Editarla no vuelve a avisar.
+  await service.update(note.id, ADMIN, { content: "Llamar el martes" });
+  assert.equal(owners.length, 1);
+  // Si ya lo mencionan, recibe solo el aviso de la mención.
+  await service.createForContact("contact-luis", ADMIN, { content: "x", mentionIds: ["luis"] });
+  assert.equal(owners.length, 1);
+  assert.deepEqual(sent.map(([to]) => to.id), ["luis"]);
+  // Quien escribe en su propio registro no se avisa a sí mismo.
+  await service.createForDeal("deal-ana", ANA, { content: "x" });
+  assert.equal(owners.length, 1);
+  // Si el correo falla, la nota se guarda igual.
+  const failing = setup({ failMail: true });
+  const saved = await failing.service.createForDeal("deal-ana", ADMIN, { content: "x" });
+  assert.ok(failing.notes.has(saved.id));
+});
 
 test("crea la nota con autor y menciones; avisa una vez a cada miembro, sin el autor ni repetidos", async () => {
   const { service, sent } = setup();

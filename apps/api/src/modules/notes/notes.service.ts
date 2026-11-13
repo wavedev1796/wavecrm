@@ -115,7 +115,7 @@ export class NotesService {
       },
       include,
     });
-    await this.notify(note.id);
+    await this.notify(note.id, true);
     return shape(note);
   }
 
@@ -158,14 +158,17 @@ export class NotesService {
    * Avisa una sola vez a cada mencionado: reclama la mención (notifiedAt) antes de enviar, así dos guardados
    * seguidos no duplican el correo. Si el envío falla la libera: la nota queda guardada y el aviso se
    * reintenta la próxima vez que se edite. El correo no incluye el texto: la mención no da acceso al registro.
+   * Una nota nueva (`created`) avisa además al responsable del registro (P12), salvo que la escribiera él o
+   * ya lo hayan mencionado. Ese aviso no se reintenta: la nota no se edita para avisar al responsable.
    */
-  private async notify(noteId: string) {
+  private async notify(noteId: string, created = false) {
+    const owner = { select: { id: true, email: true, name: true, active: true } } as const;
     const note = await this.prisma.note.findUniqueOrThrow({
       where: { id: noteId },
       select: {
-        author: { select: { name: true } },
-        deal: { select: { id: true, title: true } },
-        contact: { select: { id: true, firstName: true, lastName: true } },
+        author: { select: { id: true, name: true } },
+        deal: { select: { id: true, title: true, owner } },
+        contact: { select: { id: true, firstName: true, lastName: true, owner } },
         mentions: {
           where: { notifiedAt: null, user: { active: true } },
           select: { userId: true, user: { select: { email: true, name: true } } },
@@ -191,6 +194,19 @@ export class NotesService {
         await this.prisma.noteMention.updateMany({ where: { noteId, userId }, data: { notifiedAt: null } });
         this.logger.warn(`No se pudo avisar la mención de la nota ${noteId} a ${userId}.`);
       }
+    }
+    const responsible = (note.deal ?? note.contact)?.owner;
+    if (
+      !created ||
+      !responsible?.active ||
+      responsible.id === note.author.id ||
+      note.mentions.some((mention) => mention.userId === responsible.id)
+    )
+      return;
+    try {
+      await this.mailer.sendNoteToOwner(responsible, note.author.name, record.label, record.path);
+    } catch {
+      this.logger.warn(`No se pudo avisar la nota ${noteId} a su responsable ${responsible.id}.`);
     }
   }
 }

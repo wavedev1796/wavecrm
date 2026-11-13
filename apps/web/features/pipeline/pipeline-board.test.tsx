@@ -366,3 +366,31 @@ test("P1: la tarjeta avisa «En riesgo» con los días sin actividad; sin riesgo
   view();
   expect(screen.queryByText(/^En riesgo ·/)).toBeNull();
 });
+
+test("P11: un VENDEDOR no edita, borra ni reversa un cerrado; de un perdido solo puede enmendarlo", () => {
+  const won = { ...deal, id: "d2", title: "Ganado Sur", status: "WON" as const, stageId: "s2" };
+  const lost = { ...deal, id: "d3", title: "Perdido Norte", status: "LOST" as const };
+  const data = board({
+    stages: [stages[0]!, { ...stages[1]!, count: 1, deals: [won] }],
+    lost: { count: 1, value: "1250.25", deals: [lost] },
+  });
+  const { unmount } = view(data);
+  const wonCard = screen.getByRole("article", { name: "Negocio Ganado Sur" });
+  expect(wonCard).toHaveAttribute("draggable", "false");
+  expect(within(wonCard).getByRole("combobox", { name: /Mover Ganado Sur/ })).toBeDisabled();
+  expect(within(wonCard).queryByRole("button", { name: "Editar" })).toBeNull();
+  expect(within(wonCard).queryByRole("button", { name: "Eliminar Ganado Sur" })).toBeNull();
+  expect(within(wonCard).getByRole("button", { name: "Historial" })).toBeInTheDocument();
+  const lostCard = screen.getByRole("article", { name: "Negocio Perdido Norte" });
+  const select = within(lostCard).getByRole("combobox", { name: /Mover Perdido Norte/ });
+  expect(select).toBeEnabled();
+  expect(within(select).getByRole("option", { name: "Inicial" })).toBeDisabled();
+  expect(within(select).getByRole("option", { name: "Rechazado" })).toBeEnabled();
+  // Un abierto sigue igual para un VENDEDOR.
+  expect(within(screen.getByRole("article", { name: "Negocio Cuenta Andina" })).getByRole("button", { name: "Editar" })).toBeInTheDocument();
+  unmount();
+  render(<PipelineBoard {...data} {...props} isAdmin />);
+  const adminWon = screen.getByRole("article", { name: "Negocio Ganado Sur" });
+  expect(within(adminWon).getByRole("combobox", { name: /Mover Ganado Sur/ })).toBeEnabled();
+  expect(within(adminWon).getByRole("button", { name: "Editar" })).toBeInTheDocument();
+});

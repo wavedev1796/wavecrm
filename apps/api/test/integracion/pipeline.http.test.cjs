@@ -339,6 +339,10 @@ test("ambas rutas de movimiento exigen la propuesta aceptada, registran historia
     body: { viable: true, viabilityNote: "Orden de compra 55 confirmada por el cliente" },
   });
   assert.equal(viability.status, 200, JSON.stringify(viability.body));
+  // P3: la edición queda en el historial con el antes y el después de cada campo.
+  const [edited] = (await closures(path)).filter((e) => e.action === "UPDATED");
+  assert.deepEqual(edited.changes.viable, { from: null, to: true });
+  assert.equal(edited.changes.viabilityNote.to, "Orden de compra 55 confirmada por el cliente");
   const unpaid = await call(path + "/move", {
     method: "PATCH",
     body: { stageId: won, fromStageId: stage, closedAt: today, paymentConfirmed: false },
@@ -480,8 +484,10 @@ test("perdido con seguimiento → rechazado por un vendedor → papelera; la pro
   const events = await closures(path);
   assert.deepEqual(
     events.map((c) => [c.action, c.changes.quoteNumber]),
-    [["QUOTE_SENT", live.number], ["QUOTE_SUPERSEDED", old.number], ["QUOTE_SENT", old.number]],
+    // P3: guardar los productos deja también el cambio de valor (0 → 200) en el historial.
+    [["QUOTE_SENT", live.number], ["QUOTE_SUPERSEDED", old.number], ["QUOTE_SENT", old.number], ["UPDATED", undefined]],
   );
+  assert.deepEqual(events[3].changes.value, { from: "0.00", to: "200.00" });
   assert.equal(events[0].changes.total, "230.00");
 
   assert.equal((await call(path + "/lose", { method: "POST", body: { lossReason: "DO_NOT_CONTACT" } })).status, 400);
