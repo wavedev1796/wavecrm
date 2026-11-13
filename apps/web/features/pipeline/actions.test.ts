@@ -142,6 +142,17 @@ test("los productos se validan por fila antes de llamar al API", async () => {
   });
   expect(api).not.toHaveBeenCalled();
 });
+test("una fila vacía con IVA preseleccionado no envía el PUT al API", async () => {
+  const result = await saveDealItemsAction("d1", [
+    { description: "", quantity: "", unitPrice: "", taxRate: "15" },
+  ]);
+  expect(result.rowErrors?.[0]).toMatchObject({
+    description: expect.any(String),
+    quantity: expect.any(String),
+    unitPrice: expect.any(String),
+  });
+  expect(api).not.toHaveBeenCalled();
+});
 test("el IVA es editable: acepta 12 y rechaza decimales o vacio", async () => {
   api.mockResolvedValue(Response.json({ id: "d1" }));
   const row = { description: "Web", quantity: "1", unitPrice: "10" };
