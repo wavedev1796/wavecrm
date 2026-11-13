@@ -102,7 +102,7 @@ export function ActivityDialog({
             <Button type="button" variant="secondary" onClick={onClose}>
               {ACTIVIDADES.cancelar}
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} className="action-button action-button--success">
               <Icon aria-hidden />
               {saving ? texto.guardando : editing ? texto.guardarCambios : texto.guardar}
             </Button>

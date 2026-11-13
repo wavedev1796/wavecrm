@@ -10,18 +10,20 @@ export function RowAction({
   id,
   label,
   children,
+  tone = "cancel",
 }: Readonly<{
   action: (formData: FormData) => Promise<Feedback>;
   id: string;
   label: string;
   children: ReactNode;
+  tone?: "edit" | "success" | "cancel" | "assign" | "restore" | "delete";
 }>) {
   const show = useShowFeedback();
 
   return (
     <form action={async (formData) => show(await action(formData))}>
       <input type="hidden" name="id" value={id} />
-      <button type="submit" className="icon-button" title={label}>
+      <button type="submit" className={`icon-button icon-button--${tone}`} title={label}>
         {children}
         <span className="sr-only">{label}</span>
       </button>

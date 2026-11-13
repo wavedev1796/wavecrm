@@ -66,7 +66,7 @@ export function RejectedTrash({ deals, canReopen, children }: Readonly<Props>) {
     <>
       <div className="table-toolbar trash-toolbar">
         {feedback ? <Alert tone={feedback.tone}>{feedback.message}</Alert> : <span />}
-        <Button variant="secondary" disabled={!chosen.length} onClick={() => setDialog({ kind: "delete" })}>
+        <Button variant="secondary" className="action-button action-button--delete" disabled={!chosen.length} onClick={() => setDialog({ kind: "delete" })}>
           <Trash2 aria-hidden />
           {PAPELERA.eliminar(chosen.length)}
         </Button>
@@ -132,6 +132,7 @@ export function RejectedTrash({ deals, canReopen, children }: Readonly<Props>) {
                 <td>
                   <Button
                     variant="ghost"
+                    className="action-button action-button--restore"
                     aria-label={PAPELERA.reabrirDe(deal.title)}
                     onClick={() => setDialog({ kind: "reopen", deal })}
                   >

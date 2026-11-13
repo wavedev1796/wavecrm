@@ -271,7 +271,7 @@ export function DealForm({
         >
           {PIPELINE.cancel}
         </Button>
-        <Button type="submit" loading={pending}>
+        <Button type="submit" loading={pending} className="action-button action-button--success">
           <Check aria-hidden />
           {pending ? "Guardando..." : saveLabel}
         </Button>

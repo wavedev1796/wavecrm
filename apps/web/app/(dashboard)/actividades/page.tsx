@@ -88,7 +88,7 @@ export default async function ActivitiesPage({
             initialType={params.type ?? ""}
             initialAssigneeId={params.assigneeId ?? ""}
             focus={params.period ?? ""}
-            initialView={params.view === "calendar" ? "calendar" : "list"}
+            initialView={params.view === "history" ? "history" : params.view === "calendar" ? "calendar" : "list"}
             dealFilter={
               params.dealId
                 ? {

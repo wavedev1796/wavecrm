@@ -21,6 +21,7 @@ export function CompleteButton({ dealId, activity }: Readonly<{ dealId: string; 
     <>
       <Button
         variant="ghost"
+        className="action-button action-button--success"
         loading={pending}
         aria-label={texto.completarDe(activity.subject)}
         onClick={() =>

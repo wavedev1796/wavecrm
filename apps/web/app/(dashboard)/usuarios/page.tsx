@@ -191,6 +191,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
                           action={resendInvitation}
                           id={user.id}
                           label={USUARIOS.acciones.reenviar}
+                          tone="assign"
                         >
                           <RefreshCw aria-hidden />
                         </RowAction>
@@ -200,6 +201,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
                           action={deactivateUser}
                           id={user.id}
                           label={USUARIOS.acciones.desactivar}
+                          tone="cancel"
                         >
                           <UserX aria-hidden />
                         </RowAction>
@@ -209,6 +211,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
                           action={reactivateUser}
                           id={user.id}
                           label={USUARIOS.acciones.reactivar}
+                          tone="restore"
                         >
                           <UserCheck aria-hidden />
                         </RowAction>
@@ -218,6 +221,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
                           action={deleteUser}
                           id={user.id}
                           label={USUARIOS.acciones.eliminar}
+                          tone="delete"
                         >
                           <Trash2 aria-hidden />
                         </RowAction>

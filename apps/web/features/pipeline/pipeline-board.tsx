@@ -209,17 +209,17 @@ export function PipelineBoard({
         </Select>
       </div>
       <div className="deal-card-actions">
-        <Button variant="ghost" onClick={() => setEditor({ kind: "edit", deal })}>
+        <Button variant="ghost" className="action-button action-button--edit" onClick={() => setEditor({ kind: "edit", deal })}>
           <Pencil aria-hidden />
           Editar
         </Button>
-        <Button variant="ghost" onClick={() => setEditor({ kind: "history", deal })}>
+        <Button variant="ghost" className="action-button action-button--history" onClick={() => setEditor({ kind: "history", deal })}>
           <History aria-hidden />
           Historial
         </Button>
         <button
           type="button"
-          className="icon-button"
+          className="icon-button icon-button--delete"
           aria-label={"Eliminar " + deal.title}
           onClick={() => setEditor({ kind: "delete", deal })}
         >

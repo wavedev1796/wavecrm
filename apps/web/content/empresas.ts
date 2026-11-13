@@ -101,5 +101,10 @@ export const EMPRESAS = {
     abrir: "Añadir empresa",
     etiqueta: "Añadir empresa",
     cerrar: "Cerrar añadir empresa",
+    editar: {
+      abrir: "Editar empresa",
+      etiqueta: "Editar empresa",
+      cerrar: "Cerrar edición de empresa",
+    },
   },
 } as const;

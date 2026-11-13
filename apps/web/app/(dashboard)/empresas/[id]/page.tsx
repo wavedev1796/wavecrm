@@ -19,7 +19,7 @@ import { EMPRESAS } from "@/content/empresas";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatDateTime } from "@/lib/format";
 import { formatPhone, splitPhone } from "@/lib/phone";
-import { CompanyForm } from "../../../../features/empresas/company-form";
+import { CompanyEditDialog } from "../../../../features/empresas/company-edit-dialog";
 import type { CompanyDetail } from "../../../../features/empresas/types";
 import { DealJourney } from "../../../../features/pipeline/deal-journey";
 
@@ -71,10 +71,11 @@ export default async function CompanyDetailPage({
             </Badge>
           ))}
         </div>
+        <CompanyEditDialog id={company.id} initialValues={values} />
       </section>
 
-      <div className="contact-detail-grid">
-        <div className="contact-detail-main">
+      <div className="company-detail-grid">
+        <div className="company-detail-column">
           <Card className="contact-data-card">
             <h3>{texto.datos}</h3>
             <dl>
@@ -108,7 +109,9 @@ export default async function CompanyDetailPage({
               />
             </dl>
           </Card>
+        </div>
 
+        <div className="company-detail-column">
           <Card className="contact-related">
             <h3>
               <Users />
@@ -177,8 +180,6 @@ export default async function CompanyDetailPage({
             )}
           </Card>
         </div>
-
-        <CompanyForm id={company.id} initialValues={values} embedded={false} />
       </div>
     </div>
   );

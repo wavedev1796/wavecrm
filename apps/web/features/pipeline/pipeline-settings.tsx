@@ -150,13 +150,14 @@ export function PipelineSettings({
                   </Field>
                 </div>
                 <div className="pipeline-settings-actions">
-                  <Button type="submit" loading={pending}>
+                  <Button type="submit" loading={pending} className="action-button action-button--success">
                     {pipeline ? "Guardar pipeline" : "Crear pipeline"}
                   </Button>
                   {pipeline && !pipeline.isDefault && (
                     <Button
                       type="button"
                       variant="ghost"
+                      className="action-button action-button--delete"
                       onClick={() => setConfirm("pipeline")}
                     >
                       Eliminar pipeline
@@ -290,13 +291,14 @@ export function PipelineSettings({
                       al ingresar un negocio.
                     </p>
                     <div className="pipeline-settings-actions">
-                      <Button type="submit" loading={pending}>
+                      <Button type="submit" loading={pending} className="action-button action-button--success">
                         {stage ? "Guardar etapa" : "Agregar etapa"}
                       </Button>
                       {stage && (
                         <Button
                           type="button"
                           variant="ghost"
+                          className="action-button action-button--delete"
                           onClick={() => setConfirm("stage")}
                         >
                           Eliminar etapa
