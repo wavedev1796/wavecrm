@@ -34,7 +34,10 @@ export type Stage = Column & {
   probability: number;
   requirements?: StageRequirement[];
 };
-export type Metrics = Record<"open" | "won" | "lost" | "rejected", { count: number; value: string }>;
+export type Metrics = Record<
+  "open" | "won" | "lost" | "rejected",
+  { count: number; value: string }
+>;
 /** Lo que falta para un cambio de etapa (códigos de @wave/shared, mensaje del API). */
 export type Pending = { code: TransitionCheck; message: string };
 export type Preview = {
@@ -72,7 +75,11 @@ export type JourneyDeal = {
   closedAt?: string | null;
   lossReason?: LossReason | null;
   stage: { id: string; name: string; color: string | null };
-  stageHistory?: Array<{ changedAt: string; fromStage: { name: string } | null; toStage: { name: string } }>;
+  stageHistory?: Array<{
+    changedAt: string;
+    fromStage: { name: string } | null;
+    toStage: { name: string };
+  }>;
 };
 export type HistoryItem = {
   id: string;
@@ -116,10 +123,12 @@ export type DealItem = {
   quantity: string | number;
   unitPrice: string | number;
   taxRate: number;
+  discountRate?: number;
 };
 export type Quote = {
   id: string;
   number: string;
+  version?: number;
   status: QuoteStatus;
   subtotal: string;
   tax: string;
@@ -132,7 +141,13 @@ export type Quote = {
   /** Copia de los productos con los que se envió; las anteriores a la copia traen []. */
   items?: QuoteLine[];
 };
-export type QuoteLine = { description: string; quantity: string; unitPrice: string; taxRate: number };
+export type QuoteLine = {
+  description: string;
+  quantity: string;
+  unitPrice: string;
+  taxRate: number;
+  discountRate?: number;
+};
 export type DealDetail = Omit<Deal, "contact" | "company"> & {
   closedAt: string | null;
   lossReason: LossReason | null;
@@ -144,7 +159,12 @@ export type DealDetail = Omit<Deal, "contact" | "company"> & {
   decisionMaker?: string | null;
   createdAt: string;
   pipeline: Option;
-  stage: { id: string; name: string; color: string | null; probability: number };
+  stage: {
+    id: string;
+    name: string;
+    color: string | null;
+    probability: number;
+  };
   contact: {
     id: string;
     firstName: string;
@@ -152,7 +172,13 @@ export type DealDetail = Omit<Deal, "contact" | "company"> & {
     email: string | null;
     phone: string | null;
   } | null;
-  company: (Option & { taxId: string | null; email: string | null; phone: string | null }) | null;
+  company:
+    | (Option & {
+        taxId: string | null;
+        email: string | null;
+        phone: string | null;
+      })
+    | null;
   items: DealItem[];
   quotes: Quote[];
 };
@@ -161,12 +187,21 @@ export type ItemValues = {
   quantity: string;
   unitPrice: string;
   taxRate: string;
+  discountRate?: string;
 };
 export type ItemErrors = Record<
   number,
-  Partial<Record<"description" | "quantity" | "unitPrice" | "taxRate", string>>
+  Partial<
+    Record<
+      "description" | "quantity" | "unitPrice" | "taxRate" | "discountRate",
+      string
+    >
+  >
 >;
-export type ActivityValues = Record<"type" | "subject" | "dueAt" | "description" | "done", string>;
+export type ActivityValues = Record<
+  "type" | "subject" | "dueAt" | "description" | "done",
+  string
+>;
 export type ActivityFormState = {
   values: ActivityValues;
   fieldErrors: Partial<Record<keyof ActivityValues, string>>;

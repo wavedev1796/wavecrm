@@ -18,9 +18,12 @@ export function isDay(value: string) {
 export const decimal = (value: string) => value.trim().replace(",", ".");
 /** Hoy en Ecuador como AAAA-MM-DD (UTC-5, sin horario de verano), igual que ecuadorToday() del API. */
 export const todayEcuador = () =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guayaquil" }).format(new Date());
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guayaquil" }).format(
+    new Date(),
+  );
 /** Monto de 0 a 999999999999.99 (el máximo de Decimal(14,2)) con hasta dos decimales, con punto o coma. */
-export const isAmount = (value: string) => /^\d{1,12}(\.\d{1,2})?$/.test(decimal(value));
+export const isAmount = (value: string) =>
+  /^\d{1,12}(\.\d{1,2})?$/.test(decimal(value));
 
 export function validateDeal(values: DealValues): DealFormState["fieldErrors"] {
   const errors: DealFormState["fieldErrors"] = {};
@@ -51,6 +54,11 @@ export function validateItems(rows: readonly ItemValues[]): ItemErrors | null {
     if (!isAmount(row.unitPrice)) rowErrors.unitPrice = texto.precio;
     if (!/^\d{1,3}$/.test(row.taxRate.trim()) || Number(row.taxRate) > 100)
       rowErrors.taxRate = texto.iva;
+    if (
+      !/^\d{1,3}$/.test((row.discountRate ?? "0").trim()) ||
+      Number(row.discountRate ?? "0") > 100
+    )
+      rowErrors.discountRate = texto.descuento;
     if (Object.keys(rowErrors).length) errors[index] = rowErrors;
   });
   return Object.keys(errors).length ? errors : null;

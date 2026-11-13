@@ -46,7 +46,8 @@ export const TABLERO = {
   zonaRechazado: "Zona Rechazado",
   rechazadoAyuda: (cantidad: number) =>
     `${cantidad} ${cantidad === 1 ? "negocio" : "negocios"} en la papelera`,
-  rechazadoVacio: "Suelta aquí una tarjeta para rechazarla: el negocio irá a la papelera.",
+  rechazadoVacio:
+    "Suelta aquí una tarjeta para rechazarla: el negocio irá a la papelera.",
   verPapelera: "Ver papelera",
   verMas: (quedan: number) => `Ver más (quedan ${quedan})`,
   cargandoMas: "Cargando…",
@@ -68,7 +69,12 @@ export const TRANSICION = {
     "Recomendación: mantén completa la ficha del negocio (contacto, calificación, productos y propuestas) para que los cambios de etapa no se detengan.",
   soloFicha:
     "Los productos y las propuestas se registran en la ficha. Guarda lo que llenaste aquí y termina allá; después vuelve a mover la tarjeta.",
-  destinos: { WON: "Ganado", LOST: "Perdido", REJECTED: "Rechazado", REOPEN: "Abierto" },
+  destinos: {
+    WON: "Ganado",
+    LOST: "Perdido",
+    REJECTED: "Rechazado",
+    REOPEN: "Abierto",
+  },
   campos: {
     contacto: "Contacto",
     responsable: "Responsable",
@@ -94,7 +100,8 @@ export const TRANSICION = {
     avisoRechazo:
       "Se invalidará el proceso: la propuesta vigente quedará Rechazada y las actividades pendientes, Canceladas. El negocio irá a la papelera.",
     seguimiento: "Seguimiento (opcional)",
-    seguimientoAyuda: "Escribe un asunto para agendarlo; déjalo vacío si no hace falta.",
+    seguimientoAyuda:
+      "Escribe un asunto para agendarlo; déjalo vacío si no hace falta.",
     tipoSeguimiento: "Tipo de seguimiento",
     asuntoSeguimiento: "Asunto del seguimiento",
     fechaSeguimiento: "Programado para",
@@ -103,25 +110,34 @@ export const TRANSICION = {
     elegir: "Selecciona una opción",
   },
   errores: {
-    presupuesto: "Ingresa un presupuesto con hasta dos decimales, por ejemplo 5000 o 5000,50.",
+    presupuesto:
+      "Ingresa un presupuesto con hasta dos decimales, por ejemplo 5000 o 5000,50.",
     motivo: "Cuenta el motivo del cambio (entre 2 y 500 caracteres).",
-    evidencia: "Describe la evidencia de aceptación (entre 2 y 500 caracteres).",
+    evidencia:
+      "Describe la evidencia de aceptación (entre 2 y 500 caracteres).",
     contacto: "Elige el contacto del negocio.",
     responsable: "Elige el responsable del negocio.",
-    interaccion: "Cuenta qué se habló con el cliente (entre 2 y 160 caracteres).",
+    interaccion:
+      "Cuenta qué se habló con el cliente (entre 2 y 160 caracteres).",
     interaccionFecha: "Ingresa cuándo fue la interacción; no puede ser futura.",
     necesidad: "Describe la necesidad del cliente (entre 2 y 2000 caracteres).",
-    actividad: "Escribe el asunto de la próxima actividad (entre 2 y 160 caracteres).",
-    actividadFecha: "Programa la próxima actividad para hoy o un día posterior.",
+    actividad:
+      "Escribe el asunto de la próxima actividad (entre 2 y 160 caracteres).",
+    actividadFecha:
+      "Programa la próxima actividad para hoy o un día posterior.",
     solucion: "Describe la solución de interés (entre 2 y 2000 caracteres).",
-    presupuestoRequerido: "Ingresa el presupuesto o explica por qué aún no se conoce (al menos 2 caracteres).",
+    presupuestoRequerido:
+      "Ingresa el presupuesto o explica por qué aún no se conoce (al menos 2 caracteres).",
     cierreEstimado: "Ingresa la fecha estimada de cierre.",
-    vigencia: "Ingresa hasta cuándo es válida la propuesta, de hoy en adelante.",
+    vigencia:
+      "Ingresa hasta cuándo es válida la propuesta, de hoy en adelante.",
     envio: "Ingresa cuándo se envió la propuesta; no puede ser futura.",
-    vigenciaEnvio: "La vigencia debe ser igual o posterior a la fecha de envío.",
+    vigenciaEnvio:
+      "La vigencia debe ser igual o posterior a la fecha de envío.",
     aceptacion: "Ingresa cuándo se aceptó la propuesta; no puede ser futura.",
     cierreReal: "Ingresa la fecha real de cierre; no puede ser futura.",
-    seguimiento: "Escribe el asunto del seguimiento (entre 2 y 160 caracteres).",
+    seguimiento:
+      "Escribe el asunto del seguimiento (entre 2 y 160 caracteres).",
     seguimientoFecha: "El seguimiento debe ser de hoy en adelante.",
   },
 } as const;
@@ -155,6 +171,7 @@ export const NEGOCIO = {
     cantidad: "Cantidad",
     precio: "Precio unitario",
     iva: "IVA",
+    descuento: "Descuento %",
     subtotalFila: "Subtotal",
     acciones: "Acciones",
     celda: (campo: string, fila: number) => `${campo} del producto ${fila}`,
@@ -167,7 +184,7 @@ export const NEGOCIO = {
     total: "Total",
     tarifa: (tarifa: number) => `${tarifa} %`,
     vacio:
-      "Aún no hay productos. Agrega lo que ofreces: el valor del negocio será su subtotal sin IVA.",
+      "Aún no hay líneas. Agrega lo que ofrecerás al cliente para revisar la cotización.",
     bloqueados: "Reabre el negocio para cambiar sus productos.",
     maximo: "Un negocio admite hasta 100 productos.",
     errores: {
@@ -176,6 +193,7 @@ export const NEGOCIO = {
       precio:
         "Ingresa un precio con hasta dos decimales, por ejemplo 1400 o 19,99.",
       iva: "Ingresa un IVA entero entre 0 y 100.",
+      descuento: "Ingresa un descuento entero entre 0 y 100.",
     },
   },
   ganar: { titulo: "Ganar negocio" },
@@ -202,9 +220,14 @@ export const NEGOCIO = {
   },
   propuestas: {
     titulo: "Propuestas",
-    vacio: "Aún no hay propuestas. Registra la que enviaste al cliente con los productos actuales.",
-    sinProductos: "Agrega productos para registrar una propuesta.",
-    ayuda: "Si cambian los importes de los productos, la propuesta queda desactualizada y hay que registrar otra.",
+    vacio: "Aún no hay cotizaciones para este negocio.",
+    sinProductos: "Agrega al menos una línea para preparar la cotización.",
+    sinCliente:
+      "Asocia un contacto o empresa con nombre antes de registrar la cotización.",
+    cambiosPendientes:
+      "Guarda las líneas editadas antes de registrar esta versión.",
+    versionInmutable:
+      "Las versiones registradas conservan su contenido. Para cambiar la propuesta, edita las líneas del negocio y registra una nueva versión.",
     numero: "Número",
     estado: "Estado",
     total: "Total",
@@ -212,11 +235,16 @@ export const NEGOCIO = {
     vigencia: "Vigencia",
     aceptada: "Aceptada",
     evidencia: "Evidencia",
-    registrarTitulo: "Registrar propuesta enviada",
+    registrarTitulo: "Revisar cotización",
     vigenteHasta: "Vigente hasta",
     enviadaEl: "Enviada el",
-    registrar: "Registrar propuesta",
-    registrada: "Propuesta registrada.",
+    registrar: "Registrar como enviada",
+    registrada: "Registro guardado. El CRM no generó ni envió un documento.",
+    crearVersion: "Registrar nueva versión",
+    cliente: "Cliente",
+    resumen: "Vista previa de la cotización",
+    subtotal: "Subtotal con descuentos",
+    impuesto: "IVA",
     aceptarTitulo: (numero: string) => `Aceptación de ${numero}`,
     aceptadaEl: "Aceptada el",
     evidenciaLabel: "Evidencia de aceptación",
@@ -224,8 +252,10 @@ export const NEGOCIO = {
     aceptadaOk: "Propuesta aceptada.",
     productos: (numero: string) => `Productos de ${numero}`,
     sinDetalle: "Registrada sin detalle de productos.",
-    linea: (cantidad: string, descripcion: string) => `${cantidad} × ${descripcion}`,
-    lineaPrecio: (precio: string, tarifa: number) => `${precio} c/u · IVA ${tarifa} %`,
+    linea: (cantidad: string, descripcion: string) =>
+      `${cantidad} × ${descripcion}`,
+    lineaPrecio: (precio: string, tarifa: number, descuento = 0) =>
+      `${precio} c/u · descuento ${descuento} % · IVA ${tarifa} %`,
   },
   cierre: {
     titulo: "Cierre",
@@ -254,7 +284,8 @@ export const NEGOCIO = {
 
 /** Recorrido de cada negocio en las fichas de contacto y empresa. */
 export const RECORRIDO = {
-  movido: (desde: string, hasta: string, fecha: string) => `Pasó de ${desde} a ${hasta} el ${fecha}`,
+  movido: (desde: string, hasta: string, fecha: string) =>
+    `Pasó de ${desde} a ${hasta} el ${fecha}`,
   creado: (etapa: string, fecha: string) => `Ingresó en ${etapa} el ${fecha}`,
   cerrado: (fecha: string) => `Cerrado el ${fecha}`,
 } as const;
@@ -266,11 +297,20 @@ export const PAPELERA = {
   descripcion: (total: number) =>
     `${total} ${total === 1 ? "negocio rechazado" : "negocios rechazados"}. Elimínalos cuando ya no los necesites; un administrador puede reabrirlos.`,
   volver: "Volver al pipeline",
-  vacio: "La papelera está vacía. Los negocios que rechaces en el tablero o en la ficha aparecen aquí.",
+  vacio:
+    "La papelera está vacía. Los negocios que rechaces en el tablero o en la ficha aparecen aquí.",
   errorCarga: "No se pudo cargar la papelera. Intenta de nuevo.",
   cargando: "Cargando papelera...",
   paginacion: "Paginación de la papelera",
-  columnas: ["Negocio", "Cliente", "Valor", "Motivo", "Rechazado el", "Responsable", "Acciones"],
+  columnas: [
+    "Negocio",
+    "Cliente",
+    "Valor",
+    "Motivo",
+    "Rechazado el",
+    "Responsable",
+    "Acciones",
+  ],
   seleccionarTodos: "Seleccionar todos",
   seleccionar: (negocio: string) => `Seleccionar ${negocio}`,
   eliminar: (cantidad: number) => `Eliminar seleccionados (${cantidad})`,
@@ -279,7 +319,9 @@ export const PAPELERA = {
     `Se ${cantidad === 1 ? "eliminará 1 negocio" : `eliminarán ${cantidad} negocios`} con sus productos, propuestas y actividades. Esta acción no se puede deshacer.`,
   confirmarBoton: "Eliminar definitivamente",
   eliminados: (cantidad: number) =>
-    cantidad === 1 ? "Se eliminó 1 negocio." : `Se eliminaron ${cantidad} negocios.`,
+    cantidad === 1
+      ? "Se eliminó 1 negocio."
+      : `Se eliminaron ${cantidad} negocios.`,
   reabrir: "Reabrir",
   reabrirDe: (negocio: string) => `Reabrir ${negocio}`,
   sinContacto: "Sin contacto",

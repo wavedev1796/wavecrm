@@ -2,7 +2,12 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { authenticatedApi, apiError } from "@/lib/authenticated-api";
-import { ACTIVITY_TYPES, cleanText, LOSS_REASONS, REJECTION_REASONS } from "@wave/shared";
+import {
+  ACTIVITY_TYPES,
+  cleanText,
+  LOSS_REASONS,
+  REJECTION_REASONS,
+} from "@wave/shared";
 import { NEGOCIO, PIPELINE, TRANSICION } from "@/content/pipeline";
 import { TIMELINE } from "@/content/timeline";
 import {
@@ -57,7 +62,12 @@ async function request(
   path: string,
   method: string,
   body?: unknown,
-): Promise<{ error?: string; status?: number; data?: unknown; pending?: Pending[] }> {
+): Promise<{
+  error?: string;
+  status?: number;
+  data?: unknown;
+  pending?: Pending[];
+}> {
   try {
     const response = await authenticatedApi(path, {
       method,
@@ -140,8 +150,13 @@ export async function deleteRejectedAction(ids: string[]) {
     data?: { deleted: number };
   }>;
 }
-export async function dealHistoryAction(id: string): Promise<{ error?: string; data?: HistoryItem[] }> {
-  const { error, status, data } = await request(dealPath(id, "/history"), "GET");
+export async function dealHistoryAction(
+  id: string,
+): Promise<{ error?: string; data?: HistoryItem[] }> {
+  const { error, status, data } = await request(
+    dealPath(id, "/history"),
+    "GET",
+  );
   // 404 de una tarjeta que sí está en el tablero: un VENDEDOR solo ve el historial de lo suyo (CRM-25).
   if (status === 404) return { error: TIMELINE.sinAcceso };
   return error ? { error } : { data: data as HistoryItem[] };
@@ -151,12 +166,14 @@ export async function saveDealItemsAction(
   rows: ItemValues[],
 ): Promise<{ error?: string; rowErrors?: ItemErrors }> {
   // Las filas llegan como argumento, no como FormData: se limpian campo a campo y lo que no es texto queda vacío.
-  const clean = (value: unknown) => (typeof value === "string" ? cleanText(value) : "");
+  const clean = (value: unknown) =>
+    typeof value === "string" ? cleanText(value) : "";
   const cleaned = (Array.isArray(rows) ? rows : []).map((row) => ({
     description: clean(row?.description),
     quantity: clean(row?.quantity),
     unitPrice: clean(row?.unitPrice),
     taxRate: clean(row?.taxRate),
+    discountRate: clean(row?.discountRate || "0"),
   }));
   const rowErrors = validateItems(cleaned);
   if (rowErrors) return { rowErrors };
@@ -166,6 +183,7 @@ export async function saveDealItemsAction(
       quantity: Number(decimal(row.quantity)),
       unitPrice: Number(decimal(row.unitPrice)),
       taxRate: Number(row.taxRate),
+      discountRate: Number(row.discountRate),
     })),
   });
 }
@@ -182,12 +200,17 @@ export async function previewTransitionAction(dealId: string, to: string) {
 /** Ruta y cuerpo del cambio: ganar, perder, rechazar y reabrir tienen la suya; el resto es mover. */
 const TRANSITION_ROUTES = {
   WON: ["/win", "POST", ["closedAt", "fromStageId"]],
-  LOST: ["/lose", "POST", ["lossReason", "lossDetail", "followUp", "fromStageId"]],
+  LOST: [
+    "/lose",
+    "POST",
+    ["lossReason", "lossDetail", "followUp", "fromStageId"],
+  ],
   REJECTED: ["/reject", "POST", ["lossReason", "lossDetail", "fromStageId"]],
   REOPEN: ["/reopen", "POST", ["reason"]],
 } as const;
 
-const between = (value: string, min: number, max: number) => value.length >= min && value.length <= max;
+const between = (value: string, min: number, max: number) =>
+  value.length >= min && value.length <= max;
 
 /**
  * El formulario del modal solo trae los campos de lo que falta, y cada uno es obligatorio: así no se guarda
@@ -203,34 +226,80 @@ function transitionError(to: string, form: FormData): string | undefined {
   const rules: [boolean, string][] = [
     [has("contactId") && !text("contactId"), errores.contacto],
     [has("ownerId") && !text("ownerId"), errores.responsable],
-    [has("interactionSubject") && !between(text("interactionSubject"), 2, 160), errores.interaccion],
-    [has("interactionDay") && !(day("interactionDay") && text("interactionDay") <= today), errores.interaccionFecha],
+    [
+      has("interactionSubject") && !between(text("interactionSubject"), 2, 160),
+      errores.interaccion,
+    ],
+    [
+      has("interactionDay") &&
+        !(day("interactionDay") && text("interactionDay") <= today),
+      errores.interaccionFecha,
+    ],
     [has("need") && !between(text("need"), 2, 2000), errores.necesidad],
-    [has("nextSubject") && !between(text("nextSubject"), 2, 160), errores.actividad],
-    [has("nextDay") && !(day("nextDay") && text("nextDay") >= today), errores.actividadFecha],
+    [
+      has("nextSubject") && !between(text("nextSubject"), 2, 160),
+      errores.actividad,
+    ],
+    [
+      has("nextDay") && !(day("nextDay") && text("nextDay") >= today),
+      errores.actividadFecha,
+    ],
     [has("solution") && !between(text("solution"), 2, 2000), errores.solucion],
     [Boolean(text("budget")) && !isAmount(text("budget")), errores.presupuesto],
-    [has("budget") && !text("budget") && !between(text("budgetNote"), 2, 1000), errores.presupuestoRequerido],
+    [
+      has("budget") && !text("budget") && !between(text("budgetNote"), 2, 1000),
+      errores.presupuestoRequerido,
+    ],
     [has("expectedClose") && !day("expectedClose"), errores.cierreEstimado],
-    [has("validUntil") && !(day("validUntil") && text("validUntil") >= today), errores.vigencia],
-    [has("sentAt") && !(day("sentAt") && text("sentAt") <= today), errores.envio],
-    [has("sentAt") && text("validUntil") < text("sentAt"), errores.vigenciaEnvio],
-    [has("acceptedAt") && !(day("acceptedAt") && text("acceptedAt") <= today), errores.aceptacion],
-    [has("acceptedAt") && !between(text("acceptanceNote"), 2, 500), errores.evidencia],
-    [has("closedAt") && !(day("closedAt") && text("closedAt") <= today), errores.cierreReal],
+    [
+      has("validUntil") && !(day("validUntil") && text("validUntil") >= today),
+      errores.vigencia,
+    ],
+    [
+      has("sentAt") && !(day("sentAt") && text("sentAt") <= today),
+      errores.envio,
+    ],
+    [
+      has("sentAt") && text("validUntil") < text("sentAt"),
+      errores.vigenciaEnvio,
+    ],
+    [
+      has("acceptedAt") && !(day("acceptedAt") && text("acceptedAt") <= today),
+      errores.aceptacion,
+    ],
+    [
+      has("acceptedAt") && !between(text("acceptanceNote"), 2, 500),
+      errores.evidencia,
+    ],
+    [
+      has("closedAt") && !(day("closedAt") && text("closedAt") <= today),
+      errores.cierreReal,
+    ],
     [has("reason") && !between(text("reason"), 2, 500), errores.motivo],
-    [Boolean(text("followUpSubject")) && !between(text("followUpSubject"), 2, 160), errores.seguimiento],
-    [Boolean(text("followUpSubject")) && !(day("followUpDay") && text("followUpDay") >= today), errores.seguimientoFecha],
+    [
+      Boolean(text("followUpSubject")) &&
+        !between(text("followUpSubject"), 2, 160),
+      errores.seguimiento,
+    ],
+    [
+      Boolean(text("followUpSubject")) &&
+        !(day("followUpDay") && text("followUpDay") >= today),
+      errores.seguimientoFecha,
+    ],
   ];
   const broken = rules.find(([failed]) => failed);
   if (broken) return broken[1];
   if (to !== "LOST" && to !== "REJECTED") return undefined;
   const reason = text("lossReason");
   const detail = text("lossDetail");
-  const reasons: readonly string[] = to === "LOST" ? LOSS_REASONS : REJECTION_REASONS;
+  const reasons: readonly string[] =
+    to === "LOST" ? LOSS_REASONS : REJECTION_REASONS;
   if (!reasons.includes(reason))
-    return to === "LOST" ? NEGOCIO.perder.motivoRequerido : NEGOCIO.rechazar.motivoRequerido;
-  if ((reason === "OTHER" || detail) && !between(detail, 2, 500)) return NEGOCIO.perder.detalleRequerido;
+    return to === "LOST"
+      ? NEGOCIO.perder.motivoRequerido
+      : NEGOCIO.rechazar.motivoRequerido;
+  if ((reason === "OTHER" || detail) && !between(detail, 2, 500))
+    return NEGOCIO.perder.detalleRequerido;
   return undefined;
 }
 
@@ -238,7 +307,14 @@ function transitionError(to: string, form: FormData): string | undefined {
 function transitionSteps(dealId: string, form: FormData) {
   const text = (key: string) => formText(form, key);
   const deal: Record<string, unknown> = {};
-  for (const key of ["contactId", "ownerId", "need", "solution", "budgetNote", "decisionMaker"])
+  for (const key of [
+    "contactId",
+    "ownerId",
+    "need",
+    "solution",
+    "budgetNote",
+    "decisionMaker",
+  ])
     if (text(key)) deal[key] = text(key);
   if (text("budget")) deal.budget = Number(decimal(text("budget")));
   if (text("expectedClose")) deal.expectedClose = utcDay(text("expectedClose"));
@@ -258,19 +334,33 @@ function transitionSteps(dealId: string, form: FormData) {
     steps.push([
       dealPath(dealId, "/activities"),
       "POST",
-      { type: text("nextType"), subject: text("nextSubject"), dueAt: text("nextDay") },
+      {
+        type: text("nextType"),
+        subject: text("nextSubject"),
+        dueAt: text("nextDay"),
+      },
     ]);
   if (text("validUntil"))
     steps.push([
       dealPath(dealId, "/quotes"),
       "POST",
-      { requestKey: text("requestKey"), validUntil: utcDay(text("validUntil")), ...(text("sentAt") && { sentAt: utcDay(text("sentAt")) }) },
+      {
+        requestKey: text("requestKey"),
+        validUntil: utcDay(text("validUntil")),
+        ...(text("sentAt") && { sentAt: utcDay(text("sentAt")) }),
+      },
     ]);
   if (text("acceptedAt") && text("quoteId"))
     steps.push([
-      dealPath(dealId, "/quotes/" + encodeURIComponent(text("quoteId")) + "/accept"),
+      dealPath(
+        dealId,
+        "/quotes/" + encodeURIComponent(text("quoteId")) + "/accept",
+      ),
       "POST",
-      { acceptedAt: utcDay(text("acceptedAt")), acceptanceNote: text("acceptanceNote") },
+      {
+        acceptedAt: utcDay(text("acceptedAt")),
+        acceptanceNote: text("acceptanceNote"),
+      },
     ]);
   return steps;
 }
@@ -310,20 +400,40 @@ export async function completeTransitionAction(
     lossReason: text("lossReason") || undefined,
     lossDetail: text("lossDetail") || undefined,
     followUp: text("followUpSubject")
-      ? { type: text("followUpType"), subject: text("followUpSubject"), dueAt: text("followUpDay") }
+      ? {
+          type: text("followUpType"),
+          subject: text("followUpSubject"),
+          dueAt: text("followUpDay"),
+        }
       : undefined,
   };
   const route = TRANSITION_ROUTES[to as keyof typeof TRANSITION_ROUTES];
-  const [rest, method, keys] = route ?? ["/move", "PATCH", ["fromStageId", "reason", "closedAt"]];
+  const [rest, method, keys] = route ?? [
+    "/move",
+    "PATCH",
+    ["fromStageId", "reason", "closedAt"],
+  ];
   const body = Object.fromEntries(
-    keys.filter((key) => values[key] !== undefined).map((key) => [key, values[key]]),
+    keys
+      .filter((key) => values[key] !== undefined)
+      .map((key) => [key, values[key]]),
   );
-  const result = await request(dealPath(dealId, rest), method, route ? body : { stageId: to, ...body });
-  return result.error ? { error: result.error, pending: result.pending } : { done: true };
+  const result = await request(
+    dealPath(dealId, rest),
+    method,
+    route ? body : { stageId: to, ...body },
+  );
+  return result.error
+    ? { error: result.error, pending: result.pending }
+    : { done: true };
 }
 
 /** "Ver más": la página siguiente de una columna del tablero. */
-export async function loadColumnAction(pipelineId: string, column: string, page: number) {
+export async function loadColumnAction(
+  pipelineId: string,
+  column: string,
+  page: number,
+) {
   const query = new URLSearchParams({ pipelineId, column, page: String(page) });
   return request("/deals/board?" + query.toString(), "GET") as Promise<{
     error?: string;
@@ -337,7 +447,8 @@ export async function qualifyDealAction(
   form: FormData,
 ): Promise<{ error?: string; fieldErrors?: { budget?: string } }> {
   const budget = formText(form, "budget");
-  if (budget && !isAmount(budget)) return { fieldErrors: { budget: TRANSICION.errores.presupuesto } };
+  if (budget && !isAmount(budget))
+    return { fieldErrors: { budget: TRANSICION.errores.presupuesto } };
   return request(dealPath(dealId), "PATCH", {
     need: optional(form, "need"),
     solution: optional(form, "solution"),
@@ -351,8 +462,13 @@ export async function createQuoteAction(dealId: string, form: FormData) {
   const validUntil = formText(form, "validUntil");
   const sentAt = formText(form, "sentAt");
   const requestKey = formText(form, "requestKey");
-  if (!isDay(validUntil) || (sentAt && !isDay(sentAt))) return { error: PIPELINE.dateInvalid };
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestKey))
+  if (!isDay(validUntil) || (sentAt && !isDay(sentAt)))
+    return { error: PIPELINE.dateInvalid };
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      requestKey,
+    )
+  )
     return { error: PIPELINE.dateInvalid };
   return request(dealPath(dealId, "/quotes"), "POST", {
     requestKey,
@@ -361,15 +477,24 @@ export async function createQuoteAction(dealId: string, form: FormData) {
   });
 }
 
-export async function acceptQuoteAction(dealId: string, quoteId: string, form: FormData) {
+export async function acceptQuoteAction(
+  dealId: string,
+  quoteId: string,
+  form: FormData,
+) {
   const acceptedAt = formText(form, "acceptedAt");
   const acceptanceNote = formText(form, "acceptanceNote");
   if (!isDay(acceptedAt)) return { error: PIPELINE.dateInvalid };
-  if (acceptanceNote.length < 2 || acceptanceNote.length > 500) return { error: TRANSICION.errores.evidencia };
-  return request(dealPath(dealId, "/quotes/" + encodeURIComponent(quoteId) + "/accept"), "POST", {
-    acceptedAt: utcDay(acceptedAt),
-    acceptanceNote,
-  });
+  if (acceptanceNote.length < 2 || acceptanceNote.length > 500)
+    return { error: TRANSICION.errores.evidencia };
+  return request(
+    dealPath(dealId, "/quotes/" + encodeURIComponent(quoteId) + "/accept"),
+    "POST",
+    {
+      acceptedAt: utcDay(acceptedAt),
+      acceptanceNote,
+    },
+  );
 }
 export async function createActivityAction(
   dealId: string,
@@ -458,7 +583,9 @@ export async function configurePipelineAction(
         position: Number(formText(form, "position")),
         probability: Number(formText(form, "probability")),
         color: formText(form, "color") || "#2f6f8f",
-        requirements: form.getAll("requirements").filter((code) => typeof code === "string"),
+        requirements: form
+          .getAll("requirements")
+          .filter((code) => typeof code === "string"),
       }
     : { name, ...(form.get("isDefault") === "true" && { isDefault: true }) };
   if (

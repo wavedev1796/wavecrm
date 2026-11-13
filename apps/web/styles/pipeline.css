@@ -597,6 +597,38 @@
 .deal-quote-lines > td {
   padding-top: 0;
 }
+.quote-preview {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--wave-line);
+  border-radius: 10px;
+  background: var(--wave-surface, #fff);
+}
+.quote-preview h5,
+.quote-preview p {
+  margin: 0;
+}
+.quote-preview ul {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.quote-preview li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: baseline;
+}
+.quote-preview li small {
+  color: var(--wave-muted-strong);
+}
+.quote-preview .deal-totals {
+  margin: 4px 0 0;
+  padding: 0;
+}
 .deal-quote-lines summary {
   cursor: pointer;
   color: var(--wave-blue);

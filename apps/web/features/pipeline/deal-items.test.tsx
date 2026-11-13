@@ -11,24 +11,52 @@ test("agrega productos, muestra subtotal, IVA y total y los guarda", async () =>
   save.mockResolvedValue({});
   const user = userEvent.setup();
   render(<DealItems dealId="d1" items={[]} locked={false} />);
-  expect(screen.getByText(/Aún no hay productos/)).toBeInTheDocument();
+  expect(screen.getByText(/Aún no hay líneas/)).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Agregar producto" }));
   await user.click(screen.getByRole("button", { name: "Agregar producto" }));
-  await user.type(screen.getByLabelText("Descripción del producto 1"), "Paquete de chocolates");
+  await user.type(
+    screen.getByLabelText("Descripción del producto 1"),
+    "Paquete de chocolates",
+  );
   await user.type(screen.getByLabelText("Cantidad del producto 1"), "2");
-  await user.type(screen.getByLabelText("Precio unitario del producto 1"), "10");
+  await user.type(
+    screen.getByLabelText("Precio unitario del producto 1"),
+    "10",
+  );
   await user.clear(screen.getByLabelText("IVA del producto 1"));
   await user.type(screen.getByLabelText("IVA del producto 1"), "0");
-  await user.type(screen.getByLabelText("Descripción del producto 2"), "Paquete de vinos");
+  await user.type(
+    screen.getByLabelText("Descripción del producto 2"),
+    "Paquete de vinos",
+  );
   await user.type(screen.getByLabelText("Cantidad del producto 2"), "1");
-  await user.type(screen.getByLabelText("Precio unitario del producto 2"), "100");
+  await user.type(
+    screen.getByLabelText("Precio unitario del producto 2"),
+    "100",
+  );
   expect(screen.getByTestId("deal-total")).toHaveTextContent("135,00");
   await user.click(screen.getByRole("button", { name: "Guardar productos" }));
   expect(save).toHaveBeenCalledWith("d1", [
-    { description: "Paquete de chocolates", quantity: "2", unitPrice: "10", taxRate: "0" },
-    { description: "Paquete de vinos", quantity: "1", unitPrice: "100", taxRate: "15" },
+    {
+      description: "Paquete de chocolates",
+      quantity: "2",
+      unitPrice: "10",
+      taxRate: "0",
+      discountRate: "0",
+    },
+    {
+      description: "Paquete de vinos",
+      quantity: "1",
+      unitPrice: "100",
+      taxRate: "15",
+      discountRate: "0",
+    },
   ]);
-  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Productos guardados."));
+  await waitFor(() =>
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Productos guardados.",
+    ),
+  );
 });
 
 test("el IVA se escribe por fila, sugiere 15, 12 y 0 y recalcula el total", async () => {
@@ -36,57 +64,145 @@ test("el IVA se escribe por fila, sugiere 15, 12 y 0 y recalcula el total", asyn
   render(
     <DealItems
       dealId="d1"
-      items={[{ id: "i1", description: "Web", quantity: "1", unitPrice: "100", taxRate: 15 }]}
+      items={[
+        {
+          id: "i1",
+          description: "Web",
+          quantity: "1",
+          unitPrice: "100",
+          taxRate: 15,
+        },
+      ]}
       locked={false}
     />,
   );
   const iva = screen.getByLabelText("IVA del producto 1");
   expect(iva).toHaveValue("15");
   const list = document.getElementById(iva.getAttribute("list") ?? "");
-  expect([...(list?.querySelectorAll("option") ?? [])].map((o) => o.value)).toEqual(["15", "12", "0"]);
+  expect(
+    [...(list?.querySelectorAll("option") ?? [])].map((o) => o.value),
+  ).toEqual(["15", "12", "0"]);
   await user.clear(iva);
   await user.type(iva, "12");
   expect(screen.getByTestId("deal-total")).toHaveTextContent("112,00");
 });
 
-test("marca la celda con error que devuelve la validacion", async () => {
-  save.mockResolvedValue({ rowErrors: { 0: { quantity: "Ingresa una cantidad mayor que 0, con hasta dos decimales." } } });
+test("edita el descuento y actualiza subtotal e IVA como el API", async () => {
   const user = userEvent.setup();
   render(
     <DealItems
       dealId="d1"
-      items={[{ id: "i1", description: "Web", quantity: "1", unitPrice: "10", taxRate: 15 }]}
+      items={[
+        {
+          id: "i1",
+          description: "Web",
+          quantity: "1",
+          unitPrice: "100",
+          taxRate: 15,
+          discountRate: 10,
+        },
+      ]}
+      locked={false}
+    />,
+  );
+  expect(screen.getByLabelText("Descuento % del producto 1")).toHaveValue("10");
+  expect(screen.getByTestId("deal-total")).toHaveTextContent("103,50");
+  await user.clear(screen.getByLabelText("Descuento % del producto 1"));
+  await user.type(screen.getByLabelText("Descuento % del producto 1"), "20");
+  expect(screen.getByTestId("deal-total")).toHaveTextContent("92,00");
+});
+
+test("marca la celda con error que devuelve la validacion", async () => {
+  save.mockResolvedValue({
+    rowErrors: {
+      0: {
+        quantity: "Ingresa una cantidad mayor que 0, con hasta dos decimales.",
+      },
+    },
+  });
+  const user = userEvent.setup();
+  render(
+    <DealItems
+      dealId="d1"
+      items={[
+        {
+          id: "i1",
+          description: "Web",
+          quantity: "1",
+          unitPrice: "10",
+          taxRate: 15,
+        },
+      ]}
       locked={false}
     />,
   );
   await user.click(screen.getByRole("button", { name: "Guardar productos" }));
   expect(await screen.findByText(/cantidad mayor que 0/)).toBeInTheDocument();
-  expect(screen.getByLabelText("Cantidad del producto 1")).toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByLabelText("Cantidad del producto 1")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
 });
 
 test("un negocio ganado muestra sus productos sin poder editarlos", () => {
   render(
     <DealItems
       dealId="d1"
-      items={[{ id: "i1", description: "Web", quantity: "1", unitPrice: "10", taxRate: 15 }]}
+      items={[
+        {
+          id: "i1",
+          description: "Web",
+          quantity: "1",
+          unitPrice: "10",
+          taxRate: 15,
+        },
+      ]}
       locked
     />,
   );
-  expect(screen.getByText("Reabre el negocio para cambiar sus productos.")).toBeInTheDocument();
+  expect(
+    screen.getByText("Reabre el negocio para cambiar sus productos."),
+  ).toBeInTheDocument();
   expect(screen.queryByRole("textbox")).toBeNull();
-  expect(screen.queryByRole("button", { name: "Guardar productos" })).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "Guardar productos" }),
+  ).toBeNull();
 });
 
 test("quitar una fila limpia los errores para que no salten a otra fila", async () => {
-  save.mockResolvedValue({ rowErrors: { 1: { quantity: "Ingresa una cantidad mayor que 0, con hasta dos decimales." } } });
+  save.mockResolvedValue({
+    rowErrors: {
+      1: {
+        quantity: "Ingresa una cantidad mayor que 0, con hasta dos decimales.",
+      },
+    },
+  });
   const user = userEvent.setup();
   render(
     <DealItems
       dealId="d1"
       items={[
-        { id: "i1", description: "Web", quantity: "1", unitPrice: "10", taxRate: 15 },
-        { id: "i2", description: "Hosting", quantity: "0", unitPrice: "10", taxRate: 15 },
-        { id: "i3", description: "Soporte", quantity: "1", unitPrice: "10", taxRate: 15 },
+        {
+          id: "i1",
+          description: "Web",
+          quantity: "1",
+          unitPrice: "10",
+          taxRate: 15,
+        },
+        {
+          id: "i2",
+          description: "Hosting",
+          quantity: "0",
+          unitPrice: "10",
+          taxRate: 15,
+        },
+        {
+          id: "i3",
+          description: "Soporte",
+          quantity: "1",
+          unitPrice: "10",
+          taxRate: 15,
+        },
       ]}
       locked={false}
     />,
@@ -95,5 +211,8 @@ test("quitar una fila limpia los errores para que no salten a otra fila", async 
   expect(await screen.findByText(/cantidad mayor que 0/)).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Quitar producto 1" }));
   expect(screen.queryByText(/cantidad mayor que 0/)).toBeNull();
-  expect(screen.getByLabelText("Cantidad del producto 1")).not.toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByLabelText("Cantidad del producto 1")).not.toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
 });
