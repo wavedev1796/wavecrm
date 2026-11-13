@@ -64,6 +64,7 @@ function mockPrisma({
     audit: [],
     quotes: quotes.map((q, index) => ({ id: "q" + index, dealId: "deal-1", createdAt: new Date(index), ...q })),
     items: [...items],
+    products: [],
     activities: [...activities],
   };
   const quoteMatches = (q, where = {}) =>
@@ -123,6 +124,15 @@ function mockPrisma({
       createMany: async ({ data }) => {
         state.items = data;
       },
+    },
+    product: {
+      findUnique: async ({ where }) => state.products.find((product) => product.id === where.id) ?? null,
+      create: async ({ data }) => {
+        const product = { id: `product-${state.products.length + 1}`, isActive: true, ...data };
+        state.products.push(product);
+        return product;
+      },
+      update: async ({ where, data }) => Object.assign(state.products.find((product) => product.id === where.id), data),
     },
     quote: {
       findFirst: async ({ where }) => state.quotes.filter((q) => quoteMatches(q, where)).at(-1) ?? null,
@@ -184,13 +194,14 @@ function mockPrisma({
       audit: structuredClone(state.audit),
       quotes: state.quotes.map((quote) => ({ ...quote })),
       items: state.items.map((entry) => ({ ...entry })),
+      products: state.products.map((product) => ({ ...product })),
       activities: state.activities.map((activity) => ({ ...activity })),
     };
     try {
       return await fn(prisma);
     } catch (error) {
       Object.assign(state.deal, snapshot.deal);
-      for (const key of ["history", "audit", "quotes", "items", "activities"]) state[key] = snapshot[key];
+      for (const key of ["history", "audit", "quotes", "items", "activities", "products"]) state[key] = snapshot[key];
       throw error;
     }
   };
@@ -701,4 +712,33 @@ test("requisitos de etapa sin cambios no exigen ADMIN; cambiarlos sí", async ()
   await s.createStage("pipe-1", { name: "Nueva", position: 9, probability: 20 }, vendedor);
   const updated = await s.updateStage("stage-n", { requirements: ["NEED"] }, admin);
   assert.deepEqual(updated.requirements, ["NEED"]);
+});
+
+test("CRM-27: un vendedor reutiliza el precio y la tarifa actuales del catálogo", async () => {
+  const { prisma, state } = mockPrisma();
+  state.products.push({ id: "product-1", code: "SERV-1", description: "Asesoría", price: "100.00", taxRate: 12, isActive: true });
+  const detail = await service(prisma).saveItems("deal-1", [
+    { productId: "product-1", quantity: 2, discountRate: 10 },
+  ], vendedor);
+  assert.deepEqual(
+    [state.items[0].productId, state.items[0].description, String(state.items[0].unitPrice), state.items[0].taxRate, state.items[0].discountRate],
+    ["product-1", "Asesoría", "100.00", 12, 10],
+  );
+  assert.equal(detail.value.toString(), "180");
+});
+
+test("CRM-27: un producto inactivo no se vuelve a seleccionar y solo ADMIN administra el catálogo", async () => {
+  const { prisma, state } = mockPrisma();
+  state.products.push({ id: "product-1", code: "SERV-1", description: "Asesoría", price: 100, taxRate: 12, isActive: false });
+  await assert.rejects(
+    service(prisma).saveItems("deal-1", [{ productId: "product-1", quantity: 1 }], vendedor),
+    ConflictException,
+  );
+  assert.throws(
+    () => service(prisma).createProduct({ code: "SERV-2", description: "Otra", price: 10, taxRate: 0 }, vendedor),
+    ForbiddenException,
+  );
+  const product = await service(prisma).createProduct({ code: "SERV-2", description: "Otra", price: 10, taxRate: 0 }, admin);
+  assert.equal(product.isActive, true);
+  assert.equal(state.audit.at(-1).entityType, "Product");
 });

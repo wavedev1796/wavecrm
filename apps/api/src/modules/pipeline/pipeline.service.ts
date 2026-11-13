@@ -16,7 +16,9 @@ import {
   CreateDealActivityDto,
   CreateDealDto,
   CreateQuoteDto,
+  CreateProductDto,
   ListQuotesDto,
+  ListProductsDto,
   RejectQuoteDto,
   CreatePipelineDto,
   CreateStageDto,
@@ -24,6 +26,7 @@ import {
   ListDealsDto,
   UpdateDealDto,
   UpdatePipelineDto,
+  UpdateProductDto,
   UpdateStageDto,
 } from "./pipeline.dto";
 import {
@@ -70,6 +73,12 @@ export type Actor = { id: string; role: UserRole };
 /** Alcance de lectura: ADMIN ve todo; VENDEDOR, solo lo que tiene a su cargo (sin responsable, solo ADMIN). */
 export const ownerScope = (actor: Actor) =>
   actor.role === "ADMIN" ? {} : { ownerId: actor.id };
+const hideQuoteRequestKey = <T extends { requestKey: string | null; requestHash: string | null }>(quote: T) => {
+  const { requestKey, requestHash, ...visible } = quote;
+  void requestKey;
+  void requestHash;
+  return visible;
+};
 export type TransitionInput = {
   fromStageId?: string;
   reason?: string;
@@ -104,6 +113,64 @@ const FORBIDDEN_CLOSED =
 @Injectable()
 export class PipelineService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listProducts(query: ListProductsDto, actor: Actor) {
+    const where: Prisma.ProductWhereInput = {
+      ...(actor.role !== "ADMIN" || !query.includeInactive ? { isActive: true } : {}),
+      ...(query.search && {
+        OR: [
+          { code: { contains: query.search, mode: "insensitive" } },
+          { description: { contains: query.search, mode: "insensitive" } },
+        ],
+      }),
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        orderBy: [{ description: "asc" }, { id: "asc" }],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+    return { data, meta: { page: query.page, limit: query.limit, total, totalPages: Math.ceil(total / query.limit) } };
+  }
+  async findProduct(id: string, actor: Actor) {
+    const product = await this.prisma.product.findFirst({
+      where: { id, ...(actor.role === "ADMIN" ? {} : { isActive: true }) },
+    });
+    if (!product) throw new NotFoundException("Producto no encontrado.");
+    return product;
+  }
+  createProduct(dto: CreateProductDto, actor: Actor) {
+    this.assertCanManageProducts(actor);
+    return this.write(async (tx) => {
+      const product = await tx.product.create({ data: { ...dto, code: dto.code.trim().toUpperCase() } });
+      await tx.auditLog.create({
+        data: { action: "CREATED", entityType: "Product", entityId: product.id, userId: actor.id, changes: { code: product.code, description: product.description } },
+      });
+      return product;
+    });
+  }
+  updateProduct(id: string, dto: UpdateProductDto, actor: Actor) {
+    this.assertCanManageProducts(actor);
+    return this.write(async (tx) => {
+      const current = await tx.product.findUnique({ where: { id } });
+      if (!current) throw new NotFoundException("Producto no encontrado.");
+      const data = { ...dto, ...(dto.code !== undefined ? { code: dto.code.trim().toUpperCase() } : {}) };
+      const product = await tx.product.update({ where: { id }, data });
+      const changes: Record<string, { from: string; to: string }> = {};
+      for (const key of Object.keys(data) as (keyof typeof data)[]) {
+        const before = current[key as keyof typeof current];
+        const after = product[key as keyof typeof product];
+        if (before !== after) changes[key] = { from: String(before), to: String(after) };
+      }
+      await tx.auditLog.create({
+        data: { action: "UPDATED", entityType: "Product", entityId: id, userId: actor.id, changes },
+      });
+      return product;
+    });
+  }
 
   listOwners() {
     return this.prisma.user.findMany({
@@ -462,7 +529,39 @@ export class PipelineService {
       if (deal.status === "WON" || deal.status === "REJECTED")
         throw new ConflictException("Reabre el negocio para cambiar sus productos.");
       this.assertCanChange(deal, actor);
-      const totals = dealTotals(items);
+      const normalizedItems: {
+        productId: string | null;
+        description: string;
+        quantity: number;
+        unitPrice: Prisma.Decimal.Value;
+        taxRate: number;
+        discountRate: number;
+      }[] = await Promise.all(items.map(async (item) => {
+        if (!item.productId) {
+          if (item.description === undefined || item.unitPrice === undefined || item.taxRate === undefined)
+            throw new BadRequestException("Una línea manual requiere descripción, precio y tarifa.");
+          return {
+            productId: null,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            taxRate: item.taxRate,
+            discountRate: item.discountRate ?? 0,
+          };
+        }
+        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        if (!product) throw new NotFoundException("Producto no encontrado.");
+        if (!product.isActive) throw new ConflictException("El producto está inactivo; elige otro del catálogo.");
+        return {
+          ...item,
+          productId: product.id,
+          description: product.description,
+          unitPrice: product.price,
+          taxRate: product.taxRate,
+          discountRate: item.discountRate ?? 0,
+        };
+      }));
+      const totals = dealTotals(normalizedItems);
       const { subtotal } = totals;
       if (subtotal.greaterThan(MAX_DEAL_VALUE))
         throw new BadRequestException(
@@ -470,7 +569,7 @@ export class PipelineService {
         );
       await tx.dealItem.deleteMany({ where: { dealId: id } });
       await tx.dealItem.createMany({
-        data: items.map((item, position) => ({ ...item, dealId: id, position })),
+        data: normalizedItems.map((item, position) => ({ ...item, dealId: id, position })),
       });
       // Sin productos el monto vuelve a escribirse a mano y conserva el último valor.
       if (items.length)
@@ -626,7 +725,7 @@ export class PipelineService {
       this.prisma.quote.count({ where: { deal: dealWhere, ...(query.status ? { status: query.status as never } : {}) } }),
     ]);
     return {
-      data: data.map(({ requestKey: _requestKey, requestHash: _requestHash, ...quote }) => quote),
+      data: data.map(hideQuoteRequestKey),
       meta: { page: query.page, limit: query.limit, total, totalPages: Math.ceil(total / query.limit) },
     };
   }
@@ -636,8 +735,7 @@ export class PipelineService {
       include: { deal: { select: { id: true, title: true, ownerId: true } } },
     });
     if (!quote) throw new NotFoundException("Cotización no encontrada.");
-    const { requestKey: _requestKey, requestHash: _requestHash, ...visible } = quote;
-    return visible;
+    return hideQuoteRequestKey(quote);
   }
   rejectQuote(dealId: string, quoteId: string, dto: RejectQuoteDto, actor: Actor) {
     return this.write(async (tx) => {
@@ -772,7 +870,7 @@ export class PipelineService {
     return {
       ...deal,
       ...(Array.isArray(deal.quotes)
-        ? { quotes: deal.quotes.map(({ requestKey: _requestKey, requestHash: _requestHash, ...quote }) => quote) }
+        ? { quotes: deal.quotes.map(hideQuoteRequestKey) }
         : {}),
     };
   }
@@ -781,6 +879,10 @@ export class PipelineService {
       throw new ForbiddenException(
         "Solo un administrador cambia los requisitos de una etapa.",
       );
+  }
+  private assertCanManageProducts(actor: Actor) {
+    if (actor.role !== "ADMIN")
+      throw new ForbiddenException("Solo un administrador administra el catálogo de productos.");
   }
   private async requireOpenDeal(tx: Tx, id: string, actor: Actor) {
     const deal = await this.requireDeal(tx, id);
@@ -1146,6 +1248,8 @@ export class PipelineService {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002" && String(error.meta?.target).includes("requestKey"))
           throw new ConflictException("La clave de petición ya fue procesada.");
+        if (error.code === "P2002" && String(error.meta?.target).toLowerCase().includes("code"))
+          throw new ConflictException("Ya existe un producto con ese código.");
         if (error.code === "P2002")
           throw new ConflictException(
             "Esa posicion ya esta ocupada. Elige otra posicion.",

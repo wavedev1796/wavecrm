@@ -251,9 +251,10 @@ export class DeleteDealsDto {
   ids!: string[];
 }
 export class DealItemDto {
-  @ApiProperty({ example: "Pagina web corporativa" })
+  @ApiPropertyOptional({ example: "Pagina web corporativa", description: "Requerida si la línea es manual" })
+  @ValidateIf((line: DealItemDto) => !line.productId)
   @text("la descripción del producto", 200, 2)
-  description!: string;
+  description?: string;
   @ApiProperty({ example: 1 })
   @numeric()
   @Min(0.01, { message: "La cantidad debe ser mayor que cero." })
@@ -263,7 +264,8 @@ export class DealItemDto {
     { message: "Ingresa una cantidad con hasta dos decimales." },
   )
   quantity!: number;
-  @ApiProperty({ example: 1400 })
+  @ApiPropertyOptional({ example: 1400, description: "Si se envía productId, el servidor usa el precio del catálogo" })
+  @ValidateIf((line: DealItemDto) => !line.productId)
   @numeric()
   @Min(0, { message: "El precio no puede ser negativo." })
   @Max(MAX_MONEY, { message: "El precio máximo es " + MAX_DEAL_VALUE + "." })
@@ -271,13 +273,14 @@ export class DealItemDto {
     { maxDecimalPlaces: 2 },
     { message: "Ingresa un precio válido con hasta dos decimales." },
   )
-  unitPrice!: number;
-  @ApiProperty({ example: IVA_SUGGESTIONS[0], minimum: 0, maximum: 100 })
+  unitPrice?: number;
+  @ApiPropertyOptional({ example: IVA_SUGGESTIONS[0], minimum: 0, maximum: 100, description: "Si se envía productId, el servidor usa su tarifa" })
+  @ValidateIf((line: DealItemDto) => !line.productId)
   @numeric()
   @Min(0, { message: IVA_INVALID })
   @Max(100, { message: IVA_INVALID })
   @IsInt({ message: IVA_INVALID })
-  taxRate!: number;
+  taxRate?: number;
   @ApiPropertyOptional({ example: 0, minimum: 0, maximum: 100, description: "Descuento porcentual" })
   @IsOptional()
   @numeric()
@@ -285,6 +288,48 @@ export class DealItemDto {
   @Max(100, { message: "El descuento debe estar entre 0 y 100%." })
   @IsInt({ message: "El descuento debe ser un porcentaje entero." })
   discountRate?: number;
+  @ApiPropertyOptional({ description: "Vincula la línea con un producto activo del catálogo" })
+  @IsOptional()
+  @IsString()
+  @Length(1, 40, { message: "El producto no es válido." })
+  productId?: string;
+}
+const PRODUCT_CODE = /^[A-Z0-9][A-Z0-9._-]{0,39}$/;
+export class CreateProductDto {
+  @ApiProperty({ example: "SERV-CONSULTA" })
+  @Transform(({ value }: { value: unknown }) => typeof value === "string" ? value.trim().toUpperCase() : value)
+  @IsString({ message: "Ingresa el código del producto." })
+  @Matches(PRODUCT_CODE, { message: "Usa letras, números, punto, guion o guion bajo en el código." })
+  code!: string;
+  @ApiProperty({ example: "Servicio de consultoría" })
+  @text("la descripción del producto", 200, 2)
+  description!: string;
+  @ApiProperty({ example: 75.5, description: "Precio de referencia en USD" })
+  @numeric()
+  @Min(0, { message: "El precio no puede ser negativo." })
+  @Max(MAX_MONEY, { message: "El precio máximo es " + MAX_DEAL_VALUE + "." })
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: "Ingresa un precio válido con hasta dos decimales." })
+  price!: number;
+  @ApiProperty({ minimum: 0, maximum: 100, example: 12 })
+  @numeric()
+  @Min(0, { message: IVA_INVALID })
+  @Max(100, { message: IVA_INVALID })
+  @IsInt({ message: IVA_INVALID })
+  taxRate!: number;
+}
+export class UpdateProductDto extends PartialType(CreateProductDto) {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean({ message: "El estado del producto debe ser verdadero o falso." })
+  isActive?: boolean;
+}
+export class ListProductsDto extends PaginationDto {
+  @ApiPropertyOptional() @IsOptional() @text("la búsqueda", 100) search?: string;
+  @ApiPropertyOptional({ default: false, description: "ADMIN puede incluir productos inactivos" })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => value === "true" ? true : value === "false" ? false : value)
+  @IsBoolean({ message: "includeInactive debe ser verdadero o falso." })
+  includeInactive = false;
 }
 export class CreateDealActivityDto {
   @ApiProperty({ enum: ACTIVITY_TYPES })

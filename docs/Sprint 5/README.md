@@ -8,9 +8,9 @@ Conservar versiones de cotización con snapshots históricos y preparar la trans
 
 | CRM | Ticket | Estado |
 | --- | --- | --- |
-| CRM-27 | [Modelo Cotización + productos](27 - Modelo Cotización y productos.md) | Parcial (3/4 criterios) |
+| CRM-27 | [Modelo Cotización + productos](27 - Modelo Cotización y productos.md) | Completo (4/4 criterios) |
 | CRM-28 | [API cotizaciones](28 - API cotizaciones.md) | Completo (4/4 criterios) |
 
 ## Validación
 
-CRM-27 y CRM-28 fueron migrados en desarrollo y pruebas. CRM-28 validó el flujo HTTP de pipeline (12/12), las unitarias API (274/274) y las pruebas web enfocadas (51/51). Los tickets documentan el alcance y los pendientes de catálogo/PDF/Billing por separado.
+CRM-27 y CRM-28 fueron migrados en desarrollo y pruebas. CRM-27 validó administración y reutilización del catálogo por HTTP; CRM-28 validó el flujo de pipeline HTTP (12/12). Las unitarias API pasan 276/276 y las pruebas web enfocadas 51/51. PDF y Billing siguen planificados según los diagramas.

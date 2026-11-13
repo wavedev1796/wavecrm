@@ -38,7 +38,7 @@ Exponer lectura, creación de versiones y resolución de cotizaciones con el alc
 - `pnpm --filter @wave/database validate`: aprobado.
 - `pnpm --filter @wave/database generate`: aprobado.
 - `pnpm --filter @wave/api build`: aprobado.
-- `pnpm --filter @wave/api test`: 274/274 aprobadas.
+- `pnpm --filter @wave/api test`: 276/276 aprobadas.
 - `pipeline.http.test.cjs` contra Neon `pruebas`: 12/12 aprobadas, incluidos acceso ADMIN/VENDEDOR, versiones, snapshot de líneas, rechazo/aceptación con repetición `409` y repetición idempotente de creación.
 - Pruebas web enfocadas (`actions`, ficha de propuestas y modal de transición): 51/51 aprobadas. `pnpm --filter @wave/web lint` aprobado, con una advertencia preexistente de importación no usada en `deal-actions.test.tsx`.
 - La suite HTTP completa encontró fallos en pruebas ajenas de actividades e importación de contactos y no pudo finalizar dentro del tiempo de la corrida; por eso se ejecutó la suite pipeline directamente. No se certifica el resto de integraciones en esta entrega.
