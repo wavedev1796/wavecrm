@@ -65,6 +65,7 @@ Input (`.input`) y select (componente `Select`, clase `.select-control`) compart
 - Deshabilitado: fondo `#F1F0EB` y cursor bloqueado; el select pone el texto en `--wave-muted` y conserva su flecha.
 - Select: sin la apariencia nativa del sistema; flecha propia dibujada con dos gradientes de 5 px en `--wave-muted-strong`. Donde el navegador admite `appearance: base-select`, la lista desplegable también lleva la piel de Wave: borde `--wave-line-strong`, radio `12px`, `--shadow-md` y la opción activa o elegida en `--wave-blue-soft` con texto `--wave-blue-dark`.
   - La lista mide como máximo `min(18rem, 50dvh)` (unas siete opciones) y se desplaza por dentro: países, provincias y cantones no tapan la pantalla.
+  - Opción deshabilitada (por ejemplo, la etapa actual en «Mover a» del tablero): texto `--wave-muted`, fondo blanco y cursor bloqueado, sin resaltado al pasar ni al estar elegida.
   - La opción con foco de teclado lleva un contorno de 2 px `--wave-blue-line` hacia dentro, para distinguirla de la elegida.
   - El valor elegido va en una sola línea y se corta antes de la flecha (p. ej. «Emiratos Árabes Unidos (+971)» en el prefijo del teléfono).
 - Todos los selects de la web (tipo de documento, prefijo del teléfono, provincia, cantón, filtros, rol de usuario y columnas de importación) usan el componente `Select`; no hay `<select>` sueltos.

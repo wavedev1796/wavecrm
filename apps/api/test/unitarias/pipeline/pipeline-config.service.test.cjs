@@ -238,11 +238,10 @@ test("editar negocio: 404 y no deja el negocio sin contacto ni empresa", async (
 test("eliminar, ver ficha e historial de un negocio", async () => {
   await assert.rejects(mockPrisma({ deal: missing }).service.deleteDeal("d1", vendedor), NotFoundException);
   await assert.rejects(mockPrisma().service.findDeal("d1"), NotFoundException);
-  await assert.rejects(mockPrisma({ deal: { count: 0 } }).service.history("d1"), NotFoundException);
+  await assert.rejects(mockPrisma({ deal: { count: 0 } }).service.history("d1", vendedor), NotFoundException);
 
   const { service, called } = mockPrisma({
     deal: { findUnique: { id: "d1", title: "Cuenta", status: "OPEN" }, count: 1 },
-    auditLog: { findMany: [{ action: "WON" }] },
     dealStageHistory: { findMany: [{ id: "h1" }] },
   });
   await service.deleteDeal("d1", vendedor);
@@ -251,22 +250,28 @@ test("eliminar, ver ficha e historial de un negocio", async () => {
     id: "d1",
     title: "Cuenta",
     status: "OPEN",
-    closures: [{ action: "WON" }],
   });
-  assert.deepEqual(await service.history("d1"), [{ id: "h1" }]);
+  // La ficha ya no trae historial: actividades, etapas y cierres van por la línea de tiempo.
+  assert.equal(called("auditLog.findMany").length, 0);
+  assert.deepEqual(await service.history("d1", vendedor), [{ id: "h1" }]);
+  // El historial del tablero tiene el mismo alcance que la línea de tiempo.
+  assert.deepEqual(called("deal.count").at(-1).where, { id: "d1", ownerId: "u1" });
+  await service.history("d1", { id: "a1", role: "ADMIN" });
+  assert.deepEqual(called("deal.count").at(-1).where, { id: "d1" });
 });
 
 test("completar actividad: solo una pendiente y con fecha de cierre", async () => {
   await assert.rejects(
-    mockPrisma({ activity: { findFirst: { status: "COMPLETED" } } }).service.completeActivity("d1", "a1"),
+    mockPrisma({ activity: { findFirst: { status: "COMPLETED" } } }).service.completeActivity("d1", "a1", "u1"),
     ConflictException,
   );
-  const { service } = mockPrisma({
+  const { service, called } = mockPrisma({
     activity: { findFirst: { status: "PENDING" }, update: ({ data }) => data },
   });
-  const done = await service.completeActivity("d1", "a1");
+  const done = await service.completeActivity("d1", "a1", "u1");
   assert.equal(done.status, "COMPLETED");
   assert.ok(done.completedAt instanceof Date);
+  assert.equal(called("auditLog.create")[0].data.userId, "u1");
 });
 
 test("los errores de Prisma se traducen a respuestas HTTP claras", async () => {
@@ -305,9 +310,9 @@ test("el controlador delega cada ruta en el servicio con el usuario del token", 
   c.createDeal({ title: "N" }, user);
   c.saveItems("d1", { items: [] }, user);
   c.previewTransition("d1", { to: "s2" }, user);
-  c.history("d1");
+  c.history("d1", user);
   c.createActivity("d1", { type: "CALL" }, user);
-  c.completeActivity("d1", "a1");
+  c.completeActivity("d1", "a1", user);
   c.win("d1", { closedAt: undefined }, user);
   c.lose("d1", { lossReason: "NEGOTIATION" }, user);
   c.reopen("d1", { reason: "Error" }, user);
@@ -336,6 +341,7 @@ test("el controlador delega cada ruta en el servicio con el usuario del token", 
     ],
   );
   assert.deepEqual(calls.find(([n]) => n === "previewTransition"), ["previewTransition", "d1", "s2", actor]);
+  assert.deepEqual(calls.find(([n]) => n === "history"), ["history", "d1", actor]);
   assert.deepEqual(calls.find(([n]) => n === "board"), ["board", "p1"]);
   assert.deepEqual(calls.find(([n]) => n === "boardColumn"), ["boardColumn", "p1", "LOST", 2]);
 });

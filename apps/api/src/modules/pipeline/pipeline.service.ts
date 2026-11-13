@@ -7,6 +7,7 @@ import {
   ServiceUnavailableException,
   UnprocessableEntityException,
 } from "@nestjs/common";
+import { createHash } from "node:crypto";
 import { Prisma } from "@wave/database";
 import type { ActivityType, LossReason, UserRole } from "@wave/shared";
 import { PrismaService } from "../prisma/prisma.service";
@@ -15,18 +16,24 @@ import {
   CreateDealActivityDto,
   CreateDealDto,
   CreateQuoteDto,
+  CreateProductDto,
+  ListQuotesDto,
+  ListProductsDto,
+  RejectQuoteDto,
   CreatePipelineDto,
   CreateStageDto,
   DealItemDto,
   ListDealsDto,
   UpdateDealDto,
   UpdatePipelineDto,
+  UpdateProductDto,
   UpdateStageDto,
 } from "./pipeline.dto";
 import {
   BOARD_PAGE,
   dealMetrics,
   dealTotals,
+  ecuadorDayStart,
   ecuadorToday,
   MAX_DEAL_VALUE,
   nextQuoteNumber,
@@ -59,22 +66,19 @@ const dealDetailInclude = {
   },
   items: { orderBy: { position: "asc" } },
   quotes: { orderBy: [{ createdAt: "desc" }, { id: "desc" }] },
-  activities: {
-    include: { assignee: { select: { id: true, name: true } } },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-  },
-  stageHistory: {
-    include: {
-      fromStage: { select: { id: true, name: true } },
-      toStage: { select: { id: true, name: true } },
-      changedBy: { select: { id: true, name: true } },
-    },
-    orderBy: [{ changedAt: "desc" }, { id: "desc" }],
-  },
 } satisfies Prisma.DealInclude;
 type Tx = Prisma.TransactionClient;
 /** Quien pide el cambio: su rol decide si puede tocar un negocio cerrado. */
 export type Actor = { id: string; role: UserRole };
+/** Alcance de lectura: ADMIN ve todo; VENDEDOR, solo lo que tiene a su cargo (sin responsable, solo ADMIN). */
+export const ownerScope = (actor: Actor) =>
+  actor.role === "ADMIN" ? {} : { ownerId: actor.id };
+const hideQuoteRequestKey = <T extends { requestKey: string | null; requestHash: string | null }>(quote: T) => {
+  const { requestKey, requestHash, ...visible } = quote;
+  void requestKey;
+  void requestHash;
+  return visible;
+};
 export type TransitionInput = {
   fromStageId?: string;
   reason?: string;
@@ -89,7 +93,7 @@ export type TransitionInput = {
 /** Datos del negocio que necesitan las reglas: etapa, productos y la última propuesta vigente. */
 const gateInclude = {
   stage: true,
-  items: { select: { quantity: true, unitPrice: true, taxRate: true } },
+  items: { select: { quantity: true, unitPrice: true, taxRate: true, discountRate: true } },
   quotes: {
     where: { status: { not: "SUPERSEDED" } },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
@@ -109,6 +113,64 @@ const FORBIDDEN_CLOSED =
 @Injectable()
 export class PipelineService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listProducts(query: ListProductsDto, actor: Actor) {
+    const where: Prisma.ProductWhereInput = {
+      ...(actor.role !== "ADMIN" || !query.includeInactive ? { isActive: true } : {}),
+      ...(query.search && {
+        OR: [
+          { code: { contains: query.search, mode: "insensitive" } },
+          { description: { contains: query.search, mode: "insensitive" } },
+        ],
+      }),
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        orderBy: [{ description: "asc" }, { id: "asc" }],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+    return { data, meta: { page: query.page, limit: query.limit, total, totalPages: Math.ceil(total / query.limit) } };
+  }
+  async findProduct(id: string, actor: Actor) {
+    const product = await this.prisma.product.findFirst({
+      where: { id, ...(actor.role === "ADMIN" ? {} : { isActive: true }) },
+    });
+    if (!product) throw new NotFoundException("Producto no encontrado.");
+    return product;
+  }
+  createProduct(dto: CreateProductDto, actor: Actor) {
+    this.assertCanManageProducts(actor);
+    return this.write(async (tx) => {
+      const product = await tx.product.create({ data: { ...dto, code: dto.code.trim().toUpperCase() } });
+      await tx.auditLog.create({
+        data: { action: "CREATED", entityType: "Product", entityId: product.id, userId: actor.id, changes: { code: product.code, description: product.description } },
+      });
+      return product;
+    });
+  }
+  updateProduct(id: string, dto: UpdateProductDto, actor: Actor) {
+    this.assertCanManageProducts(actor);
+    return this.write(async (tx) => {
+      const current = await tx.product.findUnique({ where: { id } });
+      if (!current) throw new NotFoundException("Producto no encontrado.");
+      const data = { ...dto, ...(dto.code !== undefined ? { code: dto.code.trim().toUpperCase() } : {}) };
+      const product = await tx.product.update({ where: { id }, data });
+      const changes: Record<string, { from: string; to: string }> = {};
+      for (const key of Object.keys(data) as (keyof typeof data)[]) {
+        const before = current[key as keyof typeof current];
+        const after = product[key as keyof typeof product];
+        if (before !== after) changes[key] = { from: String(before), to: String(after) };
+      }
+      await tx.auditLog.create({
+        data: { action: "UPDATED", entityType: "Product", entityId: id, userId: actor.id, changes },
+      });
+      return product;
+    });
+  }
 
   listOwners() {
     return this.prisma.user.findMany({
@@ -437,6 +499,7 @@ export class PipelineService {
           lossDetail: true,
           contactId: true,
           companyId: true,
+          ownerId: true, // la línea de tiempo del contacto muestra el borrado solo a su responsable
         },
       });
       if (deals.length !== ids.length)
@@ -466,7 +529,39 @@ export class PipelineService {
       if (deal.status === "WON" || deal.status === "REJECTED")
         throw new ConflictException("Reabre el negocio para cambiar sus productos.");
       this.assertCanChange(deal, actor);
-      const totals = dealTotals(items);
+      const normalizedItems: {
+        productId: string | null;
+        description: string;
+        quantity: number;
+        unitPrice: Prisma.Decimal.Value;
+        taxRate: number;
+        discountRate: number;
+      }[] = await Promise.all(items.map(async (item) => {
+        if (!item.productId) {
+          if (item.description === undefined || item.unitPrice === undefined || item.taxRate === undefined)
+            throw new BadRequestException("Una línea manual requiere descripción, precio y tarifa.");
+          return {
+            productId: null,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            taxRate: item.taxRate,
+            discountRate: item.discountRate ?? 0,
+          };
+        }
+        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        if (!product) throw new NotFoundException("Producto no encontrado.");
+        if (!product.isActive) throw new ConflictException("El producto está inactivo; elige otro del catálogo.");
+        return {
+          ...item,
+          productId: product.id,
+          description: product.description,
+          unitPrice: product.price,
+          taxRate: product.taxRate,
+          discountRate: item.discountRate ?? 0,
+        };
+      }));
+      const totals = dealTotals(normalizedItems);
       const { subtotal } = totals;
       if (subtotal.greaterThan(MAX_DEAL_VALUE))
         throw new BadRequestException(
@@ -474,7 +569,7 @@ export class PipelineService {
         );
       await tx.dealItem.deleteMany({ where: { dealId: id } });
       await tx.dealItem.createMany({
-        data: items.map((item, position) => ({ ...item, dealId: id, position })),
+        data: normalizedItems.map((item, position) => ({ ...item, dealId: id, position })),
       });
       // Sin productos el monto vuelve a escribirse a mano y conserva el último valor.
       if (items.length)
@@ -502,11 +597,17 @@ export class PipelineService {
       const items = await tx.dealItem.findMany({
         where: { dealId },
         orderBy: { position: "asc" },
+        include: { product: true },
       });
       if (!items.length)
         throw new BadRequestException(
           "Agrega sus productos antes de registrar la propuesta.",
         );
+      const dealSnapshot = await tx.deal.findUniqueOrThrow({
+        where: { id: dealId },
+        include: { company: true, contact: true, owner: true, pipeline: true },
+      });
+      const issuer = await tx.user.findUnique({ where: { id: actor.id }, select: { name: true, email: true } });
       const today = ecuadorToday();
       const sentAt = dto.sentAt ? toDay(dto.sentAt) : today;
       if (sentAt > today)
@@ -516,6 +617,24 @@ export class PipelineService {
         throw new BadRequestException(
           "La vigencia debe ser igual o posterior a la fecha de envío.",
         );
+      const requestHash = createHash("sha256")
+        .update(JSON.stringify({
+          dealId,
+          validUntil: validUntil.toISOString(),
+          sentAt: sentAt.toISOString(),
+          items: items.map(({ description, quantity, unitPrice, taxRate, discountRate, product }) => ({
+            description, quantity: quantity.toString(), unitPrice: unitPrice.toString(),
+            taxRate, discountRate: discountRate ?? 0,
+            product: product ? { code: product.code, description: product.description } : null,
+          })),
+        }))
+        .digest("hex");
+      const previousRequest = await tx.quote.findUnique({ where: { requestKey: dto.requestKey } });
+      if (previousRequest) {
+        if (previousRequest.dealId !== dealId || previousRequest.requestHash !== requestHash)
+          throw new ConflictException("La clave de petición ya se usó con otros datos.");
+        return this.detail(tx, dealId);
+      }
       await this.supersede(tx, dealId, await this.liveQuotes(tx, dealId), actor.id);
       const last = await tx.quote.findFirst({
         where: { number: { startsWith: "COT-" } },
@@ -523,22 +642,35 @@ export class PipelineService {
         select: { number: true },
       });
       const number = nextQuoteNumber(last?.number);
+      const previousVersion = await tx.quote.aggregate({ where: { dealId }, _max: { version: true } });
+      const version = (previousVersion._max.version ?? 0) + 1;
       const totals = dealTotals(items);
       await tx.quote.create({
         data: {
           number,
+          version,
+          requestKey: dto.requestKey,
+          requestHash,
           status: "SENT",
           dealId,
           sentAt,
           validUntil,
           ...totals,
           // Copia de lo enviado: si después cambian los productos, la propuesta conserva su detalle.
-          items: items.map(({ description, quantity, unitPrice, taxRate }) => ({
+          items: items.map(({ description, quantity, unitPrice, taxRate, discountRate, product }) => ({
             description,
             quantity: quantity.toString(),
             unitPrice: unitPrice.toString(),
             taxRate,
+            discountRate: discountRate ?? 0,
+            product: product ? { code: product.code, description: product.description } : null,
           })),
+          snapshot: {
+            customer: { company: dealSnapshot.company, contact: dealSnapshot.contact },
+            issuer: { name: issuer?.name ?? null, email: issuer?.email ?? null },
+            deal: { id: dealSnapshot.id, title: dealSnapshot.title, currency: dealSnapshot.currency },
+            conditions: { validUntil: validUntil.toISOString() },
+          },
         },
       });
       await this.audit(tx, dealId, "QUOTE_SENT", actor.id, {
@@ -564,14 +696,66 @@ export class PipelineService {
         );
       if (quote.validUntil && acceptedAt > quote.validUntil)
         throw new ConflictException("La propuesta venció; registra una nueva.");
-      await tx.quote.update({
-        where: { id: quoteId },
+      const changed = await tx.quote.updateMany({
+        where: { id: quoteId, dealId, status: "SENT" },
         data: { status: "ACCEPTED", acceptedAt, acceptanceNote: dto.acceptanceNote },
       });
+      if (!changed.count) throw new ConflictException("La cotización cambió; actualiza e inténtalo de nuevo.");
       await this.audit(tx, dealId, "QUOTE_ACCEPTED", actor.id, {
         quoteNumber: quote.number,
         acceptedAt: acceptedAt.toISOString(),
         acceptanceNote: dto.acceptanceNote,
+      });
+      return this.detail(tx, dealId);
+    });
+  }
+  async listQuotes(query: ListQuotesDto, actor: Actor) {
+    const dealWhere: Prisma.DealWhereInput = {
+      ...ownerScope(actor),
+      ...(query.dealId ? { id: query.dealId } : {}),
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.quote.findMany({
+        where: { deal: dealWhere, ...(query.status ? { status: query.status as never } : {}) },
+        include: { deal: { select: { id: true, title: true, ownerId: true } } },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this.prisma.quote.count({ where: { deal: dealWhere, ...(query.status ? { status: query.status as never } : {}) } }),
+    ]);
+    return {
+      data: data.map(hideQuoteRequestKey),
+      meta: { page: query.page, limit: query.limit, total, totalPages: Math.ceil(total / query.limit) },
+    };
+  }
+  async findQuote(id: string, actor: Actor) {
+    const quote = await this.prisma.quote.findFirst({
+      where: { id, deal: ownerScope(actor) },
+      include: { deal: { select: { id: true, title: true, ownerId: true } } },
+    });
+    if (!quote) throw new NotFoundException("Cotización no encontrada.");
+    return hideQuoteRequestKey(quote);
+  }
+  rejectQuote(dealId: string, quoteId: string, dto: RejectQuoteDto, actor: Actor) {
+    return this.write(async (tx) => {
+      await this.requireOpenDeal(tx, dealId, actor);
+      const quote = await tx.quote.findFirst({ where: { id: quoteId, dealId } });
+      if (!quote) throw new NotFoundException("Cotización no encontrada.");
+      if (quote.status !== "SENT")
+        throw new ConflictException("Solo una cotización enviada se puede rechazar.");
+      const rejectedAt = toDay(dto.rejectedAt);
+      if (rejectedAt > ecuadorToday() || (quote.sentAt && rejectedAt < quote.sentAt))
+        throw new BadRequestException("La fecha de rechazo debe estar entre el envío y hoy.");
+      if (quote.validUntil && rejectedAt > quote.validUntil)
+        throw new ConflictException("La cotización venció; no se puede rechazar fuera de vigencia.");
+      const changed = await tx.quote.updateMany({
+        where: { id: quoteId, status: "SENT" },
+        data: { status: "REJECTED", rejectedAt, rejectionNote: dto.rejectionNote },
+      });
+      if (!changed.count) throw new ConflictException("La cotización cambió; actualiza e inténtalo de nuevo.");
+      await this.audit(tx, dealId, "QUOTE_REJECTED", actor.id, {
+        quoteNumber: quote.number, rejectedAt: rejectedAt.toISOString(), rejectionNote: dto.rejectionNote,
       });
       return this.detail(tx, dealId);
     });
@@ -596,8 +780,8 @@ export class PipelineService {
       items: deal.items.length,
     };
   }
-  async history(id: string) {
-    if (!(await this.prisma.deal.count({ where: { id } })))
+  async history(id: string, actor: Actor) {
+    if (!(await this.prisma.deal.count({ where: { id, ...ownerScope(actor) } })))
       throw new NotFoundException("Negocio no encontrado.");
     return this.prisma.dealStageHistory.findMany({
       where: { dealId: id },
@@ -615,7 +799,7 @@ export class PipelineService {
       if (deal.status === "REJECTED")
         throw new ConflictException("Reabre el negocio para registrar actividades.");
       const { completedAt, ...fields } = dto;
-      if (completedAt && toDay(completedAt) > ecuadorToday())
+      if (completedAt && ecuadorToday(completedAt) > ecuadorToday())
         throw new BadRequestException(
           "Una actividad ya realizada no puede tener fecha futura.",
         );
@@ -628,12 +812,13 @@ export class PipelineService {
           contactId: deal.contactId,
           companyId: deal.companyId,
           assigneeId: actorId,
+          createdById: actorId,
         },
         include: { assignee: { select: { id: true, name: true } } },
       });
     });
   }
-  completeActivity(dealId: string, activityId: string) {
+  completeActivity(dealId: string, activityId: string, actorId: string) {
     return this.write(async (tx) => {
       const activity = await tx.activity.findFirst({
         where: { id: activityId, dealId },
@@ -641,6 +826,10 @@ export class PipelineService {
       if (!activity) throw new NotFoundException("Actividad no encontrada.");
       if (activity.status !== "PENDING")
         throw new ConflictException("La actividad ya no está pendiente.");
+      // Quién la completó queda en la auditoría, igual que desde la agenda.
+      await tx.auditLog.create({
+        data: { action: "COMPLETED", entityType: "Activity", entityId: activityId, userId: actorId },
+      });
       return tx.activity.update({
         where: { id: activityId },
         data: { status: "COMPLETED", completedAt: new Date() },
@@ -674,25 +863,16 @@ export class PipelineService {
     if (!deal) throw new NotFoundException("Negocio no encontrado.");
     return deal;
   }
-  /** Ficha completa: negocio, productos, cotizaciones, actividades, historial y cierres (AuditLog). */
+  /** Ficha: negocio, productos y cotizaciones. Actividades, etapas y cierres van por GET /deals/:id/timeline. */
   private async detail(tx: Tx, id: string) {
-    // En paralelo fuera de una transacción; dentro, Prisma las encola en su conexión.
-    const [deal, closures] = await Promise.all([
-      tx.deal.findUnique({ where: { id }, include: dealDetailInclude }),
-      tx.auditLog.findMany({
-        where: { entityType: "Deal", entityId: id },
-        select: {
-          id: true,
-          action: true,
-          changes: true,
-          createdAt: true,
-          user: { select: { id: true, name: true } },
-        },
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      }),
-    ]);
+    const deal = await tx.deal.findUnique({ where: { id }, include: dealDetailInclude });
     if (!deal) throw new NotFoundException("Negocio no encontrado.");
-    return { ...deal, closures };
+    return {
+      ...deal,
+      ...(Array.isArray(deal.quotes)
+        ? { quotes: deal.quotes.map(hideQuoteRequestKey) }
+        : {}),
+    };
   }
   private assertCanSetRequirements(actor: Actor) {
     if (actor.role !== "ADMIN")
@@ -700,8 +880,14 @@ export class PipelineService {
         "Solo un administrador cambia los requisitos de una etapa.",
       );
   }
+  private assertCanManageProducts(actor: Actor) {
+    if (actor.role !== "ADMIN")
+      throw new ForbiddenException("Solo un administrador administra el catálogo de productos.");
+  }
   private async requireOpenDeal(tx: Tx, id: string, actor: Actor) {
     const deal = await this.requireDeal(tx, id);
+    if (actor.role !== "ADMIN" && deal.ownerId !== actor.id)
+      throw new NotFoundException("Negocio no encontrado.");
     this.assertCanChange(deal, actor);
     if (deal.status !== "OPEN")
       throw new ConflictException("Reabre el negocio para cambiar sus propuestas.");
@@ -837,7 +1023,11 @@ export class PipelineService {
         },
       }),
       tx.activity.count({
-        where: { dealId: deal.id, status: "PENDING", dueAt: { gte: today } },
+        where: {
+          dealId: deal.id,
+          status: "PENDING",
+          dueAt: { gte: ecuadorDayStart(today) },
+        },
       }),
     ]);
     const quote = deal.quotes[0];
@@ -872,7 +1062,7 @@ export class PipelineService {
     if (target.kind === "lost") {
       const lossDetail = input.lossDetail ?? null;
       const followUp = input.followUp;
-      if (followUp && toDay(followUp.dueAt) < ecuadorToday())
+      if (followUp && ecuadorToday(followUp.dueAt) < ecuadorToday())
         throw new BadRequestException("El seguimiento debe ser de hoy en adelante.");
       await tx.deal.update({
         where: { id },
@@ -892,12 +1082,13 @@ export class PipelineService {
             contactId: deal.contactId,
             companyId: deal.companyId,
             assigneeId: actor.id,
+            createdById: actor.id,
           },
         });
       await this.audit(tx, id, "LOST", actor.id, {
         lossReason: input.lossReason ?? null,
         lossDetail,
-        followUpAt: followUp ? toDay(followUp.dueAt).toISOString() : null,
+        followUpAt: followUp ? ecuadorToday(followUp.dueAt).toISOString() : null,
       });
       return;
     }
@@ -1021,6 +1212,7 @@ export class PipelineService {
       | "REOPENED"
       | "QUOTE_SENT"
       | "QUOTE_ACCEPTED"
+      | "QUOTE_REJECTED"
       | "QUOTE_SUPERSEDED",
     userId: string,
     changes: Prisma.InputJsonObject,
@@ -1054,6 +1246,10 @@ export class PipelineService {
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === "P2002" && String(error.meta?.target).includes("requestKey"))
+          throw new ConflictException("La clave de petición ya fue procesada.");
+        if (error.code === "P2002" && String(error.meta?.target).toLowerCase().includes("code"))
+          throw new ConflictException("Ya existe un producto con ese código.");
         if (error.code === "P2002")
           throw new ConflictException(
             "Esa posicion ya esta ocupada. Elige otra posicion.",

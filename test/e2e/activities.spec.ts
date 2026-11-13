@@ -78,7 +78,16 @@ test("ticket-24: crea, filtra, consulta en calendario y completa una actividad r
       name: "Marcar Revisar propuesta del equipo como hecha",
     })
     .click();
-  await expect(page.getByText("Completada")).toBeVisible();
+  await expect
+    .poll(async () => (await prisma.activity.findUnique({ where: { id: activityId } }))?.status)
+    .toBe("COMPLETED");
+  await expect(page.locator(".activity-toast")).toContainText(
+    "Actividad marcada como hecha.",
+  );
+  const activityCard = page.locator(".activity-card").filter({
+    has: page.getByRole("heading", { name: "Revisar propuesta del equipo" }),
+  });
+  await expect(activityCard.getByText("Completada", { exact: true })).toBeVisible();
   expect(
     (await prisma.activity.findUnique({ where: { id: activityId } }))?.status,
   ).toBe("COMPLETED");

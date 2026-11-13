@@ -1,5 +1,6 @@
 const { before, after, test } = require("node:test");
 const assert = require("node:assert/strict");
+const { randomUUID } = require("node:crypto");
 const { startApi } = require("./api.cjs");
 const {
   cedulaDePrueba,
@@ -14,6 +15,7 @@ let api,
   inactive,
   admin,
   adminToken,
+  otherToken,
   contact,
   token,
   pipeline,
@@ -29,6 +31,10 @@ const asAdmin = (path, options = {}) => api.call(path, { ...options, token: admi
 // Hoy en Ecuador (UTC-5), como ecuadorToday() del API.
 const today = new Date(Date.now() - 5 * 3600e3).toISOString().slice(0, 10) + "T00:00:00.000Z";
 const nextMonth = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10) + "T00:00:00.000Z";
+/** La ficha ya no trae historial (CRM-25): actividades y eventos se leen de la línea de tiempo. */
+const timeline = async (path) => (await asAdmin(path + "/timeline?limit=50")).body.data;
+const closures = async (path) => (await timeline(path)).filter((e) => e.kind === "EVENT").map((e) => e.event);
+const activities = async (path) => (await timeline(path)).filter((e) => e.kind === "ACTIVITY").map((e) => e.activity);
 const codes = (response) => (response.body.error?.errors ?? response.body.pending ?? []).map((p) => p.code);
 before(async () => {
   api = await startApi();
@@ -51,6 +57,11 @@ before(async () => {
   });
   assert.equal(adminLogin.status, 200);
   adminToken = adminLogin.body.accessToken;
+  const otherLogin = await api.call("/auth/login", {
+    method: "POST",
+    body: { email: other.email, password: PASSWORD },
+  });
+  otherToken = otherLogin.body.accessToken;
   contact = await api.prisma.contact.create({
     data: {
       firstName: "Ana",
@@ -221,7 +232,7 @@ test("rechaza fechas, montos, relaciones y responsables invalidos sin altas parc
 });
 test("CRM-20: productos recalculan el valor y rechazan filas invalidas sin guardar", async () => {
   const items = [
-    { description: "Pagina web", quantity: 1, unitPrice: 100.55, taxRate: 15 },
+    { description: "Pagina web", quantity: 1, unitPrice: 100.55, taxRate: 15, discountRate: 10 },
     { description: "Hosting", quantity: 2, unitPrice: 10, taxRate: 0 },
   ];
   for (const bad of [
@@ -251,7 +262,7 @@ test("CRM-20: productos recalculan el valor y rechazan filas invalidas sin guard
     body: { items },
   });
   assert.equal(saved.status, 200, JSON.stringify(saved.body));
-  assert.equal(saved.body.value, "120.55");
+  assert.equal(saved.body.value, "110.5");
   assert.deepEqual(
     saved.body.items.map((i) => [i.description, i.quantity, i.position]),
     [
@@ -275,16 +286,52 @@ test("ambas rutas de movimiento exigen la propuesta aceptada, registran historia
   const blocked = await call(path + "/move", { method: "PATCH", body: { stageId: won } });
   assert.equal(blocked.status, 422, JSON.stringify(blocked.body));
   assert.deepEqual(codes(blocked), ["ACCEPTANCE", "CLOSED_AT"]);
-  const proposal = await call(path + "/quotes", { method: "POST", body: { validUntil: nextMonth } });
+  const requestKey = randomUUID();
+  const proposalBody = { requestKey, validUntil: nextMonth };
+  const proposal = await call(path + "/quotes", { method: "POST", body: proposalBody });
   assert.equal(proposal.status, 201, JSON.stringify(proposal.body));
-  const [sent] = proposal.body.quotes;
+  const rejectedQuote = proposal.body.quotes.find((q) => q.status === "SENT");
+  assert.equal(rejectedQuote.version, 1);
+  assert.deepEqual([rejectedQuote.status, rejectedQuote.total], ["SENT", "124.08"]);
+  const retriedProposal = await call(path + "/quotes", { method: "POST", body: proposalBody });
+  assert.equal(retriedProposal.status, 201);
+  assert.equal(await api.prisma.quote.count({ where: { dealId: deal } }), 1);
+  assert.equal((await call("/quotes")).status, 200);
+  const detail = await call("/quotes/" + rejectedQuote.id);
+  assert.equal(detail.body.number, rejectedQuote.number);
+  assert.equal(detail.body.requestKey, undefined);
+  assert.equal((await api.prisma.quote.findUnique({ where: { id: rejectedQuote.id } })).requestKey, requestKey);
+  const rejected = await call(path + "/quotes/" + rejectedQuote.id + "/reject", {
+    method: "POST",
+    body: { rejectedAt: today, rejectionNote: "El cliente eligió otra alternativa" },
+  });
+  assert.equal(rejected.status, 200, JSON.stringify(rejected.body));
+  assert.equal((await call(path + "/quotes/" + rejectedQuote.id + "/reject", {
+    method: "POST",
+    body: { rejectedAt: today, rejectionNote: "Repetido" },
+  })).status, 409);
+  const proposal2 = await call(path + "/quotes", { method: "POST", body: { requestKey: randomUUID(), validUntil: nextMonth } });
+  const sent = proposal2.body.quotes.find((q) => q.status === "SENT");
+  assert.equal(sent.version, 2);
   assert.match(sent.number, /^COT-\d{6}$/);
-  assert.deepEqual([sent.status, sent.total], ["SENT", "135.63"]);
+  assert.deepEqual([sent.status, sent.total], ["SENT", "124.08"]);
+  assert.equal((await api.call("/quotes", { token: otherToken })).body.data.length, 0);
+  assert.equal((await api.call("/quotes/" + sent.id, { token: otherToken })).status, 404);
+  assert.equal((await api.call(path + "/quotes", {
+    token: otherToken,
+    method: "POST",
+    body: { requestKey: randomUUID(), validUntil: nextMonth },
+  })).status, 404);
+  assert.equal((await call("/quotes")).body.data.every((q) => q.requestKey === undefined), true);
   const accepted = await call(path + "/quotes/" + sent.id + "/accept", {
     method: "POST",
     body: { acceptedAt: today, acceptanceNote: "Orden de compra 55 por correo" },
   });
   assert.equal(accepted.status, 200, JSON.stringify(accepted.body));
+  assert.equal((await call(path + "/quotes/" + sent.id + "/accept", {
+    method: "POST",
+    body: { acceptedAt: today, acceptanceNote: "Segunda vez" },
+  })).status, 409);
   const moved = await call(path + "/move", {
     method: "PATCH",
     body: { stageId: won, fromStageId: stage, closedAt: today },
@@ -293,8 +340,8 @@ test("ambas rutas de movimiento exigen la propuesta aceptada, registran historia
   assert.equal(moved.body.status, "WON");
   assert.equal(moved.body.closedAt, today);
   assert.deepEqual(
-    (await api.prisma.quote.findMany({ where: { dealId: deal } })).map((q) => q.status),
-    ["ACCEPTED"],
+    (await api.prisma.quote.findMany({ where: { dealId: deal } })).map((q) => q.status).sort(),
+    ["ACCEPTED", "REJECTED"],
   );
   await call(path + "/move", { method: "PATCH", body: { stageId: won } });
   assert.equal((await call(path + "/history")).body.length, 2);
@@ -313,7 +360,7 @@ test("ambas rutas de movimiento exigen la propuesta aceptada, registran historia
   assert.equal(reopened.status, 200, JSON.stringify(reopened.body));
   assert.equal(reopened.body.status, "OPEN");
   assert.equal(reopened.body.closedAt, null);
-  assert.equal(await api.prisma.quote.count({ where: { dealId: deal } }), 1);
+  assert.equal(await api.prisma.quote.count({ where: { dealId: deal } }), 2);
   const history = (await call(path + "/history")).body;
   assert.equal(history.length, 3);
   assert.deepEqual(
@@ -333,10 +380,11 @@ test("cierres: ganar con la propuesta aceptada, perder con motivo y reabrir solo
   assert.equal(wonDeal.status, 200, JSON.stringify(wonDeal.body));
   assert.equal(wonDeal.body.status, "WON");
   assert.equal(wonDeal.body.stage.id, won);
-  const [quote] = wonDeal.body.quotes;
+  const quote = wonDeal.body.quotes.find((item) => item.status === "ACCEPTED");
+  assert.ok(quote);
   assert.deepEqual(
     [quote.status, quote.subtotal, quote.tax, quote.total, wonDeal.body.quotes.length],
-    ["ACCEPTED", "120.55", "15.08", "135.63", 1],
+    ["ACCEPTED", "110.5", "13.58", "124.08", 2],
   );
   assert.equal((await call(path + "/items", { method: "PUT", body: { items: [] } })).status, 409);
   // Un ganado es terminal: el VENDEDOR no puede tocarlo (403) y ni el ADMIN lo pierde sin reabrirlo (409).
@@ -354,7 +402,7 @@ test("cierres: ganar con la propuesta aceptada, perder con motivo y reabrir solo
   assert.equal(reopened.status, 200, JSON.stringify(reopened.body));
   assert.equal(reopened.body.status, "OPEN");
   assert.equal(reopened.body.stage.id, stage);
-  assert.equal(reopened.body.quotes.length, 1);
+  assert.equal(reopened.body.quotes.length, 2);
   for (const body of [{}, { lossReason: "OTHER" }, { lossReason: "CARO" }]) {
     const rejected = await call(path + "/lose", { method: "POST", body });
     assert.equal(rejected.status, 400, JSON.stringify(rejected.body));
@@ -370,15 +418,16 @@ test("cierres: ganar con la propuesta aceptada, perder con motivo y reabrir solo
   );
   assert.ok(lost.body.closedAt);
   const board = (await call("/deals/board?pipelineId=" + pipeline)).body;
-  assert.deepEqual([board.lost.count, board.metrics.open.count, board.metrics.lost.value], [1, 0, "120.55"]);
+  assert.deepEqual([board.lost.count, board.metrics.open.count, board.metrics.lost.value], [1, 0, "110.50"]);
   assert.equal(board.stages.find((s) => s.id === stage).count, 0);
   const open = await asAdmin(path + "/reopen", { method: "POST", body: { reason: "Volvió a escribir" } });
   assert.deepEqual([open.body.status, open.body.lossReason], ["OPEN", null]);
+  const events = await closures(path);
   assert.deepEqual(
-    open.body.closures.map((c) => c.action).slice(0, 4),
+    events.map((c) => c.action).slice(0, 4),
     ["REOPENED", "LOST", "REOPENED", "WON"],
   );
-  assert.equal(open.body.closures[0].changes.reason, "Volvió a escribir");
+  assert.equal(events[0].changes.reason, "Volvió a escribir");
   const direct = await call("/deals", {
     method: "POST",
     body: { title: "Directo a ganado", value: 1, pipelineId: pipeline, stageId: won, companyId: company.id },
@@ -397,35 +446,37 @@ test("perdido con seguimiento → rechazado por un vendedor → papelera; la pro
   const id = await newDeal("Vinos para eventos");
   const path = "/deals/" + id;
   await call(path + "/items", { method: "PUT", body: { items: [{ description: "Vinos", quantity: 2, unitPrice: 100, taxRate: 15 }] } });
-  assert.equal((await call(path + "/quotes", { method: "POST", body: { validUntil: nextMonth } })).status, 201);
-  await call(path + "/quotes", { method: "POST", body: { validUntil: nextMonth } });
+  assert.equal((await call(path + "/quotes", { method: "POST", body: { requestKey: randomUUID(), validUntil: nextMonth } })).status, 201);
+  await call(path + "/quotes", { method: "POST", body: { requestKey: randomUUID(), validUntil: nextMonth } });
   let detail = (await call(path)).body;
   const [live, old] = detail.quotes;
   assert.deepEqual([live.status, old.status], ["SENT", "SUPERSEDED"]);
-  assert.deepEqual(live.items, [{ description: "Vinos", quantity: "2", unitPrice: "100", taxRate: 15 }]);
+  assert.deepEqual(live.items, [{ description: "Vinos", quantity: "2", unitPrice: "100", taxRate: 15, discountRate: 0, product: null }]);
+  const events = await closures(path);
   assert.deepEqual(
-    detail.closures.map((c) => [c.action, c.changes.quoteNumber]),
+    events.map((c) => [c.action, c.changes.quoteNumber]),
     [["QUOTE_SENT", live.number], ["QUOTE_SUPERSEDED", old.number], ["QUOTE_SENT", old.number]],
   );
-  assert.equal(detail.closures[0].changes.total, "230.00");
+  assert.equal(events[0].changes.total, "230.00");
 
   assert.equal((await call(path + "/lose", { method: "POST", body: { lossReason: "DO_NOT_CONTACT" } })).status, 400);
-  const followUp = { type: "CALL", subject: "Retomar en temporada", dueAt: nextMonth };
+  // Como la web: el día del seguimiento sin hora, que el API guarda a las 00:00 de Ecuador (CRM-22).
+  const followUp = { type: "CALL", subject: "Retomar en temporada", dueAt: nextMonth.slice(0, 10) };
   const lost = await call(path + "/lose", { method: "POST", body: { lossReason: "NEED_POSTPONED", followUp } });
   assert.equal(lost.status, 200, JSON.stringify(lost.body));
   assert.deepEqual([lost.body.status, lost.body.quotes[0].status], ["LOST", "SENT"]);
-  const pending = lost.body.activities.find((a) => a.subject === followUp.subject);
-  assert.deepEqual([pending.status, pending.dueAt], ["PENDING", nextMonth]);
+  const pending = (await activities(path)).find((a) => a.subject === followUp.subject);
+  assert.deepEqual([pending.status, pending.dueAt], ["PENDING", followUp.dueAt + "T05:00:00.000Z"]);
 
   assert.equal((await call(path + "/reject", { method: "POST", body: { lossReason: "BUDGET" } })).status, 400);
   const rejected = await call(path + "/reject", { method: "POST", body: { lossReason: "DO_NOT_CONTACT" } });
   assert.equal(rejected.status, 200, JSON.stringify(rejected.body));
   detail = rejected.body;
   assert.deepEqual(
-    [detail.status, detail.lossReason, detail.quotes.map((q) => q.status), detail.activities.find((a) => a.subject === followUp.subject).status],
+    [detail.status, detail.lossReason, detail.quotes.map((q) => q.status), (await activities(path)).find((a) => a.subject === followUp.subject).status],
     ["REJECTED", "DO_NOT_CONTACT", ["REJECTED", "SUPERSEDED"], "CANCELLED"],
   );
-  assert.deepEqual(detail.closures[0].changes, {
+  assert.deepEqual((await closures(path))[0].changes, {
     lossReason: "DO_NOT_CONTACT",
     lossDetail: null,
     from: "LOST",
@@ -443,7 +494,7 @@ test("perdido con seguimiento → rechazado por un vendedor → papelera; la pro
   // Un abierto también se rechaza y un ADMIN lo reabre en su etapa.
   const second = await newDeal("Riesgo de mora");
   const direct = await call("/deals/" + second + "/reject", { method: "POST", body: { lossReason: "COMMERCIAL_RISK" } });
-  assert.equal(direct.body.closures[0].changes.from, "OPEN");
+  assert.equal((await closures("/deals/" + second))[0].changes.from, "OPEN");
   const reopened = await asAdmin("/deals/" + second + "/reopen", { method: "POST", body: { reason: "Pagó la deuda" } });
   assert.deepEqual([reopened.body.status, reopened.body.stage.id, reopened.body.lossReason], ["OPEN", stage, null]);
   await call("/deals/" + second + "/reject", { method: "POST", body: { lossReason: "COMMERCIAL_RISK" } });
@@ -462,6 +513,13 @@ test("perdido con seguimiento → rechazado por un vendedor → papelera; la pro
   assert.equal((await call(path)).status, 404);
   const trail = { entityType: "Deal", entityId: { in: [id, second] }, action: "DELETED" };
   assert.equal(await api.prisma.auditLog.count({ where: trail }), 2);
+  // CRM-25: el borrado sigue en la línea de tiempo del contacto, sin enlace; su responsable (VENDEDOR) también lo ve.
+  for (const read of [call, asAdmin]) {
+    const gone = (await read("/contacts/" + contact.id + "/timeline?limit=50")).body.data.filter(
+      (e) => e.event?.action === "DELETED" && ["Vinos para eventos", "Riesgo de mora"].includes(e.event.changes.title),
+    );
+    assert.deepEqual(gone.map((e) => [e.deal, e.event.changes.ownerId]), [[null, user.id], [null, user.id]]);
+  }
   await api.prisma.auditLog.deleteMany({ where: { entityType: "Deal", entityId: { in: [id, second] } } });
 });
 test("recorrido con requisitos: Contactado → Negociación → Propuesta con datos reales, saltos y retrocesos", async () => {
@@ -526,7 +584,7 @@ test("recorrido con requisitos: Contactado → Negociación → Propuesta con da
     method: "PUT",
     body: { items: [{ description: "Plan anual", quantity: 1, unitPrice: 1000, taxRate: 15 }] },
   });
-  await call(path + "/quotes", { method: "POST", body: { validUntil: nextMonth } });
+  await call(path + "/quotes", { method: "POST", body: { requestKey: randomUUID(), validUntil: nextMonth } });
   assert.equal((await call(path + "/move", { method: "PATCH", body: { stageId: proposalStage } })).status, 200);
   assert.deepEqual(codes(await call(path + "/move", { method: "PATCH", body: { stageId: contacted } })), ["REASON"]);
   const back = await call(path + "/move", {
@@ -584,7 +642,9 @@ test("CRM-20: registra y completa actividades del negocio una sola vez", async (
     409,
   );
   const detail = await call("/deals/" + deal);
-  assert.equal(detail.body.activities[0].subject, "Llamar al cliente");
+  for (const key of ["activities", "stageHistory", "closures"]) assert.equal(detail.body[key], undefined, key);
+  const [logged] = (await timeline("/deals/" + deal)).filter((e) => e.kind === "ACTIVITY");
+  assert.deepEqual([logged.activity.subject, logged.author.id], ["Llamar al cliente", user.id]);
 });
 test("lectura, paginacion, metricas decimales y conflictos de borrado", async () => {
   const list = await call("/deals?pipelineId=" + pipeline + "&limit=1");
@@ -594,8 +654,8 @@ test("lectura, paginacion, metricas decimales y conflictos de borrado", async ()
   assert.equal(single.body.company.id, company.id);
   const board = await call("/deals/board?pipelineId=" + pipeline);
   assert.equal(board.status, 200);
-  assert.equal(board.body.stages.find((s) => s.id === stage).value, "120.55");
-  assert.deepEqual(board.body.metrics.open, { count: 1, value: "120.55" });
+  assert.equal(board.body.stages.find((s) => s.id === stage).value, "110.50");
+  assert.deepEqual(board.body.metrics.open, { count: 1, value: "110.50" });
   assert.equal(
     (await call("/stages/" + won, { method: "DELETE" })).status,
     409,

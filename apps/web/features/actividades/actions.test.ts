@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest";
-import { completeActivity, saveActivity } from "./actions";
+import { cancelActivity, completeActivity, saveActivity } from "./actions";
 
 const mocks = vi.hoisted(() => ({
   authenticatedApi: vi.fn(),
@@ -48,12 +48,13 @@ test("crear actividad convierte fechas locales de Ecuador y revalida las fichas 
   expect(mocks.revalidatePath).toHaveBeenCalledWith("/pipeline");
 });
 
-test("editar permite limpiar vencimiento y recordatorio", async () => {
+test("editar envía la versión leída y permite limpiar vencimiento y recordatorio", async () => {
   mocks.authenticatedApi.mockResolvedValue({ ok: true });
   await saveActivity(
     { ok: false, message: "" },
     form({
       id: "activity-1",
+      updatedAt: "2026-11-03T12:00:00.000Z",
       subject: "Llamar",
       type: "CALL",
       assigneeId: "user-1",
@@ -64,6 +65,28 @@ test("editar permite limpiar vencimiento y recordatorio", async () => {
   );
   expect(payload.dueAt).toBeNull();
   expect(payload.reminderAt).toBeNull();
+  expect(payload.updatedAt).toBe("2026-11-03T12:00:00.000Z");
+});
+
+test("cancelar usa el endpoint de transición y revalida agenda y fichas", async () => {
+  mocks.authenticatedApi.mockResolvedValue({ ok: true });
+  expect(await cancelActivity("activity-1")).toEqual({ ok: true, message: "Actividad cancelada." });
+  expect(mocks.authenticatedApi).toHaveBeenCalledWith("/activities/activity-1/cancel", { method: "PATCH" });
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/actividades");
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/pipeline");
+});
+
+test("editar identifica los 409 para que la agenda se recargue", async () => {
+  mocks.authenticatedApi.mockResolvedValue({ ok: false, status: 409 });
+  mocks.apiError.mockResolvedValue("La actividad cambió desde que la abriste.");
+  const result = await saveActivity({ ok: false, message: "" }, form({
+    id: "activity-1",
+    updatedAt: "2026-11-03T12:00:00.000Z",
+    subject: "Llamar",
+    type: "CALL",
+    assigneeId: "user-1",
+  }));
+  expect(result).toMatchObject({ ok: false, conflict: true });
 });
 
 test("marcar como hecha usa el endpoint de transición y muestra el error del API", async () => {

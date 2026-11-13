@@ -21,6 +21,69 @@
   width: 17px;
   height: 17px;
 }
+/* Los iconos de acción comparten forma, pero el color anticipa el resultado de cada botón. */
+.action-button > svg {
+  transition: color 0.16s ease;
+}
+.action-button--edit > svg,
+.icon-button--edit > svg {
+  color: var(--wave-blue);
+}
+.action-button--success > svg,
+.icon-button--success > svg {
+  color: var(--wave-success);
+}
+.action-button--cancel > svg,
+.icon-button--cancel > svg {
+  color: var(--wave-warning);
+}
+.action-button--history > svg,
+.icon-button--history > svg {
+  color: var(--wave-history);
+}
+.action-button--assign > svg,
+.icon-button--assign > svg {
+  color: var(--wave-assignment);
+}
+.action-button--restore > svg,
+.icon-button--restore > svg {
+  color: var(--wave-assignment);
+}
+.action-button--delete > svg,
+.icon-button--delete > svg {
+  color: var(--wave-danger);
+}
+.icon-button--edit:hover {
+  color: var(--wave-blue-dark);
+  border-color: var(--wave-blue-line);
+  background: var(--wave-blue-soft);
+}
+.icon-button--success:hover {
+  color: var(--wave-success-strong);
+  border-color: #cfe8d9;
+  background: var(--wave-success-soft);
+}
+.icon-button--cancel:hover {
+  color: #8a6212;
+  border-color: #f0dfb8;
+  background: var(--wave-warning-soft);
+}
+.icon-button--history:hover {
+  color: #65478f;
+  border-color: #dfd5ed;
+  background: var(--wave-history-soft);
+}
+.icon-button--assign:hover,
+.icon-button--restore:hover {
+  color: #216a6e;
+  border-color: #cce5e4;
+  background: var(--wave-assignment-soft);
+}
+.icon-button--delete:hover {
+  color: var(--wave-danger);
+  border-color: #efcccc;
+  background: var(--wave-danger-soft);
+}
 .button--primary {
   color: white;
   background: var(--wave-blue);
@@ -151,6 +214,12 @@
   .select-control::picker-icon {
     display: none;
   }
+}
+/* Después de :hover y :checked para ganarles: la opción deshabilitada no se resalta. */
+.select-control option:disabled {
+  color: var(--wave-muted);
+  background: var(--wave-white);
+  cursor: not-allowed;
 }
 .input::placeholder {
   color: var(--wave-faint);

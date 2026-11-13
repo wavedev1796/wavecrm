@@ -75,6 +75,19 @@ export class MailerService {
     );
   }
 
+  /** Sin el texto de la nota: quien recibe el aviso puede no tener acceso al registro. */
+  sendMention(recipient: Recipient, author: string, record: string, path: string) {
+    return this.send(recipient, {
+      path,
+      subject: `${author} te mencionó en una nota`,
+      heading: "Te mencionaron en una nota",
+      intro: `${author} te mencionó en una nota del ${record}.`,
+      action: "Abrir la ficha",
+      expiry: "Si no tienes acceso a ese registro, pídeselo a su responsable.",
+      footer: "Recibes este aviso una sola vez por nota.",
+    });
+  }
+
   private async send(recipient: Recipient, message: Message, token?: string) {
     const appUrl =
       this.config.get<string>("APP_URL") ?? "http://localhost:3000";

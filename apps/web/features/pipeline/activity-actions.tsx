@@ -11,20 +11,22 @@ import { Select } from "@/components/ui/select";
 import { useFieldErrors } from "@/components/form/use-field-errors";
 import { TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { NEGOCIO } from "@/content/pipeline";
+import { TIMELINE } from "@/content/timeline";
 import { completeActivityAction, createActivityAction } from "./actions";
 import { emptyActivity, type ActivityValues } from "./types";
 
-// Las partes interactivas del timeline. La lista vive en el servidor (deal-timeline.tsx): así las fechas
+// Las partes interactivas del timeline. La lista se arma en el servidor (features/timeline/entries.ts): así las fechas
 // se formatean una sola vez y no difieren entre el ICU de Node y el del navegador al hidratar.
 
 export function CompleteButton({ dealId, activity }: Readonly<{ dealId: string; activity: { id: string; subject: string } }>) {
-  const texto = NEGOCIO.timeline;
+  const texto = TIMELINE;
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
   return (
     <>
       <Button
         variant="ghost"
+        className="action-button action-button--success"
         loading={pending}
         aria-label={texto.completarDe(activity.subject)}
         onClick={() =>

@@ -80,3 +80,15 @@ pnpm --filter @wave/web test        # 241/241 en 69 archivos
 ### Implementación
 
 `.page-actions` salió de `06-pipeline.css` y de `11-responsive.css`: ninguna pantalla la usa. Desde entonces el tramo 06 abre con `.kpi-grid {` y no con `.page-actions {`; la tabla de tramos conserva el ancla del corte original (`b26ebf4`). Por esas reglas, el CSS compilado ya no es idéntico al del corte. Detalle en el bloque *Recorte de código del pipeline* de [CRM-20](20%20-%20Ficha%20de%20Negocio.md).
+
+## Color semántico para acciones (2026-11-07)
+
+### Implementación
+
+- `styles/01-tokens.css` incorpora tonos de historial y asignación/restauración junto a los tokens existentes de éxito, advertencia y peligro.
+- `styles/04-controles.css` ofrece clases de acción compartidas: azul para editar, verde para confirmar/guardar, ámbar para cancelar, violeta para historial, turquesa para asignar/restaurar y rojo para eliminar.
+- Se aplicaron en agenda, fichas/timeline, pipeline, productos del negocio, empresas y administración de usuarios. El color del icono aparece en reposo; los botones iconográficos también muestran un fondo acorde al pasar el puntero.
+
+### Verificación
+
+- TypeScript web, ESLint y `git diff --check` aprobados. ESLint conserva una advertencia preexistente en `deal-actions.test.tsx`; no se ejecutaron pruebas automatizadas para este ajuste.

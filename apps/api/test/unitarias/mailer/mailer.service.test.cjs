@@ -138,6 +138,18 @@ test("el recordatorio llega al responsable, abre la agenda y escapa el asunto", 
   assert.doesNotMatch(message.html, /Oferta < urgente/);
 });
 
+test("CRM-26: el aviso de mención enlaza a la ficha, escapa el HTML y no lleva el texto de la nota", async (t) => {
+  let message;
+  withTransport(t, async (value) => { message = value; });
+  const mailer = new MailerService(config({ APP_URL: "https://crm.example/", SMTP_HOST: "smtp.example.com" }));
+  await mailer.sendMention({ email: "luis@empresa.ec", name: "Luis" }, "Ana <b>", "negocio «Licencias»", "/pipeline/d1");
+  assert.equal(message.to, "luis@empresa.ec");
+  assert.equal(message.subject, "Ana <b> te mencionó en una nota");
+  assert.match(message.text, /https:\/\/crm\.example\/pipeline\/d1/);
+  assert.match(message.html, /Ana &lt;b&gt; te mencionó en una nota del negocio «Licencias»/);
+  assert.doesNotMatch(message.text, /\?token=/);
+});
+
 test("el puerto 587 por defecto no usa TLS directo y un fallo de envío responde 503", async (t) => {
   const options = withTransport(t, async () => {
     throw new Error("ECONNREFUSED");

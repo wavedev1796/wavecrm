@@ -1,14 +1,17 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 import { ACTIVITY_TYPES, cleanText, type ActivityType } from "@wave/shared";
 import {
   IsDate,
+  IsInt,
   IsIn,
   IsOptional,
   IsString,
   Length,
+  Max,
   Matches,
+  Min,
 } from "class-validator";
 
 const text = (label: string, max: number, min = 1) =>
@@ -22,7 +25,11 @@ const text = (label: string, max: number, min = 1) =>
     }),
   );
 
-const date = (label: string) =>
+/**
+ * Fecha de una actividad (agenda y ficha del negocio). Un día sin hora ("2026-11-05") es las 00:00 de
+ * Ecuador, no de UTC: así la agenda, la ficha y el timeline lo muestran el mismo día.
+ */
+export const activityDate = (message: string) =>
   applyDecorators(
     Transform(({ value }) => {
       if (
@@ -30,11 +37,13 @@ const date = (label: string) =>
         !/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(value)
       )
         return value;
-      const parsed = new Date(value);
+      // ponytail: Ecuador continental está en UTC-5 todo el año (sin horario de verano).
+      const parsed = new Date(value.length === 10 ? `${value}T00:00:00-05:00` : value);
       return Number.isNaN(parsed.getTime()) ? value : parsed;
     }),
-    IsDate({ message: `Ingresa ${label} válido.` }),
+    IsDate({ message }),
   );
+const date = (label: string) => activityDate(`Ingresa ${label} válido.`);
 
 export class CreateActivityDto {
   @ApiProperty({ enum: ACTIVITY_TYPES })
@@ -81,7 +90,12 @@ export class CreateActivityDto {
   dealId?: string;
 }
 
-export class UpdateActivityDto extends PartialType(CreateActivityDto) {}
+export class UpdateActivityDto extends PartialType(CreateActivityDto) {
+  @ApiPropertyOptional({ format: "date-time", description: "Versión leída por el formulario" })
+  @IsOptional()
+  @date("la versión de la actividad")
+  updatedAt?: Date;
+}
 
 export class ListActivitiesDto {
   @ApiPropertyOptional({ enum: ACTIVITY_TYPES })
@@ -105,4 +119,26 @@ export class ListActivitiesDto {
   @IsOptional()
   @IsIn(["upcoming", "overdue", "all"], { message: "El periodo no es válido." })
   period?: "upcoming" | "overdue" | "all";
+}
+
+export class ActivityHistoryQueryDto {
+  @ApiPropertyOptional({ description: "Cursor devuelto por la página anterior." })
+  @IsOptional()
+  @IsString({ message: "El cursor no es válido." })
+  cursor?: string;
+
+  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: "El límite debe ser un número entero entre 1 y 50." })
+  @Min(1, { message: "El límite debe ser un número entero entre 1 y 50." })
+  @Max(50, { message: "El límite debe ser un número entero entre 1 y 50." })
+  limit = 20;
+
+  @ApiPropertyOptional({ enum: ["CREATED", "UPDATED", "COMPLETED", "CANCELLED", "DELETED"] })
+  @IsOptional()
+  @IsIn(["CREATED", "UPDATED", "COMPLETED", "CANCELLED", "DELETED"], {
+    message: "La acción del historial no es válida.",
+  })
+  action?: "CREATED" | "UPDATED" | "COMPLETED" | "CANCELLED" | "DELETED";
 }

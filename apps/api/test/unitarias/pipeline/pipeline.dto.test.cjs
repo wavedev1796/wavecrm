@@ -122,7 +122,11 @@ test("perder y rechazar aceptan solo sus motivos; el seguimiento es opcional y s
   assert.deepEqual(await errors(RejectDealDto, { lossReason: "OTHER" }), { lossDetail: "Ingresa el detalle del motivo." });
   const followUp = { type: "CALL", subject: "Retomar", dueAt: "2027-01-18" };
   assert.deepEqual(await errors(LoseDealDto, { lossReason: "NEED_POSTPONED", followUp }), {});
-  assert.ok(plainToInstance(LoseDealDto, { lossReason: "NEED_POSTPONED", followUp }).followUp.dueAt instanceof Date);
+  // CRM-22: el día del seguimiento es las 00:00 de Ecuador, igual que en la agenda.
+  assert.equal(
+    plainToInstance(LoseDealDto, { lossReason: "NEED_POSTPONED", followUp }).followUp.dueAt.toISOString(),
+    "2027-01-18T05:00:00.000Z",
+  );
   assert.deepEqual(await errors(LoseDealDto, { lossReason: "NEED_POSTPONED", followUp: { ...followUp, type: "FAX" } }), {
     followUp: "Elige el tipo del seguimiento.",
   });
@@ -206,11 +210,15 @@ test("CRM-18: el listado de negocios acepta filtros opcionales", async () => {
 });
 
 test("propuesta: vigencia obligatoria y envío opcional; aceptar exige fecha y evidencia", async () => {
-  assert.deepEqual(await errors(CreateQuoteDto, {}), { validUntil: "Ingresa la vigencia de la propuesta." });
-  assert.deepEqual(await errors(CreateQuoteDto, { validUntil: "2026-11-30", sentAt: "luego" }), {
+  assert.deepEqual(await errors(CreateQuoteDto, {}), {
+    requestKey: "Ingresa una clave de petición válida.",
+    validUntil: "Ingresa la vigencia de la propuesta.",
+  });
+  const requestKey = "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4";
+  assert.deepEqual(await errors(CreateQuoteDto, { requestKey, validUntil: "2026-11-30", sentAt: "luego" }), {
     sentAt: "Ingresa una fecha de envío válida.",
   });
-  assert.ok(plainToInstance(CreateQuoteDto, { validUntil: "2026-11-30" }).validUntil instanceof Date);
+  assert.ok(plainToInstance(CreateQuoteDto, { requestKey, validUntil: "2026-11-30" }).validUntil instanceof Date);
   assert.deepEqual(await errors(AcceptQuoteDto, {}), {
     acceptedAt: "Ingresa la fecha de aceptación.",
     acceptanceNote: "Ingresa la evidencia de aceptación.",

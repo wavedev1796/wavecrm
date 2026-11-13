@@ -65,3 +65,17 @@ Todas las rutas requieren autenticación. Los responsables deben tener una cuent
 2. Crear una actividad asignada a una persona activa, con vencimiento y recordatorio anterior al vencimiento.
 3. Confirmar que aparece en la agenda y en `GET /activities/upcoming`; crear una actividad con vencimiento anterior a hoy para verla en `GET /activities/overdue`.
 4. Ejecutar el trabajador o esperar el siguiente ciclo para que se envíe el correo al responsable.
+
+## Cancelar, transiciones condicionales y día de Ecuador (2026-11-02)
+
+Bloque añadido por Zaith Manangón desde [CRM-22](22%20-%20Modelo%20Actividad.md), con OK del usuario.
+
+### Implementación
+
+- `PATCH /activities/:id/cancel`: pendiente → `CANCELLED` sin borrar la fila.
+- `PATCH /activities/:id`, `/complete` y `/cancel` escriben con `status: "PENDING"` en el `where` (`409` si ya no lo está) y guardan en `AuditLog` quién y qué cambió. `DELETE` deja una copia `DELETED`.
+- Un día sin hora en `dueAt` o `reminderAt` se guarda a las 00:00 de Ecuador. Un negocio rechazado no recibe actividades nuevas (`409`).
+
+### Validación
+
+- Detalle y pruebas en [CRM-22](22%20-%20Modelo%20Actividad.md).

@@ -1,5 +1,6 @@
 import { applyDecorators } from "@nestjs/common";
 import { PaginationDto } from "../../common/dto/pagination.dto";
+import { activityDate } from "../activities/activities.dto";
 import { MAX_DEAL_VALUE } from "./deal-rules";
 import {
   ApiProperty,
@@ -33,6 +34,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Matches,
   Max,
@@ -218,7 +220,7 @@ export class FollowUpDto {
   @text("el asunto del seguimiento", 160, 2)
   subject!: string;
   @ApiProperty({ example: "2027-01-25" })
-  @isoDate("Ingresa la fecha del seguimiento.")
+  @activityDate("Ingresa la fecha del seguimiento.")
   dueAt!: Date;
 }
 export class LoseDealDto extends FromStageDto {
@@ -249,9 +251,10 @@ export class DeleteDealsDto {
   ids!: string[];
 }
 export class DealItemDto {
-  @ApiProperty({ example: "Pagina web corporativa" })
+  @ApiPropertyOptional({ example: "Pagina web corporativa", description: "Requerida si la línea es manual" })
+  @ValidateIf((line: DealItemDto) => !line.productId)
   @text("la descripción del producto", 200, 2)
-  description!: string;
+  description?: string;
   @ApiProperty({ example: 1 })
   @numeric()
   @Min(0.01, { message: "La cantidad debe ser mayor que cero." })
@@ -261,7 +264,8 @@ export class DealItemDto {
     { message: "Ingresa una cantidad con hasta dos decimales." },
   )
   quantity!: number;
-  @ApiProperty({ example: 1400 })
+  @ApiPropertyOptional({ example: 1400, description: "Si se envía productId, el servidor usa el precio del catálogo" })
+  @ValidateIf((line: DealItemDto) => !line.productId)
   @numeric()
   @Min(0, { message: "El precio no puede ser negativo." })
   @Max(MAX_MONEY, { message: "El precio máximo es " + MAX_DEAL_VALUE + "." })
@@ -269,13 +273,63 @@ export class DealItemDto {
     { maxDecimalPlaces: 2 },
     { message: "Ingresa un precio válido con hasta dos decimales." },
   )
-  unitPrice!: number;
-  @ApiProperty({ example: IVA_SUGGESTIONS[0], minimum: 0, maximum: 100 })
+  unitPrice?: number;
+  @ApiPropertyOptional({ example: IVA_SUGGESTIONS[0], minimum: 0, maximum: 100, description: "Si se envía productId, el servidor usa su tarifa" })
+  @ValidateIf((line: DealItemDto) => !line.productId)
+  @numeric()
+  @Min(0, { message: IVA_INVALID })
+  @Max(100, { message: IVA_INVALID })
+  @IsInt({ message: IVA_INVALID })
+  taxRate?: number;
+  @ApiPropertyOptional({ example: 0, minimum: 0, maximum: 100, description: "Descuento porcentual" })
+  @IsOptional()
+  @numeric()
+  @Min(0, { message: "El descuento debe estar entre 0 y 100%." })
+  @Max(100, { message: "El descuento debe estar entre 0 y 100%." })
+  @IsInt({ message: "El descuento debe ser un porcentaje entero." })
+  discountRate?: number;
+  @ApiPropertyOptional({ description: "Vincula la línea con un producto activo del catálogo" })
+  @IsOptional()
+  @IsString()
+  @Length(1, 40, { message: "El producto no es válido." })
+  productId?: string;
+}
+const PRODUCT_CODE = /^[A-Z0-9][A-Z0-9._-]{0,39}$/;
+export class CreateProductDto {
+  @ApiProperty({ example: "SERV-CONSULTA" })
+  @Transform(({ value }: { value: unknown }) => typeof value === "string" ? value.trim().toUpperCase() : value)
+  @IsString({ message: "Ingresa el código del producto." })
+  @Matches(PRODUCT_CODE, { message: "Usa letras, números, punto, guion o guion bajo en el código." })
+  code!: string;
+  @ApiProperty({ example: "Servicio de consultoría" })
+  @text("la descripción del producto", 200, 2)
+  description!: string;
+  @ApiProperty({ example: 75.5, description: "Precio de referencia en USD" })
+  @numeric()
+  @Min(0, { message: "El precio no puede ser negativo." })
+  @Max(MAX_MONEY, { message: "El precio máximo es " + MAX_DEAL_VALUE + "." })
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: "Ingresa un precio válido con hasta dos decimales." })
+  price!: number;
+  @ApiProperty({ minimum: 0, maximum: 100, example: 12 })
   @numeric()
   @Min(0, { message: IVA_INVALID })
   @Max(100, { message: IVA_INVALID })
   @IsInt({ message: IVA_INVALID })
   taxRate!: number;
+}
+export class UpdateProductDto extends PartialType(CreateProductDto) {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean({ message: "El estado del producto debe ser verdadero o falso." })
+  isActive?: boolean;
+}
+export class ListProductsDto extends PaginationDto {
+  @ApiPropertyOptional() @IsOptional() @text("la búsqueda", 100) search?: string;
+  @ApiPropertyOptional({ default: false, description: "ADMIN puede incluir productos inactivos" })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => value === "true" ? true : value === "false" ? false : value)
+  @IsBoolean({ message: "includeInactive debe ser verdadero o falso." })
+  includeInactive = false;
 }
 export class CreateDealActivityDto {
   @ApiProperty({ enum: ACTIVITY_TYPES })
@@ -286,7 +340,7 @@ export class CreateDealActivityDto {
   subject!: string;
   @ApiPropertyOptional()
   @IsOptional()
-  @isoDate("Ingresa una fecha válida.")
+  @activityDate("Ingresa una fecha válida.")
   dueAt?: Date;
   @ApiPropertyOptional()
   @IsOptional()
@@ -294,10 +348,13 @@ export class CreateDealActivityDto {
   description?: string;
   @ApiPropertyOptional({ description: "Con fecha, la actividad se registra como ya realizada" })
   @IsOptional()
-  @isoDate("Ingresa una fecha válida.")
+  @activityDate("Ingresa una fecha válida.")
   completedAt?: Date;
 }
 export class CreateQuoteDto {
+  @ApiProperty({ format: "uuid", description: "Clave estable para reintentar sin crear otra versión." })
+  @IsUUID("4", { message: "Ingresa una clave de petición válida." })
+  requestKey!: string;
   @ApiProperty({ example: "2026-11-30" })
   @isoDate("Ingresa la vigencia de la propuesta.")
   validUntil!: Date;
@@ -313,6 +370,21 @@ export class AcceptQuoteDto {
   @ApiProperty({ example: "Orden de compra 55 recibida por correo" })
   @text("la evidencia de aceptación", 500, 2, true)
   acceptanceNote!: string;
+}
+export class RejectQuoteDto {
+  @ApiProperty({ example: "2026-11-13" })
+  @isoDate("Ingresa la fecha de rechazo.")
+  rejectedAt!: Date;
+  @ApiProperty({ example: "El cliente eligió otra alternativa" })
+  @text("el motivo del rechazo", 500, 2)
+  rejectionNote!: string;
+}
+export class ListQuotesDto extends PaginationDto {
+  @ApiPropertyOptional() @IsOptional() @text("el negocio") dealId?: string;
+  @ApiPropertyOptional({ enum: ["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "SUPERSEDED"] })
+  @IsOptional()
+  @IsIn(["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "SUPERSEDED"])
+  status?: string;
 }
 export class SaveDealItemsDto {
   @ApiProperty({ type: [DealItemDto] })

@@ -125,6 +125,7 @@
   flex-direction: column;
   gap: 18px;
   width: 100%;
+  container: activities / inline-size;
 }
 .activities-intro {
   display: flex;
@@ -250,6 +251,110 @@
   width: 16px;
   height: 16px;
 }
+.activity-history {
+  display: grid;
+  gap: 16px;
+}
+.activity-history-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--wave-line);
+  border-radius: 14px;
+  background: var(--wave-white);
+}
+.activity-history-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.activity-history-header p {
+  margin: 5px 0 0;
+  color: var(--wave-muted);
+  font-size: 0.84rem;
+}
+.activity-history-header label {
+  display: grid;
+  gap: 5px;
+  color: var(--wave-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.activity-history-header select {
+  min-width: 190px;
+  height: 40px;
+}
+.activity-history-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.activity-history-entry {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.28fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  padding: 16px 20px;
+  border-left: 3px solid var(--wave-blue-line);
+}
+.activity-history-date {
+  color: var(--wave-muted);
+  font-size: 0.8rem;
+}
+.activity-history-content {
+  min-width: 0;
+}
+.activity-history-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.activity-history-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--wave-cream);
+  color: var(--wave-muted-strong);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.activity-history-content h3 {
+  margin: 8px 0 4px;
+  font-size: 0.96rem;
+  overflow-wrap: anywhere;
+}
+.activity-history-content p,
+.activity-history-content small {
+  margin: 0;
+  color: var(--wave-muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+.activity-history-content small {
+  display: block;
+  margin-top: 7px;
+}
+.activity-history-empty,
+.activity-history-loading {
+  padding: 26px 20px;
+  color: var(--wave-muted);
+  text-align: center;
+}
+.activity-history-error {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+.activity-history-more {
+  justify-self: center;
+}
 .activities-list {
   display: grid;
   gap: 10px;
@@ -307,37 +412,11 @@
   align-items: center;
   gap: 5px;
 }
+.activity-card-actions form { display: flex; }
 .activity-card-actions .button {
   min-height: 36px;
   padding: 7px 10px;
   font-size: 0.72rem;
-}
-.activity-edit {
-  position: relative;
-}
-.activity-edit > summary {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  color: var(--wave-muted);
-  cursor: pointer;
-  list-style: none;
-}
-.activity-edit[open] > form {
-  position: absolute;
-  top: 42px;
-  right: 0;
-  z-index: 5;
-  display: grid;
-  width: min(560px, 90vw);
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--wave-line);
-  border-radius: 14px;
-  background: white;
-  box-shadow: var(--shadow-md);
 }
 .activity-dialog form > footer { display: flex; justify-content: flex-end; gap: 9px; padding-top: 4px; }
 .activity-dialog form > footer .button { display: inline-flex; align-items: center; gap: 7px; }
@@ -440,7 +519,8 @@
 .contact-profile > div:nth-child(2) {
   flex: 1;
 }
-.contact-profile span,
+.contact-profile > div:nth-child(2) > span,
+.contact-profile .contact-tags span,
 .contact-profile p {
   color: var(--wave-muted);
   font-size: 0.74rem;
@@ -462,6 +542,23 @@
   grid-template-columns: minmax(0, 1.25fr) minmax(340px, 0.75fr);
   align-items: start;
   gap: 16px;
+}
+.company-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: start;
+  gap: 16px;
+}
+.company-detail-column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
+}
+.company-edit-feedback {
+  margin: 0;
+  align-self: center;
+  white-space: nowrap;
 }
 .contact-detail-main {
   display: flex;
@@ -536,6 +633,111 @@
 .contact-related > p {
   color: var(--wave-muted);
   font-size: 0.72rem;
+}
+/* Historial (timeline) de las fichas de negocio y de contacto: global porque lo usan las dos rutas. */
+.deal-timeline {
+  display: grid;
+  gap: 12px;
+}
+.deal-timeline > .button {
+  justify-self: start;
+}
+.deal-timeline ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.deal-timeline li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0 8px 12px;
+  border-left: 2px solid var(--wave-line);
+}
+.deal-timeline li > div {
+  display: grid;
+  gap: 2px;
+}
+.deal-timeline li .badge {
+  justify-self: start;
+}
+.deal-timeline li span:not(.badge),
+.deal-timeline li p {
+  margin: 0;
+  color: var(--wave-muted-strong);
+  font-size: 0.82rem;
+}
+/* Las notas conservan sus saltos de línea. */
+.deal-timeline li p {
+  white-space: pre-line;
+}
+/* CRM-26: notas del historial. Global, como el historial: las fichas de negocio y de contacto las usan. */
+.note-form {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--wave-line);
+}
+.note-form h4,
+.note-form .alert {
+  margin: 0;
+}
+.note-form > .button {
+  justify-self: start;
+}
+.note-form textarea {
+  height: auto;
+  min-height: 88px;
+  padding-block: 10px;
+  resize: vertical;
+}
+/* La piel del fieldset de los requisitos de etapa. */
+.note-mentions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--wave-line);
+  border-radius: 10px;
+}
+.note-mentions legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+.note-mentions p {
+  flex-basis: 100%;
+  margin: 0 0 4px;
+  color: var(--wave-muted-strong);
+  font-size: 0.8rem;
+}
+.note-mentions label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 0.88rem;
+}
+.note-mentions input {
+  accent-color: var(--wave-blue);
+}
+.note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+/* Al editar, el formulario ocupa todo el ancho del evento. */
+.deal-timeline li {
+  flex-wrap: wrap;
+}
+.deal-timeline li > .note-form {
+  flex-basis: 100%;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 .contact-form > header {
   display: flex;

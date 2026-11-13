@@ -44,7 +44,7 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
     <>
       <button
         type="button"
-        className="icon-button"
+        className="icon-button icon-button--edit"
         title={USUARIOS.acciones.editar}
         onClick={() => dialogRef.current?.showModal()}
       >
@@ -129,7 +129,7 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
               >
                 {texto.cancelar}
               </Button>
-              <Button type="submit" className="edit-user-submit" loading={pending}>
+              <Button type="submit" className="edit-user-submit action-button action-button--success" loading={pending}>
                 <Check aria-hidden />
                 {texto.aplicar}
               </Button>

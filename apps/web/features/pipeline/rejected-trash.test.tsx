@@ -1,17 +1,18 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import { deleteRejectedAction, previewTransitionAction } from "./actions";
+import { deleteRejectedAction } from "./actions";
 import { RejectedTrash } from "./rejected-trash";
+import { previewTransition } from "./transition-preview";
 import type { RejectedDeal } from "./types";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("./actions", () => ({
   deleteRejectedAction: vi.fn(),
-  previewTransitionAction: vi.fn(),
   completeTransitionAction: vi.fn(),
   saveTransitionAction: vi.fn(),
 }));
+vi.mock("./transition-preview", () => ({ previewTransition: vi.fn(), moveTransition: vi.fn() }));
 const remove = vi.mocked(deleteRejectedAction);
 const rejected = (id: string, title: string, extra: Partial<RejectedDeal> = {}): RejectedDeal => ({
   id,
@@ -84,7 +85,7 @@ test("cancelar la confirmación no elimina y conserva la selección", async () =
 });
 
 test("un ADMIN reabre desde la papelera con el motivo del cambio", async () => {
-  vi.mocked(previewTransitionAction).mockResolvedValue({
+  vi.mocked(previewTransition).mockResolvedValue({
     data: { pending: [{ code: "REASON", message: "Cuenta el motivo del cambio." }], quote: null, items: 0 },
   });
   const user = userEvent.setup();
@@ -92,7 +93,7 @@ test("un ADMIN reabre desde la papelera con el motivo del cambio", async () => {
   await user.click(screen.getByRole("button", { name: "Reabrir Cuenta Andina" }));
   const dialog = screen.getByRole("dialog", { name: "Reabrir negocio" });
   expect(await within(dialog).findByLabelText("Motivo del cambio")).toBeInTheDocument();
-  await waitFor(() => expect(previewTransitionAction).toHaveBeenCalledWith("d1", "REOPEN"));
+  await waitFor(() => expect(previewTransition).toHaveBeenCalledWith("d1", "REOPEN"));
 });
 
 test("la papelera vacía lo explica", () => {

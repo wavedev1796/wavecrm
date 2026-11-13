@@ -4,6 +4,7 @@ import { unstable_rethrow } from "next/navigation";
 import { authenticatedApi, apiError } from "@/lib/authenticated-api";
 import { ACTIVITY_TYPES, cleanText, LOSS_REASONS, REJECTION_REASONS } from "@wave/shared";
 import { NEGOCIO, PIPELINE, TRANSICION } from "@/content/pipeline";
+import { TIMELINE } from "@/content/timeline";
 import {
   decimal,
   isAmount,
@@ -29,6 +30,8 @@ import {
 
 const dealPath = (id: string, rest = "") =>
   "/deals/" + encodeURIComponent(id) + rest;
+// Fechas del negocio y de propuestas: día a las 00:00 UTC. Las de actividades viajan como día ("2026-11-05")
+// y el API las fija a las 00:00 de Ecuador, igual que la agenda.
 const utcDay = (day: string) => day + "T00:00:00.000Z";
 
 function refresh() {
@@ -54,7 +57,7 @@ async function request(
   path: string,
   method: string,
   body?: unknown,
-): Promise<{ error?: string; data?: unknown; pending?: Pending[] }> {
+): Promise<{ error?: string; status?: number; data?: unknown; pending?: Pending[] }> {
   try {
     const response = await authenticatedApi(path, {
       method,
@@ -69,6 +72,7 @@ async function request(
       const pending = body?.error?.errors;
       return {
         error: await apiError(response),
+        status: response.status,
         ...(Array.isArray(pending) && { pending: pending as Pending[] }),
       };
     }
@@ -136,11 +140,11 @@ export async function deleteRejectedAction(ids: string[]) {
     data?: { deleted: number };
   }>;
 }
-export async function dealHistoryAction(id: string) {
-  return request(dealPath(id, "/history"), "GET") as Promise<{
-    error?: string;
-    data?: HistoryItem[];
-  }>;
+export async function dealHistoryAction(id: string): Promise<{ error?: string; data?: HistoryItem[] }> {
+  const { error, status, data } = await request(dealPath(id, "/history"), "GET");
+  // 404 de una tarjeta que sí está en el tablero: un VENDEDOR solo ve el historial de lo suyo (CRM-25).
+  if (status === 404) return { error: TIMELINE.sinAcceso };
+  return error ? { error } : { data: data as HistoryItem[] };
 }
 export async function saveDealItemsAction(
   dealId: string,
@@ -247,20 +251,20 @@ function transitionSteps(dealId: string, form: FormData) {
       {
         type: text("interactionType"),
         subject: text("interactionSubject"),
-        completedAt: utcDay(text("interactionDay")),
+        completedAt: text("interactionDay"),
       },
     ]);
   if (text("nextSubject"))
     steps.push([
       dealPath(dealId, "/activities"),
       "POST",
-      { type: text("nextType"), subject: text("nextSubject"), dueAt: utcDay(text("nextDay")) },
+      { type: text("nextType"), subject: text("nextSubject"), dueAt: text("nextDay") },
     ]);
   if (text("validUntil"))
     steps.push([
       dealPath(dealId, "/quotes"),
       "POST",
-      { validUntil: utcDay(text("validUntil")), ...(text("sentAt") && { sentAt: utcDay(text("sentAt")) }) },
+      { requestKey: text("requestKey"), validUntil: utcDay(text("validUntil")), ...(text("sentAt") && { sentAt: utcDay(text("sentAt")) }) },
     ]);
   if (text("acceptedAt") && text("quoteId"))
     steps.push([
@@ -306,7 +310,7 @@ export async function completeTransitionAction(
     lossReason: text("lossReason") || undefined,
     lossDetail: text("lossDetail") || undefined,
     followUp: text("followUpSubject")
-      ? { type: text("followUpType"), subject: text("followUpSubject"), dueAt: utcDay(text("followUpDay")) }
+      ? { type: text("followUpType"), subject: text("followUpSubject"), dueAt: text("followUpDay") }
       : undefined,
   };
   const route = TRANSITION_ROUTES[to as keyof typeof TRANSITION_ROUTES];
@@ -346,8 +350,12 @@ export async function qualifyDealAction(
 export async function createQuoteAction(dealId: string, form: FormData) {
   const validUntil = formText(form, "validUntil");
   const sentAt = formText(form, "sentAt");
+  const requestKey = formText(form, "requestKey");
   if (!isDay(validUntil) || (sentAt && !isDay(sentAt))) return { error: PIPELINE.dateInvalid };
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestKey))
+    return { error: PIPELINE.dateInvalid };
   return request(dealPath(dealId, "/quotes"), "POST", {
+    requestKey,
     validUntil: utcDay(validUntil),
     ...(sentAt && { sentAt: utcDay(sentAt) }),
   });
@@ -383,12 +391,12 @@ export async function createActivityAction(
     fieldErrors.description = texto.notaLarga;
   if (Object.keys(fieldErrors).length) return { values, fieldErrors };
   // "Ya se realizó": la fecha es la de la actividad hecha (hoy si se deja vacía), no un vencimiento.
-  const day = values.dueAt && utcDay(values.dueAt);
+  const day = values.dueAt;
   const result = await request(dealPath(dealId, "/activities"), "POST", {
     type: values.type,
     subject: values.subject,
     ...(values.done
-      ? { completedAt: day || utcDay(todayEcuador()) }
+      ? { completedAt: day || todayEcuador() }
       : day && { dueAt: day }),
     ...(values.description && { description: values.description }),
   });

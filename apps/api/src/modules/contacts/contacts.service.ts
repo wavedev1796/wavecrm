@@ -44,19 +44,7 @@ const contactDetailInclude = {
     },
     orderBy: { updatedAt: "desc" },
   },
-  activities: {
-    select: {
-      id: true,
-      type: true,
-      status: true,
-      subject: true,
-      description: true,
-      dueAt: true,
-      completedAt: true,
-      assignee: { select: { id: true, name: true } },
-    },
-    orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
-  },
+  // Las actividades van por GET /contacts/:id/timeline, con el alcance del usuario.
 } satisfies Prisma.ContactInclude;
 
 /**

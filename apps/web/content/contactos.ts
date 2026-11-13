@@ -34,9 +34,6 @@ export const CONTACTOS = {
     },
     negocios: "Negocios",
     sinNegocios: "No hay negocios vinculados.",
-    actividades: "Actividades",
-    sinActividades: "No hay actividades vinculadas.",
-    sinFecha: "Sin fecha",
   },
   formulario: {
     editar: "Editar contacto",

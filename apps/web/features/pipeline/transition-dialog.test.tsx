@@ -1,17 +1,20 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import { completeTransitionAction, previewTransitionAction, saveTransitionAction } from "./actions";
+import { completeTransitionAction, saveTransitionAction } from "./actions";
+import { moveTransition, previewTransition } from "./transition-preview";
 import { TransitionDialog } from "./transition-dialog";
 
 const push = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
 vi.mock("./actions", () => ({
-  previewTransitionAction: vi.fn(),
   completeTransitionAction: vi.fn(),
   saveTransitionAction: vi.fn(),
 }));
-const preview = vi.mocked(previewTransitionAction);
+vi.mock("./transition-preview", () => ({ previewTransition: vi.fn(), moveTransition: vi.fn() }));
+const preview = vi.mocked(previewTransition);
+const move = vi.mocked(moveTransition);
 const complete = vi.mocked(completeTransitionAction);
 const pending = (...codes: string[]) =>
   codes.map((code) => ({ code, message: "Falta " + code + "." })) as never;
@@ -33,11 +36,12 @@ function view(to = "s2", targetName = "Negociación") {
 
 test("sin pendientes mueve directo con la etapa vista y avisa", async () => {
   preview.mockResolvedValue({ data: { pending: [], quote: null, items: 0 } });
-  complete.mockResolvedValue({ done: true });
+  move.mockResolvedValue({ done: true });
   const { onDone } = view();
   await waitFor(() => expect(onDone).toHaveBeenCalledWith("Cuenta Andina pasó a Negociación."));
   expect(preview).toHaveBeenCalledWith("d1", "s2");
-  expect(complete).toHaveBeenCalledWith("d1", "s2", "s1", expect.any(FormData));
+  expect(move).toHaveBeenCalledWith("d1", "s2", "s1");
+  expect(refresh).toHaveBeenCalledOnce();
 });
 
 test("con pendientes lista lo que falta y pide cada dato", async () => {

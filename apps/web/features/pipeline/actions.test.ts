@@ -142,6 +142,17 @@ test("los productos se validan por fila antes de llamar al API", async () => {
   });
   expect(api).not.toHaveBeenCalled();
 });
+test("una fila vacía con IVA preseleccionado no envía el PUT al API", async () => {
+  const result = await saveDealItemsAction("d1", [
+    { description: "", quantity: "", unitPrice: "", taxRate: "15" },
+  ]);
+  expect(result.rowErrors?.[0]).toMatchObject({
+    description: expect.any(String),
+    quantity: expect.any(String),
+    unitPrice: expect.any(String),
+  });
+  expect(api).not.toHaveBeenCalled();
+});
 test("el IVA es editable: acepta 12 y rechaza decimales o vacio", async () => {
   api.mockResolvedValue(Response.json({ id: "d1" }));
   const row = { description: "Web", quantity: "1", unitPrice: "10" };
@@ -195,6 +206,7 @@ test("completar una transicion encadena los datos y termina moviendo con la etap
       nextSubject: "Demo",
       nextDay: "2026-10-25",
       validUntil: "2026-11-30",
+      requestKey: "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4",
       sentAt: "2026-10-18",
       quoteId: "q 1",
       acceptedAt: "2026-10-18",
@@ -209,9 +221,10 @@ test("completar una transicion encadena los datos y termina moviendo con la etap
       "PATCH",
       { contactId: "c1", need: "Tienda en línea", budget: 5000.5, expectedClose: "2026-11-30T00:00:00.000Z" },
     ],
-    ["/deals/d1/activities", "POST", { type: "CALL", subject: "Primera llamada", completedAt: "2026-10-01T00:00:00.000Z" }],
-    ["/deals/d1/activities", "POST", { type: "MEETING", subject: "Demo", dueAt: "2026-10-25T00:00:00.000Z" }],
-    ["/deals/d1/quotes", "POST", { validUntil: "2026-11-30T00:00:00.000Z", sentAt: "2026-10-18T00:00:00.000Z" }],
+    // Las fechas de actividades viajan como día: el API las fija a las 00:00 de Ecuador (CRM-22).
+    ["/deals/d1/activities", "POST", { type: "CALL", subject: "Primera llamada", completedAt: "2026-10-01" }],
+    ["/deals/d1/activities", "POST", { type: "MEETING", subject: "Demo", dueAt: "2026-10-25" }],
+    ["/deals/d1/quotes", "POST", { requestKey: "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4", validUntil: "2026-11-30T00:00:00.000Z", sentAt: "2026-10-18T00:00:00.000Z" }],
     ["/deals/d1/quotes/q%201/accept", "POST", { acceptedAt: "2026-10-18T00:00:00.000Z", acceptanceNote: "Orden de compra" }],
     ["/deals/d1/move", "PATCH", { stageId: "s2", fromStageId: "s1", reason: "Revisar" }],
   ]);
@@ -233,7 +246,7 @@ test("rechazar va a su ruta; perder agenda el seguimiento solo si tiene asunto",
     [
       "/deals/d1/lose",
       "POST",
-      { lossReason: "NEED_POSTPONED", followUp: { type: "CALL", subject: "Retomar", dueAt: "2027-01-18T00:00:00.000Z" }, fromStageId: "s2" },
+      { lossReason: "NEED_POSTPONED", followUp: { type: "CALL", subject: "Retomar", dueAt: "2027-01-18" }, fromStageId: "s2" },
     ],
     ["/deals/d1/lose", "POST", { lossReason: "NO_BUDGET", fromStageId: "s2" }],
   ]);
@@ -307,13 +320,13 @@ test("la consulta previa, ver mas y la ficha usan sus rutas", async () => {
   expect((await previewTransitionAction("d1", "s 2")).data).toEqual({ pending: [], quote: null, items: 0 });
   await loadColumnAction("p1", "LOST", 2);
   await qualifyDealAction("d1", fields({ need: " Web ", solution: "", budget: "", budgetNote: "Sin definir", decisionMaker: "Gerente" }));
-  await createQuoteAction("d1", fields({ validUntil: "2026-11-30", sentAt: "" }));
+  await createQuoteAction("d1", fields({ validUntil: "2026-11-30", sentAt: "", requestKey: "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4" }));
   await acceptQuoteAction("d1", "q1", fields({ acceptedAt: "2026-10-18", acceptanceNote: " Correo " }));
   expect(calls()).toEqual([
     ["/deals/d1/transition?to=s%202", "GET", undefined],
     ["/deals/board?pipelineId=p1&column=LOST&page=2", "GET", undefined],
     ["/deals/d1", "PATCH", { need: "Web", solution: null, budget: null, budgetNote: "Sin definir", decisionMaker: "Gerente" }],
-    ["/deals/d1/quotes", "POST", { validUntil: "2026-11-30T00:00:00.000Z" }],
+    ["/deals/d1/quotes", "POST", { requestKey: "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4", validUntil: "2026-11-30T00:00:00.000Z" }],
     ["/deals/d1/quotes/q1/accept", "POST", { acceptedAt: "2026-10-18T00:00:00.000Z", acceptanceNote: "Correo" }],
   ]);
   expect((await qualifyDealAction("d1", fields({ budget: "abc" }))).fieldErrors?.budget).toBeTruthy();
@@ -336,6 +349,13 @@ test("el historial es un GET que tolera un cuerpo que no es JSON", async () => {
   api.mockResolvedValue(new Response("no json", { status: 200 }));
   expect(await dealHistoryAction("d1")).toEqual({ data: undefined });
   expect(api).toHaveBeenCalledWith("/deals/d1/history", { method: "GET" });
+});
+
+test("el historial de un negocio ajeno avisa que no hay acceso; otro error pasa tal cual", async () => {
+  api.mockResolvedValueOnce(new Response("", { status: 404 }));
+  expect(await dealHistoryAction("d1")).toEqual({ error: "No tienes acceso al historial de este registro." });
+  api.mockResolvedValueOnce(new Response("", { status: 500 }));
+  expect(await dealHistoryAction("d1")).toEqual({ error: "La referencia ya no existe." });
 });
 
 test("editar un negocio usa PATCH, envia el responsable y avisa que se actualizo", async () => {
@@ -386,10 +406,10 @@ test("una actividad ya realizada se envia como completada en su fecha o en la de
   expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body))).toEqual({
     type: "CALL",
     subject: "Llamada",
-    completedAt: "2026-10-01T00:00:00.000Z",
+    completedAt: "2026-10-01",
   });
   await createActivityAction("d1", activityState, activity({ type: "CALL", subject: "Llamada", done: "on" }));
-  expect(JSON.parse(String(api.mock.calls[1]?.[1]?.body)).completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T00:00:00.000Z$/);
+  expect(JSON.parse(String(api.mock.calls[1]?.[1]?.body)).completedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 });
 
 test("registrar una actividad limpia el formulario y omite fecha y nota vacias", async () => {
@@ -407,7 +427,7 @@ test("registrar una actividad limpia el formulario y omite fecha y nota vacias",
   expect(JSON.parse(String(api.mock.calls[1]?.[1]?.body))).toEqual({
     type: "TASK",
     subject: "Enviar",
-    dueAt: "2026-10-20T00:00:00.000Z",
+    dueAt: "2026-10-20",
     description: "Nota",
   });
 });

@@ -5,8 +5,8 @@ import CompanyDetailPage from "./page";
 
 vi.mock("@/lib/authenticated-api", () => ({ authenticatedApi: vi.fn() }));
 vi.mock("next/navigation", () => ({ notFound: vi.fn() }));
-vi.mock("../../../../features/empresas/company-form", () => ({
-  CompanyForm: ({ id }: { id: string }) => <div>Editando {id}</div>,
+vi.mock("../../../../features/empresas/company-edit-dialog", () => ({
+  CompanyEditDialog: ({ id }: { id: string }) => <div>Editando {id}</div>,
 }));
 const api = vi.mocked(authenticatedApi);
 

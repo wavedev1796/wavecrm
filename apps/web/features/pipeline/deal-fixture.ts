@@ -28,7 +28,4 @@ export const baseDeal: DealDetail = {
     { id: "i2", description: "Vinos", quantity: "1", unitPrice: "100", taxRate: 15 },
   ],
   quotes: [],
-  activities: [],
-  stageHistory: [],
-  closures: [],
 };

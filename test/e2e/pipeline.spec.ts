@@ -119,7 +119,7 @@ test("crea, mueve, edita y elimina un negocio real con controles Wave en escrito
   });
   expect(saved.stageId).toBe(initialId);
   // Sin requisitos en la etapa, el modal de transición no pide nada y mueve directo.
-  await card.dragTo(page.getByRole("region", { name: "Etapa Propuesta" }));
+  await card.getByLabel("Mover Oportunidad Kanban de etapa").selectOption(proposalId);
   await expect(
     page.getByRole("region", { name: "Etapa Propuesta" }).getByRole("article"),
   ).toBeVisible();
@@ -132,7 +132,11 @@ test("crea, mueve, edita y elimina un negocio real con controles Wave en escrito
     .toBe(proposalId);
   await card.getByRole("button", { name: "Historial", exact: true }).click();
   const history = page.getByRole("dialog", { name: "Historial del negocio" });
-  await expect(history).toContainText("Inicial → Propuesta");
+  // CRM-25: el negocio quedó a cargo de otro responsable; el VENDEDOR ve la tarjeta, pero no su historial.
+  await expect(history).toContainText("No tienes acceso al historial de este registro.");
+  expect(
+    await prisma.dealStageHistory.count({ where: { dealId: saved.id, fromStageId: initialId, toStageId: proposalId } }),
+  ).toBe(1);
   await history.getByRole("button", { name: "Cerrar", exact: true }).click();
   await page.screenshot({
     path: "test-results/pipeline-board-desktop.png",
@@ -228,7 +232,9 @@ test("la ficha arma productos, registra y acepta la propuesta, gana, y solo un A
   await expect(page.locator(".deal-profile")).toContainText("120,00");
   await page.getByLabel("Asunto").fill("Llamar para confirmar");
   await page.getByRole("button", { name: "Registrar actividad" }).click();
-  await expect(page.getByText("Llamada · Llamar para confirmar")).toBeVisible();
+  const timeline = page.locator(".deal-timeline li", { hasText: "Llamar para confirmar" });
+  await expect(timeline).toContainText("Llamada");
+  await expect(timeline).toContainText(seller.name);
 
   // Ganar sin propuesta aceptada: el modal lo explica y manda a la ficha.
   await page.getByRole("button", { name: "Ganar", exact: true }).click();
@@ -284,6 +290,7 @@ test("el tablero pide los requisitos en el modal, pagina las columnas y pierde e
         create: [
           { name: "Contactado", position: 0, probability: 15 },
           { name: "Negociación", position: 1, probability: 45, requirements: ["NEED"] },
+          { name: "Propuesta", position: 2, probability: 70 },
         ],
       },
     },
@@ -303,6 +310,17 @@ test("el tablero pide los requisitos en el modal, pagina las columnas y pierde e
         updatedAt: new Date(Date.now() - index * 60_000),
       },
     });
+  await prisma.deal.create({
+    data: {
+      title: "Lote Propuesta",
+      value: 10,
+      pipelineId: pipeline.id,
+      stageId: pipeline.stages.find((stage) => stage.name === "Propuesta")!.id,
+      companyId,
+      ownerId: seller.id,
+      updatedAt: new Date(Date.now() - 13 * 60_000),
+    },
+  });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await login(page, seller.email);
   await expect(page).toHaveURL(/\/pipeline$/);
@@ -311,18 +329,34 @@ test("el tablero pide los requisitos en el modal, pagina las columnas y pierde e
   await expect(column.getByRole("article")).toHaveCount(10);
   await column.getByRole("button", { name: "Ver más (quedan 2)" }).click();
   await expect(column.getByRole("article")).toHaveCount(12);
-  await expect(page.getByRole("region", { name: "Resumen comercial" })).toContainText("12 negocios en este pipeline");
+  await expect(page.getByRole("region", { name: "Resumen comercial" })).toContainText("13 negocios en este pipeline");
 
   const card = page.getByRole("article", { name: "Negocio Lote 01" });
-  await card.dragTo(page.getByRole("region", { name: "Etapa Negociación" }));
+  await card.getByLabel("Mover Lote 01 de etapa").selectOption(negotiation!.id);
   const gate = page.getByRole("dialog", { name: "Cambiar de etapa" });
   await expect(gate).toContainText("Documenta la necesidad del cliente.");
+  const beforeMove = await prisma.deal.findFirstOrThrow({ where: { pipelineId: pipeline.id, title: "Lote 01" } });
+  expect([beforeMove.stageId, beforeMove.need]).toEqual([contacted!.id, null]);
   await gate.getByLabel("Necesidad del cliente").fill("Tienda en línea");
   await gate.getByRole("button", { name: "Guardar y continuar" }).click();
   await expect(gate).not.toBeVisible();
   await expect(page.getByRole("region", { name: "Etapa Negociación" }).getByRole("article")).toHaveCount(1);
   const moved = await prisma.deal.findFirstOrThrow({ where: { pipelineId: pipeline.id, title: "Lote 01" } });
   expect([moved.stageId, moved.need]).toEqual([negotiation!.id, "Tienda en línea"]);
+
+  // También se puede regresar desde Propuesta; el selector debe ejecutar el mismo gate que el arrastre.
+  const proposalCard = page.getByRole("article", { name: "Negocio Lote Propuesta" });
+  await proposalCard.getByLabel("Mover Lote Propuesta de etapa").selectOption(negotiation!.id);
+  const reverseGate = page.getByRole("dialog", { name: "Cambiar de etapa" });
+  await expect(reverseGate).toContainText("Indica el motivo del cambio.");
+  const proposalBefore = await prisma.deal.findFirstOrThrow({ where: { pipelineId: pipeline.id, title: "Lote Propuesta" } });
+  expect([proposalBefore.stageId, proposalBefore.need]).toEqual([pipeline.stages.find((stage) => stage.name === "Propuesta")!.id, null]);
+  await reverseGate.getByLabel("Motivo del cambio").fill("El cliente pasó a revisión de propuesta.");
+  await reverseGate.getByRole("button", { name: "Guardar y continuar" }).click();
+  await expect(reverseGate).not.toBeVisible();
+  const returned = await prisma.deal.findFirstOrThrow({ where: { pipelineId: pipeline.id, title: "Lote Propuesta" } });
+  expect([returned.stageId, returned.need]).toEqual([negotiation!.id, null]);
+  await expect(page.getByRole("region", { name: "Etapa Negociación" }).getByRole("article")).toHaveCount(2);
 
   await page
     .getByRole("article", { name: "Negocio Lote 02" })
@@ -504,7 +538,8 @@ test("perdido con seguimiento → rechazado → la papelera elimina dos a la vez
   expect((await prisma.activity.findUniqueOrThrow({ where: { id: followUp.id } })).status).toBe("CANCELLED");
 
   await page.goto("/contactos/" + contactId);
-  await expect(page.getByRole("link", { name: titles[0] })).toBeVisible();
+  // El negocio enlaza desde su recorrido y desde cada evento del historial del contacto (CRM-25).
+  await expect(page.getByRole("link", { name: titles[0] }).first()).toBeVisible();
   await expect(page.getByText("Inicial · Rechazado").first()).toBeVisible();
 
   await page.goto("/pipeline?pipelineId=" + pipelineId);

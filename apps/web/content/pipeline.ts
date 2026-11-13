@@ -236,26 +236,7 @@ export const NEGOCIO = {
     detalle: "Detalle",
     cotizacion: "Cotización",
   },
-  timeline: {
-    titulo: "Actividad del negocio",
-    vacio: "Todavía no hay actividad registrada.",
-    creado: (etapa: string) => `Creado en ${etapa}`,
-    movido: (de: string, a: string) => `${de} → ${a}`,
-    ganado: (cotizacion: string) => `Ganado · cotización ${cotizacion}`,
-    perdido: (motivo: string) => `Perdido · ${motivo}`,
-    rechazado: (motivo: string) => `Rechazado · ${motivo}`,
-    reabierto: "Reabierto",
-    propuestaEnviada: (numero: string, total: string) => `Propuesta ${numero} enviada · ${total}`,
-    propuestaAceptada: (numero: string) => `Propuesta ${numero} aceptada`,
-    propuestaDesactualizada: (numero: string) => `Propuesta ${numero} desactualizada por cambios en los productos`,
-    vigencia: (fecha: string) => `Vigente hasta ${fecha}`,
-    seguimiento: (fecha: string) => `Seguimiento programado para ${fecha}`,
-    invalidado: (propuestas: number, actividades: number) =>
-      `${propuestas} ${propuestas === 1 ? "propuesta rechazada" : "propuestas rechazadas"} · ${actividades} ${actividades === 1 ? "actividad cancelada" : "actividades canceladas"}`,
-    sistema: "Usuario no disponible",
-    completar: "Completar",
-    completarDe: (asunto: string) => `Completar ${asunto}`,
-  },
+  // Los textos del historial (timeline) están en content/timeline.ts.
   actividad: {
     titulo: "Registrar actividad",
     tipo: "Tipo",
