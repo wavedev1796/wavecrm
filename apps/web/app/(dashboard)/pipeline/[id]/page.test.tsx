@@ -46,7 +46,7 @@ test("la ficha abierta muestra valor, productos, empresa enlazada y botones de c
   expect(api).toHaveBeenCalledWith("/deals/d1");
   expect(screen.getByRole("heading", { name: "Cuenta Andina" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Comercial Andina" })).toHaveAttribute("href", "/empresas/e1");
-  expect(screen.getByLabelText("Descripción del producto 1")).toHaveValue("Chocolates");
+  expect(container.querySelector(".deal-items--summary")).toHaveTextContent("Chocolates");
   expect(screen.getByRole("button", { name: "Ganar" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Perder" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Calificación" })).toBeInTheDocument();
@@ -62,7 +62,9 @@ test("un ganado muestra fecha de ganado, su cotizacion y productos bloqueados", 
   };
   serve(won);
   const { unmount } = render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
-  expect(screen.getByText(/COT-000001 · Aceptada · .*135,00/)).toBeInTheDocument();
+  expect(screen.getByText("COT-000001")).toBeInTheDocument();
+  expect(screen.getByText("Aceptada")).toBeInTheDocument();
+  expect(screen.getAllByText(/135,00/).length).toBeGreaterThan(0);
   expect(screen.getByText("Ganado el")).toBeInTheDocument();
   expect(screen.getByText("Reversa el negocio para cambiar sus productos.")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Reversar" })).toBeInTheDocument();
@@ -92,8 +94,9 @@ test("un rechazado muestra su cierre, bloquea productos y actividades y solo un 
 
 test("al ganar, la tabla de productos vuelve a leer lo del servidor y no conserva filas editadas", async () => {
   serve(baseDeal);
-  const { rerender } = render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
+  const { rerender, container } = render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
   const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Editar líneas" }));
   await user.type(screen.getByLabelText("Descripción del producto 1"), " editado sin guardar");
   serve({
     ...baseDeal,
@@ -103,7 +106,7 @@ test("al ganar, la tabla de productos vuelve a leer lo del servidor y no conserv
   });
   rerender(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
   expect(screen.queryByText(/editado sin guardar/)).toBeNull();
-  expect(screen.getByText("Chocolates")).toBeInTheDocument();
+  expect(container.querySelector(".deal-items--summary")).toHaveTextContent("Chocolates");
 });
 
 test("el historial llega del API ya armado y sus pendientes se completan en la ficha", async () => {
@@ -112,7 +115,7 @@ test("el historial llega del API ya armado y sus pendientes se completan en la f
   expect(api).toHaveBeenCalledWith("/deals/d1/timeline");
   expect(screen.getByText("Llamar a Maria")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Completar Llamar a Maria" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Ver más" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Abrir historial completo" })).toBeInTheDocument();
 });
 
 test("un VENDEDOR sin acceso al historial ve la ficha, el aviso y el formulario de actividad", async () => {

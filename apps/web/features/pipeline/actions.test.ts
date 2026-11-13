@@ -165,6 +165,15 @@ test("el IVA es editable: acepta 12 y rechaza decimales o vacio", async () => {
   await saveDealItemsAction("d1", [{ ...row, taxRate: "12" }]);
   expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body)).items[0].taxRate).toBe(12);
 });
+test("el descuento se valida y viaja por línea al API", async () => {
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  const row = { description: "Web", quantity: "1", unitPrice: "100", taxRate: "15", discountRate: "10" };
+  expect((await saveDealItemsAction("d1", [{ ...row, discountRate: "101" }])).rowErrors?.[0]?.discountRate).toBe(
+    "Ingresa un descuento entero entre 0 y 100.",
+  );
+  await saveDealItemsAction("d1", [row]);
+  expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body)).items[0].discountRate).toBe(10);
+});
 test("los productos viajan como numeros: el punto separa miles y la coma los centavos", async () => {
   api.mockResolvedValue(Response.json({ id: "d1" }));
   await saveDealItemsAction("d1", [
@@ -172,7 +181,7 @@ test("los productos viajan como numeros: el punto separa miles y la coma los cen
   ]);
   expect(api).toHaveBeenCalledWith("/deals/d1/items", expect.objectContaining({ method: "PUT" }));
   expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body))).toEqual({
-    items: [{ description: "Vinos", quantity: 1.5, unitPrice: 1100.25, taxRate: 0 }],
+    items: [{ description: "Vinos", quantity: 1.5, unitPrice: 1100.25, taxRate: 0, discountRate: 0 }],
   });
   api.mockClear();
   const result = await saveDealItemsAction("d1", [

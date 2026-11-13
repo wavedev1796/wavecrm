@@ -51,6 +51,8 @@ export function validateItems(rows: readonly ItemValues[]): ItemErrors | null {
     if (!isAmount(row.unitPrice)) rowErrors.unitPrice = texto.precio;
     if (!/^\d{1,3}$/.test(row.taxRate.trim()) || Number(row.taxRate) > 100)
       rowErrors.taxRate = texto.iva;
+    if (!/^\d{1,3}$/.test((row.discountRate ?? "0").trim()) || Number(row.discountRate ?? "0") > 100)
+      rowErrors.discountRate = texto.descuento;
     if (Object.keys(rowErrors).length) errors[index] = rowErrors;
   });
   return Object.keys(errors).length ? errors : null;

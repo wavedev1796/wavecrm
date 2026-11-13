@@ -410,6 +410,230 @@
 .pipeline-delete-confirm .button {
   margin: 0 8px 8px 0;
 }
+.deal-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.deal-section-heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+}
+.deal-items-summary {
+  padding: 18px 22px;
+}
+.deal-items-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--wave-line);
+}
+.deal-items-summary-total {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.deal-items-summary-total span {
+  color: var(--wave-muted-strong);
+  font-size: 0.76rem;
+}
+.deal-items-empty {
+  margin: 14px 0 0;
+  color: var(--wave-muted-strong);
+}
+.deal-editor-dialog,
+.deal-modal-form {
+  display: grid;
+  gap: 18px;
+  padding: 30px 28px 24px;
+}
+.deal-dialog-header {
+  display: grid;
+  gap: 6px;
+  padding-right: 44px;
+}
+.deal-dialog-header h2,
+.deal-dialog-header p {
+  margin: 0;
+}
+.deal-dialog-header h2 {
+  font-size: 1.25rem;
+}
+.deal-dialog-header p {
+  color: var(--wave-muted-strong);
+  font-size: 0.88rem;
+}
+.deal-editor-dialog .table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.deal-editor-dialog .table th,
+.deal-editor-dialog .table td {
+  padding-inline: 8px;
+}
+.deal-editor-totals {
+  margin: 0;
+  padding: 0;
+}
+.deal-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--wave-line);
+}
+.deal-dialog-actions > div {
+  display: flex;
+  gap: 8px;
+}
+.deal-modal-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.deal-modal-fields .form-field:has(textarea) {
+  grid-column: 1 / -1;
+}
+.deal-modal-form .quote-preview {
+  margin: 0;
+}
+.deal-modal-form .quote-preview h3 {
+  margin: 0;
+  font-size: 0.96rem;
+}
+.deal-modal-form .quote-preview-totals {
+  padding: 0;
+}
+.quote-history-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+.quote-history-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--wave-line);
+  border-radius: 12px;
+  background: #fff;
+}
+.quote-history-head,
+.quote-history-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.quote-history-title {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+.quote-history-total {
+  font-variant-numeric: tabular-nums;
+}
+.quote-history-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.quote-history-meta dt {
+  color: var(--wave-muted-strong);
+  font-size: 0.7rem;
+}
+.quote-history-meta dd {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+}
+.quote-history-evidence {
+  margin: 0;
+  font-size: 0.82rem;
+}
+.quote-history-lines summary {
+  cursor: pointer;
+  color: var(--wave-blue);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.quote-history-lines ul {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.quote-history-lines li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 0.84rem;
+}
+.quote-history-lines small {
+  color: var(--wave-muted-strong);
+}
+.quote-version-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 0 0;
+  color: var(--wave-muted-strong);
+  font-size: 0.78rem;
+}
+.quote-next-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--wave-line);
+  border-radius: 12px;
+  background: #fafaf7;
+}
+.quote-next-action > div {
+  display: grid;
+  gap: 4px;
+}
+@media (max-width: 640px) {
+  .deal-section-heading {
+    align-items: flex-start;
+  }
+  .deal-items-summary-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .deal-items-summary-total {
+    justify-items: start;
+  }
+  .deal-editor-dialog,
+  .deal-modal-form {
+    padding: 24px 18px 18px;
+  }
+  .deal-modal-fields,
+  .quote-history-meta {
+    grid-template-columns: 1fr;
+  }
+  .quote-history-lines li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .quote-history-lines small {
+    grid-column: 1 / -1;
+  }
+  .quote-next-action {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 /* El texto sr-only de la columna Acciones es absoluto: sin esto escapa del scroll y ensancha la página. */
 .deal-items .table-scroll {
   position: relative;
@@ -624,6 +848,38 @@
 }
 .deal-quote-lines > td {
   padding-top: 0;
+}
+.quote-preview {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--wave-line);
+  border-radius: 10px;
+  background: var(--wave-surface, #fff);
+}
+.quote-preview h5,
+.quote-preview p {
+  margin: 0;
+}
+.quote-preview ul {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.quote-preview li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: baseline;
+}
+.quote-preview li small {
+  color: var(--wave-muted-strong);
+}
+.quote-preview .deal-totals {
+  margin: 4px 0 0;
+  padding: 0;
 }
 .deal-quote-lines summary {
   cursor: pointer;

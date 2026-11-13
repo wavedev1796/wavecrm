@@ -24,10 +24,9 @@ import { formatDateTime, formatDay, formatMoney } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { dealFormOptions } from "../../../../features/pipeline/data";
 import { DealActions } from "../../../../features/pipeline/deal-actions";
-import { DealItems } from "../../../../features/pipeline/deal-items";
 import { DealPayments } from "../../../../features/pipeline/deal-payments";
+import { DealPreparation } from "../../../../features/pipeline/deal-preparation";
 import { DealQualification } from "../../../../features/pipeline/deal-qualification";
-import { DealQuotes } from "../../../../features/pipeline/deal-quotes";
 import { DealTimeline } from "../../../../features/pipeline/deal-timeline";
 import { StageProgress } from "../../../../features/pipeline/stage-progress";
 import type { DealDetail } from "../../../../features/pipeline/types";
@@ -97,13 +96,7 @@ export default async function DealPage({
       </section>
       {/* Productos a todo el ancho: en la columna principal la descripción quedaba en ~100 px.
           key: DealItems guarda las filas en su estado; al ganar, reabrir o guardar debe volver a leer lo del servidor. */}
-      <DealItems
-        key={deal.status + ":" + deal.items.map((item) => item.id).join(",")}
-        dealId={deal.id}
-        items={deal.items}
-        locked={deal.status === "WON" || deal.status === "REJECTED"}
-      />
-      <DealQuotes deal={deal} locked={locked} />
+      <DealPreparation deal={deal} locked={locked} />
       <div className="contact-detail-grid">
         <div className="contact-detail-main">
           <DealTimeline deal={deal} timeline={timeline} members={options.users} />

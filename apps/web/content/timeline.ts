@@ -3,6 +3,11 @@
 export const TIMELINE = {
   titulo: "Actividad del negocio",
   historial: "Historial",
+  ultimosRegistros: "Actividad reciente · máximo 5 registros",
+  abrirHistorial: "Abrir historial completo",
+  historialCompleto: "Historial completo",
+  historialCompletoAyuda: "Los registros más recientes aparecen primero. Puedes cargar eventos anteriores al final.",
+  cerrarHistorial: "Cerrar historial",
   vacio: "Todavía no hay actividad registrada.",
   sinAcceso: "No tienes acceso al historial de este registro.",
   errorCarga: "No pudimos cargar el historial.",

@@ -120,10 +120,12 @@ export type DealItem = {
   quantity: string | number;
   unitPrice: string | number;
   taxRate: number;
+  discountRate?: number;
 };
 export type Quote = {
   id: string;
   number: string;
+  version?: number;
   status: QuoteStatus;
   subtotal: string;
   tax: string;
@@ -136,7 +138,13 @@ export type Quote = {
   /** Copia de los productos con los que se envió; las anteriores a la copia traen []. */
   items?: QuoteLine[];
 };
-export type QuoteLine = { description: string; quantity: string; unitPrice: string; taxRate: number };
+export type QuoteLine = {
+  description: string;
+  quantity: string;
+  unitPrice: string;
+  taxRate: number;
+  discountRate?: number;
+};
 export type Payment = {
   id: string;
   amount: string;
@@ -177,8 +185,9 @@ export type ItemValues = {
   quantity: string;
   unitPrice: string;
   taxRate: string;
+  discountRate?: string;
 };
 export type ItemErrors = Record<
   number,
-  Partial<Record<"description" | "quantity" | "unitPrice" | "taxRate", string>>
+  Partial<Record<"description" | "quantity" | "unitPrice" | "taxRate" | "discountRate", string>>
 >;

@@ -158,6 +158,7 @@ export async function saveDealItemsAction(
     quantity: clean(row?.quantity),
     unitPrice: clean(row?.unitPrice),
     taxRate: clean(row?.taxRate),
+    discountRate: clean(row?.discountRate === undefined ? "0" : row.discountRate),
   }));
   const rowErrors = validateItems(cleaned);
   if (rowErrors) return { rowErrors };
@@ -167,6 +168,7 @@ export async function saveDealItemsAction(
       quantity: parseAmount(row.quantity, 6),
       unitPrice: parseAmount(row.unitPrice),
       taxRate: Number(row.taxRate),
+      discountRate: Number(row.discountRate),
     })),
   });
 }

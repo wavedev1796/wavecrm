@@ -5,6 +5,7 @@ type Line = {
   quantity: string | number;
   unitPrice: string | number;
   taxRate: number | string;
+  discountRate?: number | string;
 };
 
 // ponytail: centavos en enteros solo para mostrar mientras se edita; el valor que se guarda
@@ -13,8 +14,12 @@ const cents = (value: string | number) => {
   const number = typeof value === "number" ? value : parseAmount(value);
   return number === null ? 0 : Math.round(number * 100);
 };
-const lineCents = (line: Line) =>
-  Math.round((cents(line.quantity) * cents(line.unitPrice)) / 100);
+const lineCents = (line: Line) => {
+  const gross = Math.round(
+    (cents(line.quantity) * cents(line.unitPrice)) / 100,
+  );
+  return Math.round((gross * (100 - Number(line.discountRate ?? 0))) / 100);
+};
 
 export const lineTotal = (line: Line) => lineCents(line) / 100;
 
@@ -29,5 +34,9 @@ export function itemTotals(items: readonly Line[]) {
   }
   let tax = 0;
   for (const [rate, base] of bases) tax += Math.round((base * rate) / 100);
-  return { subtotal: subtotal / 100, tax: tax / 100, total: (subtotal + tax) / 100 };
+  return {
+    subtotal: subtotal / 100,
+    tax: tax / 100,
+    total: (subtotal + tax) / 100,
+  };
 }
