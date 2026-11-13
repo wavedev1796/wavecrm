@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { acceptQuoteAction, createQuoteAction } from "./actions";
@@ -30,6 +30,7 @@ test("registra la propuesta con su vigencia y fecha de envío", async () => {
   const user = userEvent.setup();
   render(<DealQuotes deal={baseDeal} locked={false} />);
   expect(screen.getByText(/Aún no hay cotizaciones/)).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Preparar cotización" }));
   await user.type(screen.getByLabelText("Vigente hasta"), "2026-11-30");
   await user.click(
     screen.getByRole("button", { name: "Registrar como enviada" }),
@@ -50,9 +51,10 @@ test("la propuesta enviada se marca como aceptada con su evidencia", async () =>
   render(
     <DealQuotes deal={{ ...baseDeal, quotes: [quote()] }} locked={false} />,
   );
-  const row = screen.getByRole("row", { name: /COT-000001/ });
-  expect(row).toHaveTextContent("Enviada");
-  expect(row).toHaveTextContent(/135,00/);
+  expect(screen.getByText("COT-000001")).toBeInTheDocument();
+  expect(screen.getAllByText("Enviada").length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/135,00/).length).toBeGreaterThan(0);
+  await user.click(screen.getByRole("button", { name: "Registrar aceptación" }));
   await user.type(
     screen.getByLabelText("Evidencia de aceptación"),
     "Orden de compra 55",
@@ -72,13 +74,13 @@ test("un error del API se muestra junto al formulario", async () => {
   });
   const user = userEvent.setup();
   render(<DealQuotes deal={baseDeal} locked={false} />);
+  await user.click(screen.getByRole("button", { name: "Preparar cotización" }));
   await user.type(screen.getByLabelText("Vigente hasta"), "2026-11-30");
   await user.click(
     screen.getByRole("button", { name: "Registrar como enviada" }),
   );
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Agrega sus productos",
-  );
+  const alerts = await screen.findAllByRole("alert");
+  expect(alerts.some((alert) => alert.textContent?.includes("Agrega sus productos"))).toBe(true);
 });
 
 test("cada propuesta muestra la copia de sus productos; las anteriores, que no tienen detalle", async () => {
@@ -130,7 +132,7 @@ test("bloquea registrar si hay cambios sin guardar o falta un cliente identifica
     ),
   ).toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "Registrar como enviada" }),
+    screen.getByRole("button", { name: "Preparar cotización" }),
   ).toBeDisabled();
   rerender(<DealQuotes deal={{ ...baseDeal, company: null }} locked={false} />);
   expect(
@@ -139,8 +141,8 @@ test("bloquea registrar si hay cambios sin guardar o falta un cliente identifica
     ),
   ).toBeInTheDocument();
   expect(
-    screen.queryByRole("button", { name: "Registrar como enviada" }),
-  ).toBeNull();
+    screen.getByRole("button", { name: "Preparar cotización" }),
+  ).toBeDisabled();
 });
 
 test("una versión existente se conserva y la acción invita a crear otra versión", () => {
@@ -167,8 +169,8 @@ test("sin productos no ofrece registrar y un cerrado muestra las propuestas sin 
     screen.getByText("Agrega al menos una línea para preparar la cotización."),
   ).toBeInTheDocument();
   expect(
-    screen.queryByRole("button", { name: "Registrar como enviada" }),
-  ).toBeNull();
+    screen.getByRole("button", { name: "Preparar cotización" }),
+  ).toBeDisabled();
   unmount();
   render(
     <DealQuotes
@@ -187,12 +189,12 @@ test("sin productos no ofrece registrar y un cerrado muestra las propuestas sin 
       locked
     />,
   );
-  const table = screen.getByRole("table");
   expect(
-    within(table).getByRole("row", { name: /COT-000001/ }),
-  ).toHaveTextContent("Orden 55");
+    screen.getByText("Orden 55"),
+  ).toBeInTheDocument();
   expect(
-    within(table).getByRole("row", { name: /COT-000000/ }),
-  ).toHaveTextContent("Desactualizada");
+    screen.getByText("COT-000000"),
+  ).toBeInTheDocument();
+  expect(screen.getByText("Desactualizada")).toBeInTheDocument();
   expect(screen.queryByRole("button")).toBeNull();
 });

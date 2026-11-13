@@ -11,7 +11,8 @@ test("agrega productos, muestra subtotal, IVA y total y los guarda", async () =>
   save.mockResolvedValue({});
   const user = userEvent.setup();
   render(<DealItems dealId="d1" items={[]} locked={false} />);
-  expect(screen.getByText(/Aún no hay líneas/)).toBeInTheDocument();
+  expect(screen.getAllByText(/Aún no hay líneas/)).toHaveLength(2);
+  await user.click(screen.getByRole("button", { name: "Editar líneas" }));
   await user.click(screen.getByRole("button", { name: "Agregar producto" }));
   await user.click(screen.getByRole("button", { name: "Agregar producto" }));
   await user.type(screen.getByLabelText("Descripción del producto 1"), "Paquete de chocolates");
@@ -28,7 +29,7 @@ test("agrega productos, muestra subtotal, IVA y total y los guarda", async () =>
     { description: "Paquete de chocolates", quantity: "2", unitPrice: "10", taxRate: "0", discountRate: "0" },
     { description: "Paquete de vinos", quantity: "1", unitPrice: "100", taxRate: "15", discountRate: "0" },
   ]);
-  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Productos guardados."));
+  await waitFor(() => expect(screen.getAllByRole("status").some((status) => status.textContent?.includes("Productos guardados."))).toBe(true));
 });
 
 test("edita el descuento y actualiza subtotal e IVA como el API", async () => {
@@ -40,6 +41,7 @@ test("edita el descuento y actualiza subtotal e IVA como el API", async () => {
       locked={false}
     />,
   );
+  await user.click(screen.getByRole("button", { name: "Editar líneas" }));
   expect(screen.getByLabelText("Descuento % del producto 1")).toHaveValue("10");
   expect(screen.getByTestId("deal-total")).toHaveTextContent("103,50");
   await user.clear(screen.getByLabelText("Descuento % del producto 1"));
@@ -56,6 +58,7 @@ test("el IVA se escribe por fila, sugiere 15, 12 y 0 y recalcula el total", asyn
       locked={false}
     />,
   );
+  await user.click(screen.getByRole("button", { name: "Editar líneas" }));
   const iva = screen.getByLabelText("IVA del producto 1");
   expect(iva).toHaveValue("15");
   const list = document.getElementById(iva.getAttribute("list") ?? "");
@@ -75,6 +78,7 @@ test("marca la celda con error que devuelve la validacion", async () => {
       locked={false}
     />,
   );
+  await user.click(screen.getByRole("button", { name: "Editar líneas" }));
   await user.click(screen.getByRole("button", { name: "Guardar productos" }));
   expect(await screen.findByText(/cantidad mayor que 0/)).toBeInTheDocument();
   expect(screen.getByLabelText("Cantidad del producto 1")).toHaveAttribute("aria-invalid", "true");
@@ -107,6 +111,7 @@ test("quitar una fila limpia los errores para que no salten a otra fila", async 
       locked={false}
     />,
   );
+  await user.click(screen.getByRole("button", { name: "Editar líneas" }));
   await user.click(screen.getByRole("button", { name: "Guardar productos" }));
   expect(await screen.findByText(/cantidad mayor que 0/)).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Quitar producto 1" }));
