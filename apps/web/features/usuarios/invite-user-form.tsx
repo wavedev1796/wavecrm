@@ -2,6 +2,7 @@
 
 import { MailPlus } from "lucide-react";
 import { useActionState } from "react";
+import { FieldIcon } from "@/components/form/field-icon";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
@@ -40,7 +41,7 @@ export function InviteUserForm() {
       <form action={formAction} className="user-form" noValidate aria-busy={pending || undefined}>
         <div className="form-field">
           <label>
-            {texto.nombre}
+            <span className="field-label"><FieldIcon name="persona" />{texto.nombre}</span>
             <Input
               name="name"
               required
@@ -54,7 +55,7 @@ export function InviteUserForm() {
         </div>
         <div className="form-field">
           <label>
-            {texto.correo}
+            <span className="field-label"><FieldIcon name="correo" />{texto.correo}</span>
             <Input
               name="email"
               type="email"
@@ -69,7 +70,7 @@ export function InviteUserForm() {
         </div>
         <div className="form-field">
           <label>
-            {texto.rol}{' '}
+            <span className="field-label"><FieldIcon name="rol" />{texto.rol}</span>
             <Select name="role" defaultValue={values.role} {...invalidProps("invite-role", fieldErrors.role)}>
               <option value="VENDEDOR">{ROL_USUARIO.VENDEDOR}</option>
               <option value="ADMIN">{ROL_USUARIO.ADMIN}</option>

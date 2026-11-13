@@ -230,8 +230,14 @@ test("la ficha arma productos, registra y acepta la propuesta, gana, y solo un A
   await expect(page.getByText("Productos guardados.")).toBeVisible();
   await expect(page.getByTestId("deal-total")).toContainText("132,00");
   await expect(page.locator(".deal-profile")).toContainText("120,00");
-  await page.getByLabel("Asunto").fill("Llamar para confirmar");
+  // P14: la ficha abre el mismo diálogo de la agenda, ya vinculado al negocio.
   await page.getByRole("button", { name: "Registrar actividad" }).click();
+  const activityDialog = page.getByRole("dialog", { name: "Registrar actividad" });
+  await activityDialog.getByLabel("Tipo de actividad").selectOption("CALL");
+  await activityDialog.getByLabel("Asunto").fill("Llamar para confirmar");
+  await activityDialog.getByRole("button", { name: "Guardar actividad" }).click();
+  await expect(page.getByText("Actividad registrada.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ver en la agenda" })).toHaveAttribute("href", /\/actividades\?dealId=/);
   const timeline = page.locator(".deal-timeline li", { hasText: "Llamar para confirmar" });
   await expect(timeline).toContainText("Llamada");
   await expect(timeline).toContainText(seller.name);
@@ -257,14 +263,14 @@ test("la ficha arma productos, registra y acepta la propuesta, gana, y solo un A
   await win.getByRole("button", { name: "Guardar y continuar" }).click();
   await expect(page.getByText(/COT-\d{6} · Aceptada/)).toBeVisible();
   expect(await prisma.quote.count({ where: { dealId: deal.id } })).toBe(1);
-  await expect(page.getByRole("button", { name: "Reabrir", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Reversar", exact: true })).toHaveCount(0);
 
   const adminPage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await login(adminPage, admin.email);
   await expect(adminPage).toHaveURL(/\/pipeline$/);
   await adminPage.goto("/pipeline/" + deal.id);
-  await adminPage.getByRole("button", { name: "Reabrir", exact: true }).click();
-  const reopen = adminPage.getByRole("dialog", { name: "Reabrir negocio" });
+  await adminPage.getByRole("button", { name: "Reversar", exact: true }).click();
+  const reopen = adminPage.getByRole("dialog", { name: "Reversar negocio" });
   await reopen.getByLabel("Motivo del cambio").fill("El cliente anuló la orden");
   await reopen.getByRole("button", { name: "Guardar y continuar" }).click();
   await expect(adminPage.getByRole("button", { name: "Perder", exact: true })).toBeVisible();
@@ -545,7 +551,7 @@ test("perdido con seguimiento → rechazado → la papelera elimina dos a la vez
   await page.goto("/pipeline?pipelineId=" + pipelineId);
   await trashZone.getByRole("link", { name: "Ver papelera" }).click();
   await expect(page.getByRole("heading", { name: "Papelera" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reabrir " + titles[0] })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Reversar " + titles[0] })).toHaveCount(0);
   // ponytail: solo los dos de esta prueba; «Seleccionar todos» borraría rechazados ajenos de la rama compartida.
   for (const title of titles) await page.getByLabel("Seleccionar " + title).check();
   await page.getByRole("button", { name: "Eliminar seleccionados (2)" }).click();

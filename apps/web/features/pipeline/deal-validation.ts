@@ -1,3 +1,4 @@
+import { parseAmount } from "@wave/shared";
 import { NEGOCIO, PIPELINE } from "@/content/pipeline";
 import type {
   DealFormState,
@@ -15,12 +16,11 @@ export function isDay(value: string) {
     date.toISOString().slice(0, 10) === value
   );
 }
-export const decimal = (value: string) => value.trim().replace(",", ".");
 /** Hoy en Ecuador como AAAA-MM-DD (UTC-5, sin horario de verano), igual que ecuadorToday() del API. */
 export const todayEcuador = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guayaquil" }).format(new Date());
-/** Monto de 0 a 999999999999.99 (el máximo de Decimal(14,2)) con hasta dos decimales, con punto o coma. */
-export const isAmount = (value: string) => /^\d{1,12}(\.\d{1,2})?$/.test(decimal(value));
+/** Monto hasta 999.999.999.999,99 (el máximo de Decimal(14,2)): punto de miles opcional y coma para los centavos. */
+export const isAmount = (value: string) => parseAmount(value) !== null;
 
 export function validateDeal(values: DealValues): DealFormState["fieldErrors"] {
   const errors: DealFormState["fieldErrors"] = {};
@@ -42,11 +42,11 @@ export function validateItems(rows: readonly ItemValues[]): ItemErrors | null {
   const texto = NEGOCIO.productos.errores;
   rows.forEach((row, index) => {
     const description = row.description.trim();
-    const quantity = decimal(row.quantity);
+    const quantity = parseAmount(row.quantity, 6);
     const rowErrors: ItemErrors[number] = {};
     if (description.length < 2 || description.length > 200)
       rowErrors.description = texto.descripcion;
-    if (!/^\d{1,6}(\.\d{1,2})?$/.test(quantity) || Number(quantity) === 0)
+    if (!quantity)
       rowErrors.quantity = texto.cantidad;
     if (!isAmount(row.unitPrice)) rowErrors.unitPrice = texto.precio;
     if (!/^\d{1,3}$/.test(row.taxRate.trim()) || Number(row.taxRate) > 100)

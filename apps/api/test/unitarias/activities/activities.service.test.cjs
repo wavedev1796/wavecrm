@@ -78,6 +78,16 @@ test("activities list supports type, assignee, upcoming and overdue filters", as
   assert.equal(result.meta.total, 1);
 });
 
+test("P14: la agenda filtra por negocio cuando llega desde su ficha", async () => {
+  const prisma = prismaFor();
+  let args;
+  prisma.activity.findMany = async (received) => ((args = received), [base]);
+  await new ActivitiesService(prisma).list({ dealId: "deal-1" });
+  assert.equal(args.where.dealId, "deal-1");
+  await new ActivitiesService(prisma).list({});
+  assert.equal("dealId" in args.where, false);
+});
+
 test("activity create assigns actor by default and validates an active assignee", async () => {
   const prisma = prismaFor();
   let inserted;

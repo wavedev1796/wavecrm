@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Ban, Pencil, RotateCcw, ThumbsDown, Trophy } from "lucide-react";
+import { Eraser, Pencil, ThumbsDown, Trophy, Undo2 } from "lucide-react";
 import { FormDialog } from "@/components/form/form-dialog";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -28,8 +28,8 @@ const TITLES = {
 } as const;
 
 /**
- * Ganar, perder, rechazar y reabrir abren el mismo modal de transición que el tablero: las reglas son las del API.
- * Cualquiera rechaza un abierto o un perdido; reabrir sigue siendo de ADMIN.
+ * Ganar, perder, enmendar (rechazar) y reversar (reabrir) abren el mismo modal de transición que el tablero: las reglas son las del API.
+ * Cualquiera rechaza un abierto o un perdido; reversar sigue siendo de ADMIN.
  */
 export function DealActions({ deal, canReopen, ...options }: Readonly<Props>) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -64,13 +64,13 @@ export function DealActions({ deal, canReopen, ...options }: Readonly<Props>) {
       )}
       {(open || deal.status === "LOST") && (
         <Button variant="secondary" className="action-button action-button--cancel" onClick={() => setMode("REJECTED")}>
-          <Ban aria-hidden />
+          <Eraser aria-hidden />
           {acciones.rechazar}
         </Button>
       )}
       {!open && canReopen && (
         <Button variant="secondary" className="action-button action-button--restore" onClick={() => setMode("REOPEN")}>
-          <RotateCcw aria-hidden />
+          <Undo2 aria-hidden />
           {acciones.reabrir}
         </Button>
       )}

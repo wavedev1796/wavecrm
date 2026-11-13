@@ -72,7 +72,7 @@ test("un negocio ganado muestra sus productos sin poder editarlos", () => {
       locked
     />,
   );
-  expect(screen.getByText("Reabre el negocio para cambiar sus productos.")).toBeInTheDocument();
+  expect(screen.getByText("Reversa el negocio para cambiar sus productos.")).toBeInTheDocument();
   expect(screen.queryByRole("textbox")).toBeNull();
   expect(screen.queryByRole("button", { name: "Guardar productos" })).toBeNull();
 });

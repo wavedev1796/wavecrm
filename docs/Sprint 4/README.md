@@ -15,6 +15,7 @@ Administrar actividades comerciales y sus recordatorios desde una API autenticad
 | CRM-24 | [Agenda de actividades](24 - Agenda de actividades.md) | Eduardo Garcia | Completo (3/3 criterios) |
 | CRM-25 | [Timeline por contacto/negocio](25 - Timeline por contacto-negocio.md) | Zaith Manangón | Completo (4/4 criterios) |
 | CRM-26 | [Notas y menciones](26 - Notas y menciones.md) | Zaith Manangón | Completo (4/4 criterios) |
+| — | [Revisión del equipo (2026-10-31)](<Revisión del equipo (2026-10-31).md>) | Zaith Manangón | Parcial (7/16 criterios) |
 
 ## Decisiones
 

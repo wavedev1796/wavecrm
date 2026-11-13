@@ -71,9 +71,23 @@
   flex-direction: column;
   gap: 5px;
 }
-/* La etiqueta del formulario es flex en columna: en bloque, el * sigue al texto en vez de bajar de línea. */
-.form-field > label.field-required {
+/* La etiqueta del formulario es flex en columna: en bloque, el * y el icono siguen al texto en vez de bajar de línea. */
+.form-field > label.field-required,
+.form-field > label:has(> .field-icon) {
   display: block;
+}
+/* Icono del tipo de dato delante de la etiqueta (components/form/field-icon.tsx), como en «Registrar actividad». */
+.field-icon {
+  width: 15px;
+  height: 15px;
+  margin-right: 7px;
+  color: var(--wave-blue);
+  vertical-align: -3px;
+}
+/* Etiqueta que envuelve a su control: el texto y el icono van en un span en fila. */
+.field-label {
+  display: flex;
+  align-items: center;
 }
 .field-required::after {
   content: " *";

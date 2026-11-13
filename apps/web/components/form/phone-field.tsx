@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FieldIcon } from "@/components/form/field-icon";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -26,7 +27,10 @@ export function PhoneField({ id, country, number, error }: Props) {
 
   return (
     <div className="form-field">
-      <label htmlFor={id}>{COMUN.formulario.telefono}</label>
+      <label htmlFor={id}>
+        <FieldIcon name="telefono" />
+        {COMUN.formulario.telefono}
+      </label>
       <div className="phone-field">
         <Select
           name="phoneCountry"

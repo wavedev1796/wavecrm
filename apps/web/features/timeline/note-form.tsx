@@ -25,7 +25,7 @@ function NoteFields({
   const id = prefix + "-content";
   return (
     <>
-      <Field id={id} label={texto.texto} required error={error}>
+      <Field id={id} label={texto.texto} required error={error} icon="texto">
         <textarea
           id={id}
           name="content"

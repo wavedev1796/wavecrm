@@ -15,7 +15,7 @@ export const PIPELINE = {
   linked: "Selecciona al menos un contacto o una empresa.",
   titleRequired: "Ingresa el nombre del negocio (entre 2 y 160 caracteres).",
   amountInvalid:
-    "Ingresa un monto con hasta dos decimales, por ejemplo 520.25 o 520,25 (maximo 999999999999.99).",
+    "Usa la coma para los centavos, por ejemplo 8.000,50 u 8000,50. El punto solo separa miles.",
   dateInvalid: "Ingresa una fecha valida.",
   valueFromItems: "Se calcula con los productos de la ficha.",
   stageLocked: "Cambia la etapa desde el tablero o la ficha.",
@@ -46,7 +46,7 @@ export const TABLERO = {
   zonaRechazado: "Zona Rechazado",
   rechazadoAyuda: (cantidad: number) =>
     `${cantidad} ${cantidad === 1 ? "negocio" : "negocios"} en la papelera`,
-  rechazadoVacio: "Suelta aquí una tarjeta para rechazarla: el negocio irá a la papelera.",
+  rechazadoVacio: "Suelta aquí una tarjeta para enmendarla: el negocio irá a la papelera.",
   verPapelera: "Ver papelera",
   verMas: (quedan: number) => `Ver más (quedan ${quedan})`,
   cargandoMas: "Cargando…",
@@ -59,6 +59,12 @@ export const TRANSICION = {
   revisando: "Revisando los requisitos…",
   intro: (negocio: string, destino: string) =>
     `Para pasar ${negocio} a ${destino} falta completar:`,
+  listo: (negocio: string, destino: string) =>
+    `${negocio} cumple los requisitos para pasar a ${destino}. Confirma el cambio.`,
+  observacionAyuda: "Opcional. Se guarda como nota en el historial del negocio.",
+  observacionLarga: "La observación admite hasta 5000 caracteres.",
+  observacionFallida: (detalle: string) =>
+    `El negocio cambió de etapa, pero la observación no se guardó: ${detalle}`,
   confirmar: "Guardar y continuar",
   cancelar: "Cancelar",
   hecho: (negocio: string, destino: string) => `${negocio} pasó a ${destino}.`,
@@ -70,6 +76,7 @@ export const TRANSICION = {
     "Los productos y las propuestas se registran en la ficha. Guarda lo que llenaste aquí y termina allá; después vuelve a mover la tarjeta.",
   destinos: { WON: "Ganado", LOST: "Perdido", REJECTED: "Rechazado", REOPEN: "Abierto" },
   campos: {
+    observacion: "Observaciones",
     contacto: "Contacto",
     responsable: "Responsable",
     necesidad: "Necesidad del cliente",
@@ -103,7 +110,7 @@ export const TRANSICION = {
     elegir: "Selecciona una opción",
   },
   errores: {
-    presupuesto: "Ingresa un presupuesto con hasta dos decimales, por ejemplo 5000 o 5000,50.",
+    presupuesto: "Ingresa el presupuesto con coma para los centavos, por ejemplo 5.000 o 5.000,50.",
     motivo: "Cuenta el motivo del cambio (entre 2 y 500 caracteres).",
     evidencia: "Describe la evidencia de aceptación (entre 2 y 500 caracteres).",
     contacto: "Elige el contacto del negocio.",
@@ -129,6 +136,11 @@ export const TRANSICION = {
 export const NEGOCIO = {
   volver: "Volver al pipeline",
   etiqueta: "Negocio",
+  avance: {
+    etiqueta: "Avance del negocio",
+    porcentaje: (probabilidad: number) => `${probabilidad} %`,
+    valor: (etapa: string, probabilidad: number) => `${etapa} · ${probabilidad} %`,
+  },
   errorCarga: "No pudimos cargar el negocio. Intenta de nuevo en un momento.",
   cargando: "Cargando negocio…",
   datos: "Datos del negocio",
@@ -145,8 +157,8 @@ export const NEGOCIO = {
   acciones: {
     ganar: "Ganar",
     perder: "Perder",
-    rechazar: "Rechazar",
-    reabrir: "Reabrir",
+    rechazar: "Enmendar",
+    reabrir: "Reversar",
     editar: "Editar",
   },
   productos: {
@@ -168,13 +180,13 @@ export const NEGOCIO = {
     tarifa: (tarifa: number) => `${tarifa} %`,
     vacio:
       "Aún no hay productos. Agrega lo que ofreces: el valor del negocio será su subtotal sin IVA.",
-    bloqueados: "Reabre el negocio para cambiar sus productos.",
+    bloqueados: "Reversa el negocio para cambiar sus productos.",
     maximo: "Un negocio admite hasta 100 productos.",
     errores: {
       descripcion: "Describe el producto (entre 2 y 200 caracteres).",
-      cantidad: "Ingresa una cantidad mayor que 0, con hasta dos decimales.",
+      cantidad: "Ingresa una cantidad mayor que 0, con coma para los decimales, por ejemplo 2 o 1,5.",
       precio:
-        "Ingresa un precio con hasta dos decimales, por ejemplo 1400 o 19,99.",
+        "Ingresa el precio con coma para los centavos, por ejemplo 1.400 o 19,99.",
       iva: "Ingresa un IVA entero entre 0 y 100.",
     },
   },
@@ -185,10 +197,10 @@ export const NEGOCIO = {
     detalleRequerido: "Cuenta el motivo (entre 2 y 500 caracteres).",
   },
   rechazar: {
-    titulo: "Rechazar negocio",
+    titulo: "Enmendar negocio",
     motivoRequerido: "Elige el motivo del rechazo.",
   },
-  reabrir: { titulo: "Reabrir negocio" },
+  reabrir: { titulo: "Reversar negocio" },
   calificacion: {
     titulo: "Calificación",
     necesidad: "Necesidad del cliente",
@@ -264,7 +276,7 @@ export const PAPELERA = {
   etiqueta: "Pipeline de ventas",
   titulo: "Papelera",
   descripcion: (total: number) =>
-    `${total} ${total === 1 ? "negocio rechazado" : "negocios rechazados"}. Elimínalos cuando ya no los necesites; un administrador puede reabrirlos.`,
+    `${total} ${total === 1 ? "negocio rechazado" : "negocios rechazados"}. Elimínalos cuando ya no los necesites; un administrador puede reversarlos.`,
   volver: "Volver al pipeline",
   vacio: "La papelera está vacía. Los negocios que rechaces en el tablero o en la ficha aparecen aquí.",
   errorCarga: "No se pudo cargar la papelera. Intenta de nuevo.",
@@ -280,8 +292,8 @@ export const PAPELERA = {
   confirmarBoton: "Eliminar definitivamente",
   eliminados: (cantidad: number) =>
     cantidad === 1 ? "Se eliminó 1 negocio." : `Se eliminaron ${cantidad} negocios.`,
-  reabrir: "Reabrir",
-  reabrirDe: (negocio: string) => `Reabrir ${negocio}`,
+  reabrir: "Reversar",
+  reabrirDe: (negocio: string) => `Reversar ${negocio}`,
   sinContacto: "Sin contacto",
   sinResponsable: "Sin responsable",
 } as const;

@@ -1,7 +1,8 @@
 "use client";
 import { useId, useRef, useState, useTransition } from "react";
 import { Package, Plus, Trash2 } from "lucide-react";
-import { IVA_SUGGESTIONS } from "@wave/shared";
+import { formatAmount, IVA_SUGGESTIONS } from "@wave/shared";
+import { FieldIcon } from "@/components/form/field-icon";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,8 +23,8 @@ const MAX_LENGTH = { description: 200, quantity: 16, unitPrice: 16, taxRate: 3 }
 const toRow = (key: string, item?: DealItem): Row => ({
   key,
   description: item?.description ?? "",
-  quantity: item ? String(item.quantity) : "",
-  unitPrice: item ? String(item.unitPrice) : "",
+  quantity: item ? formatAmount(item.quantity).replace(/,00$/, "") : "",
+  unitPrice: item ? formatAmount(item.unitPrice) : "",
   taxRate: String(item?.taxRate ?? IVA_SUGGESTIONS[0]),
 });
 
@@ -89,10 +90,10 @@ export function DealItems({
         <Table>
           <thead>
             <tr>
-              <th>{texto.descripcion}</th>
-              <th>{texto.cantidad}</th>
-              <th>{texto.precio}</th>
-              <th>{texto.iva}</th>
+              <th><FieldIcon name="producto" />{texto.descripcion}</th>
+              <th><FieldIcon name="cantidad" />{texto.cantidad}</th>
+              <th><FieldIcon name="dinero" />{texto.precio}</th>
+              <th><FieldIcon name="porcentaje" />{texto.iva}</th>
               <th className="deal-items-money">{texto.subtotalFila}</th>
               {!locked && (
                 <th className="deal-items-remove">
