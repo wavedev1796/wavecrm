@@ -36,6 +36,9 @@ export type GateFacts = {
   quote: { status: QuoteStatus; total: Prisma.Decimal.Value } | null;
   /** Total con IVA de los productos; null sin productos. */
   itemsTotal: Prisma.Decimal.Value | null;
+  /** Viabilidad según el vendedor (P4) y su evidencia. */
+  viable: boolean | null;
+  viabilityNote: string | null;
 };
 export type GateTarget =
   | { kind: "stage"; stage: GateStage }
@@ -43,7 +46,8 @@ export type GateTarget =
   | { kind: "lost" }
   | { kind: "rejected" }
   | { kind: "reopen"; stage: GateStage };
-export type GateInput = { reason?: string; closedAt?: Date; lossReason?: string };
+/** `paymentConfirmed`: respuesta a «¿Se comprobó el pago?» al ganar (P8). No se guarda en el negocio: queda en la auditoría. */
+export type GateInput = { reason?: string; closedAt?: Date; lossReason?: string; paymentConfirmed?: boolean };
 export type Pending = { code: TransitionCheck; message: string };
 
 export const CHECK_MESSAGES: Record<TransitionCheck, string> = {
@@ -56,10 +60,12 @@ export const CHECK_MESSAGES: Record<TransitionCheck, string> = {
   BUDGET: "Registra el presupuesto o explica por qué aún no se conoce.",
   EXPECTED_CLOSE: "Indica la fecha estimada de cierre.",
   PROPOSAL_SENT: "Registra la propuesta comercial enviada.",
+  VIABILITY: "Marca el negocio como viable y registra la evidencia que lo respalda.",
   ACCEPTANCE: "Registra la aceptación de la propuesta con su evidencia.",
   FINAL_AMOUNT:
     "El importe de la propuesta aceptada no coincide con el de los productos. Registra y acepta una nueva.",
   CLOSED_AT: "Ingresa la fecha real de cierre; no puede ser futura.",
+  PAYMENT_CONFIRMED: "Confirma que se comprobó el pago: sin pago comprobado el negocio no se gana.",
   LOSS_REASON: "Elige el motivo de la pérdida.",
   REJECTION_REASON: "Elige el motivo del rechazo.",
   REASON: "Indica el motivo del cambio.",
@@ -111,10 +117,13 @@ export function pendingChecks(
     const open = requirementsUpTo(stages, pipelineId, Number.POSITIVE_INFINITY);
     open.delete("NEXT_ACTIVITY");
     require(open);
+    // ponytail: viabilidad y pago se exigen solo para ganar; pasarlos a requisito de etapa si el equipo lo pide.
+    if (facts.viable !== true || !filled(facts.viabilityNote)) missing.add("VIABILITY");
     if (facts.quote?.status !== "ACCEPTED") missing.add("ACCEPTANCE");
     else if (facts.itemsTotal == null || !new Prisma.Decimal(facts.quote.total).equals(facts.itemsTotal))
       missing.add("FINAL_AMOUNT");
     if (!input.closedAt || input.closedAt > today) missing.add("CLOSED_AT");
+    if (input.paymentConfirmed !== true) missing.add("PAYMENT_CONFIRMED");
   } else {
     const destination = target.stage;
     const advancing =

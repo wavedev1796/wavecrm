@@ -613,7 +613,8 @@
   font-size: 0.88rem;
 }
 .deal-quote-form,
-.deal-qualification-form {
+.deal-qualification-form,
+.deal-payments-form {
   display: grid;
   gap: 12px;
   margin-top: 12px;
@@ -671,4 +672,60 @@
   color: var(--wave-danger);
   border-color: var(--wave-danger-soft);
   background: linear-gradient(145deg, white, var(--wave-danger-soft));
+}
+/* P1 (2026-11-13): negocio abierto que pasó los días sin actividad de su etapa. */
+.deal-risk {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 8px 0 0;
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-size: 0.66rem;
+  font-weight: 650;
+  color: var(--wave-warning);
+  background: var(--wave-warning-soft);
+}
+.deal-risk svg,
+.deal-risk-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+/* P6 (2026-11-13): abonos de la ficha. El resumen usa el dl de .contact-data-card. */
+.deal-payments-summary dd {
+  font-variant-numeric: tabular-nums;
+}
+.deal-payments-list {
+  display: grid;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.deal-payments-list li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--wave-line);
+}
+.deal-payments-list li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.deal-payments-list strong {
+  color: var(--wave-blue);
+  font-variant-numeric: tabular-nums;
+}
+.deal-payments-list span,
+.deal-payments-empty {
+  font-size: 0.76rem;
+  color: var(--wave-muted-strong);
+}
+.deal-payments-list p {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
 }

@@ -1,6 +1,6 @@
 # Revisión del equipo (2026-10-31)
 
-**Responsable:** Zaith Manangón · **Estado:** Parcial (7/16 criterios). Bloque 1 (P0, P2, P5, P7, P10, P15) hecho el 2026-11-11 y bloque 2 (P14) el 2026-11-13. Diseño aprobado por el usuario el 2026-11-11, con OK para tocar el módulo de pipeline de Eduardo (CRM-17 a CRM-19) y sumar iconos a sus formularios de contactos y empresas. P13 (sus fichas) sigue necesitando OK propio.
+**Responsable:** Zaith Manangón · **Estado:** Parcial (12/16 criterios). Bloque 1 (P0, P2, P5, P7, P10, P15) hecho el 2026-11-11, y los bloques 2 (P14) y 3 (P1, P4, P6, P8, P9) el 2026-11-13. La migración del bloque 3 está en `pruebas` y en `development` (OK del usuario, 2026-11-13). Diseño aprobado por el usuario el 2026-11-11, con OK para tocar el módulo de pipeline de Eduardo (CRM-17 a CRM-19) y sumar iconos a sus formularios de contactos y empresas. P13 (sus fichas) sigue necesitando OK propio.
 
 ## Objetivo
 
@@ -11,15 +11,15 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 ## Criterios de aceptación
 
 - [x] **P0. Monto en formato de Ecuador.** El punto de miles es opcional (`8000` y `8.000` son lo mismo) y solo la coma separa los centavos (`8.000,50`). La regla es la misma en todos los campos de dinero.
-- [ ] **P1. Días sin actividad configurables.** Un ADMIN define por etapa cuántos días sin actividad marcan un negocio *En riesgo*. La tarjeta del tablero y la ficha lo muestran.
+- [x] **P1. Días sin actividad configurables.** Un ADMIN define por etapa cuántos días sin actividad marcan un negocio *En riesgo*. La tarjeta del tablero y la ficha lo muestran.
 - [x] **P2. Rechazo reversible.** El botón *Rechazar* pasa a llamarse *Enmendar*, con icono. Deshacerlo devuelve el negocio a la etapa donde estaba, con todos sus datos.
 - [ ] **P3. Historial por campo (estilo Frappe).** La ficha muestra cada cambio del negocio como «campo: antes → después», con autor y fecha.
-- [ ] **P4. Viabilidad del vendedor.** La tarjeta *Calificación* registra si el negocio es viable y la evidencia que lo respalda. Sin esa evidencia no se puede ganar.
+- [x] **P4. Viabilidad del vendedor.** La tarjeta *Calificación* registra si el negocio es viable y la evidencia que lo respalda. Sin esa evidencia no se puede ganar.
 - [x] **P5. Barra de avance.** El selector de etapa deshabilitado del formulario se reemplaza por una barra de porcentaje con el color de cada etapa.
-- [ ] **P6. Abonos.** La ficha registra pagos con monto, fecha y nota, sin archivo adjunto, y muestra el total abonado y el saldo pendiente.
+- [x] **P6. Abonos.** La ficha registra pagos con monto, fecha y nota, sin archivo adjunto, y muestra el total abonado y el saldo pendiente.
 - [x] **P7. Observación en cada movimiento.** Al mover una tarjeta a cualquier estado del tablero (otra etapa, Ganado, Perdido, Rechazado o Abierto al reversar), el modal ofrece un campo opcional *Observaciones* que se guarda como nota del negocio. La ficha ya admitía notas en todos los estados.
-- [ ] **P8. Comprobación del pago.** El último paso para ganar pregunta «¿Se comprobó el pago?» (Sí/No). Con *No* el negocio no se gana.
-- [ ] **P9. Motivo de pérdida.** Al perder se elige el motivo de una lista que empieza por los más probables, entre ellos el nuevo *No realizó el pago*.
+- [x] **P8. Comprobación del pago.** El último paso para ganar pregunta «¿Se comprobó el pago?» (Sí/No). Con *No* el negocio no se gana.
+- [x] **P9. Motivo de pérdida.** Al perder se elige el motivo de una lista que empieza por los más probables, entre ellos el nuevo *No realizó el pago*.
 - [x] **P10. Reversar.** *Reabrir* pasa a llamarse *Reversar* en el tablero, la ficha y la papelera.
 - [ ] **P11. Estados por rol.** Las acciones de estado respetan la tabla de roles de *Decisiones*, en el API (`403`) y en la web (botones ocultos).
 - [ ] **P12. Notas por correo.** Cada nota nueva avisa por correo al responsable del negocio, además de a los mencionados.
@@ -110,6 +110,41 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 - Web: `deal-timeline.test.tsx` (reescrita), `agenda.test.tsx` (enlace al negocio y quitar el filtro), `actions.test.ts` (validación de la actividad) y `app/(dashboard)/pipeline/[id]/page.test.tsx`.
 - E2E: `test/e2e/pipeline.spec.ts` registra la actividad desde el diálogo y comprueba el enlace a la agenda.
 
+### Bloque 3 (2026-11-13): P1, P4, P6, P8, P9
+
+**Datos**
+
+- `packages/database/prisma/schema.prisma`: `LossReason.NO_PAYMENT`, `Stage.staleDays`, `Deal.viable`, `Deal.viabilityNote` y el modelo `DealPayment` (con la relación inversa en `Deal` y `User`).
+- `packages/database/prisma/migrations/20261116120000_payments_viability_stale_days/migration.sql` (nueva), con dos `CHECK`: `staleDays` vacío o entre 1 y 365, y abono mayor que cero.
+- `packages/shared/src/catalogos.ts`: `NO_PAYMENT` en `CLOSE_REASONS`, `LOSS_REASONS` ordenada de más a menos probable, `FREQUENT_LOSS_REASONS = 5` y los requisitos `VIABILITY` y `PAYMENT_CONFIRMED` en `TRANSITION_CHECKS`.
+
+**API**
+
+- `apps/api/src/modules/pipeline/stage-gates.ts`: ganar exige `VIABILITY` (viable y con evidencia) y `PAYMENT_CONFIRMED` (`paymentConfirmed: true`), con su mensaje.
+- `apps/api/src/modules/pipeline/deal-rules.ts`: `staleness()` (días sin actividad y *En riesgo*) y `paymentBalance()` (total a cobrar, abonado y saldo).
+- `apps/api/src/modules/pipeline/pipeline.dto.ts`: `staleDays` en las etapas, `viable` y `viabilityNote` en el negocio, `paymentConfirmed` al mover y al ganar, y `CreatePaymentDto`.
+- `apps/api/src/modules/pipeline/pipeline.service.ts`: el tablero y la ficha traen `idleDays` y `atRisk`; la ficha suma `payments` y `balance`. `addPayment()` y `deletePayment()` con su auditoría (`PAYMENT_ADDED`, `PAYMENT_DELETED`). El `WON` guarda `paymentConfirmed: true`. Solo un ADMIN cambia `staleDays`.
+- `apps/api/src/modules/pipeline/pipeline.controller.ts`: `POST /deals/:id/payments` y `DELETE /deals/:id/payments/:paymentId`.
+
+**Web**
+
+- `apps/web/features/pipeline/deal-payments.tsx` (nuevo): tarjeta *Abonos* con el resumen, la lista, el alta y el borrado (ADMIN).
+- `apps/web/features/pipeline/actions.ts`: `addPaymentAction()`, `deletePaymentAction()`, viabilidad en `qualifyDealAction()`, `staleDays` en la configuración y las reglas de `viable`, `viabilityNote` y `paymentConfirmed` en el modal.
+- `apps/web/features/pipeline/transition-dialog.tsx`: campos *¿Es viable?*, *Evidencia de viabilidad* y *¿Se comprobó el pago?*. Los motivos de pérdida muestran los cinco más probables y el resto en el grupo *Otros motivos*.
+- `apps/web/features/pipeline/deal-qualification.tsx`: viabilidad y evidencia.
+- `apps/web/features/pipeline/pipeline-settings.tsx`: *Días sin actividad* por etapa.
+- `apps/web/features/pipeline/pipeline-board.tsx` y `app/(dashboard)/pipeline/[id]/page.tsx`: aviso *En riesgo · N días sin actividad*. La ficha suma la tarjeta *Abonos*.
+- `apps/web/features/pipeline/types.ts`: `Payment`, `balance`, `idleDays`, `atRisk`, `staleDays`, `viable` y `viabilityNote`.
+- `apps/web/features/timeline/entries.ts` y `types.ts`: eventos *Abono registrado* y *Abono borrado*, y *Pago comprobado* en el `WON`.
+- Textos: `content/pipeline.ts` (`diasSinActividad`, `enRiesgo`, campos y errores del modal, `calificacion`, `abonos`), `content/catalogos.ts` (*No realizó el pago*) y `content/timeline.ts`.
+- Estilos en `apps/web/styles/pipeline.css`: `.deal-risk`, `.deal-risk-icon`, `.deal-payments-summary`, `.deal-payments-list` y `.deal-payments-form`.
+
+**Pruebas**
+
+- API: `stage-gates.test.cjs` (viabilidad y pago al ganar), `deal-rules.test.cjs` (`staleness`), `pipeline.service.test.cjs` (abonos, saldo, `staleDays` solo ADMIN, `paymentConfirmed` en la auditoría), `pipeline-config.service.test.cjs` (`idleDays`, `atRisk` y `balance` en el tablero y la ficha) e integración `pipeline.http.test.cjs` (ganar sin viabilidad o sin pago, flujo de abonos, `422` al pasarse del saldo, `403` al borrar como VENDEDOR).
+- Web: `deal-payments.test.tsx` (nueva), `actions.test.ts`, `transition-dialog.test.tsx`, `pipeline-board.test.tsx`, `pipeline-settings.test.tsx`, `entries.test.ts` y `app/(dashboard)/pipeline/[id]/page.test.tsx`.
+- E2E: `test/e2e/pipeline.spec.ts` llena la viabilidad y el pago al ganar, y comprueba el error con *No*.
+
 ## Decisiones
 
 ### Respuestas del usuario (2026-11-11)
@@ -136,6 +171,7 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 - `Stage.staleDays Int?` (vacío = sin alerta). Lo edita un ADMIN en *Configurar pipeline*, junto a la probabilidad y los requisitos.
 - Un negocio abierto está *En riesgo* si su última actividad completada, o su fecha de creación, tiene más de `staleDays` días (día de Ecuador). Se calcula al leer el tablero; no se guarda.
 - *Mi decisión:* solo se avisa (insignia en la tarjeta y en la ficha). No se marca como perdido de forma automática, porque perder exige un motivo que solo da una persona.
+- **Al implementar (2026-11-13):** el API rechaza con `403` que un VENDEDOR cambie `staleDays`, igual que los requisitos («Solo un administrador cambia los requisitos y los días sin actividad de una etapa»). El límite (1 a 365) lo cuida también un `CHECK` de la base.
 
 ### P2 y P10. Enmendar y Reversar
 
@@ -152,6 +188,7 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 
 - `Deal.viable Boolean?` y `Deal.viabilityNote String?` en la tarjeta *Calificación*.
 - Requisito nuevo `VIABILITY` en `stage-gates.ts`: se exige para ganar (viable = sí, con nota de 10 caracteres o más). *Mi decisión:* no se exige para entrar a etapas intermedias. Se puede subir si el equipo lo pide.
+- **Al implementar (2026-11-13):** `VIABILITY` y `PAYMENT_CONFIRMED` no se suman al enum `StageRequirement` de la base, como decía el plan. Son condiciones fijas de ganar, no requisitos que un ADMIN marca por etapa, así que viven solo en `TRANSITION_CHECKS` de `@wave/shared`. Si falta la viabilidad, el modal la pide y la guarda en el negocio antes de ganar.
 
 ### P5. Barra de avance
 
@@ -166,6 +203,14 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 - Ganar envía `paymentConfirmed: true`. Requisito nuevo `PAYMENT_CONFIRMED`: si falta o es `false`, el modal muestra «¿Se comprobó el pago?» y no gana. La respuesta queda en el `AuditLog` del `WON`.
 - *Mi decisión:* el saldo no tiene que ser cero para ganar. Manda la respuesta Sí/No del usuario, como pidió el equipo; el saldo es informativo.
 
+**Al implementar (2026-11-13):**
+
+- El saldo lo calcula el API (`paymentBalance()`) y la ficha lo recibe en `balance`. Calcularlo en la web habría ignorado el descuento por línea de las cotizaciones de Eduardo (CRM-28). Sin productos, el total a cobrar es el valor del negocio.
+- Se registran abonos en cualquier estado salvo *Rechazado* («Reversa el negocio para registrar abonos.»): un ganado o un perdido todavía puede cobrarse. Un abono con fecha futura se rechaza (`400`).
+- *Mi decisión, pendiente de P11:* solo un ADMIN borra un abono (`403` para VENDEDOR), y el borrado guarda en la auditoría el monto, la fecha y la nota.
+- El historial muestra *Abono registrado* y *Abono borrado* con su monto, y el `WON` suma la nota *Pago comprobado*.
+- El tablero calcula *En riesgo* con la última actividad completada de cada negocio (`activities` con `take: 1` en el mismo `include` del tablero, sin consultas aparte). No se guarda en la base.
+
 ### P7 y P12. Notas
 
 - **P7, aclarado por el usuario el 2026-11-11.** La ficha ya mostraba el formulario de notas en todos los estados y el API no las bloquea. El punto del equipo («un campo notas/observaciones para todos los estados del tablero») pide una *observación al mover*: el modal de transición trae un campo opcional *Observaciones*, que se guarda como nota del negocio después de que el movimiento se confirma.
@@ -177,6 +222,7 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 ### P9. Motivos de pérdida
 
 - Nuevo `LossReason.NO_PAYMENT` («No realizó el pago»). La lista del formulario y de la columna Perdido muestra primero los más probables: *No realizó el pago*, *Sin presupuesto*, *Sin respuesta*, *Eligió a la competencia* y *Otro*. El resto queda debajo, en un grupo «Otros motivos».
+- **Al implementar (2026-11-13):** el orden vive en `LOSS_REASONS` de `@wave/shared` y `FREQUENT_LOSS_REASONS` marca cuántos van arriba. Se conservan las etiquetas que ya existían (*Falta de presupuesto*, *Falta de respuesta*, *Competencia*), para no cambiar lo que ya muestran los negocios perdidos. `NO_PAYMENT` solo se ofrece al perder, no al rechazar.
 
 ### P11. Roles
 
@@ -242,8 +288,9 @@ Hoy los dos formularios guardan en la misma tabla `Activity`, pero son distintos
 
 ### Datos y migración
 
-- Una sola migración: `Stage.staleDays`, `Deal.viable`, `Deal.viabilityNote`, `DealPayment`, `LossReason.NO_PAYMENT` y `StageRequirement.VIABILITY` / `PAYMENT_CONFIRMED`.
+- Una sola migración, `20261116120000_payments_viability_stale_days`: `Stage.staleDays`, `Deal.viable`, `Deal.viabilityNote`, `DealPayment` y `LossReason.NO_PAYMENT`. Sin valores nuevos en `StageRequirement` (ver P4).
 - Se aplica primero en `pruebas` y pasa a `development` solo con OK del usuario. Nunca con base sombra en Neon.
+- **Al implementar (2026-11-13):** el SQL salió de `prisma migrate diff` entre el esquema anterior y el nuevo (`--from-schema-datamodel` / `--to-schema-datamodel`), sin base sombra ni Docker, y se le sumaron a mano los dos `CHECK`. Aplicada con `migrate deploy` en `pruebas` y después en `development`.
 
 ### Orden de trabajo
 
@@ -279,14 +326,28 @@ Hoy los dos formularios guardan en la misma tabla `Activity`, pero son distintos
 - `graphify update .` corrido.
 - **Revisión visual y E2E: pendientes**, por el mismo motivo del bloque 1.
 
+### Bloque 3 (2026-11-13)
+
+- **Migración:** `migrate deploy` aplicado en `pruebas` y, con OK del usuario, en `development` (`pnpm db:migrate:deploy`). `prisma migrate status` en `development`: «Database schema is up to date!».
+- **API:** 275 de 275 unitarias aprobadas. Integración contra `pruebas`: `pipeline.http.test.cjs` 12 de 12 (una corrida tuvo un `401` intermitente en «eliminar negocio» y la siguiente pasó completa), y las de productos y timeline también aprobadas.
+- **Web (Vitest):** 397 pruebas aprobadas.
+- **Lint y tipos:** `pnpm lint` (exit 0), `tsc --noEmit` de la web sin errores, y `@wave/shared`, `@wave/database` y `@wave/api` (`nest build`) compilan.
+- **Build completo de la web: pendiente.** `prisma generate` da `EPERM` porque el `pnpm run dev` del usuario tiene abierto el motor de Prisma. Los tipos del cliente sí se regeneraron (misma versión del motor, 6.19.3). `next build` no se corrió para no pisar el `.next` del `next dev`.
+- `graphify update .` corrido.
+- **Revisión visual y E2E: pendientes.**
+
 ## Pendientes
 
-- Revisar en el navegador los iconos, la barra, el modal y el diálogo de actividad de la ficha, y ejecutar el E2E del pipeline (`test/e2e/pipeline.spec.ts`, ajustado a *Reversar* y al diálogo de actividad). Hace falta el `pnpm run dev` y una sesión iniciada.
-- Confirmar con el equipo la tabla de roles de P11 y si la viabilidad (P4) se exige antes de llegar a Propuesta.
+- Correr `pnpm build` completo con el `pnpm run dev` detenido.
+- Revisar en el navegador los iconos, la barra, el modal y el diálogo de actividad de la ficha, la viabilidad, el pago, los abonos y el aviso *En riesgo*, y ejecutar el E2E del pipeline (`test/e2e/pipeline.spec.ts`). Hace falta el `pnpm run dev` y una sesión iniciada.
+- Confirmar con el equipo la tabla de roles de P11 (incluido que solo un ADMIN borre abonos) y si la viabilidad (P4) se exige antes de llegar a Propuesta.
 - Avisar a Eduardo:
   - Cambios en su módulo de pipeline. El modal de transición ya no mueve directo: siempre confirma con observación opcional. Se borraron `moveTransition()` y el `POST` de `app/api/pipeline/deals/[id]/transition`.
   - El monto usa coma decimal.
   - La actividad de la ficha usa el diálogo de la agenda: `createActivityAction(dealId, form)` cambió de firma y `CreateDealActivityDto` suma `assigneeId` y `reminderAt`.
   - Iconos en sus formularios de contactos y empresas.
-  - La migración nueva del bloque 3.
+  - La migración nueva del bloque 3, `20261116120000_payments_viability_stale_days`, ya aplicada en `development`: al sincronizar solo tiene que regenerar el cliente (`prisma generate`).
+  - Ganar y mover a una etapa de 100 % exigen `paymentConfirmed: true` y la viabilidad. Se ajustaron sus pruebas de integración (`pipeline.http.test.cjs`).
+  - `CreateStageDto` suma `staleDays`, y la ficha del negocio devuelve `payments`, `balance`, `idleDays` y `atRisk` (el tablero, `idleDays` y `atRisk`).
+  - `LOSS_REASONS` cambió de orden y `TRANSITION_CHECKS` suma `VIABILITY` y `PAYMENT_CONFIRMED`.
   - Si se aprueba P13, cambios en sus fichas.

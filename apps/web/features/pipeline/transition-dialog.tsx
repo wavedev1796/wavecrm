@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ACTIVITY_TYPES, LOSS_REASONS, REJECTION_REASONS, type TransitionCheck } from "@wave/shared";
+import { ACTIVITY_TYPES, FREQUENT_LOSS_REASONS, LOSS_REASONS, REJECTION_REASONS, type TransitionCheck } from "@wave/shared";
 import type { FieldIconName } from "@/components/form/field-icon";
 import { Field } from "@/components/form/form-field";
 import { Alert } from "@/components/ui/alert";
@@ -25,6 +25,9 @@ const ICONS: Record<string, FieldIconName> = {
   solution: "solucion",
   budget: "dinero",
   acceptanceNote: "evidencia",
+  viable: "evidencia",
+  viabilityNote: "evidencia",
+  paymentConfirmed: "dinero",
 };
 /** Icono por nombre de campo: fechas (…Day, …At, validUntil, expectedClose), tipos, asuntos y el resto texto. */
 const transitionIcon = (name: string): FieldIconName =>
@@ -149,16 +152,26 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
   const select = (name: string, options: readonly (readonly [string, string])[], empty = true) => (
     <Select id={"transition-" + name} name={name} defaultValue={empty ? "" : options[0]?.[0]}>
       {empty && <option value="">{campos.elegir}</option>}
-      {options.map(([value, label]) => (
-        <option key={value} value={value}>
-          {label}
-        </option>
-      ))}
+      {options.map(option)}
     </Select>
   );
   const named = (list: Option[]) => list.map((o) => [o.id, o.name] as const);
   const types = (codes: readonly (keyof typeof TIPO_ACTIVIDAD)[]) => codes.map((c) => [c, TIPO_ACTIVIDAD[c]] as const);
   const reasons = (codes: readonly (keyof typeof MOTIVO_CIERRE)[]) => codes.map((c) => [c, MOTIVO_CIERRE[c]] as const);
+  const yesNo = (yes: string, no: string) => [["yes", yes], ["no", no]] as const;
+  const option = ([value, label]: readonly [string, string]) => (
+    <option key={value} value={value}>
+      {label}
+    </option>
+  );
+  // P9: los motivos más probables arriba y el resto en un grupo aparte.
+  const lossReasons = (
+    <Select id="transition-lossReason" name="lossReason" defaultValue="">
+      <option value="">{campos.elegir}</option>
+      {reasons(LOSS_REASONS.slice(0, FREQUENT_LOSS_REASONS)).map(option)}
+      <optgroup label={campos.otrosMotivos}>{reasons(LOSS_REASONS.slice(FREQUENT_LOSS_REASONS)).map(option)}</optgroup>
+    </Select>
+  );
 
   const FIELDS: Record<TransitionCheck, () => ReactNode> = {
     CONTACT: () => field("contactId", campos.contacto, select("contactId", named(contacts))),
@@ -203,11 +216,21 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
           <p className="field-hint">{campos.evidenciaAyuda}</p>
         </>
       ),
+    VIABILITY: () => (
+      <>
+        {field("viable", campos.viable, select("viable", yesNo(campos.viableSi, campos.viableNo)))}
+        {field("viabilityNote", campos.evidenciaViabilidad, text("viabilityNote", 1000))}
+        <p className="field-hint">{campos.evidenciaViabilidadAyuda}</p>
+      </>
+    ),
     FINAL_AMOUNT: () => null,
     CLOSED_AT: () => field("closedAt", campos.cierreReal, date("closedAt", { max: today, defaultValue: today })),
+    // P8: la última pregunta antes de ganar; con «No» el negocio no se gana.
+    PAYMENT_CONFIRMED: () =>
+      field("paymentConfirmed", campos.pagoComprobado, select("paymentConfirmed", yesNo(campos.si, campos.no))),
     LOSS_REASON: () => (
       <>
-        {field("lossReason", campos.motivoPerdida, select("lossReason", reasons(LOSS_REASONS)))}
+        {field("lossReason", campos.motivoPerdida, lossReasons)}
         {field("lossDetail", campos.detalle, text("lossDetail", 500), false)}
         <fieldset className="transition-followup">
           <legend>{campos.seguimiento}</legend>

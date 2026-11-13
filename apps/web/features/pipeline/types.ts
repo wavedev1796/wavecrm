@@ -23,6 +23,9 @@ export type Deal = {
   company: Option | null;
   owner: Option | null;
   _count?: { items: number };
+  /** P1: días sin actividad realizada y si pasan los de su etapa (el API los calcula al leer el tablero y la ficha). */
+  idleDays?: number;
+  atRisk?: boolean;
 };
 /** Columna del tablero: cantidad y valor de todos sus negocios, con la primera página de tarjetas. */
 export type Column = { count: number; value: string | number; deals: Deal[] };
@@ -33,6 +36,7 @@ export type Stage = Column & {
   position: number;
   probability: number;
   requirements?: StageRequirement[];
+  staleDays?: number | null;
 };
 export type Metrics = Record<"open" | "won" | "lost" | "rejected", { count: number; value: string }>;
 /** Lo que falta para un cambio de etapa (códigos de @wave/shared, mensaje del API). */
@@ -133,6 +137,13 @@ export type Quote = {
   items?: QuoteLine[];
 };
 export type QuoteLine = { description: string; quantity: string; unitPrice: string; taxRate: number };
+export type Payment = {
+  id: string;
+  amount: string;
+  paidAt: string;
+  note: string | null;
+  createdBy: Option | null;
+};
 export type DealDetail = Omit<Deal, "contact" | "company"> & {
   closedAt: string | null;
   lossReason: LossReason | null;
@@ -142,6 +153,11 @@ export type DealDetail = Omit<Deal, "contact" | "company"> & {
   budget?: string | null;
   budgetNote?: string | null;
   decisionMaker?: string | null;
+  viable?: boolean | null;
+  viabilityNote?: string | null;
+  /** Abonos, del más reciente al más antiguo, y el resumen que calcula el API (P6). */
+  payments?: Payment[];
+  balance?: { due: string; paid: string; pending: string };
   createdAt: string;
   pipeline: Option;
   stage: { id: string; name: string; color: string | null; probability: number };

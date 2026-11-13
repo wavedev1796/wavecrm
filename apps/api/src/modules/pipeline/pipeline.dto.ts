@@ -80,6 +80,8 @@ const POSITION_INVALID = "La posicion debe ser un entero.";
 const PROBABILITY_INVALID = "La probabilidad debe estar entre 0 y 100.";
 const IVA_INVALID = "El IVA debe ser un porcentaje entero entre 0 y 100.";
 const REQUIREMENTS_INVALID = "Elige requisitos válidos y sin repetir.";
+const STALE_DAYS_INVALID = "Los días sin actividad deben ser un entero entre 1 y 365.";
+const PAYMENT_CONFIRMED_INVALID = "Indica si se comprobó el pago con true o false.";
 // El máximo de Decimal(14,2): como número para @Max y dentro de los mensajes de monto.
 const MAX_MONEY = Number(MAX_DEAL_VALUE);
 const BUDGET_INVALID =
@@ -121,6 +123,13 @@ export class CreateStageDto {
   @ArrayUnique({ message: REQUIREMENTS_INVALID })
   @IsIn([...STAGE_REQUIREMENTS], { each: true, message: REQUIREMENTS_INVALID })
   requirements?: StageRequirement[];
+  @ApiPropertyOptional({ description: "Días sin actividad para marcar un negocio «En riesgo»; null = sin alerta" })
+  @IsOptional()
+  @numeric()
+  @Min(1, { message: STALE_DAYS_INVALID })
+  @Max(365, { message: STALE_DAYS_INVALID })
+  @IsInt({ message: STALE_DAYS_INVALID })
+  staleDays?: number | null;
 }
 export class UpdateStageDto extends PartialType(CreateStageDto, {
   skipNullProperties: false,
@@ -168,6 +177,14 @@ export class CreateDealDto {
   @IsOptional()
   @text("la persona decisora", 160, 2)
   decisionMaker?: string | null;
+  @ApiPropertyOptional({ description: "El vendedor considera viable el negocio" })
+  @IsOptional()
+  @IsBoolean({ message: "Indica la viabilidad con true o false." })
+  viable?: boolean | null;
+  @ApiPropertyOptional({ description: "Evidencia de la viabilidad" })
+  @IsOptional()
+  @text("la evidencia de viabilidad", 1000, 10, true)
+  viabilityNote?: string | null;
 }
 export class UpdateDealDto extends PartialType(CreateDealDto, {
   skipNullProperties: false,
@@ -187,11 +204,19 @@ export class MoveDealDto extends FromStageDto {
   @IsOptional()
   @isoDate("Ingresa la fecha real de cierre.")
   closedAt?: Date;
+  @ApiPropertyOptional({ description: "¿Se comprobó el pago? Al mover a una etapa de 100 % (P8)" })
+  @IsOptional()
+  @IsBoolean({ message: PAYMENT_CONFIRMED_INVALID })
+  paymentConfirmed?: boolean;
 }
 export class WinDealDto extends FromStageDto {
   @ApiProperty({ example: "2026-10-10T00:00:00.000Z" })
   @isoDate("Ingresa la fecha real de cierre.")
   closedAt!: Date;
+  @ApiPropertyOptional({ description: "¿Se comprobó el pago? Sin true no se gana (P8)" })
+  @IsOptional()
+  @IsBoolean({ message: PAYMENT_CONFIRMED_INVALID })
+  paymentConfirmed?: boolean;
 }
 export class ReopenDealDto {
   @ApiProperty() @reason() reason!: string;
@@ -359,6 +384,23 @@ export class CreateDealActivityDto {
   @IsOptional()
   @Matches(/^c[a-z0-9]{20,30}$/i, { message: "El responsable no es válido." })
   assigneeId?: string;
+}
+const PAYMENT_INVALID = "Ingresa un abono mayor que cero, con hasta dos decimales.";
+/** Abono sin comprobante (P6): monto, día del pago y nota opcional. */
+export class CreatePaymentDto {
+  @ApiProperty({ example: 250.5 })
+  @numeric()
+  @Min(0.01, { message: PAYMENT_INVALID })
+  @Max(MAX_MONEY, { message: PAYMENT_INVALID })
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: PAYMENT_INVALID })
+  amount!: number;
+  @ApiProperty({ example: "2026-11-13T00:00:00.000Z" })
+  @isoDate("Ingresa la fecha del abono.")
+  paidAt!: Date;
+  @ApiPropertyOptional({ example: "Transferencia Banco Pichincha" })
+  @IsOptional()
+  @text("la nota del abono", 500, 2, true)
+  note?: string;
 }
 export class CreateQuoteDto {
   @ApiProperty({ format: "uuid", description: "Clave estable para reintentar sin crear otra versión." })

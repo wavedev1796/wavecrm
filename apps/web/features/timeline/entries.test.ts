@@ -151,3 +151,18 @@ test("cierres, propuestas, reapertura y borrado dejan su evento; lo desconocido 
     ["Evento del negocio", "Rechazado · ", "0 propuestas rechazadas · 0 actividades canceladas"],
   ]);
 });
+
+test("P6 y P8: los abonos dejan su evento y el ganado dice si se comprobó el pago", () => {
+  const entries = toEntries([
+    action("e1", "PAYMENT_ADDED", { amount: "250.50", paidAt: "2026-11-12T00:00:00.000Z", note: "Transferencia" }, "10"),
+    action("e2", "PAYMENT_DELETED", { amount: "250.50", paidAt: "2026-11-12T00:00:00.000Z", note: null }, "11"),
+    action("e3", "WON", { quoteNumber: "COT-000004", paymentConfirmed: true }, "12"),
+    action("e4", "PAYMENT_ADDED", {}, "13"),
+  ]);
+  expect(entries.map((e) => [e.title, e.note])).toEqual([
+    [expect.stringMatching(/^Abono de .*250,50 registrado$/), expect.stringMatching(/^Pagado el 12 nov.* 2026 · Transferencia$/)],
+    [expect.stringMatching(/^Abono de .*250,50 borrado$/), expect.stringMatching(/^Pagado el 12 nov.* 2026$/)],
+    ["Ganado · cotización COT-000004", "Pago comprobado"],
+    [expect.stringMatching(/^Abono de .*0,00 registrado$/), null],
+  ]);
+});

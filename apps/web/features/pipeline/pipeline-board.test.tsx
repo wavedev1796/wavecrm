@@ -356,3 +356,13 @@ test("eliminar un negocio muestra el error del API o confirma y refresca", async
   await user.click(within(modal).getByRole("button", { name: "Cancelar" }));
   expect(modal).not.toHaveAttribute("open");
 });
+
+test("P1: la tarjeta avisa «En riesgo» con los días sin actividad; sin riesgo no aparece", () => {
+  const risky = { ...deal, atRisk: true, idleDays: 9 };
+  const { unmount } = view(board({ stages: [{ ...stages[0]!, deals: [risky] }, stages[1]!] }));
+  const card = screen.getByRole("article", { name: "Negocio Cuenta Andina" });
+  expect(within(card).getByText("En riesgo · 9 días sin actividad")).toBeInTheDocument();
+  unmount();
+  view();
+  expect(screen.queryByText(/^En riesgo ·/)).toBeNull();
+});

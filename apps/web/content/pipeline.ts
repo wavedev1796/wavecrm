@@ -24,6 +24,12 @@ export const PIPELINE = {
     ayuda:
       "Se exigen también los de las etapas anteriores. Una etapa al 100 % usa las reglas fijas de cierre. Solo un administrador los cambia.",
   },
+  diasSinActividad: {
+    etiqueta: "Días sin actividad",
+    ayuda:
+      "Opcional. Pasado ese plazo sin una actividad realizada, el negocio abierto se marca «En riesgo». Solo un administrador lo cambia.",
+    error: "Los días sin actividad deben ser un entero entre 1 y 365.",
+  },
 } as const;
 
 export const TABLERO = {
@@ -52,6 +58,8 @@ export const TABLERO = {
   cargandoMas: "Cargando…",
   cambiarEtapa: "Cambiar de etapa",
   motivo: (motivo: string) => `Motivo: ${motivo}`,
+  enRiesgo: "En riesgo",
+  sinActividad: (dias: number) => `${dias} ${dias === 1 ? "día" : "días"} sin actividad`,
 } as const;
 
 export const TRANSICION = {
@@ -96,7 +104,16 @@ export const TRANSICION = {
     evidencia: "Evidencia de aceptación",
     evidenciaAyuda: "Por ejemplo: orden de compra 55 recibida por correo.",
     cierreReal: "Fecha real de cierre",
+    viable: "¿El negocio es viable?",
+    viableSi: "Sí, es viable",
+    viableNo: "No es viable",
+    evidenciaViabilidad: "Evidencia de viabilidad",
+    evidenciaViabilidadAyuda: "Por ejemplo: el cliente confirmó presupuesto y fecha de compra.",
+    pagoComprobado: "¿Se comprobó el pago?",
+    si: "Sí",
+    no: "No",
     motivoPerdida: "Motivo de la pérdida",
+    otrosMotivos: "Otros motivos",
     motivoRechazo: "Motivo del rechazo",
     avisoRechazo:
       "Se invalidará el proceso: la propuesta vigente quedará Rechazada y las actividades pendientes, Canceladas. El negocio irá a la papelera.",
@@ -128,6 +145,9 @@ export const TRANSICION = {
     vigenciaEnvio: "La vigencia debe ser igual o posterior a la fecha de envío.",
     aceptacion: "Ingresa cuándo se aceptó la propuesta; no puede ser futura.",
     cierreReal: "Ingresa la fecha real de cierre; no puede ser futura.",
+    viable: "Para ganar, el negocio debe ser viable.",
+    evidenciaViabilidad: "Describe la evidencia de viabilidad (entre 10 y 1000 caracteres).",
+    pagoComprobado: "Sin pago comprobado el negocio no se puede ganar.",
     seguimiento: "Escribe el asunto del seguimiento (entre 2 y 160 caracteres).",
     seguimientoFecha: "El seguimiento debe ser de hoy en adelante.",
   },
@@ -208,9 +228,41 @@ export const NEGOCIO = {
     presupuesto: "Presupuesto (USD)",
     justificacion: "Si aún no se conoce, por qué",
     decisor: "Persona decisora",
+    viabilidad: "Viabilidad",
+    viable: "Viable",
+    noViable: "No viable",
+    sinEvaluar: "Sin evaluar",
+    evidencia: "Evidencia de viabilidad",
+    evidenciaAyuda: "Para ganar, el negocio debe ser viable y tener esta evidencia.",
     guardar: "Guardar calificación",
     guardada: "Calificación guardada.",
     vacio: "Sin dato",
+  },
+  abonos: {
+    titulo: "Abonos",
+    porCobrar: "Total a cobrar",
+    porCobrarAyuda: "Total con IVA de los productos; sin productos, el valor del negocio.",
+    abonado: "Abonado",
+    saldo: "Saldo pendiente",
+    vacio: "Aún no hay abonos registrados.",
+    lista: "Abonos registrados",
+    monto: "Monto (USD)",
+    fecha: "Fecha del pago",
+    nota: "Nota",
+    notaAyuda: "Opcional. Por ejemplo: transferencia del Banco Pichincha.",
+    registrar: "Registrar abono",
+    registrado: "Abono registrado.",
+    detalle: (fecha: string, autor: string) => `${fecha} · ${autor}`,
+    sinAutor: "Usuario eliminado",
+    borrar: (monto: string) => `Borrar el abono de ${monto}`,
+    confirmarBorrar: "¿Borrar este abono? Queda registrado en el historial.",
+    borrado: "Abono borrado.",
+    bloqueado: "Reversa el negocio para registrar abonos.",
+    errores: {
+      monto: "Ingresa el abono con coma para los centavos, por ejemplo 250 o 250,50.",
+      fecha: "Ingresa la fecha del pago; no puede ser futura.",
+      nota: "La nota admite entre 2 y 500 caracteres.",
+    },
   },
   propuestas: {
     titulo: "Propuestas",

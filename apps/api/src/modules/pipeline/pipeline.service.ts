@@ -15,6 +15,7 @@ import {
   AcceptQuoteDto,
   CreateDealActivityDto,
   CreateDealDto,
+  CreatePaymentDto,
   CreateQuoteDto,
   CreateProductDto,
   ListQuotesDto,
@@ -37,6 +38,8 @@ import {
   ecuadorToday,
   MAX_DEAL_VALUE,
   nextQuoteNumber,
+  paymentBalance,
+  staleness,
   sumGroups,
   toDay,
 } from "./deal-rules";
@@ -57,8 +60,16 @@ const dealInclude = {
   owner: { select: { id: true, name: true } },
   _count: { select: { items: true } },
 } satisfies Prisma.DealInclude;
+/** Última actividad completada: con ella se calcula «En riesgo» (P1). `withRisk` la quita de la respuesta. */
+const lastDone = {
+  where: { status: "COMPLETED" },
+  orderBy: [{ completedAt: "desc" }, { id: "desc" }],
+  take: 1,
+  select: { completedAt: true },
+} satisfies Prisma.Deal$activitiesArgs;
+const boardInclude = { ...dealInclude, activities: lastDone } satisfies Prisma.DealInclude;
 const dealDetailInclude = {
-  ...dealInclude,
+  ...boardInclude,
   contact: {
     select: { id: true, firstName: true, lastName: true, email: true, phone: true },
   },
@@ -67,7 +78,23 @@ const dealDetailInclude = {
   },
   items: { orderBy: { position: "asc" } },
   quotes: { orderBy: [{ createdAt: "desc" }, { id: "desc" }] },
+  payments: {
+    orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
+    include: { createdBy: { select: { id: true, name: true } } },
+  },
 } satisfies Prisma.DealInclude;
+/** Cambia la última actividad completada por los días sin actividad y si el negocio está en riesgo. */
+const withRisk = <
+  T extends {
+    status: string;
+    createdAt: Date;
+    stage: { staleDays: number | null } | null;
+    activities?: { completedAt: Date | null }[];
+  },
+>({ activities = [], ...deal }: T) => ({
+  ...deal,
+  ...staleness(deal, activities[0]?.completedAt ?? null),
+});
 type Tx = Prisma.TransactionClient;
 /** Quien pide el cambio: su rol decide si puede tocar un negocio cerrado. */
 export type Actor = { id: string; role: UserRole };
@@ -90,6 +117,8 @@ export type TransitionInput = {
   followUp?: { type: ActivityType; subject: string; dueAt: Date };
   /** Solo al editar: el pipeline de destino si cambia. */
   pipelineId?: string;
+  /** Solo al ganar: respuesta a «¿Se comprobó el pago?» (P8). */
+  paymentConfirmed?: boolean;
 };
 /** Datos del negocio que necesitan las reglas: etapa, productos y la última propuesta vigente. */
 const gateInclude = {
@@ -244,7 +273,7 @@ export class PipelineService {
   }
   createStage(pipelineId: string, dto: CreateStageDto, actor: Actor) {
     return this.write(async (tx) => {
-      if (dto.requirements?.length) this.assertCanSetRequirements(actor);
+      if (dto.requirements?.length || dto.staleDays != null) this.assertCanSetRequirements(actor);
       if (!(await tx.pipeline.findUnique({ where: { id: pipelineId } })))
         throw new NotFoundException("Pipeline no encontrado.");
       return tx.stage.create({ data: { ...dto, pipelineId } });
@@ -257,9 +286,10 @@ export class PipelineService {
       // Guardar el nombre o el color reenvía los requisitos sin cambios: solo cambiarlos exige ADMIN.
       const current = new Set(stage.requirements);
       if (
-        dto.requirements &&
-        (dto.requirements.length !== current.size ||
-          dto.requirements.some((code) => !current.has(code)))
+        (dto.requirements &&
+          (dto.requirements.length !== current.size ||
+            dto.requirements.some((code) => !current.has(code)))) ||
+        (dto.staleDays !== undefined && dto.staleDays !== stage.staleDays)
       )
         this.assertCanSetRequirements(actor);
       if (dto.position !== undefined && dto.position !== stage.position) {
@@ -396,14 +426,15 @@ export class PipelineService {
       page,
     };
   }
-  private columnDeals(tx: Tx, pipelineId: string, column: string, page: number) {
-    return tx.deal.findMany({
+  private async columnDeals(tx: Tx, pipelineId: string, column: string, page: number) {
+    const deals = await tx.deal.findMany({
       where: columnWhere(pipelineId, column),
-      include: dealInclude,
+      include: boardInclude,
       orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
       skip: (page - 1) * BOARD_PAGE,
       take: BOARD_PAGE,
     });
+    return deals.map(withRisk);
   }
   createDeal(dto: CreateDealDto, actorId: string) {
     return this.write(async (tx) => {
@@ -433,6 +464,8 @@ export class PipelineService {
         hasNextActivity: false,
         quote: null,
         itemsTotal: null,
+        viable: dto.viable ?? null,
+        viabilityNote: dto.viabilityNote ?? null,
       };
       const stages = await this.gateStages(tx, [stage.pipelineId]);
       this.rejectPending(
@@ -844,6 +877,55 @@ export class PipelineService {
       });
     });
   }
+  /**
+   * Abono sin comprobante (P6). No puede pasar el saldo: el total con IVA de los productos (o el valor, sin productos)
+   * menos lo ya abonado. Un VENDEDOR abona solo en lo suyo; un rechazado no recibe abonos.
+   */
+  addPayment(dealId: string, dto: CreatePaymentDto, actor: Actor) {
+    return this.write(async (tx) => {
+      const deal = await tx.deal.findFirst({
+        where: { id: dealId, ...ownerScope(actor) },
+        include: {
+          items: { select: { quantity: true, unitPrice: true, taxRate: true, discountRate: true } },
+          payments: { select: { amount: true } },
+        },
+      });
+      if (!deal) throw new NotFoundException("Negocio no encontrado.");
+      if (deal.status === "REJECTED")
+        throw new ConflictException("Reversa el negocio para registrar abonos.");
+      const paidAt = toDay(dto.paidAt);
+      if (paidAt > ecuadorToday())
+        throw new BadRequestException("La fecha del abono no puede ser futura.");
+      if (paymentBalance(deal, deal.payments).pending.lessThan(dto.amount))
+        throw new UnprocessableEntityException("El abono supera el saldo pendiente del negocio.");
+      const note = dto.note ?? null;
+      await tx.dealPayment.create({
+        data: { dealId, amount: dto.amount, paidAt, note, createdById: actor.id },
+      });
+      await this.audit(tx, dealId, "PAYMENT_ADDED", actor.id, {
+        amount: new Prisma.Decimal(dto.amount).toFixed(2),
+        paidAt: paidAt.toISOString(),
+        note,
+      });
+      return this.detail(tx, dealId);
+    });
+  }
+  /** Borrar un abono es solo de ADMIN (P11). La auditoría guarda su copia. */
+  async deletePayment(dealId: string, paymentId: string, actor: Actor) {
+    if (actor.role !== "ADMIN")
+      throw new ForbiddenException("Solo un administrador borra un abono.");
+    return this.write(async (tx) => {
+      const payment = await tx.dealPayment.findFirst({ where: { id: paymentId, dealId } });
+      if (!payment) throw new NotFoundException("Abono no encontrado.");
+      await tx.dealPayment.delete({ where: { id: paymentId } });
+      await this.audit(tx, dealId, "PAYMENT_DELETED", actor.id, {
+        amount: payment.amount.toFixed(2),
+        paidAt: payment.paidAt.toISOString(),
+        note: payment.note,
+      });
+      return this.detail(tx, dealId);
+    });
+  }
   private liveQuotes(tx: Tx, dealId: string) {
     return tx.quote.findMany({
       where: { dealId, status: { in: ["SENT", "ACCEPTED"] } },
@@ -874,17 +956,19 @@ export class PipelineService {
   private async detail(tx: Tx, id: string) {
     const deal = await tx.deal.findUnique({ where: { id }, include: dealDetailInclude });
     if (!deal) throw new NotFoundException("Negocio no encontrado.");
+    const balance = paymentBalance(deal, deal.payments);
     return {
-      ...deal,
+      ...withRisk(deal),
       ...(Array.isArray(deal.quotes)
         ? { quotes: deal.quotes.map(hideQuoteRequestKey) }
         : {}),
+      balance: { due: balance.due.toFixed(2), paid: balance.paid.toFixed(2), pending: balance.pending.toFixed(2) },
     };
   }
   private assertCanSetRequirements(actor: Actor) {
     if (actor.role !== "ADMIN")
       throw new ForbiddenException(
-        "Solo un administrador cambia los requisitos de una etapa.",
+        "Solo un administrador cambia los requisitos y los días sin actividad de una etapa.",
       );
   }
   private assertCanManageProducts(actor: Actor) {
@@ -948,6 +1032,7 @@ export class PipelineService {
         reason: input.reason,
         lossReason: input.lossReason,
         closedAt: input.closedAt && toDay(input.closedAt),
+        paymentConfirmed: input.paymentConfirmed,
       },
       today,
     );
@@ -1052,6 +1137,8 @@ export class PipelineService {
       hasNextActivity: upcoming > 0,
       quote: quote ? { status: quote.status, total: quote.total } : null,
       itemsTotal: deal.items.length ? dealTotals(deal.items).total : null,
+      viable: deal.viable,
+      viabilityNote: deal.viabilityNote,
     };
   }
   /** Comprueba el cambio y lo escribe (negocio, historial con motivo y auditoría) en la transacción de quien llama. */
@@ -1146,9 +1233,11 @@ export class PipelineService {
       });
       if (stageId !== deal.stageId)
         await this.recordMove(tx, id, deal.stageId, stageId, actor.id, reason);
+      // pendingChecks exigió paymentConfirmed === true (P8): la respuesta queda aquí, no en el negocio.
       await this.audit(tx, id, "WON", actor.id, {
         quoteNumber: deal.quotes[0]?.number ?? null,
         closedAt: closedAt.toISOString(),
+        paymentConfirmed: true,
       });
       return;
     }
@@ -1220,7 +1309,9 @@ export class PipelineService {
       | "QUOTE_SENT"
       | "QUOTE_ACCEPTED"
       | "QUOTE_REJECTED"
-      | "QUOTE_SUPERSEDED",
+      | "QUOTE_SUPERSEDED"
+      | "PAYMENT_ADDED"
+      | "PAYMENT_DELETED",
     userId: string,
     changes: Prisma.InputJsonObject,
   ) {

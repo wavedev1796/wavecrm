@@ -16,6 +16,7 @@ import type { JwtPayload } from "../auth/auth.service";
 import {
   AcceptQuoteDto,
   BoardQueryDto,
+  CreatePaymentDto,
   CreateQuoteDto,
   CreateProductDto,
   ListQuotesDto,
@@ -193,6 +194,20 @@ export class PipelineController {
     @CurrentUser() user: JwtPayload,
   ): Promise<unknown> {
     return this.service.completeActivity(id, activityId, user.sub);
+  }
+  @Post("deals/:id/payments") addPayment(
+    @Param("id") id: string,
+    @Body() dto: CreatePaymentDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.addPayment(id, dto, actor(user));
+  }
+  @Delete("deals/:id/payments/:paymentId") deletePayment(
+    @Param("id") id: string,
+    @Param("paymentId") paymentId: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<unknown> {
+    return this.service.deletePayment(id, paymentId, actor(user));
   }
   @Post("deals/:id/win") @HttpCode(200) win(
     @Param("id") id: string,

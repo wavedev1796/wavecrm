@@ -6,6 +6,7 @@ const {
   dealTotals,
   ecuadorToday,
   nextQuoteNumber,
+  staleness,
 } = require("../../../dist/modules/pipeline/deal-rules.js");
 
 const money = (t) => [t.subtotal, t.tax, t.total].map((d) => d.toFixed(2));
@@ -74,4 +75,21 @@ test("CRM-21: hoy es el dia de Ecuador guardado a las 00:00 UTC", () => {
   // 10 oct 2026, 03:00 UTC = 9 oct, 22:00 en Ecuador.
   const day = ecuadorToday(new Date("2026-10-10T03:00:00.000Z"));
   assert.equal(day.toISOString(), "2026-10-09T00:00:00.000Z");
+});
+
+test("P1: días sin actividad en días de Ecuador; solo un abierto con límite está en riesgo", () => {
+  const today = new Date("2026-11-13T00:00:00.000Z");
+  const deal = (status, staleDays, createdAt = "2026-11-01T15:00:00.000Z") => ({
+    status,
+    createdAt: new Date(createdAt),
+    stage: { staleDays },
+  });
+  // Sin actividades cuenta desde el alta: del 1 al 13 de noviembre son 12 días.
+  assert.deepEqual(staleness(deal("OPEN", 10), null, today), { idleDays: 12, atRisk: true });
+  assert.deepEqual(staleness(deal("OPEN", 12), null, today), { idleDays: 12, atRisk: false });
+  // La última actividad completada manda; a las 22:00 del 12 en Ecuador ya es el 13 en UTC, pero cuenta como el 12.
+  assert.deepEqual(staleness(deal("OPEN", 10), new Date("2026-11-13T03:00:00.000Z"), today), { idleDays: 1, atRisk: false });
+  assert.deepEqual(staleness(deal("OPEN", null), null, today), { idleDays: 12, atRisk: false });
+  assert.deepEqual(staleness(deal("WON", 1), null, today), { idleDays: 12, atRisk: false });
+  assert.deepEqual(staleness(deal("LOST", 1), null, today), { idleDays: 12, atRisk: false });
 });

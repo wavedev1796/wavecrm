@@ -25,7 +25,7 @@ const pipelines: Pipeline[] = [
     id: "p1",
     name: "Ventas",
     isDefault: true,
-    stages: [stage("s1", "Inicial", 0, "#2f6f8f"), stage("s2", "Propuesta", 1, "#123456")],
+    stages: [stage("s1", "Inicial", 0, "#2f6f8f"), { ...stage("s2", "Propuesta", 1, "#123456"), staleDays: 7 }],
   },
   { id: "p2", name: "Alianzas", isDefault: false, stages: [] },
 ];
@@ -85,7 +85,8 @@ test("una etapa nueva va al final con el color por defecto", async () => {
 
   await waitFor(() => expect(configure).toHaveBeenCalled());
   expect(configure).toHaveBeenCalledWith("createStage", "p1", expect.any(FormData));
-  expect(sent()).toEqual({ name: "Cierre", probability: "0", position: "2", color: "#2f6f8f" });
+  // P1: sin días sin actividad la etapa no alerta (vacío).
+  expect(sent()).toEqual({ name: "Cierre", probability: "0", position: "2", color: "#2f6f8f", staleDays: "" });
 });
 
 test("editar una etapa conserva su color propio y permite eliminarla", async () => {
@@ -95,7 +96,8 @@ test("editar una etapa conserva su color propio y permite eliminarla", async () 
   expect(within(dialog).getByRole("option", { name: "Color actual" })).toBeInTheDocument();
   await user.click(within(dialog).getByRole("button", { name: "Guardar etapa" }));
   await waitFor(() => expect(configure).toHaveBeenCalledWith("updateStage", "s2", expect.any(FormData)));
-  expect(sent()).toMatchObject({ name: "Propuesta", position: "1", color: "#123456" });
+  expect(within(dialog).getByLabelText(/^Días sin actividad/)).toHaveValue(7);
+  expect(sent()).toMatchObject({ name: "Propuesta", position: "1", color: "#123456", staleDays: "7" });
 
   await user.click(screen.getByRole("button", { name: "Configurar pipeline" }));
   await user.selectOptions(within(dialog).getByLabelText("Etapa a configurar"), "s1");

@@ -285,7 +285,8 @@ test("ambas rutas de movimiento exigen la propuesta aceptada, registran historia
   const path = "/deals/" + deal;
   const blocked = await call(path + "/move", { method: "PATCH", body: { stageId: won } });
   assert.equal(blocked.status, 422, JSON.stringify(blocked.body));
-  assert.deepEqual(codes(blocked), ["ACCEPTANCE", "CLOSED_AT"]);
+  // Ganar pide, en orden, viabilidad (P4), propuesta aceptada, fecha real y al final el pago comprobado (P8).
+  assert.deepEqual(codes(blocked), ["VIABILITY", "ACCEPTANCE", "CLOSED_AT", "PAYMENT_CONFIRMED"]);
   const requestKey = randomUUID();
   const proposalBody = { requestKey, validUntil: nextMonth };
   const proposal = await call(path + "/quotes", { method: "POST", body: proposalBody });
@@ -332,9 +333,20 @@ test("ambas rutas de movimiento exigen la propuesta aceptada, registran historia
     method: "POST",
     body: { acceptedAt: today, acceptanceNote: "Segunda vez" },
   })).status, 409);
+  // P4 y P8 (2026-11-13): ganar exige viabilidad con evidencia y la respuesta «¿Se comprobó el pago?» = Sí.
+  const viability = await call(path, {
+    method: "PATCH",
+    body: { viable: true, viabilityNote: "Orden de compra 55 confirmada por el cliente" },
+  });
+  assert.equal(viability.status, 200, JSON.stringify(viability.body));
+  const unpaid = await call(path + "/move", {
+    method: "PATCH",
+    body: { stageId: won, fromStageId: stage, closedAt: today, paymentConfirmed: false },
+  });
+  assert.deepEqual(codes(unpaid), ["PAYMENT_CONFIRMED"]);
   const moved = await call(path + "/move", {
     method: "PATCH",
-    body: { stageId: won, fromStageId: stage, closedAt: today },
+    body: { stageId: won, fromStageId: stage, closedAt: today, paymentConfirmed: true },
   });
   assert.equal(moved.status, 200, JSON.stringify(moved.body));
   assert.equal(moved.body.status, "WON");
@@ -372,11 +384,12 @@ test("ambas rutas de movimiento exigen la propuesta aceptada, registran historia
 test("cierres: ganar con la propuesta aceptada, perder con motivo y reabrir solo ADMIN, con auditoría", async () => {
   const future = new Date(Date.now() + 3 * 864e5).toISOString();
   const path = "/deals/" + deal;
-  const tooSoon = await call(path + "/win", { method: "POST", body: { closedAt: future } });
+  const tooSoon = await call(path + "/win", { method: "POST", body: { closedAt: future, paymentConfirmed: true } });
   assert.equal(tooSoon.status, 422);
   assert.deepEqual(codes(tooSoon), ["CLOSED_AT"]);
   assert.equal((await call(path + "/win", { method: "POST", body: {} })).status, 400);
-  const wonDeal = await call(path + "/win", { method: "POST", body: { closedAt: today } });
+  assert.deepEqual(codes(await call(path + "/win", { method: "POST", body: { closedAt: today } })), ["PAYMENT_CONFIRMED"]);
+  const wonDeal = await call(path + "/win", { method: "POST", body: { closedAt: today, paymentConfirmed: true } });
   assert.equal(wonDeal.status, 200, JSON.stringify(wonDeal.body));
   assert.equal(wonDeal.body.status, "WON");
   assert.equal(wonDeal.body.stage.id, won);
@@ -428,6 +441,18 @@ test("cierres: ganar con la propuesta aceptada, perder con motivo y reabrir solo
     ["REOPENED", "LOST", "REOPENED", "WON"],
   );
   assert.equal(events[0].changes.reason, "Volvió a escribir");
+  // P6 (2026-11-13): abonos sobre el total con IVA de los productos (124.08); borrar es solo de ADMIN.
+  const paid = await call(path + "/payments", { method: "POST", body: { amount: 100, paidAt: today, note: "Transferencia" } });
+  assert.equal(paid.status, 201, JSON.stringify(paid.body));
+  assert.deepEqual(paid.body.payments.map((p) => [p.amount, p.note, p.createdBy.id]), [["100", "Transferencia", user.id]]);
+  assert.deepEqual(paid.body.balance, { due: "124.08", paid: "100.00", pending: "24.08" });
+  assert.equal((await call(path + "/payments", { method: "POST", body: { amount: 24.09, paidAt: today } })).status, 422);
+  const paymentPath = path + "/payments/" + paid.body.payments[0].id;
+  assert.equal((await call(paymentPath, { method: "DELETE" })).status, 403);
+  const removed = await asAdmin(paymentPath, { method: "DELETE" });
+  assert.equal(removed.status, 200, JSON.stringify(removed.body));
+  assert.deepEqual(removed.body.payments, []);
+  assert.deepEqual((await closures(path)).slice(0, 2).map((c) => c.action), ["PAYMENT_DELETED", "PAYMENT_ADDED"]);
   const direct = await call("/deals", {
     method: "POST",
     body: { title: "Directo a ganado", value: 1, pipelineId: pipeline, stageId: won, companyId: company.id },

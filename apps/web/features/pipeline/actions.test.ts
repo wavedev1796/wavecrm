@@ -15,6 +15,8 @@ import {
   loadColumnAction,
   qualifyDealAction,
   createQuoteAction,
+  addPaymentAction,
+  deletePaymentAction,
   acceptQuoteAction,
 } from "./actions";
 import { emptyDeal } from "./types";
@@ -354,7 +356,7 @@ test("la consulta previa, ver mas y la ficha usan sus rutas", async () => {
   expect(calls()).toEqual([
     ["/deals/d1/transition?to=s%202", "GET", undefined],
     ["/deals/board?pipelineId=p1&column=LOST&page=2", "GET", undefined],
-    ["/deals/d1", "PATCH", { need: "Web", solution: null, budget: null, budgetNote: "Sin definir", decisionMaker: "Gerente" }],
+    ["/deals/d1", "PATCH", { need: "Web", solution: null, budget: null, budgetNote: "Sin definir", decisionMaker: "Gerente", viable: null, viabilityNote: null }],
     ["/deals/d1/quotes", "POST", { requestKey: "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4", validUntil: "2026-11-30T00:00:00.000Z" }],
     ["/deals/d1/quotes/q1/accept", "POST", { acceptedAt: "2026-10-18T00:00:00.000Z", acceptanceNote: "Correo" }],
   ]);
@@ -525,4 +527,68 @@ test("los productos limpian cada celda y lo que no es texto queda vacío", async
     taxRate: expect.any(String),
   });
   expect(api).not.toHaveBeenCalled();
+});
+
+test("P4: la calificación guarda la viabilidad y exige evidencia de 10 caracteres o más", async () => {
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  expect((await qualifyDealAction("d1", fields({ viable: "yes", viabilityNote: "Corto" }))).fieldErrors?.viabilityNote).toBeTruthy();
+  await qualifyDealAction("d1", fields({ viable: "yes", viabilityNote: " Orden de compra firmada " }));
+  await qualifyDealAction("d1", fields({ viable: "no", viabilityNote: "" }));
+  expect(calls().map(([, , body]) => [body.viable, body.viabilityNote])).toEqual([
+    [true, "Orden de compra firmada"],
+    [false, null],
+  ]);
+});
+
+test("P4 y P8: ganar guarda la viabilidad, envía el pago comprobado y con «No» no mueve nada", async () => {
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  const win = { closedAt: "2026-10-10", viable: "yes", viabilityNote: "Orden de compra 55", paymentConfirmed: "yes" };
+  await completeTransitionAction("d1", "WON", "s3", fields(win));
+  expect(calls()).toEqual([
+    ["/deals/d1", "PATCH", { viable: true, viabilityNote: "Orden de compra 55" }],
+    ["/deals/d1/win", "POST", { closedAt: "2026-10-10T00:00:00.000Z", paymentConfirmed: true, fromStageId: "s3" }],
+  ]);
+  expect((await completeTransitionAction("d1", "WON", "s3", fields({ ...win, paymentConfirmed: "no" }))).error).toBe(
+    "Sin pago comprobado el negocio no se puede ganar.",
+  );
+  expect((await completeTransitionAction("d1", "WON", "s3", fields({ ...win, viable: "no" }))).error).toBe(
+    "Para ganar, el negocio debe ser viable.",
+  );
+  expect((await completeTransitionAction("d1", "WON", "s3", fields({ ...win, viabilityNote: "Corta" }))).error).toMatch(/10 y 1000/);
+  // Mover a la etapa de 100 % también lleva la respuesta.
+  await completeTransitionAction("d1", "s4", "s3", fields({ closedAt: "2026-10-10", paymentConfirmed: "yes" }));
+  expect(calls().at(-1)).toEqual([
+    "/deals/d1/move",
+    "PATCH",
+    { stageId: "s4", fromStageId: "s3", closedAt: "2026-10-10T00:00:00.000Z", paymentConfirmed: true },
+  ]);
+  expect(api).toHaveBeenCalledTimes(3);
+});
+
+test("P6: el abono va en formato de Ecuador, con el día a las 00:00 UTC; borrar usa su ruta", async () => {
+  today("2026-11-13");
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  await addPaymentAction("d1", fields({ amount: "1.250,50", paidAt: "2026-11-13", note: " Transferencia " }));
+  await addPaymentAction("d1", fields({ amount: "80", paidAt: "2026-11-01", note: "" }));
+  await deletePaymentAction("d1", "pay/1");
+  expect(calls()).toEqual([
+    ["/deals/d1/payments", "POST", { amount: 1250.5, paidAt: "2026-11-13T00:00:00.000Z", note: "Transferencia" }],
+    ["/deals/d1/payments", "POST", { amount: 80, paidAt: "2026-11-01T00:00:00.000Z" }],
+    ["/deals/d1/payments/pay%2F1", "DELETE", undefined],
+  ]);
+  const invalid = await addPaymentAction("d1", fields({ amount: "8.45", paidAt: "2026-11-14", note: "x" }));
+  expect(Object.keys(invalid.fieldErrors ?? {})).toEqual(["amount", "paidAt", "note"]);
+  expect((await addPaymentAction("d1", fields({ amount: "0", paidAt: "2026-11-13" }))).fieldErrors?.amount).toBeTruthy();
+  expect(api).toHaveBeenCalledTimes(3);
+});
+
+test("P1: los días sin actividad de la etapa van como entero o null", async () => {
+  api.mockResolvedValue(Response.json({ id: "s1" }));
+  const stage = (staleDays: string) => fields({ name: "Propuesta", position: "2", probability: "40", staleDays });
+  await configurePipelineAction("updateStage", "s1", stage("15"));
+  await configurePipelineAction("updateStage", "s1", stage(""));
+  expect(calls().map(([, , body]) => body.staleDays)).toEqual([15, null]);
+  expect((await configurePipelineAction("updateStage", "s1", stage("400"))).error).toMatch(/entre 1 y 365/);
+  expect((await configurePipelineAction("updateStage", "s1", stage("2,5"))).error).toMatch(/entre 1 y 365/);
+  expect(api).toHaveBeenCalledTimes(2);
 });

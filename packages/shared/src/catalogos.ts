@@ -35,20 +35,24 @@ export const CLOSE_REASONS = [
   'COMMERCIAL_RISK',
   'OUT_OF_SCOPE',
   'DO_NOT_CONTACT',
+  'NO_PAYMENT',
 ] as const;
 export type LossReason = (typeof CLOSE_REASONS)[number];
 
-// Perdido: la venta no se concretó por algo que puede cambiar.
+// Perdido: la venta no se concretó por algo que puede cambiar. Los cinco primeros son los más probables
+// (P9, 2026-11-13): la web los muestra arriba y el resto en el grupo «Otros motivos».
 export const LOSS_REASONS = [
+  'NO_PAYMENT',
   'NO_BUDGET',
-  'COMPETITOR',
-  'BAD_TIMING',
   'NO_RESPONSE',
+  'COMPETITOR',
+  'OTHER',
+  'BAD_TIMING',
   'NEED_POSTPONED',
   'NEGOTIATION',
   'PRIORITY_CHANGE',
-  'OTHER',
 ] as const satisfies readonly LossReason[];
+export const FREQUENT_LOSS_REASONS = 5;
 
 // Rechazado: decisión explícita de no continuar, del cliente o de la empresa.
 export const REJECTION_REASONS = [
@@ -76,11 +80,15 @@ export const STAGE_REQUIREMENTS = [
 export type StageRequirement = (typeof STAGE_REQUIREMENTS)[number];
 
 // Pendientes de un cambio de etapa: los requisitos de etapa, las condiciones fijas de cierre y los datos que pide el cambio.
+// VIABILITY y PAYMENT_CONFIRMED son condiciones fijas de ganar, no requisitos que se elijan por etapa: no van en la base.
+// La comprobación del pago va después de la fecha de cierre: es la última pregunta antes de ganar.
 export const TRANSITION_CHECKS = [
   ...STAGE_REQUIREMENTS,
+  'VIABILITY',
   'ACCEPTANCE',
   'FINAL_AMOUNT',
   'CLOSED_AT',
+  'PAYMENT_CONFIRMED',
   'LOSS_REASON',
   'REJECTION_REASON',
   'REASON',

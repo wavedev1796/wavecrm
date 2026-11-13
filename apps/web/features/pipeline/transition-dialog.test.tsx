@@ -178,3 +178,42 @@ test("perder pide motivo y detalle; un error del API se muestra y no cierra", as
   expect(onCancel).toHaveBeenCalled();
   expect(onDone).not.toHaveBeenCalled();
 });
+
+test("P4, P8 y P9: ganar pide viabilidad y al final el pago; perder agrupa los motivos menos probables", async () => {
+  preview.mockResolvedValue({ data: { pending: pending("VIABILITY", "CLOSED_AT", "PAYMENT_CONFIRMED"), quote: null, items: 1 } });
+  complete.mockResolvedValue({ done: true });
+  const user = userEvent.setup();
+  view("WON", "Ganado");
+  const pago = await screen.findByLabelText(/¿Se comprobó el pago\?/);
+  const items = screen.getAllByRole("listitem");
+  expect(within(items.at(-1)!).getByLabelText(/¿Se comprobó el pago\?/)).toBe(pago);
+  expect(within(pago).getAllByRole("option").map((o) => o.textContent)).toEqual(["Selecciona una opción", "Sí", "No"]);
+  await user.selectOptions(screen.getByLabelText(/¿El negocio es viable\?/), "yes");
+  await user.type(screen.getByLabelText(/Evidencia de viabilidad/), "Orden de compra firmada");
+  await user.selectOptions(pago, "yes");
+  await user.click(screen.getByRole("button", { name: "Guardar y continuar" }));
+  await waitFor(() => expect(complete).toHaveBeenCalled());
+  const form = complete.mock.calls.at(-1)![3];
+  expect([form.get("viable"), form.get("viabilityNote"), form.get("paymentConfirmed")]).toEqual([
+    "yes",
+    "Orden de compra firmada",
+    "yes",
+  ]);
+});
+
+test("P9: el motivo de pérdida muestra primero los cinco más probables y el resto en «Otros motivos»", async () => {
+  preview.mockResolvedValue({ data: { pending: pending("LOSS_REASON"), quote: null, items: 0 } });
+  view("LOST", "Perdido");
+  const motivo = await screen.findByLabelText(/Motivo de la pérdida/);
+  const frecuentes = [...motivo.children].filter((child) => child.tagName === "OPTION").map((o) => o.textContent);
+  expect(frecuentes).toEqual([
+    "Selecciona una opción",
+    "No realizó el pago",
+    "Falta de presupuesto",
+    "Falta de respuesta",
+    "Competencia",
+    "Otro",
+  ]);
+  const grupo = within(motivo).getByRole("group", { name: "Otros motivos" });
+  expect(within(grupo).getAllByRole("option")).toHaveLength(4);
+});

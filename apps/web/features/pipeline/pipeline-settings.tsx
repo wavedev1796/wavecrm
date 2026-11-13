@@ -269,7 +269,22 @@ export function PipelineSettings({
                           ))}
                         </Select>
                       </Field>
+                      <Field id="stage-staleDays" label={PIPELINE.diasSinActividad.etiqueta} icon="fecha">
+                        <Input
+                          id="stage-staleDays"
+                          name="staleDays"
+                          type="number"
+                          min={1}
+                          max={365}
+                          step={1}
+                          defaultValue={stage?.staleDays ?? ""}
+                          aria-describedby="stage-staleDays-ayuda"
+                        />
+                      </Field>
                     </div>
+                    <p id="stage-staleDays-ayuda" className="deal-form-hint">
+                      {PIPELINE.diasSinActividad.ayuda}
+                    </p>
                     <fieldset className="pipeline-requirements">
                       <legend>{PIPELINE.requisitos.titulo}</legend>
                       {STAGE_REQUIREMENTS.map((code) => (

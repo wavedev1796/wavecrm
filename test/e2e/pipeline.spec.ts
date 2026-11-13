@@ -260,6 +260,13 @@ test("la ficha arma productos, registra y acepta la propuesta, gana, y solo un A
   await page.getByRole("button", { name: "Ganar", exact: true }).click();
   const win = page.getByRole("dialog", { name: "Ganar negocio" });
   await expect(win.getByLabel("Fecha real de cierre")).toBeVisible();
+  // P4 y P8 (2026-11-13): viabilidad con evidencia y, al final, «¿Se comprobó el pago?». Con «No» no se gana.
+  await win.getByLabel("¿El negocio es viable?").selectOption("yes");
+  await win.getByLabel("Evidencia de viabilidad").fill("Orden de compra 55 confirmada");
+  await win.getByLabel("¿Se comprobó el pago?").selectOption("no");
+  await win.getByRole("button", { name: "Guardar y continuar" }).click();
+  await expect(win.getByText("Sin pago comprobado el negocio no se puede ganar.")).toBeVisible();
+  await win.getByLabel("¿Se comprobó el pago?").selectOption("yes");
   await win.getByRole("button", { name: "Guardar y continuar" }).click();
   await expect(page.getByText(/COT-\d{6} · Aceptada/)).toBeVisible();
   expect(await prisma.quote.count({ where: { dealId: deal.id } })).toBe(1);
@@ -494,7 +501,11 @@ test("recorrido del tester con un negocio nuevo: Contactado → Negociación →
   await expect(page.getByText(`Propuesta ${quote!.number} aceptada`)).toBeVisible();
   await page.getByRole("button", { name: "Ganar", exact: true }).click();
   await timed("ganar", async () => {
-    await page.getByRole("dialog", { name: "Ganar negocio" }).getByRole("button", { name: "Guardar y continuar" }).click();
+    const win = page.getByRole("dialog", { name: "Ganar negocio" });
+    await win.getByLabel("¿El negocio es viable?").selectOption("yes");
+    await win.getByLabel("Evidencia de viabilidad").fill("Orden de compra 77 confirmada");
+    await win.getByLabel("¿Se comprobó el pago?").selectOption("yes");
+    await win.getByRole("button", { name: "Guardar y continuar" }).click();
     await expect(page.getByText("Ganado el")).toBeVisible();
   });
   console.log("\nTiempos del recorrido (pruebas):\n  " + tiempos.join("\n  ") + "\n");

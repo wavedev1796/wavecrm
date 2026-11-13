@@ -9,6 +9,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  TriangleAlert,
   UserRound,
 } from "lucide-react";
 import { FormDialog } from "@/components/form/form-dialog";
@@ -155,6 +156,12 @@ export function PipelineBoard({
         </Link>
         <GripVertical aria-label="Arrastrar tarjeta" className="deal-grip" />
       </div>
+      {deal.atRisk && (
+        <p className="deal-risk" title={TABLERO.sinActividad(deal.idleDays ?? 0)}>
+          <TriangleAlert aria-hidden />
+          {TABLERO.enRiesgo} · {TABLERO.sinActividad(deal.idleDays ?? 0)}
+        </p>
+      )}
       <p className="deal-company">{deal.company?.name ?? "Sin empresa"}</p>
       <p className="deal-contact">
         {deal.contact ? deal.contact.firstName + " " + deal.contact.lastName : "Sin contacto"}

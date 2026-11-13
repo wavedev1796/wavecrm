@@ -9,6 +9,7 @@ import {
   FileText,
   Mail,
   Phone,
+  TriangleAlert,
   UserRound,
   Workflow,
 } from "lucide-react";
@@ -17,13 +18,14 @@ import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ESTADO_COTIZACION, ESTADO_NEGOCIO, MOTIVO_CIERRE } from "@/content/catalogos";
-import { NEGOCIO } from "@/content/pipeline";
+import { NEGOCIO, TABLERO } from "@/content/pipeline";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatDateTime, formatDay, formatMoney } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { dealFormOptions } from "../../../../features/pipeline/data";
 import { DealActions } from "../../../../features/pipeline/deal-actions";
 import { DealItems } from "../../../../features/pipeline/deal-items";
+import { DealPayments } from "../../../../features/pipeline/deal-payments";
 import { DealQualification } from "../../../../features/pipeline/deal-qualification";
 import { DealQuotes } from "../../../../features/pipeline/deal-quotes";
 import { DealTimeline } from "../../../../features/pipeline/deal-timeline";
@@ -84,6 +86,12 @@ export default async function DealPage({
             <i className="deal-stage-dot" style={{ background: deal.stage.color ?? "var(--wave-blue)" }} aria-hidden />
             {deal.stage.name}
           </Badge>
+          {deal.atRisk && (
+            <Badge tone="warning">
+              <TriangleAlert aria-hidden className="deal-risk-icon" />
+              {TABLERO.enRiesgo} · {TABLERO.sinActividad(deal.idleDays ?? 0)}
+            </Badge>
+          )}
         </div>
         <DealActions deal={deal} {...options} canReopen={canReopen} />
       </section>
@@ -102,6 +110,7 @@ export default async function DealPage({
         </div>
         <div className="contact-detail-main">
           <DealQualification key={deal.status} deal={deal} locked={locked} />
+          <DealPayments deal={deal} canDelete={canReopen} />
           <Card className="contact-data-card">
             <h3>{NEGOCIO.datos}</h3>
             <dl>

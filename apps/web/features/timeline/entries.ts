@@ -13,7 +13,9 @@ const reason = (value: string | null | undefined) => (value ? TABLERO.motivo(val
 
 /** Título y nota de cada evento del AuditLog: cierres, reapertura, propuestas y borrado. */
 const EVENTS: Record<string, (c: EventChanges) => [string, string | null]> = {
-  WON: (c) => [texto.ganado(c.quoteNumber ?? ""), null],
+  WON: (c) => [texto.ganado(c.quoteNumber ?? ""), c.paymentConfirmed ? texto.pagoComprobado : null],
+  PAYMENT_ADDED: (c) => [texto.abonoRegistrado(formatMoney(c.amount ?? 0)), notes(c.paidAt && texto.pagadoEl(formatDay(c.paidAt)), c.note)],
+  PAYMENT_DELETED: (c) => [texto.abonoBorrado(formatMoney(c.amount ?? 0)), notes(c.paidAt && texto.pagadoEl(formatDay(c.paidAt)), c.note)],
   LOST: (c) => [
     texto.perdido(c.lossReason ? MOTIVO_CIERRE[c.lossReason] : ""),
     notes(c.lossDetail, c.followUpAt && texto.seguimiento(formatDay(c.followUpAt))),

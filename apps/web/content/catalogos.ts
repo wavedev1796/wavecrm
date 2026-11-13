@@ -54,6 +54,7 @@ export const MOTIVO_CIERRE = {
   COMMERCIAL_RISK: "Riesgo comercial",
   OUT_OF_SCOPE: "Solicitud fuera del alcance",
   DO_NOT_CONTACT: "Cliente solicita no ser contactado",
+  NO_PAYMENT: "No realizó el pago",
 } as const satisfies Record<LossReason, string>;
 
 export const ESTADO_ACTIVIDAD = {

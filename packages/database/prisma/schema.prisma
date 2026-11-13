@@ -76,6 +76,7 @@ enum LossReason {
   COMMERCIAL_RISK
   OUT_OF_SCOPE
   DO_NOT_CONTACT
+  NO_PAYMENT
 }
 
 model User {
@@ -104,6 +105,7 @@ model User {
   notes              Note[]
   noteMentions       NoteMention[]
   auditLogs          AuditLog[]
+  dealPayments       DealPayment[]
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 
@@ -195,6 +197,9 @@ model Stage {
   color       String?
   /// Requisitos para entrar a la etapa; se suman los de las etapas abiertas anteriores.
   requirements StageRequirement[] @default([])
+  /// Días sin actividad completada para marcar un negocio abierto «En riesgo»; null = sin alerta.
+  /// De 1 a 365: CHECK "Stage_staleDays_range" (solo en la migración SQL).
+  staleDays   Int?
   pipelineId  String
   pipeline    Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
   deals       Deal[]
@@ -222,6 +227,9 @@ model Deal {
   budget        Decimal?     @db.Decimal(14, 2)
   budgetNote    String?
   decisionMaker String?
+  /// Viabilidad según el vendedor; para ganar debe ser true y con evidencia (requisito VIABILITY).
+  viable        Boolean?
+  viabilityNote String?
   pipelineId    String
   pipeline      Pipeline     @relation(fields: [pipelineId], references: [id], onDelete: Restrict)
   stageId       String
@@ -238,6 +246,7 @@ model Deal {
   stageHistory  DealStageHistory[]
   attachments   Attachment[]
   items         DealItem[]
+  payments      DealPayment[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -280,6 +289,22 @@ model DealItem {
   updatedAt   DateTime @updatedAt
 
   @@index([dealId, position])
+}
+
+/// Abono de un negocio, sin comprobante adjunto. El monto es mayor que cero: CHECK "DealPayment_amount_positive".
+model DealPayment {
+  id          String   @id @default(cuid())
+  dealId      String
+  deal        Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  amount      Decimal  @db.Decimal(14, 2)
+  /// Día del pago, a las 00:00 UTC como las demás fechas de calendario.
+  paidAt      DateTime
+  note        String?
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  @@index([dealId, paidAt])
 }
 
 model Activity {

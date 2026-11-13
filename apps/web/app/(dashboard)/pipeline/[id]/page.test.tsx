@@ -22,6 +22,8 @@ vi.mock("../../../../features/pipeline/actions", () => ({
   acceptQuoteAction: vi.fn(),
   createActivityAction: vi.fn(),
   completeActivityAction: vi.fn(),
+  addPaymentAction: vi.fn(),
+  deletePaymentAction: vi.fn(),
 }));
 const api = vi.mocked(authenticatedApi);
 /** La ficha pide el negocio, quién mira (su rol decide si puede reabrir) y la primera página del historial. */
@@ -119,4 +121,25 @@ test("un VENDEDOR sin acceso al historial ve la ficha, el aviso y el formulario 
   expect(screen.getByRole("heading", { name: "Cuenta Andina" })).toBeInTheDocument();
   expect(screen.getByText("No tienes acceso al historial de este registro.")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Registrar actividad" })).toBeInTheDocument();
+});
+
+test("P1 y P6: la ficha avisa «En riesgo» y muestra los abonos; solo un ADMIN los borra", async () => {
+  const deal = {
+    ...baseDeal,
+    atRisk: true,
+    idleDays: 12,
+    payments: [{ id: "pay-1", amount: "100", paidAt: "2026-11-12T00:00:00.000Z", note: null, createdBy: { id: "u1", name: "Zaith" } }],
+    balance: { due: "135.00", paid: "100.00", pending: "35.00" },
+  };
+  serve(deal, "VENDEDOR");
+  const { unmount } = render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
+  expect(screen.getByText(/En riesgo · 12 días sin actividad/)).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: /Abonos/ })).toBeInTheDocument();
+  expect(screen.getByText("Saldo pendiente").nextSibling).toHaveTextContent(/35,00/);
+  expect(screen.queryByRole("button", { name: /Borrar el abono/ })).toBeNull();
+  unmount();
+  serve({ ...deal, atRisk: false }, "ADMIN");
+  render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
+  expect(screen.queryByText(/En riesgo/)).toBeNull();
+  expect(screen.getByRole("button", { name: /Borrar el abono/ })).toBeInTheDocument();
 });

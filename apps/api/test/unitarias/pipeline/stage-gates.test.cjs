@@ -41,6 +41,8 @@ const facts = (overrides = {}) => ({
   hasNextActivity: true,
   quote: { status: "ACCEPTED", total: "115.00" },
   itemsTotal: "115.00",
+  viable: true,
+  viabilityNote: "Orden de compra firmada",
   ...overrides,
 });
 const empty = {
@@ -55,9 +57,13 @@ const empty = {
   hasNextActivity: false,
   quote: null,
   itemsTotal: null,
+  viable: null,
+  viabilityNote: null,
 };
 const to = (target) => ({ kind: "stage", stage: target });
 const won = { kind: "won", stage: ganado };
+/** Lo que pide el modal al ganar: fecha real y «¿Se comprobó el pago?» = Sí (P8). */
+const closing = { closedAt: today, paymentConfirmed: true };
 const codes = (dealFacts, target, input = {}) =>
   pendingChecks(dealFacts, target, stages, input, today).map((p) => p.code);
 
@@ -113,22 +119,32 @@ test("volver a avanzar tras un retroceso comprueba de nuevo las etapas", () => {
 
 test("ganar sin propuesta aceptada lo bloquea", () => {
   const enviada = facts({ stage: propuesta, quote: { status: "SENT", total: "115.00" } });
-  assert.deepEqual(codes(enviada, won, { closedAt: today }), ["ACCEPTANCE"]);
+  assert.deepEqual(codes(enviada, won, closing), ["ACCEPTANCE"]);
 });
 
 test("ganar exige que el importe aceptado sea el de los productos", () => {
-  assert.deepEqual(codes(facts({ stage: propuesta, itemsTotal: "230.00" }), won, { closedAt: today }), ["FINAL_AMOUNT"]);
-  assert.deepEqual(codes(facts({ stage: propuesta, itemsTotal: null }), won, { closedAt: today }), ["FINAL_AMOUNT"]);
-  assert.deepEqual(codes(facts({ stage: propuesta, itemsTotal: "115" }), won, { closedAt: today }), []);
+  assert.deepEqual(codes(facts({ stage: propuesta, itemsTotal: "230.00" }), won, closing), ["FINAL_AMOUNT"]);
+  assert.deepEqual(codes(facts({ stage: propuesta, itemsTotal: null }), won, closing), ["FINAL_AMOUNT"]);
+  assert.deepEqual(codes(facts({ stage: propuesta, itemsTotal: "115" }), won, closing), []);
 });
 
 test("ganar exige la fecha real de cierre y no la acepta futura", () => {
-  assert.deepEqual(codes(facts({ stage: propuesta }), won), ["CLOSED_AT"]);
-  assert.deepEqual(codes(facts({ stage: propuesta }), won, { closedAt: tomorrow }), ["CLOSED_AT"]);
+  assert.deepEqual(codes(facts({ stage: propuesta }), won, { paymentConfirmed: true }), ["CLOSED_AT"]);
+  assert.deepEqual(codes(facts({ stage: propuesta }), won, { ...closing, closedAt: tomorrow }), ["CLOSED_AT"]);
+});
+
+test("P4 y P8: ganar exige viabilidad con evidencia y el pago comprobado, al final", () => {
+  assert.deepEqual(codes(facts({ stage: propuesta, viable: null }), won, closing), ["VIABILITY"]);
+  assert.deepEqual(codes(facts({ stage: propuesta, viable: false }), won, closing), ["VIABILITY"]);
+  assert.deepEqual(codes(facts({ stage: propuesta, viabilityNote: "  " }), won, closing), ["VIABILITY"]);
+  assert.deepEqual(codes(facts({ stage: propuesta }), won, { closedAt: today }), ["PAYMENT_CONFIRMED"]);
+  assert.deepEqual(codes(facts({ stage: propuesta }), won, { ...closing, paymentConfirmed: false }), ["PAYMENT_CONFIRMED"]);
+  // Viabilidad y pago no se piden para avanzar entre etapas abiertas.
+  assert.deepEqual(codes(facts({ viable: null }), to(propuesta)), []);
 });
 
 test("ganar no obliga a programar otra actividad", () => {
-  assert.deepEqual(codes(facts({ stage: propuesta, hasNextActivity: false }), won, { closedAt: today }), []);
+  assert.deepEqual(codes(facts({ stage: propuesta, hasNextActivity: false }), won, closing), []);
 });
 
 test("ganar desde Contactado es un salto: pide todo lo de las etapas abiertas y el cierre", () => {
@@ -141,13 +157,15 @@ test("ganar desde Contactado es un salto: pide todo lo de las etapas abiertas y 
     "BUDGET",
     "EXPECTED_CLOSE",
     "PROPOSAL_SENT",
+    "VIABILITY",
     "ACCEPTANCE",
     "CLOSED_AT",
+    "PAYMENT_CONFIRMED",
   ]);
 });
 
 test("un pipeline sin etapa de 100 % también gana con las condiciones de cierre", () => {
-  assert.deepEqual(codes(facts({ stage: propuesta }), { kind: "won", stage: null }, { closedAt: today }), []);
+  assert.deepEqual(codes(facts({ stage: propuesta }), { kind: "won", stage: null }, closing), []);
 });
 
 test("perder exige el motivo", () => {

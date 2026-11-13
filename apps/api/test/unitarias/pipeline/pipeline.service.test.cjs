@@ -56,6 +56,9 @@ function mockPrisma({
     closedAt: null,
     lossReason: null,
     lossDetail: null,
+    // P4: viable con evidencia por defecto, para que ganar solo pida lo que prueba cada caso.
+    viable: true,
+    viabilityNote: "Orden de compra firmada",
     ...overrides,
   };
   const state = {
@@ -66,6 +69,7 @@ function mockPrisma({
     items: [...items],
     products: [],
     activities: [...activities],
+    payments: [],
   };
   const quoteMatches = (q, where = {}) =>
     (!where.id || (where.id.in ? where.id.in.includes(q.id) : q.id === where.id)) &&
@@ -78,6 +82,7 @@ function mockPrisma({
     stage: stages[state.deal.stageId],
     items: state.items,
     quotes: live().sort((a, b) => b.createdAt - a.createdAt).slice(0, 1),
+    payments: state.payments,
     _count: { items: state.items.length },
   });
   const byPipeline = (where) => {
@@ -108,6 +113,9 @@ function mockPrisma({
     deal: {
       findMany: async () => [full()],
       findUnique: async ({ where }) => (where.id === "deal-1" ? full() : null),
+      // Con el alcance de ownerScope: un VENDEDOR solo encuentra lo suyo.
+      findFirst: async ({ where }) =>
+        where.id === "deal-1" && (!where.ownerId || where.ownerId === state.deal.ownerId) ? full() : null,
       findUniqueOrThrow: async () => ({ ...full(), company: { id: "company-1", name: "Acme" }, contact: { id: "contact-1", firstName: "Ana", lastName: "Paz" }, owner: { id: "user-1", name: "Vendedor Uno" }, pipeline: { id: "pipe-1", name: "Ventas" } }),
       create: async ({ data }) => ({ id: "deal-2", ...data }),
       update: async ({ data }) => Object.assign(state.deal, data),
@@ -157,6 +165,17 @@ function mockPrisma({
       },
       findFirst: async () => null,
     },
+    dealPayment: {
+      create: async ({ data }) => {
+        const payment = { id: "pay-" + state.payments.length, createdAt: new Date(), ...data };
+        state.payments.push(payment);
+        return payment;
+      },
+      findFirst: async ({ where }) => state.payments.find((p) => p.id === where.id && p.dealId === where.dealId) ?? null,
+      delete: async ({ where }) => {
+        state.payments = state.payments.filter((p) => p.id !== where.id);
+      },
+    },
     auditLog: {
       create: async ({ data }) => {
         state.audit.push(data);
@@ -196,12 +215,13 @@ function mockPrisma({
       items: state.items.map((entry) => ({ ...entry })),
       products: state.products.map((product) => ({ ...product })),
       activities: state.activities.map((activity) => ({ ...activity })),
+      payments: state.payments.map((payment) => ({ ...payment })),
     };
     try {
       return await fn(prisma);
     } catch (error) {
       Object.assign(state.deal, snapshot.deal);
-      for (const key of ["history", "audit", "quotes", "items", "activities", "products"]) state[key] = snapshot[key];
+      for (const key of ["history", "audit", "quotes", "items", "activities", "products", "payments"]) state[key] = snapshot[key];
       throw error;
     }
   };
@@ -288,9 +308,9 @@ test("si falla el historial, el negocio no cambia de etapa", async () => {
 
 test("ganar exige la propuesta aceptada y no crea otra cotización", async () => {
   const { prisma, state } = mockPrisma({ stageId: "stage-n", deal: { need: ready.need }, quotes: [{ number: "COT-000007", status: "SENT", total: "115.00" }] });
-  assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "WON", { closedAt: day("2026-10-01") }, vendedor)), ["ACCEPTANCE"]);
+  assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "WON", { closedAt: day("2026-10-01"), paymentConfirmed: true }, vendedor)), ["ACCEPTANCE"]);
   state.quotes[0].status = "ACCEPTED";
-  await service(prisma).transition("deal-1", "WON", { closedAt: day("2026-10-01") }, vendedor);
+  await service(prisma).transition("deal-1", "WON", { closedAt: day("2026-10-01"), paymentConfirmed: true }, vendedor);
   assert.equal(state.quotes.length, 1);
   assert.equal(state.deal.status, "WON");
   assert.equal(state.deal.stageId, "stage-g");
@@ -298,12 +318,13 @@ test("ganar exige la propuesta aceptada y no crea otra cotización", async () =>
   assert.equal(state.history[0].toStageId, "stage-g");
   assert.equal(state.audit[0].action, "WON");
   assert.equal(state.audit[0].changes.quoteNumber, "COT-000007");
+  assert.equal(state.audit[0].changes.paymentConfirmed, true);
 });
 
 test("arrastrar a la etapa de 100 % es ganar con las mismas reglas", async () => {
   const { prisma } = mockPrisma({ stageId: "stage-n", deal: { need: ready.need }, quotes: [{ number: "COT-000001", status: "ACCEPTED", total: "115.00" }] });
-  assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "stage-g", {}, vendedor)), ["CLOSED_AT"]);
-  const result = await service(prisma).transition("deal-1", "stage-g", { closedAt: day("2026-10-01") }, vendedor);
+  assert.deepEqual(await codesOf(service(prisma).transition("deal-1", "stage-g", {}, vendedor)), ["CLOSED_AT", "PAYMENT_CONFIRMED"]);
+  const result = await service(prisma).transition("deal-1", "stage-g", { closedAt: day("2026-10-01"), paymentConfirmed: true }, vendedor);
   assert.equal(result.status, "WON");
 });
 
@@ -759,4 +780,65 @@ test("CRM-27: un producto inactivo no se vuelve a seleccionar y solo ADMIN admin
   const product = await service(prisma).createProduct({ code: "SERV-2", description: "Otra", price: 10, taxRate: 0 }, admin);
   assert.equal(product.isActive, true);
   assert.equal(state.audit.at(-1).entityType, "Product");
+});
+
+test("P6: un abono no pasa el saldo con IVA, no es futuro y queda en la auditoría; borrarlo es de ADMIN", async () => {
+  // Un producto de 100 con 15 % de IVA: se cobran 115.
+  const { prisma, state } = mockPrisma();
+  const tomorrowEc = new Date(Date.parse(todayEc + "T00:00:00.000Z") + 86_400_000);
+  const detail = await service(prisma).addPayment("deal-1", { amount: 100, paidAt: day("2026-11-01"), note: "Transferencia" }, vendedor);
+  assert.equal(detail.payments.length, 1);
+  assert.deepEqual(detail.balance, { due: "115.00", paid: "100.00", pending: "15.00" });
+  assert.deepEqual(
+    [state.payments[0].amount, state.payments[0].paidAt.toISOString(), state.payments[0].createdById],
+    [100, "2026-11-01T00:00:00.000Z", "user-1"],
+  );
+  assert.deepEqual(state.audit.at(-1).changes, { amount: "100.00", paidAt: "2026-11-01T00:00:00.000Z", note: "Transferencia" });
+  assert.equal(state.audit.at(-1).action, "PAYMENT_ADDED");
+  await assert.rejects(
+    service(prisma).addPayment("deal-1", { amount: 15.01, paidAt: day("2026-11-01") }, vendedor),
+    UnprocessableEntityException,
+  );
+  await assert.rejects(service(prisma).addPayment("deal-1", { amount: 1, paidAt: tomorrowEc }, vendedor), BadRequestException);
+  // El saldo exacto sí entra, con la fecha de hoy en Ecuador.
+  await service(prisma).addPayment("deal-1", { amount: 15, paidAt: day(todayEc) }, vendedor);
+  assert.equal(state.payments.length, 2);
+  // Otro vendedor no ve el negocio.
+  await assert.rejects(
+    service(prisma).addPayment("deal-1", { amount: 1, paidAt: day("2026-11-01") }, { id: "user-9", role: "VENDEDOR" }),
+    NotFoundException,
+  );
+  await assert.rejects(service(prisma).deletePayment("deal-1", "pay-0", vendedor), ForbiddenException);
+  await assert.rejects(service(prisma).deletePayment("deal-1", "pay-9", admin), NotFoundException);
+  await service(prisma).deletePayment("deal-1", "pay-0", admin);
+  assert.deepEqual(state.payments.map((p) => p.id), ["pay-1"]);
+  assert.deepEqual(
+    [state.audit.at(-1).action, state.audit.at(-1).changes.amount],
+    ["PAYMENT_DELETED", "100.00"],
+  );
+});
+
+test("P6: sin productos el saldo es el valor del negocio, y un rechazado no recibe abonos", async () => {
+  const sinProductos = mockPrisma({ items: [] });
+  await assert.rejects(
+    service(sinProductos.prisma).addPayment("deal-1", { amount: 100.01, paidAt: day("2026-11-01") }, vendedor),
+    UnprocessableEntityException,
+  );
+  await service(sinProductos.prisma).addPayment("deal-1", { amount: 100, paidAt: day("2026-11-01") }, vendedor);
+  await assert.rejects(
+    service(mockPrisma({ status: "REJECTED" }).prisma).addPayment("deal-1", { amount: 1, paidAt: day("2026-11-01") }, admin),
+    ConflictException,
+  );
+});
+
+test("P1: los días sin actividad de la etapa los cambia solo un ADMIN", async () => {
+  const { prisma } = mockPrisma();
+  await assert.rejects(service(prisma).updateStage("stage-a", { staleDays: 7 }, vendedor), ForbiddenException);
+  await assert.rejects(
+    service(prisma).createStage("pipe-1", { name: "Seguimiento", position: 9, probability: 20, staleDays: 7 }, vendedor),
+    ForbiddenException,
+  );
+  assert.equal((await service(prisma).updateStage("stage-a", { staleDays: 7 }, admin)).staleDays, 7);
+  // Guardar sin cambiarlos (el formulario los reenvía) no exige ADMIN.
+  assert.equal((await service(prisma).updateStage("stage-a", { name: "Contacto", staleDays: 7 }, vendedor)).name, "Contacto");
 });

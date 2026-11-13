@@ -46,6 +46,12 @@ export type EventChanges = {
   quotes?: string[];
   cancelledActivities?: number;
   title?: string;
+  /** WON desde el 2026-11-13: respuesta Sí a «¿Se comprobó el pago?». */
+  paymentConfirmed?: boolean;
+  /** PAYMENT_ADDED y PAYMENT_DELETED. */
+  amount?: string;
+  paidAt?: string;
+  note?: string | null;
 };
 
 /** Evento armado en el servidor: textos y fechas ya formateados, listos para pintar. */

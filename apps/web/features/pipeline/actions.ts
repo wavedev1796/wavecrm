@@ -47,6 +47,8 @@ const MULTILINE = new Set([
   "reason",
   "lossDetail",
   "acceptanceNote",
+  "viabilityNote",
+  "note",
 ]);
 /** Todo texto del formulario entra limpio (sin controles ni invisibles); un archivo o un campo ausente queda vacío. */
 function formText(form: FormData, key: string): string {
@@ -180,7 +182,7 @@ export async function previewTransitionAction(dealId: string, to: string) {
 
 /** Ruta y cuerpo del cambio: ganar, perder, rechazar y reabrir tienen la suya; el resto es mover. */
 const TRANSITION_ROUTES = {
-  WON: ["/win", "POST", ["closedAt", "fromStageId"]],
+  WON: ["/win", "POST", ["closedAt", "paymentConfirmed", "fromStageId"]],
   LOST: ["/lose", "POST", ["lossReason", "lossDetail", "followUp", "fromStageId"]],
   REJECTED: ["/reject", "POST", ["lossReason", "lossDetail", "fromStageId"]],
   REOPEN: ["/reopen", "POST", ["reason"]],
@@ -217,6 +219,10 @@ function transitionError(to: string, form: FormData): string | undefined {
     [has("acceptedAt") && !(day("acceptedAt") && text("acceptedAt") <= today), errores.aceptacion],
     [has("acceptedAt") && !between(text("acceptanceNote"), 2, 500), errores.evidencia],
     [has("closedAt") && !(day("closedAt") && text("closedAt") <= today), errores.cierreReal],
+    // El modal pide viabilidad y pago solo al ganar: con «No» no hay nada que guardar ni mover.
+    [has("viable") && text("viable") !== "yes", errores.viable],
+    [has("viable") && !between(text("viabilityNote"), 10, 1000), errores.evidenciaViabilidad],
+    [has("paymentConfirmed") && text("paymentConfirmed") !== "yes", errores.pagoComprobado],
     [has("reason") && !between(text("reason"), 2, 500), errores.motivo],
     [Boolean(text("followUpSubject")) && !between(text("followUpSubject"), 2, 160), errores.seguimiento],
     [Boolean(text("followUpSubject")) && !(day("followUpDay") && text("followUpDay") >= today), errores.seguimientoFecha],
@@ -241,6 +247,7 @@ function transitionSteps(dealId: string, form: FormData) {
     if (text(key)) deal[key] = text(key);
   if (text("budget")) deal.budget = parseAmount(text("budget"));
   if (text("expectedClose")) deal.expectedClose = utcDay(text("expectedClose"));
+  if (text("viable") === "yes") Object.assign(deal, { viable: true, viabilityNote: text("viabilityNote") });
   const steps: [string, string, unknown][] = [];
   if (Object.keys(deal).length) steps.push([dealPath(dealId), "PATCH", deal]);
   if (text("interactionSubject"))
@@ -310,6 +317,8 @@ export async function completeTransitionAction(
     fromStageId,
     reason: text("reason") || undefined,
     closedAt: text("closedAt") ? utcDay(text("closedAt")) : undefined,
+    // transitionError ya exigió «Sí»: solo llega aquí la confirmación.
+    paymentConfirmed: text("paymentConfirmed") === "yes" || undefined,
     lossReason: text("lossReason") || undefined,
     lossDetail: text("lossDetail") || undefined,
     followUp: text("followUpSubject")
@@ -317,7 +326,7 @@ export async function completeTransitionAction(
       : undefined,
   };
   const route = TRANSITION_ROUTES[to as keyof typeof TRANSITION_ROUTES];
-  const [rest, method, keys] = route ?? ["/move", "PATCH", ["fromStageId", "reason", "closedAt"]];
+  const [rest, method, keys] = route ?? ["/move", "PATCH", ["fromStageId", "reason", "closedAt", "paymentConfirmed"]];
   const body = Object.fromEntries(
     keys.filter((key) => values[key] !== undefined).map((key) => [key, values[key]]),
   );
@@ -338,20 +347,53 @@ export async function loadColumnAction(pipelineId: string, column: string, page:
   }>;
 }
 
-/** Calificación del negocio en la ficha: un campo vacío se borra (null). */
+/** Calificación del negocio en la ficha: un campo vacío se borra (null). Viabilidad: «yes», «no» o vacío (sin evaluar). */
 export async function qualifyDealAction(
   dealId: string,
   form: FormData,
-): Promise<{ error?: string; fieldErrors?: { budget?: string } }> {
+): Promise<{ error?: string; fieldErrors?: { budget?: string; viabilityNote?: string } }> {
   const budget = formText(form, "budget");
-  if (budget && !isAmount(budget)) return { fieldErrors: { budget: TRANSICION.errores.presupuesto } };
+  const viabilityNote = formText(form, "viabilityNote");
+  const fieldErrors = {
+    ...(budget && !isAmount(budget) && { budget: TRANSICION.errores.presupuesto }),
+    ...(viabilityNote && !between(viabilityNote, 10, 1000) && { viabilityNote: TRANSICION.errores.evidenciaViabilidad }),
+  };
+  if (Object.keys(fieldErrors).length) return { fieldErrors };
+  const viable = formText(form, "viable");
   return request(dealPath(dealId), "PATCH", {
     need: optional(form, "need"),
     solution: optional(form, "solution"),
     budget: budget ? parseAmount(budget) : null,
     budgetNote: optional(form, "budgetNote"),
     decisionMaker: optional(form, "decisionMaker"),
+    viable: viable === "yes" ? true : viable === "no" ? false : null,
+    viabilityNote: viabilityNote || null,
   });
+}
+
+/** Abono sin comprobante (P6): monto en formato de Ecuador, día del pago (no futuro) y nota opcional. */
+export async function addPaymentAction(
+  dealId: string,
+  form: FormData,
+): Promise<{ error?: string; fieldErrors?: Partial<Record<"amount" | "paidAt" | "note", string>> }> {
+  const errores = NEGOCIO.abonos.errores;
+  const amount = parseAmount(formText(form, "amount"));
+  const paidAt = formText(form, "paidAt");
+  const note = formText(form, "note");
+  const fieldErrors = {
+    ...(!amount && { amount: errores.monto }),
+    ...(!(isDay(paidAt) && paidAt <= todayEcuador()) && { paidAt: errores.fecha }),
+    ...(note && !between(note, 2, 500) && { note: errores.nota }),
+  };
+  if (Object.keys(fieldErrors).length) return { fieldErrors };
+  return request(dealPath(dealId, "/payments"), "POST", {
+    amount,
+    paidAt: utcDay(paidAt),
+    ...(note && { note }),
+  });
+}
+export async function deletePaymentAction(dealId: string, paymentId: string) {
+  return request(dealPath(dealId, "/payments/" + encodeURIComponent(paymentId)), "DELETE");
 }
 
 export async function createQuoteAction(dealId: string, form: FormData) {
@@ -456,6 +498,8 @@ export async function configurePipelineAction(
   if (name.length < 2)
     return { error: "Ingresa un nombre de al menos dos caracteres." };
   const stage = operation.endsWith("Stage");
+  const staleText = formText(form, "staleDays");
+  const staleDays = staleText ? Number(staleText) : null;
   const body = stage
     ? {
         name,
@@ -463,6 +507,7 @@ export async function configurePipelineAction(
         probability: Number(formText(form, "probability")),
         color: formText(form, "color") || "#2f6f8f",
         requirements: form.getAll("requirements").filter((code) => typeof code === "string"),
+        staleDays,
       }
     : { name, ...(form.get("isDefault") === "true" && { isDefault: true }) };
   if (
@@ -470,6 +515,8 @@ export async function configurePipelineAction(
     (!Number.isInteger(body.position) || !Number.isInteger(body.probability))
   )
     return { error: "La posicion y la probabilidad deben ser enteros." };
+  if (stage && staleDays !== null && !(Number.isInteger(staleDays) && staleDays >= 1 && staleDays <= 365))
+    return { error: PIPELINE.diasSinActividad.error };
   const method = operation.startsWith("create") ? "POST" : "PATCH";
   return request(route, method, body);
 }

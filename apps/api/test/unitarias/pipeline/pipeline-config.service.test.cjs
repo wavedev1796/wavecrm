@@ -17,6 +17,8 @@ const {
 } = require("../../../dist/modules/pipeline/pipeline.controller.js");
 
 const vendedor = { id: "u1", role: "VENDEDOR" };
+// P1: un negocio de los dobles (sin etapa ni actividades) no está en riesgo.
+const calm = { idleDays: 0, atRisk: false };
 
 /** Un delete de un registro que no existe: Prisma lanza P2025. */
 const missing = {
@@ -241,15 +243,22 @@ test("eliminar, ver ficha e historial de un negocio", async () => {
   await assert.rejects(mockPrisma({ deal: { count: 0 } }).service.history("d1", vendedor), NotFoundException);
 
   const { service, called } = mockPrisma({
-    deal: { findUnique: { id: "d1", title: "Cuenta", status: "OPEN" }, count: 1 },
+    deal: { findUnique: { id: "d1", title: "Cuenta", status: "OPEN", value: "40", items: [], payments: [] }, count: 1 },
     dealStageHistory: { findMany: [{ id: "h1" }] },
   });
   await service.deleteDeal("d1", vendedor);
   assert.equal(called("deal.delete").length, 1);
+  // P1: la ficha suma los días sin actividad; sin etapa ni actividades no alerta.
   assert.deepEqual(await service.findDeal("d1"), {
     id: "d1",
     title: "Cuenta",
     status: "OPEN",
+    value: "40",
+    items: [],
+    payments: [],
+    // P6: sin productos se cobra el valor del negocio.
+    balance: { due: "40.00", paid: "0.00", pending: "40.00" },
+    ...calm,
   });
   // La ficha ya no trae historial: actividades, etapas y cierres van por la línea de tiempo.
   assert.equal(called("auditLog.findMany").length, 0);
@@ -370,11 +379,11 @@ test("el tablero trae 10 tarjetas por columna con la cantidad y el valor de toda
   assert.deepEqual(
     board.stages.map((s) => [s.id, s.count, s.value, s.deals]),
     [
-      ["s1", 12, "1200.10", [{ id: "s1" }]],
-      ["s2", 1, "50.00", [{ id: "s2" }]],
+      ["s1", 12, "1200.10", [{ id: "s1", ...calm }]],
+      ["s2", 1, "50.00", [{ id: "s2", ...calm }]],
     ],
   );
-  assert.deepEqual(board.lost, { count: 2, value: "999.00", deals: [{ id: "LOST" }] });
+  assert.deepEqual(board.lost, { count: 2, value: "999.00", deals: [{ id: "LOST", ...calm }] });
   assert.deepEqual(board.metrics.rejected, { count: 4, value: "40.00" });
   const pages = called("deal.findMany");
   assert.deepEqual(pages[0].where, { pipelineId: "p1", stageId: "s1", status: { in: ["OPEN", "WON"] } });
@@ -406,7 +415,7 @@ test("los perdidos van a su columna y no suman al valor abierto ni al ganado", a
 
 test("ver más pide la página siguiente de una columna con el mismo filtro y orden", async () => {
   const { service, called } = mockPrisma({ deal: { findMany: [{ id: "d11" }] } });
-  assert.deepEqual(await service.boardColumn("p1", "LOST", 2), { deals: [{ id: "d11" }], page: 2 });
+  assert.deepEqual(await service.boardColumn("p1", "LOST", 2), { deals: [{ id: "d11", ...calm }], page: 2 });
   const query = called("deal.findMany")[0];
   assert.deepEqual(query.where, { pipelineId: "p1", status: "LOST" });
   assert.deepEqual([query.skip, query.take], [10, 10]);

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { NEGOCIO } from "@/content/pipeline";
 import { formatMoney } from "@/lib/format";
 import { qualifyDealAction } from "./actions";
@@ -19,10 +20,17 @@ const TEXTS = [
   ["solution", texto.solucion, 2000, "solucion"],
 ] as const;
 
-/** Necesidad, solución, presupuesto y persona decisora: los datos que piden las etapas Negociación y Propuesta. */
+const viability = (viable: boolean | null | undefined) =>
+  viable === true ? texto.viable : viable === false ? texto.noViable : texto.sinEvaluar;
+
+/**
+ * Necesidad, solución, presupuesto y persona decisora: los datos que piden las etapas Negociación y Propuesta.
+ * Viabilidad y su evidencia (P4): se exigen para ganar.
+ */
 export function DealQualification({ deal, locked }: Readonly<{ deal: DealDetail; locked: boolean }>) {
   const [feedback, setFeedback] = useState<{ tone: "error" | "success"; message: string } | null>(null);
   const [budgetError, setBudgetError] = useState<string>();
+  const [noteError, setNoteError] = useState<string>();
   const [pending, startTransition] = useTransition();
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -31,6 +39,7 @@ export function DealQualification({ deal, locked }: Readonly<{ deal: DealDetail;
       setFeedback(null);
       const result = await qualifyDealAction(deal.id, form);
       setBudgetError(result.fieldErrors?.budget);
+      setNoteError(result.fieldErrors?.viabilityNote);
       if (result.error) setFeedback({ tone: "error", message: result.error });
       else if (!result.fieldErrors) setFeedback({ tone: "success", message: texto.guardada });
     });
@@ -52,6 +61,8 @@ export function DealQualification({ deal, locked }: Readonly<{ deal: DealDetail;
             [texto.presupuesto, deal.budget != null ? formatMoney(deal.budget) : null],
             [texto.justificacion, deal.budgetNote],
             [texto.decisor, deal.decisionMaker],
+            [texto.viabilidad, viability(deal.viable)],
+            [texto.evidencia, deal.viabilityNote],
           ].map(([label, value]) => (
             <div key={label}>
               <dt>{label}</dt>
@@ -99,6 +110,28 @@ export function DealQualification({ deal, locked }: Readonly<{ deal: DealDetail;
         <Field id="qualify-decisionMaker" label={texto.decisor} icon="decisor">
           <Input id="qualify-decisionMaker" name="decisionMaker" maxLength={160} defaultValue={deal.decisionMaker ?? ""} />
         </Field>
+        <Field id="qualify-viable" label={texto.viabilidad} icon="evidencia">
+          <Select
+            id="qualify-viable"
+            name="viable"
+            defaultValue={deal.viable === true ? "yes" : deal.viable === false ? "no" : ""}
+          >
+            <option value="">{texto.sinEvaluar}</option>
+            <option value="yes">{texto.viable}</option>
+            <option value="no">{texto.noViable}</option>
+          </Select>
+        </Field>
+        <Field id="qualify-viabilityNote" label={texto.evidencia} error={noteError} icon="evidencia">
+          <textarea
+            id="qualify-viabilityNote"
+            name="viabilityNote"
+            className="input deal-textarea"
+            maxLength={1000}
+            defaultValue={deal.viabilityNote ?? ""}
+            {...invalidProps("qualify-viabilityNote", noteError)}
+          />
+        </Field>
+        <p className="field-hint">{texto.evidenciaAyuda}</p>
         <Button type="submit" variant="secondary" loading={pending}>
           {texto.guardar}
         </Button>
