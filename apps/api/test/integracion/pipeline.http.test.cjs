@@ -340,8 +340,8 @@ test("ambas rutas de movimiento exigen la propuesta aceptada, registran historia
   assert.equal(moved.body.status, "WON");
   assert.equal(moved.body.closedAt, today);
   assert.deepEqual(
-    (await api.prisma.quote.findMany({ where: { dealId: deal } })).map((q) => q.status),
-    ["REJECTED", "ACCEPTED"],
+    (await api.prisma.quote.findMany({ where: { dealId: deal } })).map((q) => q.status).sort(),
+    ["ACCEPTED", "REJECTED"],
   );
   await call(path + "/move", { method: "PATCH", body: { stageId: won } });
   assert.equal((await call(path + "/history")).body.length, 2);
@@ -380,7 +380,8 @@ test("cierres: ganar con la propuesta aceptada, perder con motivo y reabrir solo
   assert.equal(wonDeal.status, 200, JSON.stringify(wonDeal.body));
   assert.equal(wonDeal.body.status, "WON");
   assert.equal(wonDeal.body.stage.id, won);
-  const [quote] = wonDeal.body.quotes;
+  const quote = wonDeal.body.quotes.find((item) => item.status === "ACCEPTED");
+  assert.ok(quote);
   assert.deepEqual(
     [quote.status, quote.subtotal, quote.tax, quote.total, wonDeal.body.quotes.length],
     ["ACCEPTED", "110.5", "13.58", "124.08", 2],
