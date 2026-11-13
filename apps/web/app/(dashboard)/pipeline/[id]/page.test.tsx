@@ -113,7 +113,7 @@ test("el historial llega del API ya armado y sus pendientes se completan en la f
   expect(api).toHaveBeenCalledWith("/deals/d1/timeline");
   expect(screen.getByText("Llamar a Maria")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Completar Llamar a Maria" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Ver más" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Abrir historial completo" })).toBeInTheDocument();
 });
 
 test("un VENDEDOR sin acceso al historial ve la ficha, el aviso y el formulario de actividad", async () => {

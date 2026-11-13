@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { completeActivityAction } from "../pipeline/actions";
@@ -34,11 +34,26 @@ test("pinta cada evento con su tipo, título, autor y fecha en el orden recibido
   expect(screen.queryByRole("button", { name: "Ver más" })).toBeNull();
 });
 
+test("la ficha limita el historial visible a cinco registros y abre el resto en un diálogo", async () => {
+  const user = userEvent.setup();
+  render(
+    <TimelineList
+      kind="contacts"
+      id="c1"
+      initial={{ entries: Array.from({ length: 8 }, (_, index) => entry(`log-${index}`)), nextCursor: null }}
+    />,
+  );
+  expect(screen.getAllByRole("listitem")).toHaveLength(5);
+  await user.click(screen.getByRole("button", { name: "Abrir historial completo" }));
+  const dialog = screen.getByRole("dialog", { name: "Historial completo" });
+  expect(within(dialog).getAllByRole("listitem")).toHaveLength(8);
+});
+
 test("«Ver más» agrega la página siguiente sin repetir eventos y se oculta al final", async () => {
   let finish!: (value: Awaited<ReturnType<typeof loadTimeline>>) => void;
   load.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
   const user = userEvent.setup();
-  render(<TimelineList kind="contacts" id="c1" initial={{ entries: [entry("a"), entry("b")], nextCursor: "k1" }} />);
+  render(<TimelineList kind="contacts" id="c1" initial={{ entries: [entry("a"), entry("b")], nextCursor: "k1" }} fullHistory />);
   await user.click(screen.getByRole("button", { name: "Ver más" }));
   expect(load).toHaveBeenCalledWith("contacts", "c1", "k1");
   expect(screen.getByRole("button", { name: "Ver más" })).toBeDisabled();
@@ -55,7 +70,7 @@ test("si falla la carga conserva lo cargado, avisa y permite reintentar", async 
     .mockRejectedValueOnce(new Error("red"))
     .mockResolvedValueOnce({ entries: [entry("b")], nextCursor: "k2" });
   const user = userEvent.setup();
-  render(<TimelineList kind="contacts" id="c1" initial={{ entries: [entry("a")], nextCursor: "k1" }} />);
+  render(<TimelineList kind="contacts" id="c1" initial={{ entries: [entry("a")], nextCursor: "k1" }} fullHistory />);
   await user.click(screen.getByRole("button", { name: "Ver más" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("No pudimos cargar el historial.");
   expect(items()).toHaveLength(1);
@@ -173,11 +188,11 @@ test("al revalidar, la nueva primera página reemplaza lo cargado y una respuest
     .mockReturnValueOnce(new Promise((resolve) => (finish = resolve)))
     .mockResolvedValueOnce({ entries: [entry("z")], nextCursor: null });
   const user = userEvent.setup();
-  const { rerender } = render(<TimelineList kind="deals" id="d1" initial={{ entries: [entry("a")], nextCursor: "k1" }} />);
+  const { rerender } = render(<TimelineList kind="deals" id="d1" initial={{ entries: [entry("a")], nextCursor: "k1" }} fullHistory />);
   await user.click(screen.getByRole("button", { name: "Ver más" }));
   expect(await screen.findByText("Título b")).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Ver más" }));
-  rerender(<TimelineList kind="deals" id="d1" initial={{ entries: [entry("n"), entry("a")], nextCursor: "k9" }} />);
+  rerender(<TimelineList kind="deals" id="d1" initial={{ entries: [entry("n"), entry("a")], nextCursor: "k9" }} fullHistory />);
   expect(items()).toHaveLength(2);
   finish({ entries: [entry("tarde")], nextCursor: null });
   await vi.waitFor(() => expect(screen.getByRole("button", { name: "Ver más" })).toBeEnabled());

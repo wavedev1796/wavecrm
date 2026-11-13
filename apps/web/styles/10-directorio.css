@@ -648,6 +648,37 @@
 .deal-timeline > .button {
   justify-self: start;
 }
+.timeline-preview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--wave-line);
+}
+.timeline-preview-heading > span {
+  color: var(--wave-muted-strong);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.timeline-preview-heading .button {
+  min-height: 36px;
+}
+.timeline-history-dialog {
+  display: grid;
+  gap: 16px;
+  padding: 30px 28px 24px;
+}
+.timeline-full-content {
+  display: grid;
+  gap: 12px;
+  max-height: min(58vh, 620px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+.timeline-full-content > .button {
+  justify-self: start;
+}
 .deal-timeline ol {
   display: grid;
   gap: 8px;
@@ -679,6 +710,19 @@
 /* Las notas conservan sus saltos de línea. */
 .deal-timeline li p {
   white-space: pre-line;
+}
+@media (max-width: 640px) {
+  .timeline-preview-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .timeline-history-dialog {
+    padding: 24px 18px 18px;
+  }
+  .timeline-full-content {
+    max-height: 62vh;
+  }
 }
 /* CRM-26: notas del historial. Global, como el historial: las fichas de negocio y de contacto las usan. */
 .note-form {
