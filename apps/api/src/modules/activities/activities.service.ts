@@ -8,6 +8,7 @@ import { Prisma } from "@wave/database";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   CreateActivityDto,
+  ActivityHistoryQueryDto,
   ListActivitiesDto,
   UpdateActivityDto,
 } from "./activities.dto";
@@ -18,6 +19,9 @@ const include = {
   company: { select: { id: true, name: true } },
   deal: { select: { id: true, title: true, status: true } },
 } satisfies Prisma.ActivityInclude;
+const historyAuthor = { select: { id: true, name: true } } as const;
+type ActivityHistoryKind = "ACTIVITY" | "EVENT";
+type ActivityHistoryCursor = { at: Date; kind: ActivityHistoryKind; id: string };
 
 @Injectable()
 export class ActivitiesService {
@@ -53,6 +57,112 @@ export class ActivitiesService {
     return {
       data: activities,
       meta: { total: activities.length, pending, overdue },
+    };
+  }
+
+  async history(query: ActivityHistoryQueryDto) {
+    const cursor = decodeHistoryCursor(query.cursor);
+    const take = query.limit + 1;
+    const activityFilter: Prisma.ActivityWhereInput = query.action && query.action !== "CREATED"
+      ? { id: { in: [] } }
+      : {};
+    const auditFilter: Prisma.AuditLogWhereInput = query.action === "CREATED"
+      ? { id: { in: [] } }
+      : { ...(query.action && { action: query.action }) };
+    const [created, audits] = await Promise.all([
+      this.prisma.activity.findMany({
+        where: { AND: [activityFilter, historyKeyset<Prisma.ActivityWhereInput>("ACTIVITY", cursor)] },
+        select: {
+          id: true,
+          type: true,
+          subject: true,
+          createdAt: true,
+          createdBy: historyAuthor,
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take,
+      }),
+      this.prisma.auditLog.findMany({
+        where: {
+          AND: [
+            { entityType: "Activity" },
+            auditFilter,
+            historyKeyset<Prisma.AuditLogWhereInput>("EVENT", cursor),
+          ],
+        },
+        select: {
+          id: true,
+          action: true,
+          entityId: true,
+          changes: true,
+          createdAt: true,
+          user: historyAuthor,
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take,
+      }),
+    ]);
+    const liveIds = [...new Set(audits.map((event) => event.entityId))];
+    const liveActivities = liveIds.length
+      ? await this.prisma.activity.findMany({
+          where: { id: { in: liveIds } },
+          select: { id: true, subject: true, type: true },
+        })
+      : [];
+    const liveById = new Map(liveActivities.map((activity) => [activity.id, activity]));
+    const deletedIds = liveIds.filter((id) => !liveById.has(id));
+    const deletedSnapshots = deletedIds.length
+      ? await this.prisma.auditLog.findMany({
+          where: { entityType: "Activity", action: "DELETED", entityId: { in: deletedIds } },
+          select: { entityId: true, changes: true },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        })
+      : [];
+    const deletedById = new Map<string, Record<string, unknown>>();
+    for (const snapshot of deletedSnapshots) {
+      if (!deletedById.has(snapshot.entityId))
+        deletedById.set(snapshot.entityId, jsonObject(snapshot.changes) ?? {});
+    }
+    const events = [
+      ...created.map((activity) => ({
+        id: `ACTIVITY:${activity.id}`,
+        kind: "CREATED" as const,
+        activityId: activity.id,
+        subject: activity.subject,
+        activityType: activity.type,
+        at: activity.createdAt,
+        author: activity.createdBy,
+        changes: null,
+      })),
+      ...audits.map((audit) => {
+        const changes = jsonObject(audit.changes);
+        const live = liveById.get(audit.entityId);
+        const deleted = deletedById.get(audit.entityId);
+        return {
+          id: `EVENT:${audit.id}`,
+          kind: audit.action,
+          activityId: audit.entityId,
+          subject: historySubject(changes, live?.subject, deleted?.subject),
+          activityType: historyType(changes, live?.type, deleted?.type),
+          at: audit.createdAt,
+          author: audit.user,
+          changes,
+        };
+      }),
+    ].sort(
+      (left, right) =>
+        right.at.getTime() - left.at.getTime() || (left.id < right.id ? 1 : left.id > right.id ? -1 : 0),
+    );
+    const data = events.slice(0, query.limit);
+    const last = data.at(-1);
+    return {
+      data,
+      meta: {
+        limit: query.limit,
+        nextCursor: events.length > query.limit && last
+          ? encodeHistoryCursor(last)
+          : null,
+      },
     };
   }
 
@@ -267,6 +377,68 @@ export class ActivitiesService {
         "El recordatorio debe ser anterior al vencimiento.",
       );
   }
+}
+
+function historyKeyset<W>(kind: ActivityHistoryKind, cursor?: ActivityHistoryCursor): W {
+  if (!cursor) return {} as W;
+  if (kind !== cursor.kind)
+    return { createdAt: kind < cursor.kind ? { lte: cursor.at } : { lt: cursor.at } } as W;
+  return {
+    OR: [{ createdAt: { lt: cursor.at } }, { createdAt: cursor.at, id: { lt: cursor.id } }],
+  } as W;
+}
+
+function encodeHistoryCursor(event: { id: string; at: Date }) {
+  return Buffer.from(JSON.stringify({ at: event.at.toISOString(), id: event.id })).toString("base64url");
+}
+
+function decodeHistoryCursor(raw?: string): ActivityHistoryCursor | undefined {
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(Buffer.from(raw, "base64url").toString("utf8")) as { at?: unknown; id?: unknown };
+    const [kind, id] = typeof parsed.id === "string" ? parsed.id.split(/:(.*)/s) : [];
+    const at = typeof parsed.at === "string" ? new Date(parsed.at) : null;
+    if ((kind !== "ACTIVITY" && kind !== "EVENT") || !id || !at || Number.isNaN(at.getTime()))
+      throw new Error("invalid cursor");
+    return { at, kind, id };
+  } catch {
+    throw new BadRequestException("El cursor del historial no es válido.");
+  }
+}
+
+function jsonObject(value: Prisma.JsonValue | null): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function changedTo(value: unknown): unknown {
+  return value && typeof value === "object" && !Array.isArray(value) && "to" in value
+    ? (value as { to: unknown }).to
+    : value;
+}
+
+function historySubject(
+  changes: Record<string, unknown> | null,
+  current?: string,
+  deleted?: unknown,
+) {
+  const changed = changedTo(changes?.subject);
+  if (typeof changed === "string") return changed;
+  if (typeof current === "string") return current;
+  if (typeof deleted === "string") return deleted;
+  return "Actividad sin asunto";
+}
+
+function historyType(
+  changes: Record<string, unknown> | null,
+  current?: string,
+  deleted?: unknown,
+) {
+  const changed = changedTo(changes?.type);
+  if (typeof changed === "string") return changed;
+  if (typeof current === "string") return current;
+  return typeof deleted === "string" ? deleted : null;
 }
 
 /** Valor de la auditoría: fechas en ISO y vacío como null. */

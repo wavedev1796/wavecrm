@@ -36,6 +36,14 @@ Permitir que el equipo organice sus actividades comerciales desde una agenda cla
 - La fecha se muestra en la zona horaria `America/Guayaquil`. La lista compacta y los controles se reorganizan para pantallas móviles.
 - Se reutilizan `Badge`, `Button`, `Input` y `Select` de Wave y los catálogos compartidos de tipo y estado.
 
+## Historial global de actividades (2026-11-13)
+
+- Se añadió la vista Historial a la agenda, con filtro por acción y paginación cronológica. Muestra creación, edición, finalización, cancelación y eliminación, junto con asunto, tipo, fecha, usuario responsable de la acción y resumen de cambios.
+- `GET /activities/history` combina actividades todavía existentes con los eventos `Activity` de `AuditLog`; el snapshot de eliminación conserva el asunto y tipo visibles después de borrar la actividad. La API valida cursor, filtro y límite.
+- La web reutiliza el resumen de cambios del timeline y los controles Wave. Los filtros de lista se ocultan en la vista de historial; las tarjetas y el filtro de historial se ajustan al ancho del panel y a móvil.
+- Los tipos de actividad muestran en el historial los mismos iconos identificativos de llamada, correo, reunión y tarea que en la agenda. Ambos apartados reutilizan `ActivityTypeIcon` y el mismo estilo semántico.
+- Verificación estática del cambio: TypeScript web y API, ESLint y `git diff --check`. No se ejecutaron pruebas automatizadas para este ajuste.
+
 ## Ajuste responsive y acciones (2026-11-07)
 
 - La agenda usa consultas de contenedor para adaptarse al ancho real de su panel. En paneles medianos los filtros se distribuyen en dos columnas y la vista queda debajo; en anchos de teléfono los filtros y el resumen pasan a una columna, y las tarjetas reordenan fecha, acciones y detalle. Esto cubre ventanas divididas aunque el viewport completo sea ancho.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Activity, Ban, Bell, CalendarDays, Check, CircleAlert, CircleCheck, ClipboardList, Clock3, List, Mail, Pencil, Phone, Plus, Trash2, Users, Video, X } from "lucide-react";
+import { Activity, Ban, Bell, CalendarDays, Check, CircleAlert, CircleCheck, ClipboardList, Clock3, History, List, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Select } from "@/components/ui/select";
 import { ESTADO_ACTIVIDAD, TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { ACTIVIDADES } from "@/content/actividades";
 import { saveActivity } from "./actions";
+import { ActivityHistory } from "./activity-history";
+import { ActivityTypeIcon } from "./activity-type-icon";
 
 export type AgendaActivity = {
   id: string;
@@ -69,7 +71,7 @@ export function Agenda({
 }: {
   activities: AgendaActivity[];
   owners: Owner[];
-  initialView?: "list" | "calendar";
+  initialView?: "list" | "calendar" | "history";
   initialType?: string;
   initialAssigneeId?: string;
   focus?: string;
@@ -98,7 +100,7 @@ export function Agenda({
   return (
     <section className="activities-agenda">
       <div className="activities-toolbar card">
-        <div className="activities-filters">
+        {view !== "history" && <div className="activities-filters">
           <label>
             <span>Tipo</span>
             <Select
@@ -141,11 +143,11 @@ export function Agenda({
               <option value="overdue">Atrasadas</option>
             </Select>
           </label>
-        </div>
+        </div>}
         <div
           className="activities-view-toggle"
           role="group"
-          aria-label="Vista de agenda"
+          aria-label={ACTIVIDADES.vistas.etiqueta}
         >
           <Button
             type="button"
@@ -154,7 +156,7 @@ export function Agenda({
             onClick={() => setView("list")}
           >
             <List aria-hidden />
-            Lista
+            {ACTIVIDADES.vistas.lista}
           </Button>
           <Button
             type="button"
@@ -163,11 +165,22 @@ export function Agenda({
             onClick={() => setView("calendar")}
           >
             <CalendarDays aria-hidden />
-            Calendario
+            {ACTIVIDADES.vistas.calendario}
+          </Button>
+          <Button
+            type="button"
+            variant={view === "history" ? "primary" : "secondary"}
+            aria-pressed={view === "history"}
+            onClick={() => setView("history")}
+          >
+            <History aria-hidden />
+            {ACTIVIDADES.vistas.historial}
           </Button>
         </div>
       </div>
-      {view === "calendar" ? (
+      {view === "history" ? (
+        <ActivityHistory />
+      ) : view === "calendar" ? (
         <CalendarView activities={visible} />
       ) : (
         <div className="activities-list">
@@ -198,7 +211,7 @@ export function Agenda({
                       : ESTADO_ACTIVIDAD[activity.status]}
                   </Badge>
                   <span className="activity-kind">
-                    {typeIcon(activity.type)}
+                    <ActivityTypeIcon type={activity.type} />
                     {TIPO_ACTIVIDAD[activity.type]}
                   </span>
                 </div>
@@ -621,10 +634,6 @@ function timePart(value: string) {
     minute: "2-digit",
     timeZone: "America/Guayaquil",
   }).format(new Date(value));
-}
-function typeIcon(type: keyof typeof TIPO_ACTIVIDAD) {
-  const Icon = type === "CALL" ? Phone : type === "EMAIL" ? Mail : type === "MEETING" ? Video : ClipboardList;
-  return <Icon aria-hidden className="activity-kind-icon" />;
 }
 function inputDate(value?: string | null) {
   if (!value) return "";

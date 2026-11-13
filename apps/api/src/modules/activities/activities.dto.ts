@@ -1,14 +1,17 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 import { ACTIVITY_TYPES, cleanText, type ActivityType } from "@wave/shared";
 import {
   IsDate,
+  IsInt,
   IsIn,
   IsOptional,
   IsString,
   Length,
+  Max,
   Matches,
+  Min,
 } from "class-validator";
 
 const text = (label: string, max: number, min = 1) =>
@@ -116,4 +119,26 @@ export class ListActivitiesDto {
   @IsOptional()
   @IsIn(["upcoming", "overdue", "all"], { message: "El periodo no es válido." })
   period?: "upcoming" | "overdue" | "all";
+}
+
+export class ActivityHistoryQueryDto {
+  @ApiPropertyOptional({ description: "Cursor devuelto por la página anterior." })
+  @IsOptional()
+  @IsString({ message: "El cursor no es válido." })
+  cursor?: string;
+
+  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: "El límite debe ser un número entero entre 1 y 50." })
+  @Min(1, { message: "El límite debe ser un número entero entre 1 y 50." })
+  @Max(50, { message: "El límite debe ser un número entero entre 1 y 50." })
+  limit = 20;
+
+  @ApiPropertyOptional({ enum: ["CREATED", "UPDATED", "COMPLETED", "CANCELLED", "DELETED"] })
+  @IsOptional()
+  @IsIn(["CREATED", "UPDATED", "COMPLETED", "CANCELLED", "DELETED"], {
+    message: "La acción del historial no es válida.",
+  })
+  action?: "CREATED" | "UPDATED" | "COMPLETED" | "CANCELLED" | "DELETED";
 }

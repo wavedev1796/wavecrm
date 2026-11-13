@@ -15,6 +15,7 @@ import type { JwtPayload } from "../auth/auth.service";
 import { ActivitiesService } from "./activities.service";
 import {
   CreateActivityDto,
+  ActivityHistoryQueryDto,
   ListActivitiesDto,
   UpdateActivityDto,
 } from "./activities.dto";
@@ -39,6 +40,12 @@ export class ActivitiesController {
 
   @Get() list(@Query() query: ListActivitiesDto) {
     return this.activities.list(query);
+  }
+
+  @Get("history")
+  @ApiOperation({ summary: "Historial paginado de auditoría de actividades" })
+  history(@Query() query: ActivityHistoryQueryDto) {
+    return this.activities.history(query);
   }
 
   @Post() create(

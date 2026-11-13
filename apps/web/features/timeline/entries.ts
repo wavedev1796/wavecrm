@@ -33,6 +33,33 @@ const EVENTS: Record<string, (c: EventChanges) => [string, string | null]> = {
   DELETED: (c) => [texto.eliminado(c.title ?? ""), notes(reason(c.lossReason && MOTIVO_CIERRE[c.lossReason]), c.lossDetail)],
 };
 
+export function describeActivityChanges(changes: Record<string, unknown> | null) {
+  if (!changes) return null;
+  const details = Object.entries(changes).flatMap(([key, raw]) => {
+    const label = texto.actividades.cambios[key];
+    if (!label || !raw || typeof raw !== "object") return [];
+    const values = raw as { from?: unknown; to?: unknown };
+    if (key === "subject")
+      return [`${label}: ${String(values.from ?? "Sin asunto")} → ${String(values.to ?? "Sin asunto")}`];
+    if (key === "status") {
+      const from = typeof values.from === "string" && values.from in ESTADO_ACTIVIDAD
+        ? ESTADO_ACTIVIDAD[values.from as keyof typeof ESTADO_ACTIVIDAD]
+        : String(values.from ?? "");
+      const to = typeof values.to === "string" && values.to in ESTADO_ACTIVIDAD
+        ? ESTADO_ACTIVIDAD[values.to as keyof typeof ESTADO_ACTIVIDAD]
+        : String(values.to ?? "");
+      return [`${label}: ${from} → ${to}`];
+    }
+    if (key === "dueAt" || key === "reminderAt") {
+      const from = typeof values.from === "string" ? formatDateTime(values.from) : "Sin fecha";
+      const to = typeof values.to === "string" ? formatDateTime(values.to) : "Sin fecha";
+      return [`${label}: ${from} → ${to}`];
+    }
+    return [`${label} actualizado`];
+  });
+  return details.length ? details.join(" · ") : null;
+}
+
 function toEntry(event: TimelineEvent): TimelineEntry | null {
   const by = `${event.author?.name ?? texto.sistema} · ${formatDateTime(event.at)}`;
   const base = { id: event.id, deal: event.deal, detail: by };
@@ -70,32 +97,6 @@ function toEntry(event: TimelineEvent): TimelineEntry | null {
       ...(activity.status === "PENDING" && { pending: { id: activity.id, subject: activity.subject } }),
     };
 
-function describeActivityChanges(changes: Record<string, unknown> | null) {
-  if (!changes) return null;
-  const details = Object.entries(changes).flatMap(([key, raw]) => {
-    const label = texto.actividades.cambios[key];
-    if (!label || !raw || typeof raw !== "object") return [];
-    const values = raw as { from?: unknown; to?: unknown };
-    if (key === "subject")
-      return [`${label}: ${String(values.from ?? "Sin asunto")} → ${String(values.to ?? "Sin asunto")}`];
-    if (key === "status") {
-      const from = typeof values.from === "string" && values.from in ESTADO_ACTIVIDAD
-        ? ESTADO_ACTIVIDAD[values.from as keyof typeof ESTADO_ACTIVIDAD]
-        : String(values.from ?? "");
-      const to = typeof values.to === "string" && values.to in ESTADO_ACTIVIDAD
-        ? ESTADO_ACTIVIDAD[values.to as keyof typeof ESTADO_ACTIVIDAD]
-        : String(values.to ?? "");
-      return [`${label}: ${from} → ${to}`];
-    }
-    if (key === "dueAt" || key === "reminderAt") {
-      const from = typeof values.from === "string" ? formatDateTime(values.from) : "Sin fecha";
-      const to = typeof values.to === "string" ? formatDateTime(values.to) : "Sin fecha";
-      return [`${label}: ${from} → ${to}`];
-    }
-    return [`${label} actualizado`];
-  });
-  return details.length ? details.join(" · ") : null;
-}
   if (event.kind === "NOTE" && note)
     return {
       ...base,

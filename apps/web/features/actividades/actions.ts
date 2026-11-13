@@ -3,8 +3,44 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { authenticatedApi, apiError } from "@/lib/authenticated-api";
+import type { ActivityType } from "@wave/shared";
 
 export type ActivityActionState = { ok: boolean; message: string; conflict?: boolean };
+export type ActivityHistoryAction = "CREATED" | "UPDATED" | "COMPLETED" | "CANCELLED" | "DELETED";
+export type ActivityHistoryRecord = {
+  id: string;
+  kind: ActivityHistoryAction;
+  activityId: string;
+  subject: string;
+  activityType: ActivityType | null;
+  at: string;
+  author: { id: string; name: string } | null;
+  changes: Record<string, unknown> | null;
+};
+export type ActivityHistoryResult =
+  | { data: ActivityHistoryRecord[]; nextCursor: string | null }
+  | { error: string };
+
+export async function loadActivityHistory(
+  action?: ActivityHistoryAction,
+  cursor?: string,
+): Promise<ActivityHistoryResult> {
+  const query = new URLSearchParams({ limit: "20" });
+  if (action) query.set("action", action);
+  if (cursor) query.set("cursor", cursor);
+  try {
+    const response = await authenticatedApi(`/activities/history?${query}`);
+    if (!response.ok) return { error: await apiError(response) };
+    const page = (await response.json()) as {
+      data: ActivityHistoryRecord[];
+      meta: { nextCursor: string | null };
+    };
+    return { data: page.data, nextCursor: page.meta.nextCursor };
+  } catch (error) {
+    unstable_rethrow(error);
+    return { error: "No pudimos cargar el historial de actividades." };
+  }
+}
 
 export async function saveActivity(
   _state: ActivityActionState,
