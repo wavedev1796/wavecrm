@@ -32,6 +32,14 @@ test("CRM-20: cada fila y el IVA redondean a centavos hacia arriba en la mitad",
   assert.deepEqual(money(dealTotals([])), ["0.00", "0.00", "0.00"]);
 });
 
+test("CRM-28: los descuentos se aplican antes del IVA por tarifa y sin tarifa universal", () => {
+  const totals = dealTotals([
+    { quantity: 2, unitPrice: 10, discountRate: 25, taxRate: 0 },
+    { quantity: 1, unitPrice: 100, discountRate: 10, taxRate: 12 },
+  ]);
+  assert.deepEqual(money(totals), ["105.00", "10.80", "115.80"]);
+});
+
 test("CRM-21: el numero de cotizacion es correlativo de seis digitos", () => {
   assert.equal(nextQuoteNumber(null), "COT-000001");
   assert.equal(nextQuoteNumber("COT-000041"), "COT-000042");

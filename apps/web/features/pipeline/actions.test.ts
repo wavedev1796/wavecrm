@@ -195,6 +195,7 @@ test("completar una transicion encadena los datos y termina moviendo con la etap
       nextSubject: "Demo",
       nextDay: "2026-10-25",
       validUntil: "2026-11-30",
+      requestKey: "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4",
       sentAt: "2026-10-18",
       quoteId: "q 1",
       acceptedAt: "2026-10-18",
@@ -212,7 +213,7 @@ test("completar una transicion encadena los datos y termina moviendo con la etap
     // Las fechas de actividades viajan como día: el API las fija a las 00:00 de Ecuador (CRM-22).
     ["/deals/d1/activities", "POST", { type: "CALL", subject: "Primera llamada", completedAt: "2026-10-01" }],
     ["/deals/d1/activities", "POST", { type: "MEETING", subject: "Demo", dueAt: "2026-10-25" }],
-    ["/deals/d1/quotes", "POST", { validUntil: "2026-11-30T00:00:00.000Z", sentAt: "2026-10-18T00:00:00.000Z" }],
+    ["/deals/d1/quotes", "POST", { requestKey: "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4", validUntil: "2026-11-30T00:00:00.000Z", sentAt: "2026-10-18T00:00:00.000Z" }],
     ["/deals/d1/quotes/q%201/accept", "POST", { acceptedAt: "2026-10-18T00:00:00.000Z", acceptanceNote: "Orden de compra" }],
     ["/deals/d1/move", "PATCH", { stageId: "s2", fromStageId: "s1", reason: "Revisar" }],
   ]);
@@ -308,13 +309,13 @@ test("la consulta previa, ver mas y la ficha usan sus rutas", async () => {
   expect((await previewTransitionAction("d1", "s 2")).data).toEqual({ pending: [], quote: null, items: 0 });
   await loadColumnAction("p1", "LOST", 2);
   await qualifyDealAction("d1", fields({ need: " Web ", solution: "", budget: "", budgetNote: "Sin definir", decisionMaker: "Gerente" }));
-  await createQuoteAction("d1", fields({ validUntil: "2026-11-30", sentAt: "" }));
+  await createQuoteAction("d1", fields({ validUntil: "2026-11-30", sentAt: "", requestKey: "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4" }));
   await acceptQuoteAction("d1", "q1", fields({ acceptedAt: "2026-10-18", acceptanceNote: " Correo " }));
   expect(calls()).toEqual([
     ["/deals/d1/transition?to=s%202", "GET", undefined],
     ["/deals/board?pipelineId=p1&column=LOST&page=2", "GET", undefined],
     ["/deals/d1", "PATCH", { need: "Web", solution: null, budget: null, budgetNote: "Sin definir", decisionMaker: "Gerente" }],
-    ["/deals/d1/quotes", "POST", { validUntil: "2026-11-30T00:00:00.000Z" }],
+    ["/deals/d1/quotes", "POST", { requestKey: "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4", validUntil: "2026-11-30T00:00:00.000Z" }],
     ["/deals/d1/quotes/q1/accept", "POST", { acceptedAt: "2026-10-18T00:00:00.000Z", acceptanceNote: "Correo" }],
   ]);
   expect((await qualifyDealAction("d1", fields({ budget: "abc" }))).fieldErrors?.budget).toBeTruthy();

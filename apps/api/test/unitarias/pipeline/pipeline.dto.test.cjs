@@ -210,11 +210,15 @@ test("CRM-18: el listado de negocios acepta filtros opcionales", async () => {
 });
 
 test("propuesta: vigencia obligatoria y envío opcional; aceptar exige fecha y evidencia", async () => {
-  assert.deepEqual(await errors(CreateQuoteDto, {}), { validUntil: "Ingresa la vigencia de la propuesta." });
-  assert.deepEqual(await errors(CreateQuoteDto, { validUntil: "2026-11-30", sentAt: "luego" }), {
+  assert.deepEqual(await errors(CreateQuoteDto, {}), {
+    requestKey: "Ingresa una clave de petición válida.",
+    validUntil: "Ingresa la vigencia de la propuesta.",
+  });
+  const requestKey = "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4";
+  assert.deepEqual(await errors(CreateQuoteDto, { requestKey, validUntil: "2026-11-30", sentAt: "luego" }), {
     sentAt: "Ingresa una fecha de envío válida.",
   });
-  assert.ok(plainToInstance(CreateQuoteDto, { validUntil: "2026-11-30" }).validUntil instanceof Date);
+  assert.ok(plainToInstance(CreateQuoteDto, { requestKey, validUntil: "2026-11-30" }).validUntil instanceof Date);
   assert.deepEqual(await errors(AcceptQuoteDto, {}), {
     acceptedAt: "Ingresa la fecha de aceptación.",
     acceptanceNote: "Ingresa la evidencia de aceptación.",

@@ -1,5 +1,5 @@
 "use client";
-import { Fragment, useState, useTransition, type FormEvent } from "react";
+import { Fragment, useRef, useState, useTransition, type FormEvent } from "react";
 import { FileText } from "lucide-react";
 import { Field } from "@/components/form/form-field";
 import { Alert } from "@/components/ui/alert";
@@ -23,15 +23,21 @@ type Result = { error?: string };
 export function DealQuotes({ deal, locked }: Readonly<{ deal: DealDetail; locked: boolean }>) {
   const [feedback, setFeedback] = useState<{ tone: "error" | "success"; message: string } | null>(null);
   const [pending, startTransition] = useTransition();
+  const requestKey = useRef<string | null>(null);
   const sent = deal.quotes.find((quote) => quote.status === "SENT");
   const today = todayEcuador();
-  const run = (action: (form: FormData) => Promise<Result>, success: string) => (event: FormEvent<HTMLFormElement>) => {
+  const run = (action: (form: FormData) => Promise<Result>, success: string, idempotent = false) => (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    if (idempotent) {
+      requestKey.current ??= crypto.randomUUID();
+      form.set("requestKey", requestKey.current);
+    }
     startTransition(async () => {
       setFeedback(null);
       const result = await action(form);
       setFeedback(result.error ? { tone: "error", message: result.error } : { tone: "success", message: success });
+      if (idempotent && !result.error) requestKey.current = null;
     });
   };
   const day = (value?: string | null) => (value ? formatDay(value) : "—");
@@ -119,7 +125,7 @@ export function DealQuotes({ deal, locked }: Readonly<{ deal: DealDetail; locked
             className="deal-quote-form"
             noValidate
             aria-busy={pending}
-            onSubmit={run((form) => createQuoteAction(deal.id, form), texto.registrada)}
+            onSubmit={run((form) => createQuoteAction(deal.id, form), texto.registrada, true)}
           >
             <h4>{texto.registrarTitulo}</h4>
             <Field id="quote-validUntil" label={texto.vigenteHasta} required>

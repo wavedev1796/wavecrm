@@ -34,6 +34,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Matches,
   Max,
@@ -277,6 +278,13 @@ export class DealItemDto {
   @Max(100, { message: IVA_INVALID })
   @IsInt({ message: IVA_INVALID })
   taxRate!: number;
+  @ApiPropertyOptional({ example: 0, minimum: 0, maximum: 100, description: "Descuento porcentual" })
+  @IsOptional()
+  @numeric()
+  @Min(0, { message: "El descuento debe estar entre 0 y 100%." })
+  @Max(100, { message: "El descuento debe estar entre 0 y 100%." })
+  @IsInt({ message: "El descuento debe ser un porcentaje entero." })
+  discountRate?: number;
 }
 export class CreateDealActivityDto {
   @ApiProperty({ enum: ACTIVITY_TYPES })
@@ -299,6 +307,9 @@ export class CreateDealActivityDto {
   completedAt?: Date;
 }
 export class CreateQuoteDto {
+  @ApiProperty({ format: "uuid", description: "Clave estable para reintentar sin crear otra versión." })
+  @IsUUID("4", { message: "Ingresa una clave de petición válida." })
+  requestKey!: string;
   @ApiProperty({ example: "2026-11-30" })
   @isoDate("Ingresa la vigencia de la propuesta.")
   validUntil!: Date;
@@ -314,6 +325,21 @@ export class AcceptQuoteDto {
   @ApiProperty({ example: "Orden de compra 55 recibida por correo" })
   @text("la evidencia de aceptación", 500, 2, true)
   acceptanceNote!: string;
+}
+export class RejectQuoteDto {
+  @ApiProperty({ example: "2026-11-13" })
+  @isoDate("Ingresa la fecha de rechazo.")
+  rejectedAt!: Date;
+  @ApiProperty({ example: "El cliente eligió otra alternativa" })
+  @text("el motivo del rechazo", 500, 2)
+  rejectionNote!: string;
+}
+export class ListQuotesDto extends PaginationDto {
+  @ApiPropertyOptional() @IsOptional() @text("el negocio") dealId?: string;
+  @ApiPropertyOptional({ enum: ["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "SUPERSEDED"] })
+  @IsOptional()
+  @IsIn(["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "SUPERSEDED"])
+  status?: string;
 }
 export class SaveDealItemsDto {
   @ApiProperty({ type: [DealItemDto] })
