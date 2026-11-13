@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { completeTransitionAction } from "./actions";
-import { moveTransition, previewTransition } from "./transition-preview";
+import { previewTransition } from "./transition-preview";
 import { DealActions } from "./deal-actions";
 import { baseDeal } from "./deal-fixture";
 import type { DealDetail } from "./types";
@@ -13,9 +13,9 @@ vi.mock("./actions", () => ({
   saveTransitionAction: vi.fn(),
   saveDeal: vi.fn(),
 }));
-vi.mock("./transition-preview", () => ({ previewTransition: vi.fn(), moveTransition: vi.fn() }));
+vi.mock("./transition-preview", () => ({ previewTransition: vi.fn() }));
 const preview = vi.mocked(previewTransition);
-const move = vi.mocked(moveTransition);
+const complete = vi.mocked(completeTransitionAction);
 const view = (deal: DealDetail, canReopen = false) =>
   render(<DealActions deal={deal} pipelines={[]} contacts={[]} companies={[]} users={[]} canReopen={canReopen} />);
 const asks = (...codes: string[]) =>
@@ -63,14 +63,14 @@ test("rechazar se ofrece en abiertos y perdidos, no en ganados ni rechazados", a
   const user = userEvent.setup();
   const { unmount } = view({ ...baseDeal, status: "LOST" });
   expect(screen.queryByRole("button", { name: "Ganar" })).toBeNull();
-  await user.click(screen.getByRole("button", { name: "Rechazar" }));
-  const dialog = screen.getByRole("dialog", { name: "Rechazar negocio" });
+  await user.click(screen.getByRole("button", { name: "Enmendar" }));
+  const dialog = screen.getByRole("dialog", { name: "Enmendar negocio" });
   expect(await within(dialog).findByLabelText("Motivo del rechazo")).toBeInTheDocument();
   expect(preview).toHaveBeenCalledWith("d1", "REJECTED");
   unmount();
   for (const status of ["WON", "REJECTED"] as const) {
     const { unmount: drop } = view({ ...baseDeal, status });
-    expect(screen.queryByRole("button", { name: "Rechazar" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Enmendar" })).toBeNull();
     drop();
   }
 });
@@ -78,23 +78,24 @@ test("rechazar se ofrece en abiertos y perdidos, no en ganados ni rechazados", a
 test("reabrir solo aparece para un ADMIN y pide el motivo", async () => {
   const won = { ...baseDeal, status: "WON" as const };
   const { unmount } = view(won);
-  expect(screen.queryByRole("button", { name: "Reabrir" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Reversar" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Ganar" })).toBeNull();
   unmount();
   asks("REASON");
   const user = userEvent.setup();
   view(won, true);
-  await user.click(screen.getByRole("button", { name: "Reabrir" }));
-  const dialog = screen.getByRole("dialog", { name: "Reabrir negocio" });
+  await user.click(screen.getByRole("button", { name: "Reversar" }));
+  const dialog = screen.getByRole("dialog", { name: "Reversar negocio" });
   expect(await within(dialog).findByLabelText("Motivo del cambio")).toBeInTheDocument();
   expect(preview).toHaveBeenCalledWith("d1", "REOPEN");
 });
 
 test("al completar el cambio avisa y refresca la ficha", async () => {
   preview.mockResolvedValue({ data: { pending: [], quote: null, items: 2 } });
-  move.mockResolvedValue({ done: true });
+  complete.mockResolvedValue({ done: true });
   const user = userEvent.setup();
   view(baseDeal);
   await user.click(screen.getByRole("button", { name: "Ganar" }));
+  await user.click(await screen.findByRole("button", { name: "Guardar y continuar" }));
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cuenta Andina pasó a Ganado."));
 });

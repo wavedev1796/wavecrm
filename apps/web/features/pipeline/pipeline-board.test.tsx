@@ -8,7 +8,7 @@ import {
   deleteDealAction,
   loadColumnAction,
 } from "./actions";
-import { moveTransition, previewTransition } from "./transition-preview";
+import { previewTransition } from "./transition-preview";
 import type { Board, Deal, Stage } from "./types";
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
@@ -20,9 +20,8 @@ vi.mock("./actions", () => ({
   dealHistoryAction: vi.fn().mockResolvedValue({ data: [] }),
   deleteDealAction: vi.fn(),
 }));
-vi.mock("./transition-preview", () => ({ previewTransition: vi.fn(), moveTransition: vi.fn() }));
+vi.mock("./transition-preview", () => ({ previewTransition: vi.fn() }));
 const preview = vi.mocked(previewTransition);
-const move = vi.mocked(moveTransition);
 const complete = vi.mocked(completeTransitionAction);
 const deal: Deal = {
   id: "d1",
@@ -63,8 +62,12 @@ function view(data = board()) {
 }
 const moveTo = () => {
   preview.mockResolvedValue({ data: { pending: [], quote: null, items: 0 } });
-  move.mockResolvedValue({ done: true });
+  complete.mockResolvedValue({ done: true });
 };
+/** Sin pendientes el modal igual pide confirmar (con observación opcional, P7). */
+const confirm = async () => fireEvent.click(await screen.findByRole("button", { name: "Guardar y continuar" }));
+/** Negocio, destino y etapa vista de cada movimiento confirmado. */
+const moves = () => complete.mock.calls.map((call) => call.slice(0, 3));
 
 test("crear desde una columna abre el modal con esa etapa y controles Wave", async () => {
   const user = userEvent.setup();
@@ -89,7 +92,12 @@ test("con productos el monto se ve pero no se edita; al editar la etapa no cambi
   const modal = screen.getByRole("dialog", { name: "Editar negocio" });
   expect(within(modal).getByLabelText("Monto (USD)")).toHaveAttribute("readonly");
   expect(within(modal).getByText("Se calcula con los productos de la ficha.")).toBeInTheDocument();
-  expect(within(modal).getByLabelText("Etapa", { exact: true })).toBeDisabled();
+  // La etapa ya no es un selector deshabilitado: es una barra de avance de solo lectura.
+  expect(within(modal).queryByRole("combobox", { name: "Etapa" })).toBeNull();
+  const avance = within(modal).getByRole("progressbar", { name: "Avance del negocio" });
+  expect(avance).toHaveAttribute("aria-valuenow", "10");
+  expect(avance).toHaveAttribute("aria-valuetext", "Inicial · 10 %");
+  expect(avance.querySelectorAll(".stage-progress-step")).toHaveLength(2);
   expect(within(modal).getByLabelText("Pipeline", { exact: true })).toBeDisabled();
   expect(within(modal).getByText("Cambia la etapa desde el tablero o la ficha.")).toBeInTheDocument();
 });
@@ -114,6 +122,7 @@ test("con ratón, el selector abre el modal en el clic sobre la opción, no en e
   fireEvent.change(selector, { target: { value: "s2" } });
   expect(preview).not.toHaveBeenCalled();
   fireEvent.click(ganado);
+  await confirm();
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cuenta Andina pasó a Ganado."));
   expect(preview).toHaveBeenCalledTimes(1);
   expect(preview).toHaveBeenCalledWith("d1", "s2");
@@ -127,11 +136,12 @@ test("el selector y el arrastre piden el mismo cambio con las mismas reglas", as
   expect(within(selector).getByRole("option", { name: "Inicial" })).toBeDisabled();
   expect(within(selector).getByRole("option", { name: "Ganado" })).toBeEnabled();
   await user.selectOptions(selector, "s2");
+  await confirm();
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cuenta Andina pasó a Ganado."));
-  const bySelect = [preview.mock.calls[0], move.mock.calls[0]];
+  const bySelect = [preview.mock.calls[0], moves()[0]];
 
   preview.mockClear();
-  move.mockClear();
+  complete.mockClear();
   const card = screen.getByRole("article", { name: "Negocio Cuenta Andina" });
   const target = screen.getByRole("region", { name: "Etapa Ganado" });
   const dataTransfer = { setData: vi.fn(), dropEffect: "", effectAllowed: "" };
@@ -143,8 +153,9 @@ test("el selector y el arrastre piden el mismo cambio con las mismas reglas", as
   expect(target).not.toHaveClass("pipeline-column--over");
   fireEvent.dragOver(target, { dataTransfer });
   fireEvent.drop(target, { dataTransfer });
-  await waitFor(() => expect(move).toHaveBeenCalled());
-  expect([preview.mock.calls[0], move.mock.calls[0]]).toEqual(bySelect);
+  await confirm();
+  await waitFor(() => expect(complete).toHaveBeenCalled());
+  expect([preview.mock.calls[0], moves()[0]]).toEqual(bySelect);
   expect(bySelect).toEqual([["d1", "s2"], ["d1", "s2", "s1"]]);
   expect(dataTransfer.setData).toHaveBeenCalledWith("text/plain", "d1");
 
@@ -160,8 +171,7 @@ test("seleccionar una etapa anterior mueve el negocio desde la tarjeta", async (
     id: "s3", name: "Propuesta", color: null, position: 2, probability: 70,
     count: 1, value: "1250.25", deals: [{ ...deal, stageId: "s3" }],
   };
-  preview.mockResolvedValue({ data: { pending: [], quote: null, items: 0 } });
-  move.mockResolvedValue({ done: true });
+  moveTo();
   const user = userEvent.setup();
   view(board({ stages: [
     { ...stages[0]!, deals: [] },
@@ -171,7 +181,8 @@ test("seleccionar una etapa anterior mueve el negocio desde la tarjeta", async (
 
   await user.selectOptions(screen.getByLabelText("Mover Cuenta Andina de etapa"), "s2");
 
-  await waitFor(() => expect(move).toHaveBeenCalledWith("d1", "s2", "s3"));
+  await confirm();
+  await waitFor(() => expect(moves()).toEqual([["d1", "s2", "s3"]]));
   expect(await screen.findByRole("status")).toHaveTextContent("Cuenta Andina pasó a Negociación.");
 });
 

@@ -4,15 +4,16 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { ActivitiesToastHost, Agenda, NewActivityForm, type AgendaActivity } from "./agenda";
 import { saveActivity } from "./actions";
 
-const { refresh, fetchMock } = vi.hoisted(() => ({ refresh: vi.fn(), fetchMock: vi.fn() }));
+const { refresh, push, fetchMock } = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn(), fetchMock: vi.fn() }));
 beforeEach(() => {
   refresh.mockClear();
+  push.mockClear();
   fetchMock.mockReset();
   fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
   vi.stubGlobal("fetch", fetchMock);
 });
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh, push: vi.fn() }),
+  useRouter: () => ({ refresh, push }),
 }));
 vi.mock("./actions", () => ({
   saveActivity: vi.fn(),
@@ -54,6 +55,21 @@ test("la agenda lista actividades con responsable, contexto y marca como hecha",
     { method: "PATCH" },
   ));
   await waitFor(() => expect(refresh).toHaveBeenCalled());
+});
+
+test("P14: el negocio de la actividad abre su ficha y el filtro por negocio se puede quitar", async () => {
+  render(
+    <Agenda
+      activities={[{ ...activity, deal: { id: "d1", title: "Cuenta Andina" } }]}
+      owners={[{ id: "u1", name: "Ana Vendedor" }]}
+      dealFilter={{ id: "d1", title: "Cuenta Andina" }}
+    />,
+  );
+  expect(screen.getByRole("link", { name: "Abrir el negocio Cuenta Andina" })).toHaveAttribute("href", "/pipeline/d1");
+  expect(screen.getByText("Negocio: Cuenta Andina")).toBeInTheDocument();
+  window.history.replaceState(null, "", "/actividades?dealId=d1&type=CALL");
+  await userEvent.click(screen.getByRole("button", { name: "Quitar el filtro por negocio" }));
+  expect(push).toHaveBeenCalledWith("/actividades?type=CALL");
 });
 
 test("la agenda filtra atrasadas y cambia a calendario", async () => {

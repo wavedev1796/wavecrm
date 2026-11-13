@@ -108,6 +108,11 @@ export class ListActivitiesDto {
   @Matches(/^c[a-z0-9]{20,30}$/i, { message: "El responsable no es válido." })
   assigneeId?: string;
 
+  @ApiPropertyOptional({ description: "Solo las actividades de este negocio (enlace desde su ficha)" })
+  @IsOptional()
+  @Matches(/^c[a-z0-9]{20,30}$/i, { message: "El negocio no es válido." })
+  dealId?: string;
+
   @ApiPropertyOptional({ enum: ["PENDING", "COMPLETED", "CANCELLED"] })
   @IsOptional()
   @IsIn(["PENDING", "COMPLETED", "CANCELLED"], {

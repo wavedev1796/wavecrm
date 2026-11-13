@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { FieldIcon } from "@/components/form/field-icon";
 import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { normalizeDigits } from "@/lib/ecuador";
@@ -35,6 +36,7 @@ export function CompanyField({ defaultLabel, defaultId, error }: Props) {
   return (
     <div className="form-field">
       <label htmlFor="contact-company">
+        <FieldIcon name="empresa" />
         {CONTACTOS.formulario.empresa.etiqueta}
       </label>
       <Input

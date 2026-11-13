@@ -2,6 +2,7 @@
 
 import { Circle, CircleCheck } from "lucide-react";
 import { type ReactNode, useActionState, useState } from "react";
+import { FieldIcon } from "@/components/form/field-icon";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
@@ -64,7 +65,7 @@ export function NewPasswordForm({
       {state.error && <Alert tone="error">{state.error}</Alert>}
 
       <div className="field">
-        <label htmlFor="password">{ACCESO.campos.contrasena}</label>
+        <label htmlFor="password"><FieldIcon name="contrasena" />{ACCESO.campos.contrasena}</label>
         <PasswordInput
           id="password"
           name="password"
@@ -97,6 +98,7 @@ export function NewPasswordForm({
 
       <div className="field">
         <label htmlFor="passwordConfirmation">
+          <FieldIcon name="contrasena" />
           {ACCESO.campos.confirmarContrasena}
         </label>
         <PasswordInput

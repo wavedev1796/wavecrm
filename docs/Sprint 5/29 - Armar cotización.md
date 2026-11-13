@@ -32,10 +32,11 @@ Preparar la propuesta desde la ficha del negocio, editar sus líneas y revisar c
 
 ## Validación y evidencia
 
-- Pruebas web enfocadas: `pnpm --filter @wave/web exec vitest run features/pipeline/deal-items.test.tsx features/pipeline/deal-quotes.test.tsx features/pipeline/actions.test.ts features/pipeline/item-totals.test.ts 'app/(dashboard)/pipeline/[id]/page.test.tsx'` — **60/60 aprobadas**.
-- Lint web: `pnpm --filter @wave/web lint` — aprobado, con una advertencia preexistente en `apps/web/features/pipeline/deal-actions.test.tsx` por un import sin uso.
-- TypeScript: `pnpm --filter @wave/web exec tsc --noEmit` — aprobado.
-- Build web: `pnpm --filter @wave/web build` no pudo terminar porque Windows devolvió `EPERM` al crear `apps/web/.next/server/app/(dashboard)/contactos`. Los tests, lint y typecheck sí finalizaron; el build de producción queda pendiente de repetir en un entorno que permita crear esa ruta.
+- Pruebas web enfocadas: `pnpm --filter @wave/web exec vitest run features/pipeline/deal-items.test.tsx features/pipeline/deal-quotes.test.tsx features/pipeline/actions.test.ts features/pipeline/item-totals.test.ts 'app/(dashboard)/pipeline/[id]/page.test.tsx'` — **61/61 aprobadas** tras integrar la rama remota.
+- Lint web: `pnpm --filter @wave/web lint` — aprobado.
+- TypeScript: después de `pnpm --filter @wave/shared build`, `pnpm --filter @wave/web exec tsc --noEmit` — aprobado.
+- API: `pnpm --filter @wave/api test` — **278/278 aprobadas**; el comando también compiló el API.
+- Build web: `pnpm --filter @wave/web build` no pudo terminar porque Windows devolvió `EPERM` al crear `apps/web/.next/server/app/(dashboard)/empresas`. Tests, lint y typecheck sí finalizaron; el build de producción queda pendiente de repetir en un entorno que permita crear esa ruta.
 - Casos cubiertos incluyen edición/descuento, IVA y redondeo, línea inválida, datos de cliente faltantes, cambios sin guardar, versión inmutable/nueva y errores de API. La autorización final queda protegida por el API existente; no se hizo una llamada contra un ambiente compartido para este cambio de frontend.
 
 ## Evidencia visual

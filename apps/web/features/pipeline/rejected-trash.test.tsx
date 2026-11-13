@@ -12,7 +12,7 @@ vi.mock("./actions", () => ({
   completeTransitionAction: vi.fn(),
   saveTransitionAction: vi.fn(),
 }));
-vi.mock("./transition-preview", () => ({ previewTransition: vi.fn(), moveTransition: vi.fn() }));
+vi.mock("./transition-preview", () => ({ previewTransition: vi.fn() }));
 const remove = vi.mocked(deleteRejectedAction);
 const rejected = (id: string, title: string, extra: Partial<RejectedDeal> = {}): RejectedDeal => ({
   id,
@@ -50,7 +50,7 @@ test("muestra cada rechazado con su motivo y sus respaldos; sin ADMIN no hay Rea
   expect(second).toHaveTextContent("Sin contacto");
   expect(second).toHaveTextContent("Sin responsable");
   expect(screen.queryByRole("columnheader", { name: "Acciones" })).toBeNull();
-  expect(screen.queryByRole("button", { name: /Reabrir/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: /Reversar/ })).toBeNull();
   expect(screen.getByRole("button", { name: "Eliminar seleccionados (0)" })).toBeDisabled();
 });
 
@@ -90,8 +90,8 @@ test("un ADMIN reabre desde la papelera con el motivo del cambio", async () => {
   });
   const user = userEvent.setup();
   render(<RejectedTrash deals={deals} canReopen />);
-  await user.click(screen.getByRole("button", { name: "Reabrir Cuenta Andina" }));
-  const dialog = screen.getByRole("dialog", { name: "Reabrir negocio" });
+  await user.click(screen.getByRole("button", { name: "Reversar Cuenta Andina" }));
+  const dialog = screen.getByRole("dialog", { name: "Reversar negocio" });
   expect(await within(dialog).findByLabelText("Motivo del cambio")).toBeInTheDocument();
   await waitFor(() => expect(previewTransition).toHaveBeenCalledWith("d1", "REOPEN"));
 });

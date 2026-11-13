@@ -3,6 +3,7 @@
 import { FileUp } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { FieldIcon } from "@/components/form/field-icon";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
@@ -99,7 +100,7 @@ export function ImportForm({ fields, action, noun, listHref }: Props) {
       >
         <div className="form-field">
           <label>
-            {texto.archivo}{" "}
+            <span className="field-label"><FieldIcon name="archivo" />{texto.archivo}</span>
             <input
               name="file"
               type="file"

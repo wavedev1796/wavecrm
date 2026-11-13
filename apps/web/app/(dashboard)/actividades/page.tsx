@@ -5,6 +5,7 @@ import {
   ActivitiesToastHost,
   type AgendaActivity,
 } from "@/features/actividades/agenda";
+import { ACTIVIDADES } from "@/content/actividades";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
 import { unstable_rethrow } from "next/navigation";
 
@@ -13,6 +14,7 @@ type Params = {
   assigneeId?: string;
   period?: string;
   view?: string;
+  dealId?: string;
 };
 type Owner = { id: string; name: string };
 
@@ -25,6 +27,7 @@ export default async function ActivitiesPage({
   const query = new URLSearchParams();
   if (params.type) query.set("type", params.type);
   if (params.assigneeId) query.set("assigneeId", params.assigneeId);
+  if (params.dealId) query.set("dealId", params.dealId);
   if (params.period === "upcoming" || params.period === "overdue")
     query.set("period", params.period);
   const [activitiesResult, ownersResult] = await Promise.allSettled([
@@ -86,6 +89,17 @@ export default async function ActivitiesPage({
             initialAssigneeId={params.assigneeId ?? ""}
             focus={params.period ?? ""}
             initialView={params.view === "history" ? "history" : params.view === "calendar" ? "calendar" : "list"}
+            dealFilter={
+              params.dealId
+                ? {
+                    id: params.dealId,
+                    // El nombre sale de sus actividades; sin ninguna, un texto genérico (no se pide la ficha aparte).
+                    title:
+                      result.data.find((activity) => activity.deal?.id === params.dealId)?.deal?.title ??
+                      ACTIVIDADES.negocioSinActividades,
+                  }
+                : undefined
+            }
           />
         </>
       )}

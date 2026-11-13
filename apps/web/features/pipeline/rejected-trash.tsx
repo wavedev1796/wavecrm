@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { Trash2, Undo2 } from "lucide-react";
 import { FormDialog } from "@/components/form/form-dialog";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -136,7 +136,7 @@ export function RejectedTrash({ deals, canReopen, children }: Readonly<Props>) {
                     aria-label={PAPELERA.reabrirDe(deal.title)}
                     onClick={() => setDialog({ kind: "reopen", deal })}
                   >
-                    <RotateCcw aria-hidden />
+                    <Undo2 aria-hidden />
                     {PAPELERA.reabrir}
                   </Button>
                 </td>

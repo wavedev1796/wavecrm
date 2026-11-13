@@ -32,7 +32,7 @@ export function LocationFields({
 
   return (
     <>
-      <Field id={provinceId} label={COMUN.formulario.provincia} error={provinceError}>
+      <Field id={provinceId} label={COMUN.formulario.provincia} error={provinceError} icon="ubicacion">
         <Select
           id={provinceId}
           name="province"
@@ -49,7 +49,7 @@ export function LocationFields({
           ))}
         </Select>
       </Field>
-      <Field id={cantonId} label={COMUN.formulario.canton} error={cantonError}>
+      <Field id={cantonId} label={COMUN.formulario.canton} error={cantonError} icon="ubicacion">
         <Select
           id={cantonId}
           name="city"

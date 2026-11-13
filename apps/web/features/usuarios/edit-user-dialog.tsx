@@ -3,6 +3,7 @@
 import { Check, Pencil, X } from "lucide-react";
 import { useActionState, useRef } from "react";
 import type { UserRole } from "@wave/shared";
+import { FieldIcon } from "@/components/form/field-icon";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
@@ -80,7 +81,7 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
               {state.feedback?.tone === "error" && <Alert tone="error">{state.feedback.message}</Alert>}
               <div className="form-field">
                 <label>
-                  {texto.nombre}
+                  <span className="field-label"><FieldIcon name="persona" />{texto.nombre}</span>
                   <Input
                     name="name"
                     required
@@ -93,7 +94,7 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
               </div>
               <div className="form-field">
                 <label>
-                  {texto.correo}
+                  <span className="field-label"><FieldIcon name="correo" />{texto.correo}</span>
                   <Input
                     name="email"
                     type="email"
@@ -107,7 +108,7 @@ export function EditUserDialog({ user }: Readonly<{ user: EditableUser }>) {
               </div>
               <div className="form-field">
                 <label>
-                  {texto.rol}{' '}
+                  <span className="field-label"><FieldIcon name="rol" />{texto.rol}</span>
                   <Select
                     name="role"
                     defaultValue={values.role}

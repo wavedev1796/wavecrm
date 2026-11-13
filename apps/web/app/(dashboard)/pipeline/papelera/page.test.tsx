@@ -37,11 +37,11 @@ test("pide los rechazados de la página y solo un ADMIN ve Reabrir", async () =>
   expect(Object.fromEntries(new URLSearchParams(path.slice("/deals?".length)))).toEqual({ page: "2", limit: "20", status: "REJECTED" });
   expect(screen.getByRole("heading", { name: "Papelera" })).toBeInTheDocument();
   expect(screen.getByText("Solicitud fuera del alcance")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Reabrir Cuenta Andina" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Reversar Cuenta Andina" })).toBeInTheDocument();
   unmount();
   serve("VENDEDOR");
   render(await TrashPage({ searchParams: Promise.resolve({}) }));
-  expect(screen.queryByRole("button", { name: "Reabrir Cuenta Andina" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Reversar Cuenta Andina" })).toBeNull();
 });
 
 test("si el API falla muestra el error y el enlace de vuelta", async () => {

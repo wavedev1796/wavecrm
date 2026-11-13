@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition, type FormEvent } from "react";
 import { ClipboardCheck } from "lucide-react";
+import { formatAmount } from "@wave/shared";
 import { Field } from "@/components/form/form-field";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,8 @@ import type { DealDetail } from "./types";
 
 const texto = NEGOCIO.calificacion;
 const TEXTS = [
-  ["need", texto.necesidad, 2000],
-  ["solution", texto.solucion, 2000],
+  ["need", texto.necesidad, 2000, "necesidad"],
+  ["solution", texto.solucion, 2000, "solucion"],
 ] as const;
 
 /** Necesidad, solución, presupuesto y persona decisora: los datos que piden las etapas Negociación y Propuesta. */
@@ -65,8 +66,8 @@ export function DealQualification({ deal, locked }: Readonly<{ deal: DealDetail;
       {title}
       {feedback && <Alert tone={feedback.tone}>{feedback.message}</Alert>}
       <form onSubmit={submit} noValidate aria-busy={pending} className="deal-qualification-form">
-        {TEXTS.map(([name, label, max]) => (
-          <Field key={name} id={"qualify-" + name} label={label}>
+        {TEXTS.map(([name, label, max, icon]) => (
+          <Field key={name} id={"qualify-" + name} label={label} icon={icon}>
             <textarea
               id={"qualify-" + name}
               name={name}
@@ -76,17 +77,17 @@ export function DealQualification({ deal, locked }: Readonly<{ deal: DealDetail;
             />
           </Field>
         ))}
-        <Field id="qualify-budget" label={texto.presupuesto} error={budgetError}>
+        <Field id="qualify-budget" label={texto.presupuesto} error={budgetError} icon="dinero">
           <Input
             id="qualify-budget"
             name="budget"
             inputMode="decimal"
             maxLength={16}
-            defaultValue={deal.budget ?? ""}
+            defaultValue={deal.budget == null ? "" : formatAmount(deal.budget)}
             {...invalidProps("qualify-budget", budgetError)}
           />
         </Field>
-        <Field id="qualify-budgetNote" label={texto.justificacion}>
+        <Field id="qualify-budgetNote" label={texto.justificacion} icon="texto">
           <textarea
             id="qualify-budgetNote"
             name="budgetNote"
@@ -95,7 +96,7 @@ export function DealQualification({ deal, locked }: Readonly<{ deal: DealDetail;
             defaultValue={deal.budgetNote ?? ""}
           />
         </Field>
-        <Field id="qualify-decisionMaker" label={texto.decisor}>
+        <Field id="qualify-decisionMaker" label={texto.decisor} icon="decisor">
           <Input id="qualify-decisionMaker" name="decisionMaker" maxLength={160} defaultValue={deal.decisionMaker ?? ""} />
         </Field>
         <Button type="submit" variant="secondary" loading={pending}>

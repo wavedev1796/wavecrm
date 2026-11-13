@@ -16,11 +16,7 @@ import { Info } from "@/components/data/detail-info";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import {
-  ESTADO_COTIZACION,
-  ESTADO_NEGOCIO,
-  MOTIVO_CIERRE,
-} from "@/content/catalogos";
+import { ESTADO_COTIZACION, ESTADO_NEGOCIO, MOTIVO_CIERRE } from "@/content/catalogos";
 import { NEGOCIO } from "@/content/pipeline";
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { formatDateTime, formatDay, formatMoney } from "@/lib/format";
@@ -30,15 +26,11 @@ import { DealActions } from "../../../../features/pipeline/deal-actions";
 import { DealPreparation } from "../../../../features/pipeline/deal-preparation";
 import { DealQualification } from "../../../../features/pipeline/deal-qualification";
 import { DealTimeline } from "../../../../features/pipeline/deal-timeline";
+import { StageProgress } from "../../../../features/pipeline/stage-progress";
 import type { DealDetail } from "../../../../features/pipeline/types";
 import { loadTimeline } from "../../../../features/timeline/actions";
 
-const TONO = {
-  OPEN: "neutral",
-  WON: "success",
-  LOST: "warning",
-  REJECTED: "danger",
-} as const;
+const TONO = { OPEN: "neutral", WON: "success", LOST: "warning", REJECTED: "danger" } as const;
 
 export default async function DealPage({
   params,
@@ -52,8 +44,7 @@ export default async function DealPage({
   ]);
   if (response.status === 404) notFound();
   // Solo un ADMIN reabre o modifica un negocio cerrado; el API lo exige igual (403).
-  const canReopen =
-    me.ok && ((await me.json()) as { role?: string }).role === "ADMIN";
+  const canReopen = me.ok && ((await me.json()) as { role?: string }).role === "ADMIN";
   if (!response.ok) return <Alert tone="error">{NEGOCIO.errorCarga}</Alert>;
   const deal = (await response.json()) as DealDetail;
   let options;
@@ -65,16 +56,12 @@ export default async function DealPage({
   }
   const campos = NEGOCIO.campos;
   const cierre = NEGOCIO.cierre;
-  const quote =
-    deal.quotes.find((q) => q.status === "ACCEPTED") ?? deal.quotes[0];
+  const quote = deal.quotes.find((q) => q.status === "ACCEPTED") ?? deal.quotes[0];
   const locked = deal.status !== "OPEN";
   const contactPhone = deal.contact?.phone ?? deal.company?.phone;
   return (
     <div className="contact-detail-page">
-      <Link
-        className="back-link"
-        href={"/pipeline?pipelineId=" + encodeURIComponent(deal.pipelineId)}
-      >
+      <Link className="back-link" href={"/pipeline?pipelineId=" + encodeURIComponent(deal.pipelineId)}>
         {NEGOCIO.volver}
       </Link>
       <section className="contact-profile card deal-profile">
@@ -84,32 +71,27 @@ export default async function DealPage({
         <div>
           <span>{NEGOCIO.etiqueta}</span>
           <h2>{deal.title}</h2>
-          <p className="deal-profile-value">
-            {formatMoney(deal.value, deal.currency)}
-          </p>
+          <p className="deal-profile-value">{formatMoney(deal.value, deal.currency)}</p>
+          <StageProgress
+            stages={options.pipelines.find((pipeline) => pipeline.id === deal.pipelineId)?.stages ?? [deal.stage]}
+            currentId={deal.stageId}
+          />
         </div>
         <div className="contact-tags">
           <Badge tone={TONO[deal.status]}>{ESTADO_NEGOCIO[deal.status]}</Badge>
           <Badge tone="neutral">
-            <i
-              className="deal-stage-dot"
-              style={{ background: deal.stage.color ?? "var(--wave-blue)" }}
-              aria-hidden
-            />
+            <i className="deal-stage-dot" style={{ background: deal.stage.color ?? "var(--wave-blue)" }} aria-hidden />
             {deal.stage.name}
           </Badge>
         </div>
         <DealActions deal={deal} {...options} canReopen={canReopen} />
       </section>
-      {/* El editor y la vista previa bloquean el registro mientras haya líneas sin guardar. */}
+      {/* Productos a todo el ancho: en la columna principal la descripción quedaba en ~100 px.
+          key: DealItems guarda las filas en su estado; al ganar, reabrir o guardar debe volver a leer lo del servidor. */}
       <DealPreparation deal={deal} locked={locked} />
       <div className="contact-detail-grid">
         <div className="contact-detail-main">
-          <DealTimeline
-            deal={deal}
-            timeline={timeline}
-            members={options.users}
-          />
+          <DealTimeline deal={deal} timeline={timeline} members={options.users} />
         </div>
         <div className="contact-detail-main">
           <DealQualification key={deal.status} deal={deal} locked={locked} />
@@ -130,44 +112,14 @@ export default async function DealPage({
               <Info
                 icon={<Building2 />}
                 label={campos.empresa}
-                value={
-                  deal.company && (
-                    <Link href={"/empresas/" + deal.company.id}>
-                      {deal.company.name}
-                    </Link>
-                  )
-                }
+                value={deal.company && <Link href={"/empresas/" + deal.company.id}>{deal.company.name}</Link>}
               />
-              <Info
-                icon={<Mail />}
-                label={campos.correo}
-                value={deal.contact?.email ?? deal.company?.email}
-              />
-              <Info
-                icon={<Phone />}
-                label={campos.telefono}
-                value={contactPhone && formatPhone(contactPhone)}
-              />
-              <Info
-                icon={<UserRound />}
-                label={campos.responsable}
-                value={deal.owner?.name}
-              />
-              <Info
-                icon={<Workflow />}
-                label={campos.pipeline}
-                value={deal.pipeline.name + " · " + deal.stage.name}
-              />
-              <Info
-                icon={<CalendarDays />}
-                label={campos.cierreEstimado}
-                value={deal.expectedClose && formatDay(deal.expectedClose)}
-              />
-              <Info
-                icon={<Clock3 />}
-                label={campos.creado}
-                value={formatDateTime(deal.createdAt)}
-              />
+              <Info icon={<Mail />} label={campos.correo} value={deal.contact?.email ?? deal.company?.email} />
+              <Info icon={<Phone />} label={campos.telefono} value={contactPhone && formatPhone(contactPhone)} />
+              <Info icon={<UserRound />} label={campos.responsable} value={deal.owner?.name} />
+              <Info icon={<Workflow />} label={campos.pipeline} value={deal.pipeline.name + " · " + deal.stage.name} />
+              <Info icon={<CalendarDays />} label={campos.cierreEstimado} value={deal.expectedClose && formatDay(deal.expectedClose)} />
+              <Info icon={<Clock3 />} label={campos.creado} value={formatDateTime(deal.createdAt)} />
             </dl>
           </Card>
           {deal.status !== "OPEN" && (
@@ -176,13 +128,7 @@ export default async function DealPage({
               <dl>
                 <Info
                   icon={<CalendarCheck />}
-                  label={
-                    {
-                      WON: cierre.ganadoEl,
-                      LOST: cierre.perdidoEl,
-                      REJECTED: cierre.rechazadoEl,
-                    }[deal.status]
-                  }
+                  label={{ WON: cierre.ganadoEl, LOST: cierre.perdidoEl, REJECTED: cierre.rechazadoEl }[deal.status]}
                   value={deal.closedAt && formatDay(deal.closedAt)}
                 />
                 {deal.status === "WON" && quote && (
@@ -194,16 +140,8 @@ export default async function DealPage({
                 )}
                 {deal.status !== "WON" && deal.lossReason && (
                   <>
-                    <Info
-                      icon={<FileText />}
-                      label={cierre.motivo}
-                      value={MOTIVO_CIERRE[deal.lossReason]}
-                    />
-                    <Info
-                      icon={<FileText />}
-                      label={cierre.detalle}
-                      value={deal.lossDetail}
-                    />
+                    <Info icon={<FileText />} label={cierre.motivo} value={MOTIVO_CIERRE[deal.lossReason]} />
+                    <Info icon={<FileText />} label={cierre.detalle} value={deal.lossDetail} />
                   </>
                 )}
               </dl>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { FieldIcon } from "@/components/form/field-icon";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldError, invalidProps } from "@/components/ui/field-error";
@@ -32,7 +33,7 @@ export function LoginForm() {
       ) : null}
 
       <div className="field">
-        <label htmlFor="email">{ACCESO.campos.correo}</label>
+        <label htmlFor="email"><FieldIcon name="correo" />{ACCESO.campos.correo}</label>
         <Input
           id="email"
           name="email"
@@ -50,7 +51,7 @@ export function LoginForm() {
 
       <div className="field">
         <div className="field-heading">
-          <label htmlFor="password">{ACCESO.campos.contrasena}</label>
+          <label htmlFor="password"><FieldIcon name="contrasena" />{ACCESO.campos.contrasena}</label>
           <Link className="auth-link" href="/recuperar-contrasena">
             {ACCESO.login.olvidaste}
           </Link>
