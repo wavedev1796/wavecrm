@@ -77,6 +77,8 @@ export type JourneyDeal = {
   lossReason?: LossReason | null;
   stage: { id: string; name: string; color: string | null };
   stageHistory?: Array<{ changedAt: string; fromStage: { name: string } | null; toStage: { name: string } }>;
+  /** P13: productos del negocio, para agrupar los de los ganados en la ficha del cliente. */
+  items?: Array<{ description: string; quantity: string }>;
 };
 export type HistoryItem = {
   id: string;

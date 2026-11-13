@@ -21,6 +21,7 @@ import { formatDateTime } from "@/lib/format";
 import { formatPhone, splitPhone } from "@/lib/phone";
 import { CompanyEditDialog } from "../../../../features/empresas/company-edit-dialog";
 import type { CompanyDetail } from "../../../../features/empresas/types";
+import { ClientProducts } from "../../../../features/pipeline/client-products";
 import { DealJourney } from "../../../../features/pipeline/deal-journey";
 
 export default async function CompanyDetailPage({
@@ -153,6 +154,8 @@ export default async function CompanyDetailPage({
               <p>{texto.sinNegocios}</p>
             )}
           </Card>
+
+          <ClientProducts deals={company.deals} />
 
           <Card className="contact-related company-history">
             <h3>

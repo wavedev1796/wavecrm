@@ -349,6 +349,15 @@ export const RECORRIDO = {
   cerrado: (fecha: string) => `Cerrado el ${fecha}`,
 } as const;
 
+/** P13: productos de los negocios ganados, en la ficha del contacto o de la empresa. */
+export const PRODUCTOS_CLIENTE = {
+  titulo: "Productos comprados",
+  vacio: "Aún no hay negocios ganados con productos.",
+  negocios: (negocios: number) => `${negocios} ${negocios === 1 ? "negocio ganado" : "negocios ganados"}`,
+  ultimo: (fecha: string) => `último el ${fecha}`,
+  cantidad: (cantidad: string) => `× ${cantidad}`,
+} as const;
+
 /** Papelera: negocios rechazados, de todos los pipelines. */
 export const PAPELERA = {
   etiqueta: "Pipeline de ventas",

@@ -521,6 +521,8 @@ test("perdido con seguimiento → rechazado por un vendedor → papelera; la pro
   const journey = (await call("/contacts/" + contact.id)).body.deals.find((d) => d.id === id);
   assert.deepEqual([journey.status, journey.lossReason], ["REJECTED", "DO_NOT_CONTACT"]);
   assert.equal(journey.stageHistory[0].toStage.name, journey.stage.name);
+  // P13: la ficha del contacto trae los productos de cada negocio.
+  assert.deepEqual(journey.items, [{ description: "Vinos", quantity: "2" }]);
 
   // Un abierto también se rechaza y un ADMIN lo reabre en su etapa.
   const second = await newDeal("Riesgo de mora");

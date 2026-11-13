@@ -119,3 +119,20 @@ Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*, Sprint 3),
 ### Verificación
 
 - TypeScript web, ESLint y `git diff --check` aprobados. No se ejecutaron pruebas automatizadas para este ajuste.
+
+## Productos comprados (2026-11-13)
+
+Bloque añadido por Zaith Manangón (P13 de *Revisión del equipo (2026-10-31)*, Sprint 4), con autorización del usuario del 2026-11-13.
+
+### Implementación
+
+- `apps/api/src/modules/companies/companies.service.ts`: los negocios de `GET /companies/:id` suman `items: { description, quantity }`.
+- `apps/web/app/(dashboard)/empresas/[id]/page.tsx`: la tarjeta *Productos comprados* (`ClientProducts`, `apps/web/features/pipeline/client-products.tsx`) va después de *Negocios*. Agrupa los productos de los negocios ganados, con cantidad total, negocios y último cierre.
+
+### Decisiones
+
+- **Coordinación con *Revisión del equipo*.** Detalle en [Revisión del equipo (2026-10-31)](../Sprint%204/Revisi%C3%B3n%20del%20equipo%20%282026-10-31%29.md), decisión P13.
+
+### Validación
+
+- `client-products.test.tsx`, la prueba unitaria del servicio (comprueba el `select` de `items`) y la integración `pipeline.http.test.cjs` (lee los productos en la ficha del contacto).

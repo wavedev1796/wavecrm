@@ -31,6 +31,8 @@ const contactDetailInclude = {
       closedAt: true,
       lossReason: true,
       stage: { select: { id: true, name: true, color: true } },
+      // P13 (revisión 2026-10-31): la ficha agrupa los productos de los negocios ganados.
+      items: { select: { description: true, quantity: true } },
       // Recorrido: el último movimiento de etapa del negocio.
       stageHistory: {
         select: {

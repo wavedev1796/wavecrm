@@ -1,6 +1,6 @@
 # Revisión del equipo (2026-10-31)
 
-**Responsable:** Zaith Manangón · **Estado:** Parcial (15/16 criterios). Bloque 1 (P0, P2, P5, P7, P10, P15) hecho el 2026-11-11, y los bloques 2 (P14), 3 (P1, P4, P6, P8, P9) y 4 (P3, P11, P12) el 2026-11-13. Falta P13 (bloque 5). La migración del bloque 3 está en `pruebas` y en `development` (OK del usuario, 2026-11-13). Diseño aprobado por el usuario el 2026-11-11, con OK para tocar el módulo de pipeline de Eduardo (CRM-17 a CRM-19) y sumar iconos a sus formularios de contactos y empresas. P13 (sus fichas) sigue necesitando OK propio.
+**Responsable:** Zaith Manangón · **Estado:** Completo (16/16 criterios). Bloque 1 (P0, P2, P5, P7, P10, P15) hecho el 2026-11-11, y los bloques 2 (P14), 3 (P1, P4, P6, P8, P9), 4 (P3, P11, P12) y 5 (P13, con OK del usuario para tocar las fichas de contactos y empresas) el 2026-11-13. Quedan la revisión visual, el E2E y el build completo (ver *Pendientes*). La migración del bloque 3 está en `pruebas` y en `development` (OK del usuario, 2026-11-13). Diseño aprobado por el usuario el 2026-11-11, con OK para tocar el módulo de pipeline de Eduardo (CRM-17 a CRM-19) y sumar iconos a sus formularios de contactos y empresas. P13 (sus fichas) sigue necesitando OK propio.
 
 ## Objetivo
 
@@ -23,7 +23,7 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 - [x] **P10. Reversar.** *Reabrir* pasa a llamarse *Reversar* en el tablero, la ficha y la papelera.
 - [x] **P11. Estados por rol.** Las acciones de estado respetan la tabla de roles de *Decisiones*, en el API (`403`) y en la web (botones ocultos).
 - [x] **P12. Notas por correo.** Cada nota nueva avisa por correo al responsable del negocio, además de a los mencionados.
-- [ ] **P13. Productos por cliente.** La ficha del contacto y la de la empresa listan los productos de sus negocios ganados.
+- [x] **P13. Productos por cliente.** La ficha del contacto y la de la empresa listan los productos de sus negocios ganados.
 - [x] **P14. Actividades del negocio en la agenda.** La ficha del negocio registra actividades con el mismo formulario de la agenda (responsable, vencimiento con hora, recordatorio por correo), ya vinculadas al negocio. Desde la agenda se abre el negocio, y desde el negocio, su agenda filtrada.
 - [x] **P15. Iconos en los formularios.** Cada campo de cada formulario lleva un icono antes de su etiqueta, como el formulario *Registrar actividad* de la agenda.
 
@@ -170,6 +170,19 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 - API: `deal-rules.test.cjs` (`dealChanges`), `pipeline.service.test.cjs` (edición campo por campo y valor al guardar productos), `notes.service.test.cjs` (aviso al responsable), `mailer.service.test.cjs` (`sendNoteToOwner`) e integración `pipeline.http.test.cjs` (la edición y el valor de los productos en el historial).
 - Web: `entries.test.ts` (*Negocio editado*), `pipeline-board.test.tsx` y `pipeline-settings.test.tsx` (VENDEDOR y ADMIN).
 
+### Bloque 5 (2026-11-13): P13
+
+- `apps/api/src/modules/contacts/contacts.service.ts` y `apps/api/src/modules/companies/companies.service.ts` (Eduardo, con OK): los negocios de la ficha suman `items: { description, quantity }`.
+- `apps/web/features/pipeline/client-products.tsx` (nuevo): `wonProducts()` agrupa los productos de los ganados y `ClientProducts` pinta la tarjeta *Productos comprados* con la piel de `.contact-related`, sin estilos nuevos.
+- `apps/web/app/(dashboard)/contactos/[id]/page.tsx` y `apps/web/app/(dashboard)/empresas/[id]/page.tsx` (Eduardo, con OK): la tarjeta va después de *Negocios*.
+- `apps/web/features/pipeline/types.ts`: `JourneyDeal.items`.
+- `apps/web/content/pipeline.ts`: `PRODUCTOS_CLIENTE`.
+
+**Pruebas**
+
+- Web: `client-products.test.tsx` (nueva).
+- API: `contacts.service.test.cjs` y `companies.service.test.cjs` comprueban que se piden los productos. La integración `pipeline.http.test.cjs` los lee en la ficha del contacto.
+
 ## Decisiones
 
 ### Respuestas del usuario (2026-11-11)
@@ -288,6 +301,13 @@ El pedido no trae criterios escritos: salen de los puntos de la reunión (mensaj
 - `GET /contacts/:id/products` y `GET /companies/:id/products`: productos de los negocios `WON`, agrupados por descripción, con cantidad total y fecha del último negocio.
 - **Coordinación con CRM-13 a CRM-15.** Las fichas de contactos y empresas son de Eduardo: tocarlas necesita OK del usuario.
 
+**Al implementar (2026-11-13, OK del usuario):**
+
+- *Cambio sobre el plan:* no hay rutas nuevas. `GET /contacts/:id` y `GET /companies/:id` ya traen los negocios de la ficha; ahora cada negocio suma sus `items` (`description`, `quantity`). La web agrupa los de los ganados. Son dos líneas en los servicios de Eduardo, sin otra consulta ni otro endpoint.
+- Se agrupa por descripción sin distinguir mayúsculas ni espacios al borde. Se muestra la primera forma escrita, la cantidad total, cuántos negocios ganados la incluyen y el cierre más reciente. Primero lo último que se compró.
+- *Mi decisión:* el alcance es el de la ficha. La ficha ya muestra todos los negocios del cliente a quien la abre, así que los productos siguen la misma regla.
+- *Omitido:* el esqueleto de carga de las fichas no suma la tarjeta nueva. Se agrega si se nota el salto al cargar.
+
 ### P14. Actividades del negocio en la agenda
 
 Hoy los dos formularios guardan en la misma tabla `Activity`, pero son distintos. El de la ficha (`features/pipeline/activity-actions.tsx`) solo tiene tipo, asunto, una fecha sin hora y una nota. El de la agenda (`features/actividades/agenda.tsx`) tiene además responsable, hora y recordatorio. La agenda muestra el negocio como texto, sin enlace, y no filtra por negocio.
@@ -393,12 +413,20 @@ Hoy los dos formularios guardan en la misma tabla `Activity`, pero son distintos
 - `graphify update .` corrido.
 - **Revisión visual y E2E: pendientes**, por el mismo motivo de los bloques anteriores.
 
+### Bloque 5 (2026-11-13)
+
+- **Sin migración.**
+- **API:** 278 de 278 unitarias. Integración contra `pruebas`: `pipeline.http.test.cjs` y `contacts-companies.http.test.cjs`, 20 de 20.
+- **Web (Vitest):** 89 archivos y 407 pruebas aprobadas, incluidas las de las fichas de contacto y empresa sin cambios.
+- **Lint y tipos:** `pnpm lint` (exit 0), `tsc --noEmit` de la web sin errores y `nest build` del API aprobado.
+- `graphify update .` corrido.
+- **Revisión visual: pendiente**, por el mismo motivo de los bloques anteriores.
+
 ## Pendientes
 
 - Correr `pnpm build` completo con el `pnpm run dev` detenido.
-- Revisar en el navegador los iconos, la barra, el modal y el diálogo de actividad de la ficha, la viabilidad, el pago, los abonos, el aviso *En riesgo*, el historial *Negocio editado* y el tablero con una cuenta VENDEDOR. Ejecutar el E2E del pipeline (`test/e2e/pipeline.spec.ts`). Hace falta el `pnpm run dev` y una sesión iniciada.
+- Revisar en el navegador los iconos, la barra, el modal y el diálogo de actividad de la ficha, la viabilidad, el pago, los abonos, el aviso *En riesgo*, el historial *Negocio editado*, el tablero con una cuenta VENDEDOR y *Productos comprados* en las fichas de contacto y empresa. Ejecutar el E2E del pipeline (`test/e2e/pipeline.spec.ts`). Hace falta el `pnpm run dev` y una sesión iniciada.
 - Confirmar con el equipo la tabla de roles de P11 (incluido que solo un ADMIN borre abonos, y que un VENDEDOR siga pudiendo cambiar nombre, probabilidad, orden y color de las etapas) y si la viabilidad (P4) se exige antes de llegar a Propuesta.
-- P13 (bloque 5): necesita OK para tocar las fichas de contactos y empresas de Eduardo.
 - Avisar a Eduardo:
   - Cambios en su módulo de pipeline. El modal de transición ya no mueve directo: siempre confirma con observación opcional. Se borraron `moveTransition()` y el `POST` de `app/api/pipeline/deals/[id]/transition`.
   - El monto usa coma decimal.
@@ -411,4 +439,4 @@ Hoy los dos formularios guardan en la misma tabla `Activity`, pero son distintos
   - Bloque 4: editar un negocio y guardar productos que cambian el valor escriben `UPDATED` en `AuditLog`; se ajustó su prueba de integración de la propuesta.
   - `PipelineBoard` y `PipelineSettings` reciben `isAdmin`, y la página del tablero pide `/auth/me`.
   - Cada nota nueva avisa por correo al responsable del registro (`sendNoteToOwner`).
-  - Si se aprueba P13, cambios en sus fichas.
+  - P13, con OK del usuario: `GET /contacts/:id` y `GET /companies/:id` traen los `items` de cada negocio, las dos fichas suman la tarjeta *Productos comprados* (`ClientProducts`) y sus pruebas unitarias comprueban el `select` nuevo.

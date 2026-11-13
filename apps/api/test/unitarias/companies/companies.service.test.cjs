@@ -129,6 +129,8 @@ test("la ficha de empresa incluye contactos negocios e historial", async () => {
   // Recorrido: cada negocio trae su cierre y solo su último movimiento.
   const deals = companyQuery.include.deals.select;
   assert.deepEqual([deals.closedAt, deals.lossReason, deals.stageHistory.take], [true, true, 1]);
+  // P13: los productos de cada negocio, para la tarjeta «Productos comprados».
+  assert.deepEqual(deals.items.select, { description: true, quantity: true });
   assert.equal(result.history[0].action, "CREATE");
 });
 

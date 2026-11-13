@@ -20,6 +20,7 @@ import { formatPhone, splitPhone } from "@/lib/phone";
 import { ContactForm } from "../../../../features/contactos/contact-form";
 import { companyLabel } from "../../../../features/contactos/contact-form-state";
 import type { ContactDetail } from "../../../../features/contactos/types";
+import { ClientProducts } from "../../../../features/pipeline/client-products";
 import { DealJourney } from "../../../../features/pipeline/deal-journey";
 import { loadTimeline } from "../../../../features/timeline/actions";
 import { NoteForm } from "../../../../features/timeline/note-form";
@@ -130,6 +131,7 @@ export default async function ContactDetailPage({
               <p>{texto.sinNegocios}</p>
             )}
           </Card>
+          <ClientProducts deals={contact.deals} />
           <Card className="contact-related deal-timeline">
             <h3>
               <CalendarDays />

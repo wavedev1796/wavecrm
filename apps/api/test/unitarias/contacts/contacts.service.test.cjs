@@ -103,6 +103,8 @@ test("la ficha devuelve el contacto y borrarlo usa su id", async () => {
   assert.equal((await contacts.findOne("contact-1")).firstName, "Ana");
   const deals = query.include.deals.select;
   assert.deepEqual([deals.closedAt, deals.lossReason, deals.stageHistory.take], [true, true, 1]);
+  // P13: los productos de cada negocio, para la tarjeta «Productos comprados».
+  assert.deepEqual(deals.items.select, { description: true, quantity: true });
   // Las actividades van por la línea de tiempo, con el alcance del usuario.
   assert.equal(query.include.activities, undefined);
   await contacts.remove("contact-1");
