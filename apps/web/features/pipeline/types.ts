@@ -166,16 +166,3 @@ export type ItemErrors = Record<
   number,
   Partial<Record<"description" | "quantity" | "unitPrice" | "taxRate", string>>
 >;
-export type ActivityValues = Record<"type" | "subject" | "dueAt" | "description" | "done", string>;
-export type ActivityFormState = {
-  values: ActivityValues;
-  fieldErrors: Partial<Record<keyof ActivityValues, string>>;
-  feedback?: { tone: "error" | "success"; message: string };
-};
-export const emptyActivity: ActivityValues = {
-  type: "CALL",
-  subject: "",
-  dueAt: "",
-  description: "",
-  done: "",
-};

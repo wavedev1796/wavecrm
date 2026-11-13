@@ -94,7 +94,7 @@ export function PipelineSettings({
           </header>
           {feedback && <Alert tone="error">{feedback}</Alert>}
           <div className="pipeline-settings-body">
-            <Field id="manage-pipeline" label="Pipeline">
+            <Field id="manage-pipeline" label="Pipeline" icon="pipeline">
               <Select
                 id="manage-pipeline"
                 disabled={pending}
@@ -126,7 +126,7 @@ export function PipelineSettings({
             >
               <fieldset disabled={pending} className="deal-form-fields">
                 <div className="pipeline-settings-grid">
-                  <Field id="pipeline-name" label="Nombre" required>
+                  <Field id="pipeline-name" label="Nombre" required icon="pipeline">
                     <Input
                       id="pipeline-name"
                       name="name"
@@ -136,7 +136,7 @@ export function PipelineSettings({
                       defaultValue={pipeline?.name ?? ""}
                     />
                   </Field>
-                  <Field id="pipeline-default" label="Pipeline principal">
+                  <Field id="pipeline-default" label="Pipeline principal" icon="pipeline">
                     <Select
                       id="pipeline-default"
                       name="isDefault"
@@ -168,7 +168,7 @@ export function PipelineSettings({
             {pipeline && (
               <>
                 <h3>Etapas del embudo</h3>
-                <Field id="manage-stage" label="Etapa a configurar">
+                <Field id="manage-stage" label="Etapa a configurar" icon="etapa">
                   <Select
                     id="manage-stage"
                     value={stageId}
@@ -199,7 +199,7 @@ export function PipelineSettings({
                 >
                   <fieldset disabled={pending} className="deal-form-fields">
                     <div className="pipeline-settings-grid">
-                      <Field id="stage-name" label="Nombre de etapa" required>
+                      <Field id="stage-name" label="Nombre de etapa" required icon="etapa">
                         <Input
                           id="stage-name"
                           name="name"
@@ -213,6 +213,7 @@ export function PipelineSettings({
                         id="stage-probability"
                         label="Probabilidad (%)"
                         required
+                        icon="porcentaje"
                       >
                         <Input
                           id="stage-probability"
@@ -229,6 +230,7 @@ export function PipelineSettings({
                         id="stage-position"
                         label="Orden de la etapa"
                         required
+                        icon="posicion"
                       >
                         <Select
                           id="stage-position"
@@ -249,7 +251,7 @@ export function PipelineSettings({
                           )}
                         </Select>
                       </Field>
-                      <Field id="stage-color" label="Color">
+                      <Field id="stage-color" label="Color" icon="color">
                         <Select
                           id="stage-color"
                           name="color"

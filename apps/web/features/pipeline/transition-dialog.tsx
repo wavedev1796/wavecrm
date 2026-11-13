@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useTransition, type ReactNode } from "reac
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ACTIVITY_TYPES, LOSS_REASONS, REJECTION_REASONS, type TransitionCheck } from "@wave/shared";
+import type { FieldIconName } from "@/components/form/field-icon";
 import { Field } from "@/components/form/form-field";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -11,15 +12,29 @@ import { Select } from "@/components/ui/select";
 import { MOTIVO_CIERRE, TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { TRANSICION } from "@/content/pipeline";
 import { completeTransitionAction, saveTransitionAction } from "./actions";
-import { moveTransition, previewTransition } from "./transition-preview";
+import { previewTransition } from "./transition-preview";
 import { todayEcuador } from "./deal-validation";
 import type { Deal, Option, Preview } from "./types";
 
 const texto = TRANSICION;
 const campos = TRANSICION.campos;
+const ICONS: Record<string, FieldIconName> = {
+  contactId: "persona",
+  ownerId: "responsable",
+  need: "necesidad",
+  solution: "solucion",
+  budget: "dinero",
+  acceptanceNote: "evidencia",
+};
+/** Icono por nombre de campo: fechas (…Day, …At, validUntil, expectedClose), tipos, asuntos y el resto texto. */
+const transitionIcon = (name: string): FieldIconName =>
+  ICONS[name] ??
+  (/(Day|At|Close|Until)$/.test(name) ? "fecha" : name.endsWith("Type") ? "tipo" : name.endsWith("Subject") ? "asunto" : "texto");
 const INTERACTIONS = ["CALL", "EMAIL", "MEETING"] as const;
 /** Seguimiento de un perdido: por defecto, en tres meses. */
 const FOLLOW_UP_DAYS = 90;
+/** La observación se guarda como nota: el mismo límite que el formulario de notas. */
+const NOTE_MAX = 5000;
 const inDays = (day: string, days: number) =>
   new Date(Date.parse(day + "T00:00:00.000Z") + days * 86_400_000).toISOString().slice(0, 10);
 
@@ -68,17 +83,8 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
       const result = await (opening.current ??= previewTransition(deal.id, to));
       if (!current) return;
       if (!result.data) return setError(result.error ?? "");
-      if (result.data.pending.length) return setPreview(result.data);
-      const moved = await moveTransition(deal.id, to, deal.stageId);
-      if (!current) return;
-      if (moved.done) {
-        onDone(message);
-        router.refresh();
-        return;
-      }
-      setError(moved.error ?? "");
-      const again = await previewTransition(deal.id, to);
-      if (current && again.data) setPreview(again.data);
+      // Aunque no falte nada, se muestra el formulario: todo movimiento admite una observación (P7, 2026-11-11).
+      setPreview(result.data);
     })();
     return () => {
       current = false;
@@ -97,7 +103,10 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
         return router.push(href);
       }
       const result = await completeTransitionAction(deal.id, to, deal.stageId, form);
-      if (result.done) return onDone(message);
+      if (result.done) {
+        onDone(result.warning ?? message);
+        return router.refresh();
+      }
       setError(result.error ?? "");
       // Lo guardado antes del error ya cuenta: se vuelve a preguntar qué falta.
       const next = await previewTransition(deal.id, to);
@@ -120,7 +129,7 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
 
   const today = todayEcuador();
   const field = (name: string, label: string, control: ReactNode, required = true) => (
-    <Field id={"transition-" + name} label={label} required={required}>
+    <Field id={"transition-" + name} label={label} required={required} icon={transitionIcon(name)}>
       {control}
     </Field>
   );
@@ -233,25 +242,40 @@ export function TransitionDialog({ deal, to, targetName, contacts, users, onCanc
       }}
     >
       <h2>{texto.titulo}</h2>
-      <p>{texto.intro(deal.title, targetName)}</p>
-      <Alert tone="note">
-        {toFicha ? (
-          texto.soloFicha
-        ) : (
-          <>
-            {texto.recomendacion} <Link href={href}>{texto.abrirFicha}</Link>
-          </>
-        )}
-      </Alert>
+      {preview.pending.length > 0 ? (
+        <>
+          <p>{texto.intro(deal.title, targetName)}</p>
+          <Alert tone="note">
+            {toFicha ? (
+              texto.soloFicha
+            ) : (
+              <>
+                {texto.recomendacion} <Link href={href}>{texto.abrirFicha}</Link>
+              </>
+            )}
+          </Alert>
+        </>
+      ) : (
+        <p>{texto.listo(deal.title, targetName)}</p>
+      )}
       {error && <Alert tone="error">{error}</Alert>}
-      <ul className="transition-pending">
-        {preview.pending.map((item) => (
-          <li key={item.code}>
-            <p>{item.message}</p>
-            {FIELDS[item.code]()}
-          </li>
-        ))}
-      </ul>
+      {preview.pending.length > 0 && (
+        <ul className="transition-pending">
+          {preview.pending.map((item) => (
+            <li key={item.code}>
+              <p>{item.message}</p>
+              {FIELDS[item.code]()}
+            </li>
+          ))}
+        </ul>
+      )}
+      {/* En la ficha (toFicha) no se mueve nada todavía: la observación va con el movimiento real. */}
+      {!toFicha && (
+        <>
+          {field("observation", campos.observacion, text("observation", NOTE_MAX), false)}
+          <p className="field-hint">{texto.observacionAyuda}</p>
+        </>
+      )}
       <div className="deal-confirm-actions">
         {cancel}
         <Button type="submit" loading={pending}>

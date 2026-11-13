@@ -27,6 +27,7 @@ import { DealItems } from "../../../../features/pipeline/deal-items";
 import { DealQualification } from "../../../../features/pipeline/deal-qualification";
 import { DealQuotes } from "../../../../features/pipeline/deal-quotes";
 import { DealTimeline } from "../../../../features/pipeline/deal-timeline";
+import { StageProgress } from "../../../../features/pipeline/stage-progress";
 import type { DealDetail } from "../../../../features/pipeline/types";
 import { loadTimeline } from "../../../../features/timeline/actions";
 
@@ -72,6 +73,10 @@ export default async function DealPage({
           <span>{NEGOCIO.etiqueta}</span>
           <h2>{deal.title}</h2>
           <p className="deal-profile-value">{formatMoney(deal.value, deal.currency)}</p>
+          <StageProgress
+            stages={options.pipelines.find((pipeline) => pipeline.id === deal.pipelineId)?.stages ?? [deal.stage]}
+            currentId={deal.stageId}
+          />
         </div>
         <div className="contact-tags">
           <Badge tone={TONO[deal.status]}>{ESTADO_NEGOCIO[deal.status]}</Badge>

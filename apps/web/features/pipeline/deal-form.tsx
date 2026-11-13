@@ -1,6 +1,8 @@
 "use client";
 import { useActionState, useEffect, useState } from "react";
 import { BriefcaseBusiness, Check } from "lucide-react";
+import { formatAmount } from "@wave/shared";
+import type { FieldIconName } from "@/components/form/field-icon";
 import { Field } from "@/components/form/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -10,6 +12,7 @@ import { invalidProps } from "@/components/ui/field-error";
 import { useFieldErrors } from "@/components/form/use-field-errors";
 import { PIPELINE } from "@/content/pipeline";
 import { saveDeal } from "./actions";
+import { StageProgress } from "./stage-progress";
 import {
   emptyDeal,
   type Deal,
@@ -18,6 +21,17 @@ import {
   type Option,
   type Pipeline,
 } from "./types";
+
+const ICONS: Record<keyof DealValues, FieldIconName> = {
+  title: "negocio",
+  value: "dinero",
+  pipelineId: "pipeline",
+  stageId: "etapa",
+  contactId: "persona",
+  companyId: "empresa",
+  ownerId: "responsable",
+  expectedClose: "fecha",
+};
 
 type Props = {
   deal?: Deal;
@@ -49,7 +63,7 @@ export function DealForm({
       stageId,
       ...(deal && {
         title: deal.title,
-        value: String(deal.value),
+        value: formatAmount(deal.value),
         pipelineId: deal.pipelineId,
         stageId: deal.stageId,
         contactId: deal.contactId ?? "",
@@ -83,6 +97,7 @@ export function DealForm({
     label,
     required,
     error: error(name),
+    icon: ICONS[name],
   });
   const options = (items: Option[], current: Option | null | undefined) =>
     current && !items.some((o) => o.id === current.id)
@@ -138,7 +153,7 @@ export function DealForm({
               inputMode="decimal"
               type="text"
               defaultValue={state.values.value}
-              placeholder="0.00"
+              placeholder="0,00"
               {...(locked && { "aria-describedby": "deal-value-hint" })}
             />
             {locked && (
@@ -179,28 +194,31 @@ export function DealForm({
               ))}
             </Select>
           </Field>
-          <Field {...field("stageId", "Etapa", true)}>
-            <Select
-              {...props("stageId")}
-              value={selectedStage}
-              disabled={Boolean(deal)}
-              required
-              {...(deal && { "aria-describedby": "deal-stage-hint" })}
-              onChange={(event) => {
-                setSelectedStage(event.target.value);
-              }}
-            >
-              <option value="">Selecciona una etapa</option>
-              {stages.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} · {s.probability}%
-                </option>
-              ))}
-            </Select>
-            {deal && (
-              <p id="deal-stage-hint" className="field-hint">
-                {PIPELINE.stageLocked}
-              </p>
+          {/* Al editar, la etapa es solo lectura: barra de avance en vez de un selector deshabilitado. */}
+          <Field {...field("stageId", "Etapa", !deal)}>
+            {deal ? (
+              <>
+                <StageProgress stages={stages} currentId={selectedStage} describedBy="deal-stage-hint" />
+                <p id="deal-stage-hint" className="field-hint">
+                  {PIPELINE.stageLocked}
+                </p>
+              </>
+            ) : (
+              <Select
+                {...props("stageId")}
+                value={selectedStage}
+                required
+                onChange={(event) => {
+                  setSelectedStage(event.target.value);
+                }}
+              >
+                <option value="">Selecciona una etapa</option>
+                {stages.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} · {s.probability}%
+                  </option>
+                ))}
+              </Select>
             )}
           </Field>
           <p className="deal-form-wide deal-form-hint">{PIPELINE.linked}</p>

@@ -1,5 +1,6 @@
-import { decimal } from "./deal-validation";
+import { parseAmount } from "@wave/shared";
 
+/** Un número es un dato del API; un texto es lo que escribe la persona (`1.250,50`). */
 type Line = {
   quantity: string | number;
   unitPrice: string | number;
@@ -9,8 +10,8 @@ type Line = {
 // ponytail: centavos en enteros solo para mostrar mientras se edita; el valor que se guarda
 // lo calcula el API con Decimal (deal-rules.ts) y las dos reglas son las mismas.
 const cents = (value: string | number) => {
-  const number = Number(decimal(String(value)));
-  return Number.isFinite(number) ? Math.round(number * 100) : 0;
+  const number = typeof value === "number" ? value : parseAmount(value);
+  return number === null ? 0 : Math.round(number * 100);
 };
 const lineCents = (line: Line) =>
   Math.round((cents(line.quantity) * cents(line.unitPrice)) / 100);

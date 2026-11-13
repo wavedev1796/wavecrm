@@ -524,6 +524,24 @@ test("CRM-20: la actividad del negocio copia contacto y empresa y la asigna a qu
   await assert.rejects(service(prisma).completeActivity("deal-1", "ajena", "user-1"), NotFoundException);
 });
 
+test("P14: la actividad del negocio acepta responsable y recordatorio con las reglas de la agenda", async () => {
+  const { prisma } = mockPrisma();
+  const due = new Date("2030-01-10T15:00:00-05:00");
+  const reminder = new Date("2030-01-10T14:00:00-05:00");
+  const created = await service(prisma).createActivity(
+    "deal-1",
+    { type: "MEETING", subject: "Demo", dueAt: due, reminderAt: reminder, assigneeId: "user-2" },
+    "user-1",
+  );
+  assert.deepEqual([created.assigneeId, created.createdById, created.reminderAt], ["user-2", "user-1", reminder]);
+  const fails = (dto) => assert.rejects(service(prisma).createActivity("deal-1", { type: "CALL", subject: "Llamar", ...dto }, "user-1"), BadRequestException);
+  await fails({ reminderAt: reminder }); // sin vencimiento
+  await fails({ dueAt: reminder, reminderAt: due }); // recordatorio después del vencimiento
+  await fails({ completedAt: ecDay("2026-10-01"), dueAt: due, reminderAt: reminder }); // hecha con recordatorio
+  prisma.user.findFirst = async () => null;
+  await fails({ assigneeId: "inactivo" });
+});
+
 test("CRM-22: completar desde la ficha deja en la auditoría quién la completó", async () => {
   const { prisma, state } = mockPrisma();
   prisma.activity.findFirst = async () => ({ id: "act-1", dealId: "deal-1", status: "PENDING" });

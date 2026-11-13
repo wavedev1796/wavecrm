@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Activity, Ban, Bell, CalendarDays, Check, CircleAlert, CircleCheck, ClipboardList, Clock3, List, Mail, Pencil, Phone, Plus, Trash2, Users, Video, X } from "lucide-react";
+import { Ban, CalendarDays, Check, CircleAlert, CircleCheck, ClipboardList, List, Mail, Pencil, Phone, Plus, Trash2, Video, X } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ESTADO_ACTIVIDAD, TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { ACTIVIDADES } from "@/content/actividades";
 import { saveActivity } from "./actions";
+import { ActivityDialog } from "./activity-dialog";
 
 export type AgendaActivity = {
   id: string;
@@ -66,6 +67,7 @@ export function Agenda({
   initialType = "",
   initialAssigneeId = "",
   focus = "",
+  dealFilter,
 }: {
   activities: AgendaActivity[];
   owners: Owner[];
@@ -73,6 +75,8 @@ export function Agenda({
   initialType?: string;
   initialAssigneeId?: string;
   focus?: string;
+  /** Llegó desde la ficha de un negocio (`?dealId=`): solo sus actividades, con un filtro que se puede quitar. */
+  dealFilter?: { id: string; title: string };
 }) {
   const [view, setView] = useState(initialView);
   const [period, setPeriod] = useState(focus || "all");
@@ -141,6 +145,14 @@ export function Agenda({
               <option value="overdue">Atrasadas</option>
             </Select>
           </label>
+          {dealFilter && (
+            <span className="activities-deal-filter">
+              {ACTIVIDADES.filtroNegocio(dealFilter.title)}
+              <button type="button" aria-label={ACTIVIDADES.quitarFiltroNegocio} onClick={() => setFilter("dealId", "")}>
+                <X aria-hidden />
+              </button>
+            </span>
+          )}
         </div>
         <div
           className="activities-view-toggle"
@@ -210,7 +222,14 @@ export function Agenda({
                     ? ` · ${activity.contact.firstName} ${activity.contact.lastName}`
                     : ""}
                   {activity.company ? ` · ${activity.company.name}` : ""}
-                  {activity.deal ? ` · ${activity.deal.title}` : ""}
+                  {activity.deal && (
+                    <>
+                      {" · "}
+                      <Link href={`/pipeline/${encodeURIComponent(activity.deal.id)}`} aria-label={ACTIVIDADES.abrirNegocio(activity.deal.title)}>
+                        {activity.deal.title}
+                      </Link>
+                    </>
+                  )}
                 </small>
               </div>
               {activity.status === "PENDING" && (
@@ -272,7 +291,7 @@ export function Agenda({
     </section>
   );
 
-  function setFilter(key: "type" | "assigneeId", value: string) {
+  function setFilter(key: "type" | "assigneeId" | "dealId", value: string) {
     const params = new URLSearchParams(window.location.search);
     if (value) params.set(key, value);
     else params.delete(key);
@@ -355,159 +374,49 @@ function EditActivityDialog({
   onSaved: () => void;
   onConflict: () => void;
 }) {
-  const [saving, setSaving] = useState(false);
   return (
-    <div
-      className="activity-dialog-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+    <ActivityDialog
+      mode="edit"
+      owners={owners}
+      activity={activity}
+      onClose={onClose}
+      onSubmit={async (data) => {
+        data.set("id", activity.id);
+        const result = await saveActivity({ ok: false, message: "" }, data);
+        notify(result);
+        if (result.ok) onSaved();
+        else if (result.conflict) {
+          onClose();
+          onConflict();
+        }
+        return result;
       }}
-    >
-      <section
-        className="activity-dialog card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-activity-dialog-title"
-      >
-        <header>
-          <div className="activity-dialog-icon"><Pencil aria-hidden /></div>
-          <div>
-            <h2 id="edit-activity-dialog-title">Editar actividad</h2>
-            <p>Actualiza los detalles y guarda los cambios.</p>
-          </div>
-          <button type="button" aria-label="Cerrar" onClick={onClose}><X aria-hidden /></button>
-        </header>
-        <form action={async (data) => {
-          setSaving(true);
-          try {
-            data.set("id", activity.id);
-            const result = await saveActivity({ ok: false, message: "" }, data);
-            notify(result);
-            if (result.ok) onSaved();
-            else if (result.conflict) {
-              onClose();
-              onConflict();
-            }
-          } finally {
-            setSaving(false);
-          }
-        }}>
-          <ActivityFields activity={activity} owners={owners} />
-          <footer>
-            <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" disabled={saving}><Check aria-hidden />{saving ? "Guardando…" : "Guardar cambios"}</Button>
-          </footer>
-        </form>
-      </section>
-    </div>
+    />
   );
 }
 
 export function NewActivityForm({ owners }: { owners: Owner[] }) {
   const [open, setOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
   const router = useRouter();
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}><Plus aria-hidden /> Nueva actividad</Button>
-      {open && <div className="activity-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
-        <section className="activity-dialog card" role="dialog" aria-modal="true" aria-labelledby="activity-dialog-title">
-          <header><div className="activity-dialog-icon"><Activity aria-hidden /></div><div><h2 id="activity-dialog-title">Registrar actividad</h2><p>Asigna un seguimiento y define cuándo debe completarse.</p></div><button type="button" aria-label="Cerrar" onClick={() => setOpen(false)}><X aria-hidden /></button></header>
-          <form action={async (data) => {
-            setSaving(true);
-            try {
-              const result = await saveActivity({ ok: false, message: "" }, data);
-              notify(result);
-              if (result.ok) { setOpen(false); router.refresh(); }
-            } finally { setSaving(false); }
-          }}>
-            <ActivityFields owners={owners} />
-            <footer><Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button><Button type="submit" disabled={saving}><Plus aria-hidden />{saving ? "Guardando…" : "Guardar actividad"}</Button></footer>
-          </form>
-        </section>
-      </div>}
+      <Button type="button" onClick={() => setOpen(true)}><Plus aria-hidden /> {ACTIVIDADES.formulario.nueva}</Button>
+      {open && (
+        <ActivityDialog
+          owners={owners}
+          onClose={() => setOpen(false)}
+          onSubmit={async (data) => {
+            const result = await saveActivity({ ok: false, message: "" }, data);
+            notify(result);
+            if (result.ok) {
+              setOpen(false);
+              router.refresh();
+            }
+            return result;
+          }}
+        />
+      )}
     </>
-  );
-}
-
-function ActivityFields({
-  owners,
-  activity,
-}: {
-  owners: Owner[];
-  activity?: AgendaActivity;
-}) {
-  return (
-    <div className="activity-form-grid">
-      {activity && <input type="hidden" name="updatedAt" value={activity.updatedAt} />}
-      <label>
-        <span className="activity-field-label"><ClipboardList aria-hidden /> Asunto</span>
-        <Input
-          name="subject"
-          aria-label="Asunto"
-          defaultValue={activity?.subject}
-          required
-          minLength={2}
-          maxLength={160}
-        />
-      </label>
-      <label>
-        <span className="activity-field-label"><Activity aria-hidden /> Tipo</span>
-        <Select
-          name="type"
-          aria-label="Tipo de actividad"
-          defaultValue={activity?.type ?? "TASK"}
-        >
-          {Object.entries(TIPO_ACTIVIDAD).map(([key, label]) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </Select>
-      </label>
-      <label>
-        <span className="activity-field-label"><Users aria-hidden /> Responsable</span>
-        <Select
-          name="assigneeId"
-          aria-label="Responsable asignado"
-          defaultValue={activity?.assigneeId ?? owners[0]?.id ?? ""}
-          required
-        >
-          {owners.map((owner) => (
-            <option key={owner.id} value={owner.id}>
-              {owner.name}
-            </option>
-          ))}
-        </Select>
-      </label>
-      <label>
-        <span className="activity-field-label"><Clock3 aria-hidden /> Vence</span>
-        <Input
-          name="dueAt"
-          aria-label="Vence"
-          type="datetime-local"
-          defaultValue={inputDate(activity?.dueAt)}
-        />
-      </label>
-      <label>
-        <span className="activity-field-label"><Bell aria-hidden /> Recordatorio por correo</span>
-        <Input
-          name="reminderAt"
-          aria-label="Recordatorio por correo"
-          type="datetime-local"
-          defaultValue={inputDate(activity?.reminderAt)}
-        />
-      </label>
-      <label className="activity-description">
-        <span className="activity-field-label"><ClipboardList aria-hidden /> Descripción</span>
-        <textarea
-          name="description"
-          aria-label="Descripción"
-          defaultValue={activity?.description ?? ""}
-          maxLength={1000}
-        />
-      </label>
-    </div>
   );
 }
 
@@ -618,21 +527,6 @@ function timePart(value: string) {
 function typeIcon(type: keyof typeof TIPO_ACTIVIDAD) {
   const Icon = type === "CALL" ? Phone : type === "EMAIL" ? Mail : type === "MEETING" ? Video : ClipboardList;
   return <Icon aria-hidden className="activity-kind-icon" />;
-}
-function inputDate(value?: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  return new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "America/Guayaquil",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  })
-    .format(date)
-    .replace(" ", "T");
 }
 function isOverdue(activity: AgendaActivity) {
   return (

@@ -7,11 +7,11 @@ import { apiPage, pendingCall } from "../../../../features/timeline/timeline-fix
 import DealPage from "./page";
 
 vi.mock("@/lib/authenticated-api", () => ({ authenticatedApi: vi.fn(), apiError: async () => "x" }));
-vi.mock("next/navigation", () => ({ notFound: vi.fn(), unstable_rethrow: vi.fn()}));
+vi.mock("next/navigation", () => ({ notFound: vi.fn(), unstable_rethrow: vi.fn(), useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("../../../../features/pipeline/data", () => ({
   dealFormOptions: async () => ({ pipelines: [], contacts: [], companies: [], users: [] }),
 }));
-// Todas las acciones que importan los componentes de la ficha (ActivityForm hace .bind al renderizar).
+// Todas las acciones que importan los componentes de la ficha (el bloque de actividad usa createActivityAction).
 vi.mock("../../../../features/pipeline/actions", () => ({
   saveDeal: vi.fn(),
   saveDealItemsAction: vi.fn(),
@@ -37,6 +37,10 @@ test("la ficha abierta muestra valor, productos, empresa enlazada y botones de c
   serve({ ...baseDeal, stage: { ...baseDeal.stage, color: "#2f8f5b" } });
   const { container } = render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
   expect(container.querySelector(".deal-stage-dot")).toHaveStyle({ background: "#2f8f5b" });
+  // Sin las etapas del pipeline (mock vacío), la barra muestra al menos la etapa actual con su color.
+  const avance = screen.getByRole("progressbar", { name: "Avance del negocio" });
+  expect(avance).toHaveAttribute("aria-valuetext", "Propuesta · 70 %");
+  expect(avance.querySelector(".stage-progress-step")).toHaveStyle({ background: "#2f8f5b" });
   expect(api).toHaveBeenCalledWith("/deals/d1");
   expect(screen.getByRole("heading", { name: "Cuenta Andina" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Comercial Andina" })).toHaveAttribute("href", "/empresas/e1");
@@ -58,12 +62,12 @@ test("un ganado muestra fecha de ganado, su cotizacion y productos bloqueados", 
   const { unmount } = render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
   expect(screen.getByText(/COT-000001 · Aceptada · .*135,00/)).toBeInTheDocument();
   expect(screen.getByText("Ganado el")).toBeInTheDocument();
-  expect(screen.getByText("Reabre el negocio para cambiar sus productos.")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Reabrir" })).toBeInTheDocument();
+  expect(screen.getByText("Reversa el negocio para cambiar sus productos.")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Reversar" })).toBeInTheDocument();
   unmount();
   serve(won, "VENDEDOR");
   render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
-  expect(screen.queryByRole("button", { name: "Reabrir" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Reversar" })).toBeNull();
 });
 
 test("un perdido muestra su motivo y detalle", async () => {
@@ -79,9 +83,9 @@ test("un rechazado muestra su cierre, bloquea productos y actividades y solo un 
   expect(screen.getAllByText("Rechazado").length).toBeGreaterThan(0);
   expect(screen.getByText("Rechazado el")).toBeInTheDocument();
   expect(screen.getByText("Riesgo comercial")).toBeInTheDocument();
-  expect(screen.getByText("Reabre el negocio para cambiar sus productos.")).toBeInTheDocument();
-  expect(screen.queryByLabelText("Asunto")).toBeNull();
-  expect(screen.queryByRole("button", { name: /Reabrir|Rechazar|Ganar|Perder/ })).toBeNull();
+  expect(screen.getByText("Reversa el negocio para cambiar sus productos.")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Registrar actividad" })).toBeNull();
+  expect(screen.queryByRole("button", { name: /Reversar|Enmendar|Ganar|Perder/ })).toBeNull();
 });
 
 test("al ganar, la tabla de productos vuelve a leer lo del servidor y no conserva filas editadas", async () => {
@@ -114,5 +118,5 @@ test("un VENDEDOR sin acceso al historial ve la ficha, el aviso y el formulario 
   render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
   expect(screen.getByRole("heading", { name: "Cuenta Andina" })).toBeInTheDocument();
   expect(screen.getByText("No tienes acceso al historial de este registro.")).toBeInTheDocument();
-  expect(screen.getByLabelText("Asunto")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Registrar actividad" })).toBeInTheDocument();
 });

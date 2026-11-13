@@ -3,6 +3,7 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useActionState } from 'react';
+import { FieldIcon } from '@/components/form/field-icon';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { FieldError, invalidProps } from '@/components/ui/field-error';
@@ -43,7 +44,7 @@ export function ForgotPasswordForm() {
         {state.error && <Alert tone="error">{state.error}</Alert>}
 
         <div className="field">
-          <label htmlFor="email">{ACCESO.campos.correo}</label>
+          <label htmlFor="email"><FieldIcon name="correo" />{ACCESO.campos.correo}</label>
           <Input
             id="email"
             name="email"

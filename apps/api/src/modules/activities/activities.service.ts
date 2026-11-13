@@ -27,6 +27,7 @@ export class ActivitiesService {
     const where: Prisma.ActivityWhereInput = {
       ...(query.type && { type: query.type }),
       ...(query.assigneeId && { assigneeId: query.assigneeId }),
+      ...(query.dealId && { dealId: query.dealId }),
       ...(query.status && { status: query.status }),
       ...(query.period === "upcoming" && {
         status: "PENDING",
@@ -67,7 +68,7 @@ export class ActivitiesService {
 
   async create(dto: CreateActivityDto, actorId: string) {
     const data = await this.relations(dto, actorId);
-    this.validateReminder(data.dueAt, data.reminderAt);
+    assertReminder(data.dueAt, data.reminderAt);
     return this.prisma.activity.create({
       data: {
         ...data,
@@ -88,7 +89,7 @@ export class ActivitiesService {
     const dueAt = data.dueAt === undefined ? current.dueAt : data.dueAt;
     const reminderAt =
       data.reminderAt === undefined ? current.reminderAt : data.reminderAt;
-    this.validateReminder(dueAt, reminderAt);
+    assertReminder(dueAt, reminderAt);
     // Antes y después de lo que cambió: reprogramar o reasignar queda en el historial.
     const changes = Object.fromEntries(
       Object.entries(data).flatMap(([key, value]) => {
@@ -248,25 +249,26 @@ export class ActivitiesService {
       // Igual que la ficha: rechazar cancela sus pendientes, así que no se le agregan nuevas.
       if (deal.status === "REJECTED")
         throw new ConflictException(
-          "Reabre el negocio para registrar actividades.",
+          "Reversa el negocio para registrar actividades.",
         );
     }
     return data;
   }
+}
 
-  private validateReminder(
-    dueAt?: Date | string | null,
-    reminderAt?: Date | string | null,
-  ) {
-    if (reminderAt && !dueAt)
-      throw new BadRequestException(
-        "Programa una fecha de vencimiento para activar el recordatorio.",
-      );
-    if (reminderAt && dueAt && new Date(reminderAt) > new Date(dueAt))
-      throw new BadRequestException(
-        "El recordatorio debe ser anterior al vencimiento.",
-      );
-  }
+/** El recordatorio exige vencimiento y no puede ser posterior a él. Lo usan la agenda y la ficha del negocio. */
+export function assertReminder(
+  dueAt?: Date | string | null,
+  reminderAt?: Date | string | null,
+) {
+  if (reminderAt && !dueAt)
+    throw new BadRequestException(
+      "Programa una fecha de vencimiento para activar el recordatorio.",
+    );
+  if (reminderAt && dueAt && new Date(reminderAt) > new Date(dueAt))
+    throw new BadRequestException(
+      "El recordatorio debe ser anterior al vencimiento.",
+    );
 }
 
 /** Valor de la auditoría: fechas en ISO y vacío como null. */

@@ -41,6 +41,7 @@ import {
   type GateTarget,
   type Pending,
 } from "./stage-gates";
+import { assertReminder } from "../activities/activities.service";
 
 const dealInclude = {
   stage: true,
@@ -96,7 +97,7 @@ const columnWhere = (pipelineId: string, column: string): Prisma.DealWhereInput 
     ? { pipelineId, status: "LOST" }
     : { pipelineId, stageId: column, status: { in: ["OPEN", "WON"] } };
 const FORBIDDEN_CLOSED =
-  "Solo un administrador puede reabrir o modificar un negocio cerrado.";
+  "Solo un administrador puede reversar o modificar un negocio cerrado.";
 
 @Injectable()
 export class PipelineService {
@@ -457,7 +458,7 @@ export class PipelineService {
     return this.write(async (tx) => {
       const deal = await this.requireDeal(tx, id);
       if (deal.status === "WON" || deal.status === "REJECTED")
-        throw new ConflictException("Reabre el negocio para cambiar sus productos.");
+        throw new ConflictException("Reversa el negocio para cambiar sus productos.");
       this.assertCanChange(deal, actor);
       const totals = dealTotals(items);
       const { subtotal } = totals;
@@ -606,12 +607,18 @@ export class PipelineService {
     return this.write(async (tx) => {
       const deal = await this.requireDeal(tx, dealId);
       if (deal.status === "REJECTED")
-        throw new ConflictException("Reabre el negocio para registrar actividades.");
-      const { completedAt, ...fields } = dto;
+        throw new ConflictException("Reversa el negocio para registrar actividades.");
+      const { completedAt, assigneeId = actorId, ...fields } = dto;
       if (completedAt && ecuadorToday(completedAt) > ecuadorToday())
         throw new BadRequestException(
           "Una actividad ya realizada no puede tener fecha futura.",
         );
+      if (completedAt && fields.reminderAt)
+        throw new BadRequestException("Una actividad ya realizada no lleva recordatorio.");
+      assertReminder(fields.dueAt, fields.reminderAt);
+      // Mismas reglas que la agenda: el responsable es una cuenta activa.
+      if (!(await tx.user.findFirst({ where: { id: assigneeId, active: true }, select: { id: true } })))
+        throw new BadRequestException("El responsable debe ser un usuario activo.");
       // Con el contacto del negocio, la actividad aparece también en la ficha del contacto.
       return tx.activity.create({
         data: {
@@ -620,7 +627,7 @@ export class PipelineService {
           dealId,
           contactId: deal.contactId,
           companyId: deal.companyId,
-          assigneeId: actorId,
+          assigneeId,
           createdById: actorId,
         },
         include: { assignee: { select: { id: true, name: true } } },
@@ -688,7 +695,7 @@ export class PipelineService {
     const deal = await this.requireDeal(tx, id);
     this.assertCanChange(deal, actor);
     if (deal.status !== "OPEN")
-      throw new ConflictException("Reabre el negocio para cambiar sus propuestas.");
+      throw new ConflictException("Reversa el negocio para cambiar sus propuestas.");
     return deal;
   }
   /** Un negocio cerrado solo lo reabre o modifica un ADMIN. */
@@ -753,7 +760,7 @@ export class PipelineService {
     if (to === "LOST") {
       if (deal.status !== "OPEN")
         throw new ConflictException(
-          "Reabre el negocio antes de marcarlo como perdido.",
+          "Reversa el negocio antes de marcarlo como perdido.",
         );
       return { kind: "lost" };
     }
@@ -761,7 +768,7 @@ export class PipelineService {
       if (deal.status === "REJECTED")
         throw new ConflictException("Este negocio ya está rechazado.");
       if (deal.status === "WON")
-        throw new ConflictException("Reabre el negocio antes de rechazarlo.");
+        throw new ConflictException("Reversa el negocio antes de rechazarlo.");
       return { kind: "rejected" };
     }
     if (to === "REOPEN") {
@@ -786,7 +793,7 @@ export class PipelineService {
         throw new ConflictException("Este negocio ya está ganado.");
       }
       if (deal.status !== "OPEN")
-        throw new ConflictException("Reabre el negocio antes de ganarlo.");
+        throw new ConflictException("Reversa el negocio antes de ganarlo.");
       return { kind: "won", stage };
     }
     if (!stage || (stage.id === deal.stageId && deal.status === "OPEN"))

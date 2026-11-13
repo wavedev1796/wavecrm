@@ -297,6 +297,15 @@ export class CreateDealActivityDto {
   @IsOptional()
   @activityDate("Ingresa una fecha válida.")
   completedAt?: Date;
+  // Mismo formulario que la agenda (2026-11-11): responsable y recordatorio por correo.
+  @ApiPropertyOptional({ description: "Recordatorio por correo; no posterior al vencimiento" })
+  @IsOptional()
+  @activityDate("Ingresa una fecha de recordatorio válida.")
+  reminderAt?: Date;
+  @ApiPropertyOptional({ description: "Por defecto, quien la registra" })
+  @IsOptional()
+  @Matches(/^c[a-z0-9]{20,30}$/i, { message: "El responsable no es válido." })
+  assigneeId?: string;
 }
 export class CreateQuoteDto {
   @ApiProperty({ example: "2026-11-30" })

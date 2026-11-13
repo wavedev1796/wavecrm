@@ -521,23 +521,20 @@
   resize: vertical;
 }
 
-.activity-form {
+/* Actividades en la ficha del negocio (P14): botón del diálogo de la agenda y enlace a su agenda filtrada. */
+.deal-activity {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: end;
-  gap: 12px;
+  gap: 10px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--wave-line);
 }
-.activity-form h4,
-.activity-form .alert {
-  grid-column: 1 / -1;
-  margin: 0;
+.deal-activity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
-@media (max-width: 560px) {
-  .activity-form {
-    grid-template-columns: 1fr;
-  }
+.deal-activity .alert {
+  margin: 0;
 }
 
 .deal-profile {
@@ -552,6 +549,36 @@
   font-size: 1.125rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+}
+/* Barra de avance de la etapa (stage-progress.tsx): un tramo por etapa con su color hasta la actual. */
+.stage-progress {
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+}
+.stage-progress-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--wave-text);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+.stage-progress-head b {
+  font-variant-numeric: tabular-nums;
+}
+.stage-progress-track {
+  display: flex;
+  gap: 3px;
+}
+.stage-progress-step {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--wave-line-strong);
+}
+.deal-profile .stage-progress {
+  margin-top: 8px;
 }
 .deal-stage-dot {
   display: inline-block;

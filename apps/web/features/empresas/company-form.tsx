@@ -2,6 +2,7 @@
 
 import { Building2, Check } from "lucide-react";
 import { useActionState, useEffect } from "react";
+import type { FieldIconName } from "@/components/form/field-icon";
 import { Field } from "@/components/form/form-field";
 import { LocationFields } from "@/components/form/location-fields";
 import { PhoneField } from "@/components/form/phone-field";
@@ -19,6 +20,15 @@ import {
 } from "./company-form-state";
 
 const texto = EMPRESAS.formulario;
+const ICONS: Partial<Record<keyof CompanyFormValues, FieldIconName>> = {
+  name: "empresa",
+  legalName: "empresa",
+  taxId: "documento",
+  website: "sitio",
+  email: "correo",
+  address: "ubicacion",
+  tags: "etiquetas",
+};
 
 const initial: CompanyFormState = {
   feedback: null,
@@ -67,6 +77,7 @@ export function CompanyForm({
       label={label}
       error={error(field)}
       required={props.required}
+      icon={ICONS[field]}
     >
       <Input
         name={field}

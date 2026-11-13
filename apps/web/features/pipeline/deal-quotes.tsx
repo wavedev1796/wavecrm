@@ -76,7 +76,7 @@ export function DealQuotes({ deal, locked }: Readonly<{ deal: DealDetail; locked
                             <li key={index}>
                               <span>{texto.linea(line.quantity, line.description)}</span>
                               <small>{texto.lineaPrecio(formatMoney(line.unitPrice), line.taxRate)}</small>
-                              <b className="deal-items-money">{formatMoney(lineTotal(line))}</b>
+                              <b className="deal-items-money">{formatMoney(lineTotal({ ...line, quantity: Number(line.quantity), unitPrice: Number(line.unitPrice) }))}</b>
                             </li>
                           ))}
                         </ul>
@@ -102,10 +102,10 @@ export function DealQuotes({ deal, locked }: Readonly<{ deal: DealDetail; locked
           onSubmit={run((form) => acceptQuoteAction(deal.id, sent.id, form), texto.aceptadaOk)}
         >
           <h4>{texto.aceptarTitulo(sent.number)}</h4>
-          <Field id="quote-acceptedAt" label={texto.aceptadaEl} required>
+          <Field id="quote-acceptedAt" label={texto.aceptadaEl} required icon="fecha">
             <Input id="quote-acceptedAt" name="acceptedAt" type="date" max={today} defaultValue={today} required />
           </Field>
-          <Field id="quote-acceptanceNote" label={texto.evidenciaLabel} required>
+          <Field id="quote-acceptanceNote" label={texto.evidenciaLabel} required icon="evidencia">
             <textarea id="quote-acceptanceNote" name="acceptanceNote" className="input deal-textarea" maxLength={500} required />
           </Field>
           <Button type="submit" loading={pending}>
@@ -122,10 +122,10 @@ export function DealQuotes({ deal, locked }: Readonly<{ deal: DealDetail; locked
             onSubmit={run((form) => createQuoteAction(deal.id, form), texto.registrada)}
           >
             <h4>{texto.registrarTitulo}</h4>
-            <Field id="quote-validUntil" label={texto.vigenteHasta} required>
+            <Field id="quote-validUntil" label={texto.vigenteHasta} required icon="fecha">
               <Input id="quote-validUntil" name="validUntil" type="date" min={today} required />
             </Field>
-            <Field id="quote-sentAt" label={texto.enviadaEl}>
+            <Field id="quote-sentAt" label={texto.enviadaEl} icon="fecha">
               <Input id="quote-sentAt" name="sentAt" type="date" max={today} defaultValue={today} />
             </Field>
             <Button type="submit" variant="secondary" loading={pending}>

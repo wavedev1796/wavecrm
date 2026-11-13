@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { completeTransitionAction, saveTransitionAction } from "./actions";
-import { moveTransition, previewTransition } from "./transition-preview";
+import { previewTransition } from "./transition-preview";
 import { TransitionDialog } from "./transition-dialog";
 
 const push = vi.fn();
@@ -12,9 +12,8 @@ vi.mock("./actions", () => ({
   completeTransitionAction: vi.fn(),
   saveTransitionAction: vi.fn(),
 }));
-vi.mock("./transition-preview", () => ({ previewTransition: vi.fn(), moveTransition: vi.fn() }));
+vi.mock("./transition-preview", () => ({ previewTransition: vi.fn() }));
 const preview = vi.mocked(previewTransition);
-const move = vi.mocked(moveTransition);
 const complete = vi.mocked(completeTransitionAction);
 const pending = (...codes: string[]) =>
   codes.map((code) => ({ code, message: "Falta " + code + "." })) as never;
@@ -34,14 +33,32 @@ function view(to = "s2", targetName = "Negociación") {
   return props;
 }
 
-test("sin pendientes mueve directo con la etapa vista y avisa", async () => {
+test("sin pendientes pide confirmar con una observación opcional y mueve con la etapa vista", async () => {
   preview.mockResolvedValue({ data: { pending: [], quote: null, items: 0 } });
-  move.mockResolvedValue({ done: true });
+  complete.mockResolvedValue({ done: true });
+  const user = userEvent.setup();
   const { onDone } = view();
-  await waitFor(() => expect(onDone).toHaveBeenCalledWith("Cuenta Andina pasó a Negociación."));
+  await screen.findByText("Cuenta Andina cumple los requisitos para pasar a Negociación. Confirma el cambio.");
   expect(preview).toHaveBeenCalledWith("d1", "s2");
-  expect(move).toHaveBeenCalledWith("d1", "s2", "s1");
+  expect(complete).not.toHaveBeenCalled();
+  await user.type(screen.getByLabelText("Observaciones"), "Cliente confirmó por llamada");
+  await user.click(screen.getByRole("button", { name: "Guardar y continuar" }));
+  await waitFor(() => expect(onDone).toHaveBeenCalledWith("Cuenta Andina pasó a Negociación."));
+  const [dealId, to, from, form] = complete.mock.calls[0]!;
+  expect([dealId, to, from]).toEqual(["d1", "s2", "s1"]);
+  expect(form.get("observation")).toBe("Cliente confirmó por llamada");
   expect(refresh).toHaveBeenCalledOnce();
+});
+
+test("si el negocio se movió pero la observación falló, avisa con ese mensaje", async () => {
+  preview.mockResolvedValue({ data: { pending: [], quote: null, items: 0 } });
+  complete.mockResolvedValue({ done: true, warning: "El negocio cambió de etapa, pero la observación no se guardó: x" });
+  const user = userEvent.setup();
+  const { onDone } = view();
+  await user.click(await screen.findByRole("button", { name: "Guardar y continuar" }));
+  await waitFor(() =>
+    expect(onDone).toHaveBeenCalledWith("El negocio cambió de etapa, pero la observación no se guardó: x"),
+  );
 });
 
 test("con pendientes lista lo que falta y pide cada dato", async () => {
@@ -154,7 +171,7 @@ test("perder pide motivo y detalle; un error del API se muestra y no cierra", as
   expect(await screen.findByLabelText("Motivo de la pérdida")).toHaveClass("select-control");
   expect(screen.getByLabelText("Detalle")).toBeInTheDocument();
 
-  preview.mockResolvedValueOnce({ error: "Solo un administrador puede reabrir o modificar un negocio cerrado." });
+  preview.mockResolvedValueOnce({ error: "Solo un administrador puede reversar o modificar un negocio cerrado." });
   const { onDone, onCancel } = view("REOPEN", "Abierto");
   expect(await screen.findByText(/Solo un administrador/)).toBeInTheDocument();
   await userEvent.setup().click(screen.getAllByRole("button", { name: "Cancelar" }).at(-1)!);

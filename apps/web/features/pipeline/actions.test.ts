@@ -17,7 +17,7 @@ import {
   createQuoteAction,
   acceptQuoteAction,
 } from "./actions";
-import { emptyActivity, emptyDeal } from "./types";
+import { emptyDeal } from "./types";
 vi.mock("@/lib/authenticated-api", () => ({
   authenticatedApi: vi.fn(),
   apiError: async () => "La referencia ya no existe.",
@@ -44,7 +44,7 @@ const form = (extra: Record<string, string> = {}) => {
   const result = new FormData();
   for (const [key, value] of Object.entries({
     title: "Contrato",
-    value: "520.25",
+    value: "520,25",
     pipelineId: "p1",
     stageId: "s1",
     contactId: "c1",
@@ -57,7 +57,7 @@ const form = (extra: Record<string, string> = {}) => {
 test("valida monto, vinculo y fecha antes de llamar al API", async () => {
   const result = await saveDeal(
     initial,
-    form({ value: "1.001", contactId: "", expectedClose: "2026-02-31" }),
+    form({ value: "1,001", contactId: "", expectedClose: "2026-02-31" }),
   );
   expect(result.fieldErrors).toEqual(
     expect.objectContaining({
@@ -152,15 +152,44 @@ test("el IVA es editable: acepta 12 y rechaza decimales o vacio", async () => {
   await saveDealItemsAction("d1", [{ ...row, taxRate: "12" }]);
   expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body)).items[0].taxRate).toBe(12);
 });
-test("los productos viajan como numeros con coma o punto decimal", async () => {
+test("los productos viajan como numeros: el punto separa miles y la coma los centavos", async () => {
   api.mockResolvedValue(Response.json({ id: "d1" }));
   await saveDealItemsAction("d1", [
-    { description: " Vinos ", quantity: "1,5", unitPrice: "100.25", taxRate: "0" },
+    { description: " Vinos ", quantity: "1,5", unitPrice: "1.100,25", taxRate: "0" },
   ]);
   expect(api).toHaveBeenCalledWith("/deals/d1/items", expect.objectContaining({ method: "PUT" }));
   expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body))).toEqual({
-    items: [{ description: "Vinos", quantity: 1.5, unitPrice: 100.25, taxRate: 0 }],
+    items: [{ description: "Vinos", quantity: 1.5, unitPrice: 1100.25, taxRate: 0 }],
   });
+  api.mockClear();
+  const result = await saveDealItemsAction("d1", [
+    { description: "Vinos", quantity: "1", unitPrice: "100.25", taxRate: "0" },
+  ]);
+  expect(result.rowErrors?.[0]?.unitPrice).toBe(
+    "Ingresa el precio con coma para los centavos, por ejemplo 1.400 o 19,99.",
+  );
+  expect(api).not.toHaveBeenCalled();
+});
+test("la observacion del movimiento se guarda como nota despues de mover, nunca antes", async () => {
+  api.mockResolvedValue(Response.json({ id: "d1" }));
+  const moved = await completeTransitionAction("d1", "s2", "s1", fields({ observation: " Llamó \r\n\r\n\r\nel gerente " }));
+  expect(moved).toEqual({ done: true });
+  expect(calls()).toEqual([
+    ["/deals/d1/move", "PATCH", { stageId: "s2", fromStageId: "s1" }],
+    ["/deals/d1/notes", "POST", { content: "Llamó\n\nel gerente", mentionIds: [] }],
+  ]);
+  api.mockClear();
+  // Demasiado larga: no se mueve nada.
+  const long = await completeTransitionAction("d1", "s2", "s1", fields({ observation: "a".repeat(5001) }));
+  expect(long.error).toBe("La observación admite hasta 5000 caracteres.");
+  expect(api).not.toHaveBeenCalled();
+  // La nota falla: el movimiento ya quedó y se avisa.
+  api
+    .mockResolvedValueOnce(Response.json({ id: "d1" }))
+    .mockResolvedValueOnce(Response.json({ error: { message: "Sin acceso" } }, { status: 403 }));
+  const warned = await completeTransitionAction("d1", "LOST", "s1", fields({ lossReason: "NO_BUDGET", observation: "Sin fondos" }));
+  expect(warned.done).toBe(true);
+  expect(warned.warning).toMatch(/^El negocio cambió de etapa, pero la observación no se guardó: /);
 });
 test("ganar, perder y reabrir van a su ruta con la etapa vista y el dia a las 00:00 UTC", async () => {
   api.mockResolvedValue(Response.json({ id: "d1" }));
@@ -293,7 +322,7 @@ test("un 422 devuelve los pendientes y un paso previo que falla corta la cadena"
 
 test("la transicion valida fechas, presupuesto y motivos antes de llamar al API", async () => {
   for (const values of [
-    { budget: "1.001" },
+    { budget: "1,001" },
     { nextDay: "2026-02-31", nextSubject: "Demo", nextType: "CALL" },
     { reason: "x" },
   ] as Record<string, string>[])
@@ -376,55 +405,72 @@ const activity = (values: Record<string, string>) => {
   for (const [key, value] of Object.entries(values)) data.set(key, value);
   return data;
 };
-const activityState = { values: emptyActivity, fieldErrors: {} };
+const sent = (index = 0) => JSON.parse(String(api.mock.calls[index]?.[1]?.body));
 
 test("una actividad invalida explica cada campo sin llamar al API", async () => {
   const result = await createActivityAction(
     "d1",
-    activityState,
-    activity({ type: "FAX", subject: "L", dueAt: "mañana", description: "x".repeat(1001) }),
+    activity({ type: "FAX", subject: "L", dueAt: "mañana", reminderAt: "x", description: "x".repeat(1001) }),
   );
-  expect(Object.keys(result.fieldErrors).sort()).toEqual(["description", "dueAt", "subject", "type"]);
+  expect(result.ok).toBe(false);
+  expect(Object.keys(result.fieldErrors ?? {}).sort()).toEqual(["description", "dueAt", "reminderAt", "subject", "type"]);
   expect(api).not.toHaveBeenCalled();
 });
 
-test("una actividad ya realizada se envia como completada en su fecha o en la de hoy", async () => {
-  api.mockResolvedValue(Response.json({ id: "a1" }));
-  await createActivityAction("d1", activityState, activity({ type: "CALL", subject: "Llamada", dueAt: "2026-10-01", done: "on" }));
-  expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body))).toEqual({
-    type: "CALL",
-    subject: "Llamada",
-    completedAt: "2026-10-01",
-  });
-  await createActivityAction("d1", activityState, activity({ type: "CALL", subject: "Llamada", done: "on" }));
-  expect(JSON.parse(String(api.mock.calls[1]?.[1]?.body)).completedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-});
-
-test("registrar una actividad limpia el formulario y omite fecha y nota vacias", async () => {
-  api.mockResolvedValue(Response.json({ id: "a1" }));
-  const result = await createActivityAction("d1", activityState, activity({ type: "CALL", subject: " Llamar " }));
-  expect(JSON.parse(String(api.mock.calls[0]?.[1]?.body))).toEqual({ type: "CALL", subject: "Llamar" });
-  expect(result.values).toEqual(emptyActivity);
-  expect(result.feedback?.tone).toBe("success");
-
-  await createActivityAction(
-    "d1",
-    activityState,
-    activity({ type: "TASK", subject: "Enviar", dueAt: "2026-10-20", description: "Nota" }),
+test("el recordatorio sigue las reglas de la agenda antes de llamar al API", async () => {
+  const base = { type: "CALL", subject: "Llamar" };
+  const error = async (values: Record<string, string>) =>
+    (await createActivityAction("d1", activity({ ...base, ...values }))).fieldErrors?.reminderAt;
+  expect(await error({ reminderAt: "2026-11-20T09:00" })).toBe(
+    "Programa una fecha de vencimiento para activar el recordatorio.",
   );
-  expect(JSON.parse(String(api.mock.calls[1]?.[1]?.body))).toEqual({
-    type: "TASK",
-    subject: "Enviar",
-    dueAt: "2026-10-20",
-    description: "Nota",
+  expect(await error({ dueAt: "2026-11-20T09:00", reminderAt: "2026-11-20T10:00" })).toBe(
+    "El recordatorio debe ser anterior al vencimiento.",
+  );
+  expect(await error({ dueAt: "2026-11-20T09:00", reminderAt: "2026-11-20T08:00", done: "on" })).toBe(
+    "Una actividad ya realizada no lleva recordatorio.",
+  );
+  expect(api).not.toHaveBeenCalled();
+});
+
+test("con responsable, hora y recordatorio, envia instantes de Ecuador a la ruta del negocio", async () => {
+  api.mockResolvedValue(Response.json({ id: "a1" }));
+  const result = await createActivityAction(
+    "d1",
+    activity({
+      type: "MEETING",
+      subject: " Demo ",
+      assigneeId: "u2",
+      dueAt: "2026-11-20T15:00",
+      reminderAt: "2026-11-20T14:30",
+      description: " Llevar \r\n\r\n\r\nla propuesta ",
+    }),
+  );
+  expect(result).toEqual({ ok: true, message: "Actividad registrada." });
+  expect(api).toHaveBeenCalledWith("/deals/d1/activities", expect.objectContaining({ method: "POST" }));
+  expect(sent()).toEqual({
+    type: "MEETING",
+    subject: "Demo",
+    assigneeId: "u2",
+    description: "Llevar\n\nla propuesta",
+    dueAt: "2026-11-20T20:00:00.000Z",
+    reminderAt: "2026-11-20T19:30:00.000Z",
   });
 });
 
-test("si el API rechaza la actividad, conserva lo escrito", async () => {
+test("una actividad ya realizada se envia completada en su fecha o ahora, sin vencimiento", async () => {
+  api.mockResolvedValue(Response.json({ id: "a1" }));
+  await createActivityAction("d1", activity({ type: "CALL", subject: "Llamada", dueAt: "2026-10-01T10:00", done: "on" }));
+  expect(sent()).toEqual({ type: "CALL", subject: "Llamada", completedAt: "2026-10-01T15:00:00.000Z" });
+  await createActivityAction("d1", activity({ type: "CALL", subject: "Llamada", done: "on" }));
+  expect(Date.parse(sent(1).completedAt)).toBeLessThanOrEqual(Date.now());
+  expect(sent(1).dueAt).toBeUndefined();
+});
+
+test("si el API rechaza la actividad, devuelve su mensaje", async () => {
   api.mockResolvedValue(new Response("", { status: 404 }));
-  const result = await createActivityAction("d1", activityState, activity({ type: "CALL", subject: "Llamar" }));
-  expect(result.feedback).toEqual({ tone: "error", message: "La referencia ya no existe." });
-  expect(result.values.subject).toBe("Llamar");
+  const result = await createActivityAction("d1", activity({ type: "CALL", subject: "Llamar" }));
+  expect(result).toEqual({ ok: false, message: "La referencia ya no existe." });
 });
 
 test("la configuracion exige etapas con enteros, color por defecto y pipeline principal", async () => {

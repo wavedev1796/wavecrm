@@ -3,6 +3,7 @@
 import { Check, IdCard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
+import type { FieldIconName } from "@/components/form/field-icon";
 import { Field } from "@/components/form/form-field";
 import { LocationFields } from "@/components/form/location-fields";
 import { PhoneField } from "@/components/form/phone-field";
@@ -21,6 +22,15 @@ import {
   type ContactFormState,
   type ContactFormValues,
 } from "./contact-form-state";
+
+const ICONS: Partial<Record<keyof ContactFormValues, FieldIconName>> = {
+  firstName: "persona",
+  lastName: "persona",
+  documentId: "documento",
+  email: "correo",
+  position: "cargo",
+  tags: "etiquetas",
+};
 
 type ContactFormProps = Readonly<{
   id?: string;
@@ -71,6 +81,7 @@ export function ContactForm({
     label,
     error: error(name),
     required,
+    icon: ICONS[name],
   });
 
   return (
@@ -118,6 +129,7 @@ export function ContactForm({
           id="contact-documentType"
           label={texto.campos.tipoDocumento}
           required
+          icon="documento"
         >
           <Select
             id="contact-documentType"

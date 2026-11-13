@@ -2,22 +2,21 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { authenticatedApi, apiError } from "@/lib/authenticated-api";
-import { ACTIVITY_TYPES, cleanText, LOSS_REASONS, REJECTION_REASONS } from "@wave/shared";
+import { ACTIVITY_TYPES, cleanText, LOSS_REASONS, parseAmount, REJECTION_REASONS } from "@wave/shared";
 import { NEGOCIO, PIPELINE, TRANSICION } from "@/content/pipeline";
 import { TIMELINE } from "@/content/timeline";
 import {
-  decimal,
   isAmount,
   isDay,
   todayEcuador,
   validateDeal,
   validateItems,
 } from "./deal-validation";
+import { ACTIVIDADES } from "@/content/actividades";
+import type { ActivityResult } from "../actividades/activity-dialog";
+import { ecuadorIso } from "../actividades/dates";
 import {
-  emptyActivity,
   emptyDeal,
-  type ActivityFormState,
-  type ActivityValues,
   type Deal,
   type DealFormState,
   type DealValues,
@@ -35,7 +34,8 @@ const dealPath = (id: string, rest = "") =>
 const utcDay = (day: string) => day + "T00:00:00.000Z";
 
 function refresh() {
-  for (const path of ["/pipeline", "/contactos", "/empresas"])
+  // /actividades: las actividades del negocio (ficha y modal de transición) son las mismas de la agenda (P14).
+  for (const path of ["/pipeline", "/contactos", "/empresas", "/actividades"])
     revalidatePath(path, "layout");
 }
 /** Campos de varias líneas (notas y motivos): conservan sus saltos de línea; el resto queda en una línea. */
@@ -94,7 +94,6 @@ export async function saveDeal(
   const values = { ...emptyDeal };
   for (const key of Object.keys(values) as (keyof DealValues)[])
     values[key] = formText(form, key);
-  values.value = decimal(values.value);
   const locked = form.get("valueLocked") === "1";
   const fieldErrors = validateDeal(values);
   if (Object.keys(fieldErrors).length) return { values, fieldErrors };
@@ -104,7 +103,7 @@ export async function saveDeal(
     id ? "PATCH" : "POST",
     {
       title: values.title,
-      ...(!locked && { value: Number(values.value) }),
+      ...(!locked && { value: parseAmount(values.value) }),
       pipelineId: values.pipelineId,
       stageId: values.stageId,
       contactId: values.contactId || null,
@@ -163,8 +162,8 @@ export async function saveDealItemsAction(
   return request(dealPath(dealId, "/items"), "PUT", {
     items: cleaned.map((row) => ({
       description: row.description,
-      quantity: Number(decimal(row.quantity)),
-      unitPrice: Number(decimal(row.unitPrice)),
+      quantity: parseAmount(row.quantity, 6),
+      unitPrice: parseAmount(row.unitPrice),
       taxRate: Number(row.taxRate),
     })),
   });
@@ -240,7 +239,7 @@ function transitionSteps(dealId: string, form: FormData) {
   const deal: Record<string, unknown> = {};
   for (const key of ["contactId", "ownerId", "need", "solution", "budgetNote", "decisionMaker"])
     if (text(key)) deal[key] = text(key);
-  if (text("budget")) deal.budget = Number(decimal(text("budget")));
+  if (text("budget")) deal.budget = parseAmount(text("budget"));
   if (text("expectedClose")) deal.expectedClose = utcDay(text("expectedClose"));
   const steps: [string, string, unknown][] = [];
   if (Object.keys(deal).length) steps.push([dealPath(dealId), "PATCH", deal]);
@@ -299,7 +298,11 @@ export async function completeTransitionAction(
   to: string,
   fromStageId: string,
   form: FormData,
-): Promise<{ error?: string; pending?: Pending[]; done?: true }> {
+): Promise<{ error?: string; pending?: Pending[]; done?: true; warning?: string }> {
+  // La observación (P7) va como nota después del movimiento: se valida antes para no mover y luego fallar.
+  const rawObservation = form.get("observation");
+  const observation = typeof rawObservation === "string" ? cleanText(rawObservation, true) : "";
+  if (observation.length > 5000) return { error: TRANSICION.observacionLarga };
   const saved = await saveTransitionAction(dealId, to, form);
   if (saved.error) return saved;
   const text = (key: string) => formText(form, key);
@@ -319,7 +322,11 @@ export async function completeTransitionAction(
     keys.filter((key) => values[key] !== undefined).map((key) => [key, values[key]]),
   );
   const result = await request(dealPath(dealId, rest), method, route ? body : { stageId: to, ...body });
-  return result.error ? { error: result.error, pending: result.pending } : { done: true };
+  if (result.error) return { error: result.error, pending: result.pending };
+  if (!observation) return { done: true };
+  // El movimiento ya quedó: si la nota falla, se avisa sin deshacerlo.
+  const note = await request(dealPath(dealId, "/notes"), "POST", { content: observation, mentionIds: [] });
+  return note.error ? { done: true, warning: TRANSICION.observacionFallida(note.error) } : { done: true };
 }
 
 /** "Ver más": la página siguiente de una columna del tablero. */
@@ -341,7 +348,7 @@ export async function qualifyDealAction(
   return request(dealPath(dealId), "PATCH", {
     need: optional(form, "need"),
     solution: optional(form, "solution"),
-    budget: budget ? Number(decimal(budget)) : null,
+    budget: budget ? parseAmount(budget) : null,
     budgetNote: optional(form, "budgetNote"),
     decisionMaker: optional(form, "decisionMaker"),
   });
@@ -367,46 +374,43 @@ export async function acceptQuoteAction(dealId: string, quoteId: string, form: F
     acceptanceNote,
   });
 }
-export async function createActivityAction(
-  dealId: string,
-  _state: ActivityFormState,
-  form: FormData,
-): Promise<ActivityFormState> {
-  const values = { ...emptyActivity };
-  for (const key of Object.keys(values) as (keyof ActivityValues)[])
-    values[key] = formText(form, key);
-  const texto = NEGOCIO.actividad;
-  const fieldErrors: ActivityFormState["fieldErrors"] = {};
-  if (!(ACTIVITY_TYPES as readonly string[]).includes(values.type))
-    fieldErrors.type = texto.tipoRequerido;
-  if (values.subject.length < 2 || values.subject.length > 160)
-    fieldErrors.subject = texto.asuntoRequerido;
-  if (values.dueAt && !isDay(values.dueAt))
-    fieldErrors.dueAt = PIPELINE.dateInvalid;
-  if (values.description.length > 1000)
-    fieldErrors.description = texto.notaLarga;
-  if (Object.keys(fieldErrors).length) return { values, fieldErrors };
-  // "Ya se realizó": la fecha es la de la actividad hecha (hoy si se deja vacía), no un vencimiento.
-  const day = values.dueAt;
+/**
+ * Actividad desde la ficha (P14, 2026-11-11): el mismo formulario de la agenda (responsable, vencimiento con hora y
+ * recordatorio), contra POST /deals/:id/activities, que aplica las reglas del negocio. «Ya se realizó» la registra
+ * completada en la fecha de «Vence» (ahora si se deja vacía), sin recordatorio.
+ */
+export async function createActivityAction(dealId: string, form: FormData): Promise<ActivityResult> {
+  const text = (key: string) => formText(form, key);
+  const errores = ACTIVIDADES.formulario.errores;
+  const rawDescription = form.get("description");
+  const description = typeof rawDescription === "string" ? cleanText(rawDescription, true) : "";
+  const [type, subject, assigneeId, rawDue, rawReminder] = ["type", "subject", "assigneeId", "dueAt", "reminderAt"].map(text);
+  const done = form.get("done") === "on";
+  const dueAt = ecuadorIso(rawDue ?? "");
+  const reminderAt = ecuadorIso(rawReminder ?? "");
+  const fieldErrors: NonNullable<ActivityResult["fieldErrors"]> = {};
+  if (!(ACTIVITY_TYPES as readonly string[]).includes(type ?? "")) fieldErrors.type = errores.tipo;
+  if (!subject || subject.length < 2 || subject.length > 160) fieldErrors.subject = errores.asunto;
+  if (rawDue && !dueAt) fieldErrors.dueAt = errores.fecha;
+  // Fechas ISO del mismo huso: compararlas como texto respeta el orden.
+  if (rawReminder && !reminderAt) fieldErrors.reminderAt = errores.fecha;
+  else if (reminderAt && done) fieldErrors.reminderAt = errores.hechaConRecordatorio;
+  else if (reminderAt && !dueAt) fieldErrors.reminderAt = errores.recordatorioSinFecha;
+  else if (reminderAt && dueAt && reminderAt > dueAt) fieldErrors.reminderAt = errores.recordatorioTarde;
+  if (description.length > 1000) fieldErrors.description = errores.descripcion;
+  if (Object.keys(fieldErrors).length) return { ok: false, message: ACTIVIDADES.formulario.revisar, fieldErrors };
   const result = await request(dealPath(dealId, "/activities"), "POST", {
-    type: values.type,
-    subject: values.subject,
-    ...(values.done
-      ? { completedAt: day || todayEcuador() }
-      : day && { dueAt: day }),
-    ...(values.description && { description: values.description }),
+    type,
+    subject,
+    ...(assigneeId && { assigneeId }),
+    ...(description && { description }),
+    ...(done
+      ? { completedAt: dueAt ?? new Date().toISOString() }
+      : { ...(dueAt && { dueAt }), ...(reminderAt && { reminderAt }) }),
   });
-  if (result.error)
-    return {
-      values,
-      fieldErrors: {},
-      feedback: { tone: "error", message: result.error },
-    };
-  return {
-    values: emptyActivity,
-    fieldErrors: {},
-    feedback: { tone: "success", message: texto.registrada },
-  };
+  return result.error
+    ? { ok: false, message: result.error }
+    : { ok: true, message: ACTIVIDADES.formulario.creada };
 }
 export async function completeActivityAction(
   dealId: string,

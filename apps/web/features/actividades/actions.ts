@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { authenticatedApi, apiError } from "@/lib/authenticated-api";
+import { ecuadorIso } from "./dates";
 
 export type ActivityActionState = { ok: boolean; message: string; conflict?: boolean };
 
@@ -11,8 +12,8 @@ export async function saveActivity(
   formData: FormData,
 ): Promise<ActivityActionState> {
   const id = String(formData.get("id") ?? "");
-  const dueAt = asEcuadorIso(formData.get("dueAt"));
-  const reminderAt = asEcuadorIso(formData.get("reminderAt"));
+  const dueAt = ecuadorIso(formData.get("dueAt"));
+  const reminderAt = ecuadorIso(formData.get("reminderAt"));
   const updatedAt = String(formData.get("updatedAt") ?? "");
   const body = {
     type: String(formData.get("type") ?? "TASK"),
@@ -99,8 +100,3 @@ async function mutate(
   }
 }
 
-function asEcuadorIso(value: FormDataEntryValue | null) {
-  if (typeof value !== "string" || !value) return undefined;
-  const parsed = new Date(`${value}:00-05:00`);
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
-}
