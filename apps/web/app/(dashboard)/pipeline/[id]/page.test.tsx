@@ -57,6 +57,9 @@ test("la ficha abierta muestra valor, productos, empresa enlazada y botones de c
   expect(overviewBottom?.children[0]).toHaveClass("deal-overview-created");
   expect(overviewBottom?.children[1]).toHaveClass("deal-overview-activity");
   await user.click(screen.getByRole("tab", { name: /Productos y propuestas/ }));
+  const preparationGrid = container.querySelector(".deal-preparation-grid");
+  expect(preparationGrid?.querySelector(":scope > .deal-items")).toBeInTheDocument();
+  expect(preparationGrid?.querySelector(":scope > .deal-quotes")).toBeInTheDocument();
   expect(container.querySelector(".deal-items--summary")).toHaveTextContent("Chocolates");
   expect(screen.queryByRole("heading", { name: "Calificación" })).toBeNull();
   expect(screen.getByRole("heading", { name: /Propuestas/ })).toBeInTheDocument();

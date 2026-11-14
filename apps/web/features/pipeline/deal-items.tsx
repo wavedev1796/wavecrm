@@ -103,12 +103,20 @@ export function DealItems({
         {locked && <Alert tone="note">{texto.bloqueados}</Alert>}
         {feedback?.tone === "success" && <Alert tone="success">{feedback.message}</Alert>}
         {rows.length ? (
-          <div className="deal-items-summary-row">
-            <div>
-              <strong>{rows.slice(0, 2).map((row) => row.description || texto.sinDescripcion).join(" · ")}</strong>
-              {rows.length > 2 && <span className="field-hint"> + {rows.length - 2} más</span>}
-              <span className="field-hint"> · {dirty ? texto.cambiosSinGuardar : texto.lineasGuardadas}</span>
-            </div>
+          <div className="deal-items-summary-content">
+            <ul className="deal-items-summary-lines">
+              {rows.map((row) => (
+                <li className="deal-items-summary-line" key={row.key}>
+                  <div>
+                    <strong>{row.description || texto.sinDescripcion}</strong>
+                    <span className="field-hint">
+                      {row.quantity || "0"} × {formatMoney(row.unitPrice || 0)} · IVA {row.taxRate}% · descuento {row.discountRate}%
+                    </span>
+                  </div>
+                  <b>{formatMoney(lineTotal(row))}</b>
+                </li>
+              ))}
+            </ul>
             <div className="deal-items-summary-total">
               <span>{texto.total}</span>
               <b>{formatMoney(totals.total)}</b>

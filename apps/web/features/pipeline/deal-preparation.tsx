@@ -18,7 +18,7 @@ export function DealPreparation({
   );
   const itemsLocked = deal.status === "WON" || deal.status === "REJECTED";
   return (
-    <>
+    <div className="deal-preparation-grid">
       <DealItems
         key={deal.status + ":" + deal.items.map((item) => item.id).join(",")}
         dealId={deal.id}
@@ -32,6 +32,6 @@ export function DealPreparation({
         locked={locked}
         hasUnsavedItems={hasUnsavedItems}
       />
-    </>
+    </div>
   );
 }
