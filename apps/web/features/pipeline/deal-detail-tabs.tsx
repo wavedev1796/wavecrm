@@ -170,7 +170,7 @@ function DealOverview({
 
   return (
     <div className="deal-overview-grid">
-      <div className="deal-overview-main">
+      <div className="deal-overview-top">
         <Card className="contact-related deal-overview-quote">
           <header className="deal-overview-card-heading"><h2><FileText aria-hidden />{text.ultimaPropuesta}</h2>
             {quote && <Badge tone={quote.status === "ACCEPTED" ? "success" : quote.status === "REJECTED" ? "danger" : quote.status === "SUPERSEDED" ? "neutral" : "blue"}>{ESTADO_COTIZACION[quote.status]}</Badge>}
@@ -189,22 +189,7 @@ function DealOverview({
           </Button>
         </Card>
 
-        <Card className="contact-related deal-overview-activity">
-          <header className="deal-overview-card-heading"><h2><Clock3 aria-hidden />{text.actividadReciente}</h2>
-            <Button type="button" variant="ghost" onClick={() => onSelect("activity")}>{text.verActividad}</Button>
-          </header>
-          {"error" in timeline ? (
-            <p className="field-hint">{timeline.error}</p>
-          ) : events.length ? (
-            <ol>
-              {events.map((event) => <li key={event.id}><Badge tone="neutral">{event.type}</Badge><strong>{event.title}</strong><span>{event.detail}</span></li>)}
-            </ol>
-          ) : <p>{text.sinActividadReciente}</p>}
-        </Card>
-      </div>
-
-      <div className="deal-overview-side">
-        <Card className="contact-data-card">
+        <Card className="contact-data-card deal-overview-business">
           <h2><BriefcaseBusiness aria-hidden />{text.datosContacto}</h2>
           <dl>
             <Info icon={<Building2 />} label={fields.empresa} value={deal.company && <Link href={`/empresas/${deal.company.id}`}>{deal.company.name}</Link>} />
@@ -238,10 +223,26 @@ function DealOverview({
           <Button type="button" variant="ghost" onClick={() => onSelect("payments")}><Wallet aria-hidden />{text.verTodosAbonos}</Button>
         </Card>
 
+      </div>
+
+      <div className="deal-overview-bottom">
         <Card className="contact-data-card deal-overview-created">
           <h2><CalendarDays aria-hidden />{fields.pipeline}</h2>
           <p>{deal.pipeline.name} · {deal.stage.name}</p>
           <span className="field-hint">{fields.creado}: {formatDateTime(deal.createdAt)}</span>
+        </Card>
+
+        <Card className="contact-related deal-overview-activity">
+          <header className="deal-overview-card-heading"><h2><Clock3 aria-hidden />{text.actividadReciente}</h2>
+            <Button type="button" variant="ghost" onClick={() => onSelect("activity")}>{text.verActividad}</Button>
+          </header>
+          {"error" in timeline ? (
+            <p className="field-hint">{timeline.error}</p>
+          ) : events.length ? (
+            <ol>
+              {events.map((event) => <li key={event.id}><Badge tone="neutral">{event.type}</Badge><strong>{event.title}</strong><span>{event.detail}</span></li>)}
+            </ol>
+          ) : <p>{text.sinActividadReciente}</p>}
         </Card>
       </div>
     </div>

@@ -779,15 +779,34 @@
 }
 .deal-overview-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.85fr);
-  align-items: start;
   gap: 16px;
 }
-.deal-overview-main,
-.deal-overview-side {
+.deal-overview-top,
+.deal-overview-bottom {
   display: grid;
   min-width: 0;
   gap: 14px;
+}
+.deal-overview-top {
+  grid-template-columns: minmax(220px, 0.9fr) minmax(360px, 1.55fr) minmax(210px, 0.8fr);
+  align-items: stretch;
+}
+.deal-overview-bottom {
+  grid-template-columns: minmax(230px, 0.72fr) minmax(0, 1.8fr);
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .deal-overview-top {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .deal-overview-business {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .deal-overview-balance {
+    grid-column: 2;
+    grid-row: 1;
+  }
 }
 .deal-overview-quote,
 .deal-overview-activity,
@@ -803,7 +822,8 @@
   gap: 12px;
 }
 .deal-overview-card-heading h2,
-.deal-overview-side h2,
+.deal-overview-top h2,
+.deal-overview-bottom h2,
 .deal-overview-closed h3 {
   display: flex;
   align-items: center;
@@ -812,7 +832,8 @@
   font-size: 0.96rem;
 }
 .deal-overview-card-heading h2 svg,
-.deal-overview-side h2 svg,
+.deal-overview-top h2 svg,
+.deal-overview-bottom h2 svg,
 .deal-overview-closed h3 svg {
   width: 18px;
   height: 18px;
@@ -862,14 +883,22 @@
   color: var(--wave-muted-strong);
   font-size: 0.78rem;
 }
-.deal-overview-side .contact-data-card {
+.deal-overview-top .contact-data-card,
+.deal-overview-bottom .contact-data-card {
   display: grid;
   gap: 14px;
 }
-.deal-overview-side .contact-data-card dl {
+.deal-overview-business dl {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 18px;
+  row-gap: 12px;
+}
+.deal-overview-business dl > div {
+  min-width: 0;
+}
+.deal-overview-business dd {
+  overflow-wrap: anywhere;
 }
 .deal-overview-closed {
   display: grid;
@@ -895,7 +924,16 @@
   margin: 0;
 }
 @media (max-width: 760px) {
-  .deal-overview-grid {
+  .deal-overview-top,
+  .deal-overview-bottom {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .deal-overview-business,
+  .deal-overview-balance {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .deal-overview-business dl {
     grid-template-columns: minmax(0, 1fr);
   }
 }

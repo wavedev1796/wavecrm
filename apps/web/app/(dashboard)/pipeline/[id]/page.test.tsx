@@ -49,6 +49,13 @@ test("la ficha abierta muestra valor, productos, empresa enlazada y botones de c
   expect(screen.getByRole("link", { name: "Comercial Andina" })).toHaveAttribute("href", "/empresas/e1");
   expect(screen.getByRole("tab", { name: "Resumen" })).toHaveAttribute("aria-selected", "true");
   expect(container.querySelector(".deal-overview-quote")).toBeInTheDocument();
+  const overviewTop = container.querySelector(".deal-overview-top");
+  const overviewBottom = container.querySelector(".deal-overview-bottom");
+  expect(overviewTop?.children[0]).toHaveClass("deal-overview-quote");
+  expect(overviewTop?.children[1]).toHaveClass("deal-overview-business");
+  expect(overviewTop?.children[2]).toHaveClass("deal-overview-balance");
+  expect(overviewBottom?.children[0]).toHaveClass("deal-overview-created");
+  expect(overviewBottom?.children[1]).toHaveClass("deal-overview-activity");
   await user.click(screen.getByRole("tab", { name: /Productos y propuestas/ }));
   expect(container.querySelector(".deal-items--summary")).toHaveTextContent("Chocolates");
   expect(screen.queryByRole("heading", { name: "Calificación" })).toBeNull();
