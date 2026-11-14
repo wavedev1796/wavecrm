@@ -211,3 +211,10 @@ Revisión de sobreingeniería (ponytail) sobre el pipeline, API y web. Con OK de
 - Los mensajes "Productos guardados." y "Actividad registrada." siguen visibles después de ganar, perder o reabrir.
 - La columna de dinero de la tabla (112 px) puede cortar montos de más de 10 cifras.
 - El tablero (`board`, CRM-18) usa la misma transacción de lectura con 5 s por defecto; no falló en la revisión, pero tiene el mismo riesgo contra Neon.
+
+## Organización visual de la ficha (2026-11-14)
+
+- La ficha agrupa su contenido en pestañas **Resumen**, **Productos y propuestas**, **Actividad**, **Calificación** y **Abonos**, con iconos Wave y contadores donde aportan contexto. La cabecera conserva nombre, cliente, etapa, estado, riesgo y valor; las acciones de transición y edición quedan en un menú desplegable.
+- El resumen prioriza última propuesta, tres eventos recientes, datos del negocio y saldo pendiente, con accesos directos a los apartados completos.
+- Los paneles mantienen montados sus formularios al cambiar de pestaña para no perder ediciones aún no guardadas. La barra de pestañas permite navegar con flechas y Home/End y se desplaza horizontalmente en móvil.
+- `apps/web/features/pipeline/deal-detail-tabs.tsx` compone la ficha; `apps/web/styles/pipeline.css` define las pestañas, el resumen y sus ajustes responsive. Las secciones mantienen sus componentes y permisos existentes.
