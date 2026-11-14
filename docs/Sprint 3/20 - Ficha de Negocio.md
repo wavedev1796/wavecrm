@@ -216,6 +216,6 @@ Revisión de sobreingeniería (ponytail) sobre el pipeline, API y web. Con OK de
 
 - La ficha agrupa su contenido en pestañas **Resumen**, **Productos y propuestas**, **Actividad**, **Calificación** y **Abonos**, con iconos Wave y contadores donde aportan contexto. La cabecera conserva nombre, cliente, etapa, estado, riesgo y valor; las acciones de transición y edición quedan en un menú desplegable.
 - El resumen distribuye última propuesta, datos compactos del negocio y saldo pendiente en una fila; debajo muestra pipeline/etapa junto a un historial reciente más ancho, con accesos directos a los apartados completos.
-- La pestaña de preparación separa productos y propuestas en dos columnas; cada línea resume cantidad, precio unitario, IVA, descuento e importe, y las columnas se apilan en pantallas estrechas.
+- La pestaña de preparación prioriza el historial de propuestas y mantiene compacta la tarjeta de productos; cada línea resume cantidad, precio unitario, IVA, descuento e importe. En pantallas estrechas las secciones se apilan y los metadatos de las propuestas se redistribuyen para evitar solapamientos.
 - Los paneles mantienen montados sus formularios al cambiar de pestaña para no perder ediciones aún no guardadas. La barra de pestañas permite navegar con flechas y Home/End y se desplaza horizontalmente en móvil.
 - `apps/web/features/pipeline/deal-detail-tabs.tsx` compone la ficha; `apps/web/styles/pipeline.css` define las pestañas, el resumen y sus ajustes responsive. Las secciones mantienen sus componentes y permisos existentes.
