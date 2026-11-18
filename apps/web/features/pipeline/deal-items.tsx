@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Package, Plus, Save, Trash2, X } from "lucide-react";
-import { formatAmount, IVA_SUGGESTIONS } from "@wave/shared";
+import { formatAmount, IVA_SUGGESTIONS, parseAmount } from "@wave/shared";
 import { FieldIcon } from "@/components/form/field-icon";
 import { FormDialog } from "@/components/form/form-dialog";
 import { Alert } from "@/components/ui/alert";
@@ -29,6 +29,8 @@ const toRow = (key: string, item?: DealItem): Row => ({
   taxRate: String(item?.taxRate ?? IVA_SUGGESTIONS[0]),
   discountRate: String(item?.discountRate ?? 0),
 });
+/** El precio de la fila es texto en formato es-EC («1.250,50»); `Number()` lo convierte en NaN. */
+const price = (row: Row) => formatMoney(parseAmount(row.unitPrice) ?? 0);
 const signature = (rows: readonly Row[]) => JSON.stringify(rows.map(({ description, quantity, unitPrice, taxRate, discountRate }) => ({ description, quantity, unitPrice, taxRate, discountRate })));
 
 export function DealItems({
@@ -110,7 +112,7 @@ export function DealItems({
                   <div>
                     <strong>{row.description || texto.sinDescripcion}</strong>
                     <span className="field-hint">
-                      {row.quantity || "0"} × {formatMoney(row.unitPrice || 0)} · IVA {row.taxRate}% · descuento {row.discountRate}%
+                      {row.quantity || "0"} × {price(row)} · IVA {row.taxRate}% · descuento {row.discountRate}%
                     </span>
                   </div>
                   <b>{formatMoney(lineTotal(row))}</b>
@@ -161,7 +163,7 @@ export function DealItems({
                   <tr key={row.key}>
                     <td>{locked ? row.description : cell(row, index, "description", texto.descripcion)}</td>
                     <td className="deal-items-qty">{locked ? row.quantity : cell(row, index, "quantity", texto.cantidad)}</td>
-                    <td className="deal-items-money">{locked ? formatMoney(row.unitPrice) : cell(row, index, "unitPrice", texto.precio)}</td>
+                    <td className="deal-items-money">{locked ? price(row) : cell(row, index, "unitPrice", texto.precio)}</td>
                     <td className="deal-items-tax">{locked ? texto.tarifa(Number(row.taxRate)) : cell(row, index, "taxRate", texto.iva)}</td>
                     <td className="deal-items-tax">{locked ? `${row.discountRate} %` : cell(row, index, "discountRate", texto.descuento)}</td>
                     <td className="deal-items-money deal-items-line">{formatMoney(lineTotal(row))}</td>

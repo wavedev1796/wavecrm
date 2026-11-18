@@ -42,6 +42,27 @@ Preparar la propuesta desde la ficha del negocio, editar sus líneas y revisar c
 - Build web: `pnpm --filter @wave/web build` no pudo terminar porque Windows devolvió `EPERM` al crear `apps/web/.next/server/app/(dashboard)/empresas`. Tests, lint y typecheck sí finalizaron; el build de producción queda pendiente de repetir en un entorno que permita crear esa ruta.
 - Casos cubiertos incluyen edición/descuento, IVA y redondeo, línea inválida, datos de cliente faltantes, cambios sin guardar, versión inmutable/nueva y errores de API. La autorización final queda protegida por el API existente; no se hizo una llamada contra un ambiente compartido para este cambio de frontend.
 
+## Precio $NaN y aviso antes de la lista (2026-11-18)
+
+Bloque añadido al verificar CRM-30 en el navegador, contra Neon `pruebas` (negocio «SW»).
+
+### Implementación
+
+- `apps/web/features/pipeline/deal-items.tsx`: el resumen de líneas mostraba «1 × $NaN». El precio de cada fila es texto en formato es-EC («1.250,50») y `formatMoney` lo convertía con `Number()`. El helper `price(row)` lo convierte con `parseAmount` de `@wave/shared`, como ya hace `item-totals.ts`; lo usan el resumen y la tabla de solo lectura del negocio bloqueado, que tenía el mismo fallo.
+- `apps/web/features/pipeline/deal-quotes.tsx`: al registrar o aceptar una versión, el aviso de éxito y el cierre del diálogo esperan a que la ficha ya traiga las propuestas que respondió el API. Se compara una huella `id:estado` de `deal.quotes` con la de la ficha devuelta por la acción; mientras no coincidan, el botón sigue «cargando». Sin ficha en la respuesta, cierra de inmediato.
+
+### Decisiones
+
+- **La revalidación funcionaba.** `request()` ya llama a `revalidatePath("/pipeline", "layout")` y la lista se actualiza sola sin recargar. El fallo visible era el orden: Next entrega el resultado de la server action antes que la página revalidada, dentro de la misma respuesta. En desarrollo el aviso «Registro guardado» salía a los 3,7 s y la lista nueva a los 6,3 s. No se agregó `router.refresh()`, que pediría la ficha otra vez.
+- La espera compara contra la ficha que devolvió el API y no contra «la lista cambió», para que un reintento idempotente (misma clave, versión ya creada) no quede esperando un cambio que no llega.
+
+### Validación
+
+- `deal-items.test.tsx`: 2 pruebas nuevas (resumen y tabla bloqueada sin `NaN`); fallaban antes del arreglo.
+- `deal-quotes.test.tsx`: 1 prueba nueva (sin aviso y con el botón ocupado hasta que llega la ficha con la versión nueva); fallaba antes del arreglo.
+- `pnpm --filter @wave/web test`: **415/415**. Lint y `tsc --noEmit`: sin errores.
+- Navegador contra `pruebas`: el resumen muestra «1 × $600,00»; al registrar COT-000005 · v5, lista, cierre del diálogo y aviso llegaron juntos (14,0 s con el servidor recién recompilado) y el botón quedó ocupado mientras tanto.
+
 ## Evidencia visual
 
 La ficha muestra las líneas y el historial como resúmenes compactos; la tabla editable, la revisión/registro de versión y la aceptación se abren mediante acciones en diálogos separados. Los detalles de líneas históricas se despliegan por versión. La evidencia de interacción está en las pruebas de componentes indicadas arriba; no se adjunta captura de un ambiente vivo.

@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState, useTransition, type FormEvent, type RefObject } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent, type RefObject } from "react";
 import Link from "next/link";
 import { BadgeCheck, FileDown, FilePlus2, FileText, Send, X } from "lucide-react";
 import { Field } from "@/components/form/form-field";
@@ -15,10 +15,13 @@ import { formatDay, formatMoney } from "@/lib/format";
 import { acceptQuoteAction, createQuoteAction } from "./actions";
 import { todayEcuador } from "./deal-validation";
 import { itemTotals, lineTotal } from "./item-totals";
-import type { DealDetail } from "./types";
+import type { DealDetail, Quote } from "./types";
 
 const texto = NEGOCIO.propuestas;
-type Result = { error?: string };
+type Result = { error?: string; data?: unknown };
+type Waiting = { key: string; message: string; dialog: RefObject<HTMLDialogElement | null> };
+/** Huella de las propuestas: cambia al registrar una versión o al aceptarla. */
+const quotesKey = (quotes: readonly Pick<Quote, "id" | "status">[]) => quotes.map((quote) => quote.id + ":" + quote.status).join();
 
 /** Historial compacto; aceptación y creación de versión se abren en formularios separados. */
 export function DealQuotes({
@@ -37,6 +40,17 @@ export function DealQuotes({
   const customerName = deal.company?.name.trim() || [deal.contact?.firstName, deal.contact?.lastName].filter(Boolean).join(" ").trim();
   const canPrepare = Boolean(customerName) && deal.items.length > 0 && !hasUnsavedItems;
   const today = todayEcuador();
+  // Next entrega el resultado de la acción antes que la página revalidada: el aviso y el cierre del
+  // diálogo esperan a que la ficha ya traiga las propuestas que respondió el API.
+  const currentKey = quotesKey(deal.quotes);
+  const [waiting, setWaiting] = useState<Waiting | null>(null);
+  const busy = pending || waiting !== null;
+  useEffect(() => {
+    if (waiting?.key !== currentKey) return;
+    waiting.dialog.current?.close();
+    setFeedback({ tone: "success", message: waiting.message });
+    setWaiting(null);
+  }, [currentKey, waiting]);
 
   const run = (
     action: (form: FormData) => Promise<Result>,
@@ -53,11 +67,11 @@ export function DealQuotes({
     startTransition(async () => {
       setFeedback(null);
       const result = await action(form);
-      setFeedback(result.error ? { tone: "error", message: result.error } : { tone: "success", message: success });
-      if (!result.error) {
-        dialog.current?.close();
-        if (idempotent) requestKey.current = null;
-      }
+      if (result.error) return setFeedback({ tone: "error", message: result.error });
+      if (idempotent) requestKey.current = null;
+      // Sin ficha en la respuesta no hay nada que esperar: la huella actual cierra de inmediato.
+      const quotes = (result.data as { quotes?: Quote[] } | undefined)?.quotes;
+      setWaiting({ key: quotes ? quotesKey(quotes) : currentKey, message: success, dialog });
     });
   };
 
@@ -146,7 +160,7 @@ export function DealQuotes({
         <form
           className="deal-modal-form"
           noValidate
-          aria-busy={pending}
+          aria-busy={busy}
           onSubmit={run((form) => createQuoteAction(deal.id, form), texto.registrada, createDialog, true)}
         >
           <header className="deal-dialog-header">
@@ -183,10 +197,10 @@ export function DealQuotes({
             </Field>
           </div>
           <div className="deal-dialog-actions">
-            <Button type="button" variant="ghost" disabled={pending} onClick={() => createDialog.current?.close()}>
+            <Button type="button" variant="ghost" disabled={busy} onClick={() => createDialog.current?.close()}>
               <X aria-hidden />{texto.cancelar}
             </Button>
-            <Button type="submit" loading={pending} disabled={!canPrepare}>
+            <Button type="submit" loading={busy} disabled={!canPrepare}>
               <Send aria-hidden />{texto.registrar}
             </Button>
           </div>
@@ -198,7 +212,7 @@ export function DealQuotes({
           <form
             className="deal-modal-form"
             noValidate
-            aria-busy={pending}
+            aria-busy={busy}
             onSubmit={run((form) => acceptQuoteAction(deal.id, sent.id, form), texto.aceptadaOk, acceptDialog)}
           >
             <header className="deal-dialog-header">
@@ -216,10 +230,10 @@ export function DealQuotes({
               </Field>
             </div>
             <div className="deal-dialog-actions">
-              <Button type="button" variant="ghost" disabled={pending} onClick={() => acceptDialog.current?.close()}>
+              <Button type="button" variant="ghost" disabled={busy} onClick={() => acceptDialog.current?.close()}>
                 <X aria-hidden />{texto.cancelar}
               </Button>
-              <Button type="submit" loading={pending}><BadgeCheck aria-hidden />{texto.aceptar}</Button>
+              <Button type="submit" loading={busy}><BadgeCheck aria-hidden />{texto.aceptar}</Button>
             </div>
           </form>
         )}

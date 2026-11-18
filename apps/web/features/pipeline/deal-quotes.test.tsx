@@ -45,6 +45,24 @@ test("registra la propuesta con su vigencia y fecha de envío", async () => {
   );
 });
 
+test("el aviso de registro espera a que la ficha traiga la versión nueva", async () => {
+  const created = quote({ id: "q2", number: "COT-000002", version: 2 });
+  // El API responde la ficha completa; Next entrega la página revalidada después del resultado.
+  vi.mocked(createQuoteAction).mockResolvedValue({ data: { ...baseDeal, quotes: [created] } } as never);
+  const user = userEvent.setup();
+  const { rerender } = render(<DealQuotes deal={baseDeal} locked={false} />);
+  await user.click(screen.getByRole("button", { name: "Preparar cotización" }));
+  await user.type(screen.getByLabelText("Vigente hasta"), "2026-11-30");
+  const submit = screen.getByRole("button", { name: "Registrar como enviada" });
+  await user.click(submit);
+  await waitFor(() => expect(createQuoteAction).toHaveBeenCalled());
+  expect(screen.queryByText(/Registro guardado/)).toBeNull();
+  expect(submit).toHaveAttribute("aria-busy", "true");
+  rerender(<DealQuotes deal={{ ...baseDeal, quotes: [created] }} locked={false} />);
+  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Registro guardado."));
+  expect(screen.getByText("COT-000002 · v2")).toBeInTheDocument();
+});
+
 test("la propuesta enviada se marca como aceptada con su evidencia", async () => {
   vi.mocked(acceptQuoteAction).mockResolvedValue({});
   const user = userEvent.setup();

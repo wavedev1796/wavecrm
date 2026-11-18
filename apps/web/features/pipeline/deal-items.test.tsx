@@ -32,6 +32,20 @@ test("agrega productos, muestra subtotal, IVA y total y los guarda", async () =>
   await waitFor(() => expect(screen.getAllByRole("status").some((status) => status.textContent?.includes("Productos guardados."))).toBe(true));
 });
 
+test.each([false, true])("el precio unitario guardado se muestra sin $NaN (bloqueado: %s)", (locked) => {
+  const { container } = render(
+    <DealItems
+      dealId="d1"
+      items={[{ id: "i1", description: "Licencia", quantity: "2", unitPrice: "1250.50", taxRate: 15 }]}
+      locked={locked}
+    />,
+  );
+  const line = screen.getAllByText("Licencia")[0]!.closest("li")!;
+  expect(line).toHaveTextContent(/2 × \$1\.250,50 · IVA 15%/);
+  // La tabla del diálogo (solo lectura si está bloqueado) tampoco convierte el texto con Number().
+  expect(container.ownerDocument.body).not.toHaveTextContent("NaN");
+});
+
 test("edita el descuento y actualiza subtotal e IVA como el API", async () => {
   const user = userEvent.setup();
   render(
