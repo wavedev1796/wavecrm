@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { ESTADO_COTIZACION } from "@/content/catalogos";
 import { NEGOCIO } from "@/content/pipeline";
 import { formatDay, formatMoney } from "@/lib/format";
+import { quoteTone } from "../quotes/quote-tone";
 import { acceptQuoteAction, createQuoteAction } from "./actions";
 import { todayEcuador } from "./deal-validation";
 import { itemTotals, lineTotal } from "./item-totals";
@@ -100,7 +101,7 @@ export function DealQuotes({
                 <header className="quote-history-head">
                   <div className="quote-history-title">
                     <strong>{quote.number}{quote.version ? ` · v${quote.version}` : ""}</strong>
-                    <Badge tone={quote.status === "ACCEPTED" ? "success" : quote.status === "REJECTED" ? "danger" : quote.status === "SUPERSEDED" ? "neutral" : "blue"}>
+                    <Badge tone={quoteTone(quote.status)}>
                       {ESTADO_COTIZACION[quote.status]}
                     </Badge>
                   </div>

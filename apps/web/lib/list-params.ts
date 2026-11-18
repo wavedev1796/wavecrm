@@ -1,12 +1,13 @@
 import { PROVINCES } from "@/lib/ecuador";
 
 /** Filtros de un listado tal como llegan en la URL. */
-export type ListParams = { search?: string; province?: string; tag?: string };
+export type ListParams = { search?: string; province?: string; tag?: string; status?: string };
 
 function filters(params: ListParams, query = new URLSearchParams()) {
   if (params.search) query.set("search", params.search);
   if (params.province) query.set("province", params.province);
   if (params.tag) query.set("tag", params.tag);
+  if (params.status) query.set("status", params.status);
   return query;
 }
 

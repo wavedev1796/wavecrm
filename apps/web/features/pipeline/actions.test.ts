@@ -18,6 +18,7 @@ import {
   addPaymentAction,
   deletePaymentAction,
   acceptQuoteAction,
+  rejectQuoteAction,
 } from "./actions";
 import { emptyDeal } from "./types";
 vi.mock("@/lib/authenticated-api", () => ({
@@ -362,17 +363,21 @@ test("la consulta previa, ver mas y la ficha usan sus rutas", async () => {
   await qualifyDealAction("d1", fields({ need: " Web ", solution: "", budget: "", budgetNote: "Sin definir", decisionMaker: "Gerente" }));
   await createQuoteAction("d1", fields({ validUntil: "2026-11-30", sentAt: "", requestKey: "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4" }));
   await acceptQuoteAction("d1", "q1", fields({ acceptedAt: "2026-10-18", acceptanceNote: " Correo " }));
+  await rejectQuoteAction("d1", "q 2", fields({ rejectedAt: "2026-10-19", rejectionNote: " Otro proveedor " }));
   expect(calls()).toEqual([
     ["/deals/d1/transition?to=s%202", "GET", undefined],
     ["/deals/board?pipelineId=p1&column=LOST&page=2", "GET", undefined],
     ["/deals/d1", "PATCH", { need: "Web", solution: null, budget: null, budgetNote: "Sin definir", decisionMaker: "Gerente", viable: null, viabilityNote: null }],
     ["/deals/d1/quotes", "POST", { requestKey: "8e2ce48b-55ad-4c71-8a0d-f237c753f4a4", validUntil: "2026-11-30T00:00:00.000Z" }],
     ["/deals/d1/quotes/q1/accept", "POST", { acceptedAt: "2026-10-18T00:00:00.000Z", acceptanceNote: "Correo" }],
+    ["/deals/d1/quotes/q%202/reject", "POST", { rejectedAt: "2026-10-19T00:00:00.000Z", rejectionNote: "Otro proveedor" }],
   ]);
   expect((await qualifyDealAction("d1", fields({ budget: "abc" }))).fieldErrors?.budget).toBeTruthy();
   expect((await createQuoteAction("d1", fields({ validUntil: "" }))).error).toBeTruthy();
   expect((await acceptQuoteAction("d1", "q1", fields({ acceptedAt: "2026-10-18", acceptanceNote: "" }))).error).toBeTruthy();
-  expect(api).toHaveBeenCalledTimes(5);
+  expect((await rejectQuoteAction("d1", "q1", fields({ rejectedAt: "", rejectionNote: "Otro" }))).error).toBeTruthy();
+  expect((await rejectQuoteAction("d1", "q1", fields({ rejectedAt: "2026-10-19", rejectionNote: "x" }))).error).toMatch(/motivo/);
+  expect(api).toHaveBeenCalledTimes(6);
 });
 
 test("borrar, reabrir y completar usan su ruta y un 204 no trae datos", async () => {

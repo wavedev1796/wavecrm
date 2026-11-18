@@ -432,6 +432,8 @@ export class RejectQuoteDto {
 }
 export class ListQuotesDto extends PaginationDto {
   @ApiPropertyOptional() @IsOptional() @text("el negocio") dealId?: string;
+  @ApiPropertyOptional({ description: "Número COT, título del negocio, empresa o contacto" })
+  @IsOptional() @text("la búsqueda", 100) search?: string;
   @ApiPropertyOptional({ enum: ["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "SUPERSEDED"] })
   @IsOptional()
   @IsIn(["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "SUPERSEDED"])

@@ -1,7 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import ActividadesPage from "./actividades/page";
-import CotizacionesPage from "./cotizaciones/page";
 import ReportesPage from "./reportes/page";
 
 vi.mock("@/lib/authenticated-api", () => ({
@@ -26,12 +25,6 @@ test("la agenda de actividades carga una lista real y las otras secciones pendie
     screen.getByText("No hay actividades en este rango"),
   ).toBeInTheDocument();
   activities.unmount();
-  for (const [Page, title] of [
-    [CotizacionesPage, "Cotizaciones"],
-    [ReportesPage, "Reportes comerciales"],
-  ] as const) {
-    const view = render(<Page />);
-    expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
-    view.unmount();
-  }
+  render(<ReportesPage />);
+  expect(screen.getByRole("heading", { name: "Reportes comerciales" })).toBeInTheDocument();
 });

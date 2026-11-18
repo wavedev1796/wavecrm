@@ -35,7 +35,7 @@ const utcDay = (day: string) => day + "T00:00:00.000Z";
 
 function refresh() {
   // /actividades: las actividades del negocio (ficha y modal de transición) son las mismas de la agenda (P14).
-  for (const path of ["/pipeline", "/contactos", "/empresas", "/actividades"])
+  for (const path of ["/pipeline", "/contactos", "/empresas", "/actividades", "/cotizaciones"])
     revalidatePath(path, "layout");
 }
 /** Campos de varias líneas (notas y motivos): conservan sus saltos de línea; el resto queda en una línea. */
@@ -420,6 +420,18 @@ export async function acceptQuoteAction(dealId: string, quoteId: string, form: F
   return request(dealPath(dealId, "/quotes/" + encodeURIComponent(quoteId) + "/accept"), "POST", {
     acceptedAt: utcDay(acceptedAt),
     acceptanceNote,
+  });
+}
+
+/** Rechazo de una versión enviada (listado /cotizaciones): el API valida fechas y vigencia. */
+export async function rejectQuoteAction(dealId: string, quoteId: string, form: FormData) {
+  const rejectedAt = formText(form, "rejectedAt");
+  const rejectionNote = formText(form, "rejectionNote");
+  if (!isDay(rejectedAt)) return { error: PIPELINE.dateInvalid };
+  if (rejectionNote.length < 2 || rejectionNote.length > 500) return { error: TRANSICION.errores.motivo };
+  return request(dealPath(dealId, "/quotes/" + encodeURIComponent(quoteId) + "/reject"), "POST", {
+    rejectedAt: utcDay(rejectedAt),
+    rejectionNote,
   });
 }
 /**

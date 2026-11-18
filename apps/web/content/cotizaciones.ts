@@ -1,3 +1,34 @@
+// Listado /cotizaciones (CRM-29, 2026-11-18): todas las versiones con filtros, aceptar y rechazar.
+export const LISTADO_COTIZACIONES = {
+  etiqueta: "Propuestas comerciales",
+  titulo: "Cotizaciones",
+  total: (total: number) => (total === 1 ? "1 cotización" : `${total} cotizaciones`),
+  resumenSinDatos: "Sin datos",
+  buscar: { etiqueta: "Buscar cotización", placeholder: "Número, negocio o cliente" },
+  estado: "Filtrar por estado",
+  todosLosEstados: "Todos los estados",
+  columnas: ["Cotización", "Cliente", "Estado", "Enviada", "Válida hasta", "Total", "Acciones"],
+  cargando: "Cargando cotizaciones",
+  errorCarga: "No se pudieron cargar las cotizaciones. Inténtalo de nuevo.",
+  sinResultados: "No hay cotizaciones con estos filtros.",
+  paginacion: "Paginación de cotizaciones",
+  verDocumento: (numero: string) => `Ver documento de ${numero}`,
+  aceptar: (numero: string) => `Aceptar ${numero}`,
+  rechazar: (numero: string) => `Rechazar ${numero}`,
+  aceptarTitulo: (numero: string) => `Registrar aceptación de ${numero}`,
+  rechazarTitulo: (numero: string) => `Registrar rechazo de ${numero}`,
+  aceptarAyuda: "Registra la fecha y la evidencia con la que el cliente aceptó. La versión queda cerrada.",
+  rechazarAyuda: "Registra la fecha y el motivo con el que el cliente la rechazó. El negocio sigue abierto.",
+  aceptadaEl: "Aceptada el",
+  rechazadaEl: "Rechazada el",
+  evidencia: "Evidencia de aceptación",
+  motivo: "Motivo del rechazo",
+  confirmarAceptacion: "Registrar aceptación",
+  confirmarRechazo: "Registrar rechazo",
+  cancelar: "Cancelar",
+  cerrar: "Cerrar",
+} as const;
+
 // Documento PDF de una versión de cotización (CRM-30): textos de /cotizaciones/[id].
 
 export const DOCUMENTO_COTIZACION = {

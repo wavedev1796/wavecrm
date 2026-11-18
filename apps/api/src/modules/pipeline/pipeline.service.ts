@@ -753,19 +753,37 @@ export class PipelineService {
     });
   }
   async listQuotes(query: ListQuotesDto, actor: Actor) {
-    const dealWhere: Prisma.DealWhereInput = {
-      ...ownerScope(actor),
-      ...(query.dealId ? { id: query.dealId } : {}),
+    const contains = { contains: query.search, mode: "insensitive" } as const;
+    const where: Prisma.QuoteWhereInput = {
+      deal: { ...ownerScope(actor), ...(query.dealId ? { id: query.dealId } : {}) },
+      ...(query.status ? { status: query.status as never } : {}),
+      // Listado /cotizaciones: busca por número, negocio o cliente vigente del negocio.
+      ...(query.search && {
+        OR: [
+          { number: contains },
+          { deal: { title: contains } },
+          { deal: { company: { name: contains } } },
+          { deal: { contact: { OR: [{ firstName: contains }, { lastName: contains }] } } },
+        ],
+      }),
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.quote.findMany({
-        where: { deal: dealWhere, ...(query.status ? { status: query.status as never } : {}) },
-        include: { deal: { select: { id: true, title: true, ownerId: true } } },
+        where,
+        include: {
+          deal: {
+            select: {
+              id: true, title: true, ownerId: true, currency: true, status: true,
+              company: { select: { name: true } },
+              contact: { select: { firstName: true, lastName: true } },
+            },
+          },
+        },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
-      this.prisma.quote.count({ where: { deal: dealWhere, ...(query.status ? { status: query.status as never } : {}) } }),
+      this.prisma.quote.count({ where }),
     ]);
     return {
       data: data.map(hideQuoteRequestKey),

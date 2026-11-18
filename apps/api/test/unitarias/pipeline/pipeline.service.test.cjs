@@ -656,6 +656,30 @@ test("rechazar propuesta requiere evidencia, respeta vigencia y solo cambia una 
   await assert.rejects(service(prisma).rejectQuote("deal-1", "q0", { rejectedAt: day(todayEc), rejectionNote: "Repetido" }, vendedor), ConflictException);
 });
 
+test("listado /cotizaciones: alcance del vendedor, estado y búsqueda por número, negocio o cliente", async () => {
+  const calls = [];
+  const prisma = {
+    quote: {
+      findMany: async (args) => (calls.push(args), [{ id: "q1", requestKey: "k", requestHash: "h", number: "COT-000001" }]),
+      count: async (args) => (calls.push(args), 11),
+    },
+    $transaction: (operations) => Promise.all(operations),
+  };
+  const result = await service(prisma).listQuotes({ page: 2, limit: 10, status: "SENT", search: "acme" }, vendedor);
+  const [list, count] = calls;
+  assert.deepEqual(count.where, list.where);
+  assert.deepEqual(list.where.deal, { ownerId: "user-1" });
+  assert.equal(list.where.status, "SENT");
+  assert.equal(list.where.OR.length, 4);
+  assert.deepEqual(list.where.OR[0], { number: { contains: "acme", mode: "insensitive" } });
+  assert.deepEqual([list.skip, list.take], [10, 10]);
+  assert.deepEqual(result.data, [{ id: "q1", number: "COT-000001" }]);
+  assert.deepEqual(result.meta, { page: 2, limit: 10, total: 11, totalPages: 2 });
+  calls.length = 0;
+  await service(prisma).listQuotes({ page: 1, limit: 10 }, admin);
+  assert.deepEqual(calls[0].where, { deal: {} });
+});
+
 test("la propuesta exige productos, negocio abierto, envío no futuro y vigencia posterior al envío", async () => {
   await assert.rejects(service(mockPrisma({ items: [] }).prisma).createQuote("deal-1", { validUntil: future }, vendedor), BadRequestException);
   await assert.rejects(
