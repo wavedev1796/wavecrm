@@ -1,0 +1,268 @@
+/* Documento de una versión de cotización (CRM-30): en pantalla es una hoja; al imprimir, el PDF. */
+.quote-document-page {
+  display: grid;
+  gap: 16px;
+  max-width: 920px;
+}
+.quote-document-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.quote-document-toolbar > div {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+.quote-document-toolbar p {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--wave-muted-strong);
+  font-size: 0.72rem;
+  font-weight: 550;
+  text-align: right;
+}
+.quote-document-retry {
+  justify-self: start;
+  text-decoration: none;
+}
+.quote-document {
+  display: grid;
+  gap: 24px;
+  padding: 32px;
+  border: 1px solid var(--wave-line);
+  border-radius: 14px;
+  background: var(--wave-white);
+  box-shadow: var(--shadow-sm);
+  color: var(--wave-text);
+  font-size: 0.86rem;
+}
+.quote-document p {
+  margin: 0;
+}
+.quote-document h3 {
+  margin: 0 0 8px;
+  color: var(--wave-muted-strong);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.quote-document-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--wave-blue);
+}
+.quote-document-head > div:first-child {
+  flex: 1 1 0;
+  min-width: 220px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  color: var(--wave-muted-strong);
+  font-size: 0.78rem;
+}
+.quote-document-logo {
+  width: 106px;
+  height: 50px;
+}
+.quote-document-title {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  text-align: right;
+}
+.quote-document-title > span {
+  color: var(--wave-blue);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.quote-document-title h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+.quote-document-title dl,
+.quote-document-totals {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 16px;
+  margin: 4px 0 0;
+}
+.quote-document-title dt,
+.quote-document-totals dt {
+  color: var(--wave-muted-strong);
+}
+.quote-document-title dd,
+.quote-document-totals dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.quote-document-parties {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.quote-document-parties > div {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 12px 16px;
+  border: 1px solid var(--wave-line);
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+.quote-document-table-wrap {
+  overflow-x: auto;
+}
+.quote-document-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.quote-document-table th {
+  padding: 8px 10px;
+  background: var(--wave-blue-soft);
+  color: var(--wave-blue-dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+.quote-document-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--wave-line);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.quote-document-table th:first-child,
+.quote-document-table td:first-child {
+  width: 100%;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.quote-document-table small {
+  display: block;
+  color: var(--wave-muted-strong);
+  font-size: 0.75rem;
+}
+.quote-document-totals {
+  justify-content: end;
+  margin-top: 12px;
+}
+.quote-document-totals dt:last-of-type,
+.quote-document-totals dd:last-of-type {
+  padding-top: 6px;
+  border-top: 1px solid var(--wave-line-strong);
+  color: var(--wave-blue-dark);
+  font-size: 1rem;
+  font-weight: 800;
+}
+.quote-document-terms ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--wave-muted-strong);
+  font-size: 0.8rem;
+}
+.quote-document-signatures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 32px;
+  padding-top: 24px;
+}
+.quote-document-signatures > div {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+.quote-document-signatures span {
+  display: grid;
+  align-content: end;
+  min-height: 48px;
+  border-bottom: 1px solid var(--wave-ink);
+}
+.quote-document-signatures small {
+  color: var(--wave-muted-strong);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .quote-document {
+    padding: 16px;
+  }
+  .quote-document-toolbar > div,
+  .quote-document-title {
+    justify-items: start;
+    text-align: left;
+  }
+  .quote-document-toolbar p {
+    text-align: left;
+  }
+}
+
+/* PDF: solo la hoja, A4, encabezado de la tabla repetido en cada página y bloques sin cortar. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  body,
+  .main-area,
+  .page-content {
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+    background: #fff;
+  }
+  .sidebar,
+  .sidebar-backdrop,
+  .topbar,
+  .quote-document-toolbar {
+    display: none !important;
+  }
+  .quote-document-page {
+    display: block;
+    max-width: none;
+  }
+  /* Chromium no fragmenta bien un grid entre páginas: los bloques sin cortar se montan sobre la tabla. */
+  .quote-document {
+    display: block;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 10pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .quote-document > * + * {
+    margin-top: 24px;
+  }
+  .quote-document-table-wrap {
+    overflow: visible;
+  }
+  .quote-document-table thead {
+    display: table-header-group;
+  }
+  .quote-document-table tr,
+  .quote-document-parties > div,
+  .quote-document-totals,
+  .quote-document-terms,
+  .quote-document-signatures {
+    break-inside: avoid;
+  }
+  .quote-document-table-wrap + .quote-document-totals {
+    break-before: avoid;
+  }
+}

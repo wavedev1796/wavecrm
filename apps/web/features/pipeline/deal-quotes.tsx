@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, useTransition, type FormEvent, type RefObject } from "react";
-import { BadgeCheck, FilePlus2, FileText, Send, X } from "lucide-react";
+import Link from "next/link";
+import { BadgeCheck, FileDown, FilePlus2, FileText, Send, X } from "lucide-react";
 import { Field } from "@/components/form/form-field";
 import { FormDialog } from "@/components/form/form-dialog";
 import { Alert } from "@/components/ui/alert";
@@ -91,6 +92,11 @@ export function DealQuotes({
                   </div>
                   <b className="quote-history-total">{formatMoney(quote.total)}</b>
                 </header>
+                {quote.items?.length ? (
+                  <Link className="quote-history-pdf" href={`/cotizaciones/${quote.id}`}>
+                    <FileDown aria-hidden />{texto.verPdf(quote.number)}
+                  </Link>
+                ) : null}
                 <dl className="quote-history-meta">
                   <div><dt>{texto.enviada}</dt><dd>{day(quote.sentAt)}</dd></div>
                   <div><dt>{texto.vigencia}</dt><dd>{day(quote.validUntil)}</dd></div>

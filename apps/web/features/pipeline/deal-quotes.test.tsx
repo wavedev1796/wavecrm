@@ -120,6 +120,9 @@ test("cada propuesta muestra la copia de sus productos; las anteriores, que no t
   expect(
     screen.getByText("Registrada sin detalle de productos."),
   ).toBeInTheDocument();
+  // Solo la versión con copia de productos enlaza a su documento PDF.
+  expect(screen.getByRole("link", { name: "Ver PDF de COT-000001" })).toHaveAttribute("href", "/cotizaciones/" + quote().id);
+  expect(screen.queryByRole("link", { name: "Ver PDF de COT-000000" })).toBeNull();
 });
 
 test("bloquea registrar si hay cambios sin guardar o falta un cliente identificable", () => {

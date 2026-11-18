@@ -1,0 +1,46 @@
+// Documento PDF de una versión de cotización (CRM-30): textos de /cotizaciones/[id].
+
+export const DOCUMENTO_COTIZACION = {
+  titulo: "Cotización",
+  volverNegocio: "Volver al negocio",
+  volverPipeline: "Volver al pipeline",
+  descargar: "Descargar PDF",
+  ayudaDescarga:
+    "Se abre el diálogo de impresión: elige «Guardar como PDF». Descargar no registra un envío ni cambia el estado de la propuesta.",
+  errorCarga: "No se pudo cargar la cotización. Tu propuesta no cambió.",
+  reintentar: "Reintentar",
+  sinCopia:
+    "Esta versión se registró antes de que el CRM guardara la copia completa del cliente y del emisor. No se genera su PDF para no mostrar datos distintos de los presentados.",
+  version: (numero: string, version?: number) => (version ? `${numero} · versión ${version}` : numero),
+  estado: "Estado",
+  negocio: "Negocio",
+  enviada: "Fecha de envío",
+  vigencia: "Válida hasta",
+  emisor: "Emisor",
+  emitidaPor: "Preparada por",
+  cliente: "Cliente",
+  contacto: "Contacto",
+  ruc: "RUC",
+  documento: "Documento",
+  codigo: "Código",
+  columnas: {
+    descripcion: "Descripción",
+    cantidad: "Cant.",
+    precio: "P. unitario",
+    descuento: "Desc.",
+    iva: "IVA",
+    subtotal: "Subtotal",
+  },
+  lineas: "Detalle de productos y servicios",
+  subtotal: "Subtotal con descuentos",
+  impuesto: "IVA",
+  total: "Total",
+  condiciones: "Condiciones",
+  condicionVigencia: (fecha: string) => `Propuesta válida hasta el ${fecha}.`,
+  condicionMoneda: (moneda: string) => `Importes en ${moneda}; descuentos aplicados antes del IVA.`,
+  condicionSri:
+    "Las tarifas de IVA son referenciales. Este documento es una propuesta comercial, no un comprobante electrónico autorizado por el SRI.",
+  firmaEmisor: "Por Wave",
+  firmaCliente: "Aceptación del cliente",
+  firmaAyuda: "Nombre, firma y fecha",
+} as const;

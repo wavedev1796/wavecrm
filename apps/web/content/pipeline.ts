@@ -335,6 +335,7 @@ export const NEGOCIO = {
     aceptadaOk: "Propuesta aceptada.",
     productos: (numero: string) => `Productos de ${numero}`,
     sinDetalle: "Registrada sin detalle de productos.",
+    verPdf: (numero: string) => `Ver PDF de ${numero}`,
     linea: (cantidad: string, descripcion: string) => `${cantidad} × ${descripcion}`,
     lineaPrecio: (precio: string, tarifa: number, descuento = 0) => `${precio} c/u · descuento ${descuento} % · IVA ${tarifa} %`,
   },

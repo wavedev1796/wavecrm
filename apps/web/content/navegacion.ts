@@ -50,6 +50,10 @@ export const NAVEGACION = {
     title: "Ficha de empresa",
     subtitle: "Contactos, negocios e historial",
   },
+  documentoCotizacion: {
+    title: "Cotización",
+    subtitle: "Documento de la versión registrada",
+  },
   porDefecto: PIPELINE,
   shell: {
     navegacion: "Navegación principal",

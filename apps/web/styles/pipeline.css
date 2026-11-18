@@ -611,6 +611,25 @@
   font-size: 0.82rem;
   overflow-wrap: anywhere;
 }
+/* Enlace al documento PDF de la versión (CRM-30): la piel del resumen de productos. */
+.quote-history-pdf {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 6px;
+  color: var(--wave-blue);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.quote-history-pdf:hover {
+  color: var(--wave-blue-dark);
+  text-decoration: underline;
+}
+.quote-history-pdf svg {
+  width: 15px;
+  height: 15px;
+}
 .quote-history-lines summary {
   cursor: pointer;
   color: var(--wave-blue);

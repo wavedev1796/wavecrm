@@ -44,6 +44,7 @@ function headerForPath(pathname: string) {
   if (exact) return exact;
   if (pathname.startsWith("/contactos/")) return NAVEGACION.fichaContacto;
   if (pathname.startsWith("/empresas/")) return NAVEGACION.fichaEmpresa;
+  if (pathname.startsWith("/cotizaciones/")) return NAVEGACION.documentoCotizacion;
   return NAVEGACION.porDefecto;
 }
 

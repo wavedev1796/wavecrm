@@ -11,6 +11,7 @@ Conservar versiones de cotización con snapshots históricos y preparar la trans
 | CRM-27 | [Modelo Cotización + productos](27 - Modelo Cotización y productos.md) | Completo (4/4 criterios) |
 | CRM-28 | [API cotizaciones](28 - API cotizaciones.md) | Completo (4/4 criterios) |
 | CRM-29 | [Armar cotización](29 - Armar cotización.md) | Completo (4/4 criterios) |
+| CRM-30 | [PDF de cotización (marca Wave)](30 - PDF de cotización (marca Wave).md) | Completo (4/4 criterios) |
 
 ## Validación
 
