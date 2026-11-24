@@ -82,4 +82,3 @@ Al validar la migración a mano se pasó la URL de `pruebas` como `--shadow-data
 ## Pendientes
 
 - Producción recibe la migración `20261102130000_note_mentions` en el próximo despliegue.
-- Avisar a Eduardo: migración, `POST /deals|contacts/:id/notes`, `PATCH|DELETE /notes/:id`, cambios en `deal-timeline.tsx` y en las fichas de negocio y contacto, y `sendMention` en el `MailerService` (los dobles de prueba deben implementarlo).

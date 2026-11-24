@@ -60,4 +60,3 @@ Generar un PDF con marca Wave que corresponda exactamente a la versión comercia
 ## Pendientes
 
 - Envío por correo con registro del resultado: CRM-36.
-- Listado global de cotizaciones en `/cotizaciones` (sigue siendo el marcador de sección).

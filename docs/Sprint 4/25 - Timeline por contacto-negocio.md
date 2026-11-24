@@ -80,4 +80,3 @@ Mostrar el recorrido cronológico de una relación comercial (contacto o negocio
 ## Pendientes
 
 - La agenda (`GET /activities`) sigue siendo compartida por decisión del Sprint 4: un VENDEDOR puede ver ahí actividades de negocios ajenos.
-- Avisar a Eduardo: migración, campos fuera del detalle de negocio y contacto, alcance de `GET /deals/:id/history` y `createdById` en la agenda.

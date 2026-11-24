@@ -1,6 +1,6 @@
 # CRM-29 — Armar cotización
 
-**Responsable:** No indicado en el ticket · **Estado:** Completo (4/4 criterios) · Sprint 5
+**Responsable:** Eduardo Garcia y Zaith Manangón · **Estado:** Completo (4/4 criterios) · Sprint 5. Zaith Manangón añadió el listado `/cotizaciones` (2026-11-18).
 
 ## Objetivo
 

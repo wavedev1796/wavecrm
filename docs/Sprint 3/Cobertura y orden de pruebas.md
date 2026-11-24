@@ -84,4 +84,3 @@ dotenv -e .env.test.local -- playwright test --list   # 25 e2e en 6 archivos, de
 
 - Ramas sin cubrir en las fichas `contactos/[id]/page.tsx` y `empresas/[id]/page.tsx` (CRM-14/15, de Eduardo): necesitan su OK.
 - Las 16 ramas de `apps/api/src/common/validation.ts` y las 18 de `pipeline.service.ts` siguen abiertas. Son casos borde de los decoradores y del servicio.
-- Avisar a Eduardo: las unitarias del API cambiaron de carpeta y las e2e están en `test/e2e/`. Antes de agregar una prueba, debe sincronizar.

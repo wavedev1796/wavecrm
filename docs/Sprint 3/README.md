@@ -21,7 +21,7 @@ Configurar el embudo comercial, administrar negocios desde la API y moverlos en 
 | — | [Estilos globales por partes](Estilos globales por partes.md) | Zaith Manangón | Completo (5/5 criterios) |
 | — | [Esqueletos de carga](Esqueletos de carga.md) | Zaith Manangón | Completo (5/5 criterios) |
 | — | [Cobertura y orden de pruebas](Cobertura y orden de pruebas.md) | Zaith Manangón | Completo (5/5 criterios) |
-| — | [Reglas de transición del pipeline](Reglas de transición del pipeline.md) | Zaith Manangón | En curso (0/15 criterios) |
+| — | [Reglas de transición del pipeline](Reglas de transición del pipeline.md) | Zaith Manangón | Completo (15/15 criterios) |
 | — | [Revisión del flujo comercial](Revisión del flujo comercial.md) | Zaith Manangón | Completo (12/12 criterios) |
 
 ## Decisiones

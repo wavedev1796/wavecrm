@@ -1,6 +1,6 @@
 # CRM-28 — API cotizaciones
 
-**Responsable:** No indicado en el ticket · **Estado:** Completo (4/4 criterios) · Sprint 5
+**Responsable:** Eduardo Garcia · **Estado:** Completo (4/4 criterios) · Sprint 5
 
 ## Objetivo
 

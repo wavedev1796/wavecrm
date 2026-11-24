@@ -1,6 +1,6 @@
 # Reglas de transición del pipeline
 
-**Responsable:** Zaith Manangón · **Estado:** En curso (0/15 criterios). Pedido del usuario del 2026-10-18; autoriza cambiar el módulo de pipeline y el tablero de Eduardo (CRM-17 a CRM-19).
+**Responsable:** Zaith Manangón · **Estado:** Completo (15/15 criterios). Pedido del usuario del 2026-10-18; autoriza cambiar el módulo de pipeline y el tablero de Eduardo (CRM-17 a CRM-19). El estado se dedujo del código el 2026-11-24 (ver el último bloque).
 
 ## Objetivo
 
@@ -8,25 +8,41 @@ Que un negocio solo pase de etapa cuando los datos guardados lo respaldan: requi
 
 ## Criterios de aceptación
 
-- [ ] Cada etapa abierta declara sus requisitos de entrada, que configura un ADMIN en *Configurar pipeline*. Las reglas no dependen del nombre ni del color de la etapa.
-- [ ] Toda transición (arrastre, selector, edición, *Ganar*, *Perder*, *Reabrir*) pasa por una sola función del API que comprueba con datos guardados los requisitos acumulados de las etapas intermedias y de la de destino.
-- [ ] Para entrar a Negociación se exigen contacto identificable, responsable, una interacción ya realizada, la necesidad documentada y la próxima actividad con fecha.
-- [ ] Para entrar a Propuesta se exigen además la solución, el presupuesto o la justificación de su incertidumbre, una propuesta enviada vinculada al negocio y la fecha estimada de cierre.
-- [ ] Ganar exige una propuesta aceptada con evidencia y vigente, un importe igual al de los productos y la fecha real de cierre (no futura). Usa esa cotización y no crea otra.
-- [ ] Perder solo se permite desde un negocio abierto y exige motivo. Conserva el historial y el tablero muestra los perdidos en su propia columna.
-- [ ] Retroceder exige motivo, no borra datos y guarda el motivo en el historial.
-- [ ] Solo un ADMIN reabre o modifica un negocio ganado o perdido, con confirmación y motivo, y queda auditado.
-- [ ] Al arrastrar o elegir una etapa, si falta algo se abre un modal con los requisitos pendientes y campos para completarlos sin salir del tablero. El API revalida y la tarjeta se mueve solo después de confirmarse la operación.
-- [ ] Las métricas de abiertos, ganados y perdidos salen de una única definición del API. Los perdidos no suman al valor abierto ni al ganado.
-- [ ] Un movimiento sobre datos que cambió otra persona responde `409`, la tarjeta conserva su etapa y aparece un mensaje claro.
-- [ ] El IVA de cada producto es editable: entero de 0 a 100, con sugerencias 15, 12 y 0, validado en la web, el API y la base.
-- [ ] El tablero muestra 10 tarjetas por columna con *Ver más* y una altura de columna acotada.
-- [ ] Pruebas de cada caso obligatorio del pedido (lista en *Validación*).
-- [ ] Documentadas las reglas definitivas, las decisiones pendientes, la migración y la evidencia de las pruebas.
+- [x] Cada etapa abierta declara sus requisitos de entrada, que configura un ADMIN en *Configurar pipeline*. Las reglas no dependen del nombre ni del color de la etapa.
+- [x] Toda transición (arrastre, selector, edición, *Ganar*, *Perder*, *Reabrir*) pasa por una sola función del API que comprueba con datos guardados los requisitos acumulados de las etapas intermedias y de la de destino.
+- [x] Para entrar a Negociación se exigen contacto identificable, responsable, una interacción ya realizada, la necesidad documentada y la próxima actividad con fecha.
+- [x] Para entrar a Propuesta se exigen además la solución, el presupuesto o la justificación de su incertidumbre, una propuesta enviada vinculada al negocio y la fecha estimada de cierre.
+- [x] Ganar exige una propuesta aceptada con evidencia y vigente, un importe igual al de los productos y la fecha real de cierre (no futura). Usa esa cotización y no crea otra.
+- [x] Perder solo se permite desde un negocio abierto y exige motivo. Conserva el historial y el tablero muestra los perdidos en su propia columna.
+- [x] Retroceder exige motivo, no borra datos y guarda el motivo en el historial.
+- [x] Solo un ADMIN reabre o modifica un negocio ganado o perdido, con confirmación y motivo, y queda auditado.
+- [x] Al arrastrar o elegir una etapa, si falta algo se abre un modal con los requisitos pendientes y campos para completarlos sin salir del tablero. El API revalida y la tarjeta se mueve solo después de confirmarse la operación.
+- [x] Las métricas de abiertos, ganados y perdidos salen de una única definición del API. Los perdidos no suman al valor abierto ni al ganado.
+- [x] Un movimiento sobre datos que cambió otra persona responde `409`, la tarjeta conserva su etapa y aparece un mensaje claro.
+- [x] El IVA de cada producto es editable: entero de 0 a 100, con sugerencias 15, 12 y 0, validado en la web, el API y la base.
+- [x] El tablero muestra 10 tarjetas por columna con *Ver más* y una altura de columna acotada.
+- [x] Pruebas de cada caso obligatorio del pedido (lista en *Validación*).
+- [x] Documentadas las reglas definitivas, las decisiones pendientes, la migración y la evidencia de las pruebas.
 
 ## Implementación
 
-Pendiente: el diseño está en *Decisiones* y se aprueba antes de escribir código.
+Entregado en los commits `d80a06d` (reglas como función pura y métricas únicas), `d23ae06` (integración contra `pruebas`), `b4e0c5a` (E2E del tablero) y `09cfc2c` (documentación y bloques fechados en CRM-18 a CRM-21).
+
+### API
+
+- `apps/api/src/modules/pipeline/stage-gates.ts`: `pendingChecks(facts, target, stages, input, today)`, función pura que devuelve los pendientes `[{ code, message }]`. Destinos: etapa, ganado, perdido, rechazado y reabrir. Requisitos acumulados con `requirementsUpTo()` (etapas abiertas, de probabilidad menor a 100, hasta la de destino).
+- `apps/api/src/modules/pipeline/pipeline.service.ts`: `plan()` lee el negocio, comprueba permiso (`assertCanChange`) y `fromStageId` (`409`), resuelve el destino (`resolveTarget`) y arma los datos (`gateFacts`). `applyTransition()` rechaza con `422` si hay pendientes y escribe negocio, historial con motivo (`recordMove`) y auditoría en la misma transacción. `previewTransition()` sirve `GET /deals/:id/transition` sin escribir. `assertCanSetRequirements()` deja los requisitos solo a ADMIN.
+- `apps/api/src/modules/pipeline/deal-rules.ts`: `dealMetrics()` (abiertos, ganados, perdidos y rechazados, sin sumarse entre sí) y `BOARD_PAGE = 10`.
+- `apps/api/src/modules/pipeline/pipeline.dto.ts`: `reason` de 2 a 500 caracteres (obligatorio en `ReopenDealDto`) y `taxRate` entero de 0 a 100.
+- `packages/database/prisma/migrations/20261018120000_stage_gates/`: la migración descrita en *Decisiones*.
+- `packages/shared/src/catalogos.ts`: `TRANSITION_CHECKS` e `IVA_SUGGESTIONS = [15, 12, 0]`.
+
+### Web
+
+- `apps/web/features/pipeline/transition-dialog.tsx`: modal único para arrastre, selector y botones de la ficha.
+- `apps/web/features/pipeline/pipeline-board.tsx`: columna Perdido, *Ver más (quedan N)* por columna y métricas del API sin recalcular.
+- `apps/web/features/pipeline/deal-items.tsx`: IVA por fila con `<datalist>` de `IVA_SUGGESTIONS`.
+- `apps/web/styles/pipeline.css`: columna con `max-height` y desplazamiento interno.
 
 ## Decisiones
 
@@ -149,11 +165,11 @@ Compatible con los datos existentes: todo es columna nueva opcional o con valor 
 
 ### Coordinación con CRM-17, CRM-18, CRM-19 y CRM-21
 
-Cambian el servicio, el controlador y los DTO del pipeline, el tablero, el formulario de negocio y la configuración de etapas, con autorización del usuario (2026-10-18). Al subir hay que avisar a Eduardo de la migración, de que `closedAt` pasa a ser obligatorio al ganar, de que ganar ya no crea cotización y de la columna Perdido. Se añaden bloques fechados en sus tickets.
+Cambian el servicio, el controlador y los DTO del pipeline, el tablero, el formulario de negocio y la configuración de etapas, con autorización del usuario (2026-10-18). Se añaden bloques fechados en sus tickets.
 
 ## Validación
 
-Pendiente. Pruebas previstas, una por caso obligatorio del pedido:
+Una prueba por caso obligatorio del pedido:
 
 | Caso | Dónde |
 | --- | --- |
@@ -184,3 +200,22 @@ Bloque añadido por Zaith Manangón (*Revisión del flujo comercial*), con autor
 ### Validación
 
 - `stage-gates.test.cjs` y `transition-dialog.test.tsx`. Cifras en [Revisión del flujo comercial](Revisi%C3%B3n%20del%20flujo%20comercial.md).
+
+## Estado deducido del código (2026-11-24)
+
+El documento seguía *En curso (0/15)* aunque el código ya estaba entregado. Los criterios se marcaron comparando cada uno con el código vigente, no con lo planeado.
+
+### Decisiones
+
+- Cada criterio tiene su respaldo en `stage-gates.ts`, `pipeline.service.ts` (`plan`, `resolveTarget`, `gateFacts`, `applyTransition`), `deal-rules.ts`, los DTO y la migración `20261018120000_stage_gates`, listados en *Implementación*.
+- Cambios posteriores que ya forman parte de las reglas vigentes:
+  - *Revisión del flujo comercial* (2026-10-25): estado `REJECTED` y destino `rejected` con `REJECTION_REASON`. Rechazar deja `REJECTED` la propuesta vigente y cancela las actividades pendientes. Cualquier usuario pasa un perdido a rechazado.
+  - *Revisión del equipo* (Sprint 4, 2026-11-13): ganar exige además `VIABILITY` (viable y con evidencia) y `PAYMENT_CONFIRMED`. El modal ya no mueve directo: siempre confirma, con *Observaciones* opcionales (P7).
+  - CRM-28 (Sprint 5): la tarifa de IVA es explícita en producto y línea, sin el 15 % por defecto. Las sugerencias 15, 12 y 0 siguen en la web.
+- Reabrir un ganado lo devuelve a su etapa de origen; un perdido o un rechazado se queda en la etapa donde estaba.
+
+### Validación
+
+- API: `node --test` de `stage-gates`, `pipeline.service`, `pipeline.dto` y `pipeline-config.service`: 110 de 110 aprobadas (2026-11-24).
+- Web: `vitest run` de `pipeline-board`, `transition-dialog` y `deal-items`: 41 de 41 aprobadas (2026-11-24).
+- La integración (`pipeline.http.test.cjs`) y el E2E (`test/e2e/pipeline.spec.ts`) no se volvieron a correr en esta revisión.

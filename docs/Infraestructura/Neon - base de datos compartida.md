@@ -43,8 +43,7 @@ Conclusión: el desfase entre ramas es silencioso con los comandos seguros y des
 
 1. ~~Integrar el trabajo del Sprint 0 y el Sprint 1 en `develop` por PR.~~ _Descartado: el equipo no tiene permiso sobre `develop`. Se alinean las dos ramas de desarrollo entre sí._
 2. Eduardo trae `ZaithManangon-Dev` a `EduardoGarcia-Dev` **antes** de crear migraciones de CRM-7. Hoy su rama solo tiene commits del Sprint 0, así que no debería haber conflictos: es el momento más barato para alinearse.
-3. Informar a Eduardo del cambio de roles a `ADMIN | VENDEDOR` (decisión del equipo en CRM-6), porque el CRUD de usuarios de CRM-7 depende de ellos.
-4. Comprobación: `git diff origin/ZaithManangon-Dev origin/EduardoGarcia-Dev -- packages/database/prisma/migrations` debe salir vacío.
+3. Comprobación: `git diff origin/ZaithManangon-Dev origin/EduardoGarcia-Dev -- packages/database/prisma/migrations` debe salir vacío.
 
 ### Fase 1: proyecto Neon
 

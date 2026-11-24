@@ -58,7 +58,7 @@ Cada corrección quedó protegida por al menos una prueba; el detalle está en `
 
 - **Subida a `develop` bloqueada.** `git` sube con la cuenta `wavedev0911`, pero `gh` está autenticado como `zmanangon09`, que no tiene acceso al repositorio. Sigue pendiente abrir el PR de `ZaithManangon-Dev` hacia `develop`.
 - **El envío del correo de recuperación dependía de CRM-7.** El mailer ya existe, así que el bloqueo desapareció, pero la funcionalidad no entró en este sprint.
-- **Coordinación sobre archivos compartidos.** El cierre de calidad modificó código de CRM-7 y CRM-9; se documentó en la sección "Pruebas automatizadas" de esos tickets y se avisa a Eduardo al subir.
+- **Coordinación sobre archivos compartidos.** El cierre de calidad modificó código de CRM-7 y CRM-9; se documentó en la sección "Pruebas automatizadas" de esos tickets.
 
 ## 6. Siguientes pasos (Sprint 2)
 
