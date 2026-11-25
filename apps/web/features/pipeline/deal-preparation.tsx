@@ -9,7 +9,8 @@ import type { DealDetail } from "./types";
 export function DealPreparation({
   deal,
   locked,
-}: Readonly<{ deal: DealDetail; locked: boolean }>) {
+  defaultTaxRate,
+}: Readonly<{ deal: DealDetail; locked: boolean; defaultTaxRate: number }>) {
   const [hasUnsavedItems, setHasUnsavedItems] = useState(false);
   const router = useRouter();
   const reportDirty = useCallback(
@@ -22,6 +23,7 @@ export function DealPreparation({
       <DealItems
         key={deal.status + ":" + deal.items.map((item) => item.id).join(",")}
         dealId={deal.id}
+        defaultTaxRate={defaultTaxRate}
         items={deal.items}
         locked={itemsLocked}
         onDirtyChange={reportDirty}

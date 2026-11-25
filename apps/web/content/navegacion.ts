@@ -17,6 +17,7 @@ export const NAVEGACION = {
     actividades: "Actividades",
     reportes: "Reportes",
     usuarios: "Usuarios",
+    configuracion: "Configuración",
   },
   cabeceras: {
     "/pipeline": PIPELINE,
@@ -40,6 +41,10 @@ export const NAVEGACION = {
     "/usuarios": {
       title: "Usuarios",
       subtitle: "Cuentas y accesos del equipo",
+    },
+    "/configuracion": {
+      title: "Configuración",
+      subtitle: "Ajustes generales de la cuenta",
     },
   } as Record<string, Cabecera>,
   fichaContacto: {

@@ -21,12 +21,12 @@ type Row = Required<ItemValues> & { key: string };
 const texto = NEGOCIO.productos;
 const INPUT_MODE = { description: undefined, quantity: "decimal", unitPrice: "decimal", taxRate: "numeric", discountRate: "numeric" } as const;
 const MAX_LENGTH = { description: 200, quantity: 16, unitPrice: 16, taxRate: 3, discountRate: 3 } as const;
-const toRow = (key: string, item?: DealItem): Row => ({
+const toRow = (key: string, defaultTaxRate: number, item?: DealItem): Row => ({
   key,
   description: item?.description ?? "",
   quantity: item ? formatAmount(item.quantity).replace(/,00$/, "") : "",
   unitPrice: item ? formatAmount(item.unitPrice) : "",
-  taxRate: String(item?.taxRate ?? IVA_SUGGESTIONS[0]),
+  taxRate: String(item?.taxRate ?? defaultTaxRate),
   discountRate: String(item?.discountRate ?? 0),
 });
 /** El precio de la fila es texto en formato es-EC («1.250,50»); `Number()` lo convierte en NaN. */
@@ -35,16 +35,17 @@ const signature = (rows: readonly Row[]) => JSON.stringify(rows.map(({ descripti
 
 export function DealItems({
   dealId,
+  defaultTaxRate,
   items,
   locked,
   onDirtyChange,
   onSaved,
-}: Readonly<{ dealId: string; items: DealItem[]; locked: boolean; onDirtyChange?: (dirty: boolean) => void; onSaved?: () => void }>) {
+}: Readonly<{ dealId: string; defaultTaxRate: number; items: DealItem[]; locked: boolean; onDirtyChange?: (dirty: boolean) => void; onSaved?: () => void }>) {
   const prefix = useId();
   const dialog = useRef<HTMLDialogElement>(null);
   const nextKey = useRef(0);
-  const [rows, setRows] = useState(() => items.map((item) => toRow(item.id, item)));
-  const savedSignature = signature(items.map((item) => toRow(item.id, item)));
+  const [rows, setRows] = useState(() => items.map((item) => toRow(item.id, defaultTaxRate, item)));
+  const savedSignature = signature(items.map((item) => toRow(item.id, defaultTaxRate, item)));
   const [errors, setErrors] = useState<ItemErrors>({});
   const [feedback, setFeedback] = useState<{ tone: "error" | "success"; message: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -198,7 +199,7 @@ export function DealItems({
                 variant="secondary"
                 disabled={pending || rows.length >= 100}
                 title={rows.length >= 100 ? texto.maximo : undefined}
-                onClick={() => setRows((current) => [...current, toRow("new-" + ++nextKey.current)])}
+                onClick={() => setRows((current) => [...current, toRow("new-" + ++nextKey.current, defaultTaxRate)])}
               >
                 <Plus aria-hidden />{texto.agregar}
               </Button>

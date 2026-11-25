@@ -22,6 +22,7 @@ test('un administrador ve Usuarios, la página actual marcada y su título', () 
   expect(screen.getByText('AL')).toBeInTheDocument();
   expect(screen.getByText('Administrador')).toBeInTheDocument();
   expect(screen.getByText('Contenido')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Configuración' })).toHaveAttribute('href', '/configuracion');
 });
 
 test('un vendedor no ve Usuarios', () => {
@@ -32,6 +33,7 @@ test('un vendedor no ve Usuarios', () => {
     </AppShell>,
   );
   expect(screen.queryByRole('link', { name: 'Usuarios' })).toBeNull();
+  expect(screen.queryByRole('link', { name: 'Configuración' })).toBeNull();
   expect(screen.getByRole('link', { name: 'Contactos' })).toHaveAttribute('aria-current', 'page');
   expect(screen.getByText('Vendedor')).toBeInTheDocument();
 });

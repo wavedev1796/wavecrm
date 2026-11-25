@@ -56,7 +56,8 @@ export function DealDetailTabs({
   canReopen,
   timeline,
   members,
-}: Readonly<{ deal: DealDetail; options: Options; canReopen: boolean; timeline: TimelineResult; members: Member[] }>) {
+  defaultTaxRate,
+}: Readonly<{ deal: DealDetail; options: Options; canReopen: boolean; timeline: TimelineResult; members: Member[]; defaultTaxRate: number }>) {
   const [active, setActive] = useState<TabId>("summary");
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const locked = deal.status !== "OPEN";
@@ -140,7 +141,7 @@ export function DealDetailTabs({
           />
       </section>
       <section id="deal-panel-products" role="tabpanel" aria-labelledby="deal-tab-products" className="deal-tab-panel" tabIndex={0} hidden={active !== "products"}>
-        <DealPreparation deal={deal} locked={locked} />
+        <DealPreparation deal={deal} locked={locked} defaultTaxRate={defaultTaxRate} />
       </section>
       <section id="deal-panel-activity" role="tabpanel" aria-labelledby="deal-tab-activity" className="deal-tab-panel" tabIndex={0} hidden={active !== "activity"}>
         <DealTimeline deal={deal} timeline={timeline} members={members} />

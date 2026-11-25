@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   Search,
+  Settings,
   UserCog,
   Users,
   X,
@@ -85,7 +86,10 @@ export function AppShell({
           {[
             ...navItems,
             ...(user?.role === "ADMIN"
-              ? [{ href: "/usuarios", label: NAVEGACION.menu.usuarios, icon: UserCog }]
+              ? [
+                  { href: "/usuarios", label: NAVEGACION.menu.usuarios, icon: UserCog },
+                  { href: "/configuracion", label: NAVEGACION.menu.configuracion, icon: Settings },
+                ]
               : []),
           ].map(({ href, label, icon: Icon }) => {
             // Las subrutas (/contactos/importar, fichas…) marcan su sección.

@@ -30,6 +30,7 @@ const api = vi.mocked(authenticatedApi);
 function serve(deal: unknown, role = "ADMIN", timeline: unknown = apiPage([])) {
   api.mockImplementation(async (path) => {
     if (path === "/auth/me") return Response.json({ id: "u1", role });
+    if (path === "/settings") return Response.json({ taxRate: 12 });
     if (path.endsWith("/timeline")) return typeof timeline === "number" ? new Response(null, { status: timeline }) : Response.json(timeline);
     return Response.json(deal);
   });
@@ -192,4 +193,15 @@ test("P1 y P6: la ficha avisa «En riesgo» y muestra los abonos; solo un ADMIN 
   expect(screen.queryByText(/En riesgo/)).toBeNull();
   await user.click(screen.getByRole("tab", { name: /^Abonos/ }));
   expect(screen.getByRole("button", { name: /Borrar el abono/ })).toBeInTheDocument();
+});
+
+test("los productos nuevos de la ficha arrancan con el IVA general", async () => {
+  const user = userEvent.setup();
+  serve({ ...baseDeal, items: [] });
+  render(await DealPage({ params: Promise.resolve({ id: "d1" }) }));
+  expect(api).toHaveBeenCalledWith("/settings");
+  await user.click(screen.getByRole("tab", { name: /Productos y propuestas/ }));
+  await user.click(screen.getByRole("button", { name: "Editar líneas" }));
+  await user.click(screen.getByRole("button", { name: "Agregar producto" }));
+  expect(screen.getByLabelText("IVA del producto 1")).toHaveValue("12");
 });

@@ -10,7 +10,7 @@ const save = vi.mocked(saveDealItemsAction);
 test("agrega productos, muestra subtotal, IVA y total y los guarda", async () => {
   save.mockResolvedValue({});
   const user = userEvent.setup();
-  render(<DealItems dealId="d1" items={[]} locked={false} />);
+  render(<DealItems defaultTaxRate={15} dealId="d1" items={[]} locked={false} />);
   expect(screen.getAllByText(/Aún no hay líneas/)).toHaveLength(2);
   await user.click(screen.getByRole("button", { name: "Editar líneas" }));
   await user.click(screen.getByRole("button", { name: "Agregar producto" }));
@@ -35,6 +35,7 @@ test("agrega productos, muestra subtotal, IVA y total y los guarda", async () =>
 test.each([false, true])("el precio unitario guardado se muestra sin $NaN (bloqueado: %s)", (locked) => {
   const { container } = render(
     <DealItems
+      defaultTaxRate={15}
       dealId="d1"
       items={[{ id: "i1", description: "Licencia", quantity: "2", unitPrice: "1250.50", taxRate: 15 }]}
       locked={locked}
@@ -50,6 +51,7 @@ test("edita el descuento y actualiza subtotal e IVA como el API", async () => {
   const user = userEvent.setup();
   render(
     <DealItems
+      defaultTaxRate={15}
       dealId="d1"
       items={[{ id: "i1", description: "Web", quantity: "1", unitPrice: "100", taxRate: 15, discountRate: 10 }]}
       locked={false}
@@ -67,6 +69,7 @@ test("el IVA se escribe por fila, sugiere 15, 12 y 0 y recalcula el total", asyn
   const user = userEvent.setup();
   render(
     <DealItems
+      defaultTaxRate={15}
       dealId="d1"
       items={[{ id: "i1", description: "Web", quantity: "1", unitPrice: "100", taxRate: 15 }]}
       locked={false}
@@ -87,6 +90,7 @@ test("marca la celda con error que devuelve la validacion", async () => {
   const user = userEvent.setup();
   render(
     <DealItems
+      defaultTaxRate={15}
       dealId="d1"
       items={[{ id: "i1", description: "Web", quantity: "1", unitPrice: "10", taxRate: 15 }]}
       locked={false}
@@ -101,6 +105,7 @@ test("marca la celda con error que devuelve la validacion", async () => {
 test("un negocio ganado muestra sus productos sin poder editarlos", () => {
   render(
     <DealItems
+      defaultTaxRate={15}
       dealId="d1"
       items={[{ id: "i1", description: "Web", quantity: "1", unitPrice: "10", taxRate: 15 }]}
       locked
@@ -116,6 +121,7 @@ test("quitar una fila limpia los errores para que no salten a otra fila", async 
   const user = userEvent.setup();
   render(
     <DealItems
+      defaultTaxRate={15}
       dealId="d1"
       items={[
         { id: "i1", description: "Web", quantity: "1", unitPrice: "10", taxRate: 15 },
@@ -131,4 +137,12 @@ test("quitar una fila limpia los errores para que no salten a otra fila", async 
   await user.click(screen.getByRole("button", { name: "Quitar producto 1" }));
   expect(screen.queryByText(/cantidad mayor que 0/)).toBeNull();
   expect(screen.getByLabelText("Cantidad del producto 1")).not.toHaveAttribute("aria-invalid", "true");
+});
+
+test("la fila nueva arranca con el IVA general configurado", async () => {
+  const user = userEvent.setup();
+  render(<DealItems defaultTaxRate={12} dealId="d1" items={[]} locked={false} />);
+  await user.click(screen.getByRole("button", { name: "Editar líneas" }));
+  await user.click(screen.getByRole("button", { name: "Agregar producto" }));
+  expect(screen.getByLabelText("IVA del producto 1")).toHaveValue("12");
 });

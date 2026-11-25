@@ -1,7 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
-import { unstable_rethrow } from "next/navigation";
-import { authenticatedApi, apiError } from "@/lib/authenticated-api";
+import { request } from "./request";
 import { ACTIVITY_TYPES, cleanText, LOSS_REASONS, parseAmount, REJECTION_REASONS } from "@wave/shared";
 import { NEGOCIO, PIPELINE, TRANSICION } from "@/content/pipeline";
 import { TIMELINE } from "@/content/timeline";
@@ -33,11 +31,6 @@ const dealPath = (id: string, rest = "") =>
 // y el API las fija a las 00:00 de Ecuador, igual que la agenda.
 const utcDay = (day: string) => day + "T00:00:00.000Z";
 
-function refresh() {
-  // /actividades: las actividades del negocio (ficha y modal de transición) son las mismas de la agenda (P14).
-  for (const path of ["/pipeline", "/contactos", "/empresas", "/actividades", "/cotizaciones"])
-    revalidatePath(path, "layout");
-}
 /** Campos de varias líneas (notas y motivos): conservan sus saltos de línea; el resto queda en una línea. */
 const MULTILINE = new Set([
   "need",
@@ -54,40 +47,6 @@ const MULTILINE = new Set([
 function formText(form: FormData, key: string): string {
   const value = form.get(key);
   return typeof value === "string" ? cleanText(value, MULTILINE.has(key)) : "";
-}
-async function request(
-  path: string,
-  method: string,
-  body?: unknown,
-): Promise<{ error?: string; status?: number; data?: unknown; pending?: Pending[] }> {
-  try {
-    const response = await authenticatedApi(path, {
-      method,
-      ...(body !== undefined && { body: JSON.stringify(body) }),
-    });
-    if (!response.ok) {
-      // Un 422 de una transición trae la lista de pendientes junto al mensaje.
-      const body = (await response
-        .clone()
-        .json()
-        .catch(() => null)) as { error?: { errors?: unknown } } | null;
-      const pending = body?.error?.errors;
-      return {
-        error: await apiError(response),
-        status: response.status,
-        ...(Array.isArray(pending) && { pending: pending as Pending[] }),
-      };
-    }
-    const data: unknown =
-      response.status === 204
-        ? undefined
-        : await response.json().catch(() => undefined);
-    if (method !== "GET") refresh();
-    return { data };
-  } catch (error) {
-    unstable_rethrow(error);
-    return { error: PIPELINE.connection };
-  }
 }
 export async function saveDeal(
   _state: DealFormState,
