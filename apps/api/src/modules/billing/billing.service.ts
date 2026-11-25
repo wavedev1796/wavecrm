@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
   Injectable,
@@ -10,12 +11,13 @@ import { ConfigService } from "@nestjs/config";
 import type { BillingHandoff, BillingStatus } from "@wave/database";
 import { ownerScope, type Actor } from "../pipeline/pipeline.service";
 import { PrismaService } from "../prisma/prisma.service";
-import type { SendBillingDto } from "./billing.dto";
+import type { EmailBillingDto, ReissueBillingDto, SendBillingDto } from "./billing.dto";
 import { billingStatus, buyerOptions, toBuyer, toInvoiceLines } from "./billing-rules";
 
 const NOT_CONFIGURED = "La facturación no está configurada.";
 const UNREACHABLE = "No se pudo contactar a Wave Billing.";
 const SENDING = "Ya se está enviando.";
+const NO_INVOICE = "Aún no hay factura en Wave Billing.";
 const SETTINGS = [
   "WAVE_BILLING_URL",
   "WAVE_BILLING_API_KEY",
@@ -27,7 +29,8 @@ const SETTINGS = [
 const DELIVERED: BillingStatus[] = ["SENT", "AUTHORIZED", "RETURNED", "NOT_AUTHORIZED"];
 const PENDING_TTL_MS = 2 * 60_000;
 
-type CallResult = { ok: true; data: any } | { ok: false; message: string; reachable: boolean };
+type Config = Record<(typeof SETTINGS)[number], string>;
+type CallResult = { ok: true; data: any } | { ok: false; message: string; reachable: boolean; status?: number };
 export type HandoffView = BillingHandoff & { quoteNumber: string; invoiceNumber: string | null };
 
 /** `001-001-000000012` desde la clave de acceso del SRI (estab, punto de emisión, secuencial). */
@@ -35,16 +38,27 @@ const invoiceNumber = (accessKey: string | null) =>
   accessKey ? `${accessKey.slice(24, 27)}-${accessKey.slice(27, 30)}-${accessKey.slice(30, 39)}` : null;
 
 /** Mensaje de Billing: `message` o `error` del cuerpo, o el texto recortado. Nunca el Error de fetch. */
-function messageOf(text: string) {
+function messageOf(text: string, status: number) {
+  const str = (x: unknown) => (typeof x === "string" ? x : JSON.stringify(x));
   try {
     const body = JSON.parse(text);
     const found = body?.message ?? body?.error;
-    if (found) return String(Array.isArray(found) ? found.join(" ") : found).slice(0, 300);
+    if (found) return (Array.isArray(found) ? found.map(str).join(" ") : str(found)).slice(0, 300);
   } catch {
     // ponytail: cuerpo que no es JSON, se usa el texto tal cual.
   }
-  return text.trim().slice(0, 300) || UNREACHABLE;
+  return text.trim().slice(0, 300) || `Wave Billing respondió ${status}.`;
 }
+
+/** Campos de la fila desde un comprobante de Billing. */
+const fromBilling = (d: any) => ({
+  status: billingStatus(d.estado),
+  accessKey: d.claveAcceso,
+  sequential: d.secuencial,
+  authorizationNumber: d.numeroAutorizacion,
+  authorizedAt: d.fechaAutorizacion ? new Date(d.fechaAutorizacion) : null,
+  messages: d.mensajes ?? [],
+});
 
 @Injectable()
 export class BillingService {
@@ -74,8 +88,9 @@ export class BillingService {
     const comprador = toBuyer(dto.buyer, ...parties);
     const lineas = toInvoiceLines(quote.items);
 
-    await this.claim(quote.id, previous, { status: "PENDING", buyer: comprador, paymentMethod: dto.paymentMethod });
-    const result = await this.call("/api/v1/facturas", {
+    const raced = await this.claim(quote.id, previous, { status: "PENDING", buyer: comprador, paymentMethod: dto.paymentMethod });
+    if (raced) return this.view(raced, quote.number);
+    const result = await this.call(cfg, "/api/v1/facturas", {
       method: "POST",
       body: {
         emisorId: cfg.WAVE_BILLING_EMISOR_ID,
@@ -90,34 +105,114 @@ export class BillingService {
       },
     });
 
-    const data = result.ok
-      ? {
-          status: billingStatus(result.data.estado),
-          accessKey: result.data.claveAcceso,
-          sequential: result.data.secuencial,
-          authorizationNumber: result.data.numeroAutorizacion,
-          authorizedAt: result.data.fechaAutorizacion ? new Date(result.data.fechaAutorizacion) : null,
-          messages: result.data.mensajes ?? [],
-        }
-      : { status: "FAILED" as const, messages: [result.message] };
+    const data = result.ok ? fromBilling(result.data) : { status: "FAILED" as const, messages: [result.message] };
     const saved = await this.prisma.billingHandoff.update({
       where: { quoteId: quote.id },
       data: { ...data, attempts: { increment: 1 } },
     });
-    await this.prisma.auditLog.create({
-      data: {
-        action: result.ok ? "BILLING_SENT" : "BILLING_FAILED",
-        entityType: "Deal",
-        entityId: dealId,
-        userId: actor.id,
-        changes: {
-          quoteNumber: quote.number,
-          status: data.status,
-          ...(result.ok ? { sequential: result.data.secuencial } : { message: result.message }),
-        },
-      },
+    await this.audit(result.ok ? "BILLING_SENT" : "BILLING_FAILED", dealId, actor, {
+      quoteNumber: quote.number,
+      status: data.status,
+      ...(result.ok ? { sequential: result.data.secuencial } : { message: result.message }),
     });
     return this.view(saved, quote.number);
+  }
+
+  /** Consulta a Billing una entrega `SENT` (o `FAILED`, por si el tiempo agotado sí llegó). */
+  async refresh(dealId: string, actor: Actor): Promise<HandoffView> {
+    const from: BillingStatus[] = ["SENT", "FAILED"];
+    const { quote, row, cfg } = await this.existing(dealId, actor, from, "Esta entrega no se puede consultar.");
+    const raced = await this.claim(quote.id, row, { status: "PENDING" }, from);
+    if (raced) return this.view(raced, quote.number);
+    const query = `?emisorId=${encodeURIComponent(cfg.WAVE_BILLING_EMISOR_ID)}&ambiente=${encodeURIComponent(cfg.WAVE_BILLING_AMBIENTE)}`;
+    const result = await this.call(cfg, `/api/v1/facturas/por-venta/${quote.id}${query}`);
+    if (!result.ok) {
+      const restored = await this.prisma.billingHandoff.update({ where: { quoteId: quote.id }, data: { status: row.status } });
+      // 404: aún no existe en Billing, la fila queda como estaba.
+      if (result.status === 404) return this.view(restored, quote.number);
+      throw new BadGatewayException(result.message);
+    }
+    const data = fromBilling(result.data);
+    const saved = await this.prisma.billingHandoff.update({ where: { quoteId: quote.id }, data });
+    if (data.status !== row.status) {
+      await this.audit("BILLING_STATUS", dealId, actor, { quoteNumber: quote.number, from: row.status, status: data.status });
+    }
+    return this.view(saved, quote.number);
+  }
+
+  /** Reemite una factura devuelta o no autorizada con los datos actuales del comprador. */
+  async reissue(dealId: string, dto: ReissueBillingDto, actor: Actor): Promise<HandoffView> {
+    const from: BillingStatus[] = ["RETURNED", "NOT_AUTHORIZED"];
+    const { deal, quote, row, cfg } = await this.existing(dealId, actor, from, "Esta factura no se puede reemitir.");
+    const parties = this.parties(deal);
+    if (!buyerOptions(...parties)?.options.includes(dto.buyer)) throw new BadRequestException("No se puede facturar a esa parte.");
+    const comprador = toBuyer(dto.buyer, ...parties);
+    const raced = await this.claim(quote.id, row, { status: "PENDING", buyer: comprador }, from);
+    if (raced) return this.view(raced, quote.number);
+    const result = await this.call(cfg, `/api/v1/facturas/${row.accessKey}/reemitir`, { method: "POST", body: { comprador } });
+    if (!result.ok) {
+      await this.prisma.billingHandoff.update({ where: { quoteId: quote.id }, data: { status: row.status, buyer: row.buyer as never } });
+      throw result.reachable ? new UnprocessableEntityException(result.message) : new BadGatewayException(result.message);
+    }
+    const data = fromBilling(result.data);
+    const saved = await this.prisma.billingHandoff.update({ where: { quoteId: quote.id }, data: { ...data, attempts: { increment: 1 } } });
+    await this.audit("BILLING_REISSUED", dealId, actor, {
+      quoteNumber: quote.number,
+      previousAccessKey: row.accessKey,
+      accessKey: data.accessKey,
+      sequential: data.sequential,
+      status: data.status,
+    });
+    return this.view(saved, quote.number);
+  }
+
+  /** Reenvía el comprobante autorizado por correo; sin `email`, Billing usa el del comprador. */
+  async email(dealId: string, dto: EmailBillingDto, actor: Actor): Promise<HandoffView> {
+    const { quote, row, cfg } = await this.existing(dealId, actor, ["AUTHORIZED"], "Solo se reenvía una factura autorizada.");
+    const result = await this.call(cfg, `/api/v1/facturas/${row.accessKey}/enviar-correo`, {
+      method: "POST",
+      body: dto.email ? { email: dto.email } : {},
+    });
+    if (!result.ok) throw result.reachable ? new UnprocessableEntityException(result.message) : new BadGatewayException(result.message);
+    await this.audit("BILLING_EMAILED", dealId, actor, { quoteNumber: quote.number, ...(dto.email ? { email: dto.email } : {}) });
+    return this.view(row, quote.number);
+  }
+
+  /** RIDE (PDF) o XML del comprobante vigente, tal como los entrega Billing. */
+  async file(dealId: string, kind: "ride" | "xml", actor: Actor) {
+    const { quote } = await this.load(dealId, actor);
+    const row = quote && (await this.prisma.billingHandoff.findUnique({ where: { quoteId: quote.id } }));
+    if (!row?.accessKey) throw new ConflictException(NO_INVOICE);
+    const cfg = this.settings();
+    let res: Response;
+    try {
+      res = await this.request(cfg, `/api/v1/facturas/${row.accessKey}/${kind === "ride" ? "ride.pdf" : "xml"}`);
+    } catch {
+      throw new BadGatewayException(UNREACHABLE);
+    }
+    if (res.status === 404) throw new NotFoundException("Wave Billing no encontró la factura.");
+    if (!res.ok) throw new BadGatewayException(UNREACHABLE);
+    return {
+      data: Buffer.from(await res.arrayBuffer()),
+      type: kind === "ride" ? "application/pdf" : (res.headers.get("content-type") ?? "application/xml"),
+      name: `${row.accessKey}.${kind === "ride" ? "pdf" : "xml"}`,
+    };
+  }
+
+  /** Negocio y cotización aceptada con fila en alguno de los estados `allowed`; un `PENDING` es «Ya se está enviando.». */
+  private async existing(dealId: string, actor: Actor, allowed: BillingStatus[], notAllowed: string) {
+    const { deal, quote } = await this.load(dealId, actor);
+    const row = quote && (await this.prisma.billingHandoff.findUnique({ where: { quoteId: quote.id } }));
+    if (!quote || !row) throw new ConflictException(NO_INVOICE);
+    if (row.status === "PENDING") throw new ConflictException(SENDING);
+    if (!allowed.includes(row.status)) throw new ConflictException(notAllowed);
+    return { deal, quote, row, cfg: this.settings() };
+  }
+
+  private audit(action: string, dealId: string, actor: Actor, changes: Record<string, unknown>) {
+    return this.prisma.auditLog.create({
+      data: { action, entityType: "Deal", entityId: dealId, userId: actor.id, changes: changes as never },
+    });
   }
 
   /** Negocio dentro del alcance del actor (si no, 404) y su cotización aceptada más reciente. */
@@ -145,17 +240,25 @@ export class BillingService {
   }
 
   private settings() {
-    const values = Object.fromEntries(SETTINGS.map((key) => [key, this.config.get<string>(key)])) as Record<(typeof SETTINGS)[number], string>;
+    const values = Object.fromEntries(SETTINGS.map((key) => [key, this.config.get<string>(key)])) as Config;
     if (SETTINGS.some((key) => !values[key])) throw new ServiceUnavailableException(NOT_CONFIGURED);
     return values;
   }
 
-  /** Reclamo confirmado antes de llamar a Billing: crea la fila, o pasa FAILED (o un PENDING viejo) a PENDING. */
-  private async claim(quoteId: string, previous: BillingHandoff | null, data: Record<string, unknown>) {
+  /**
+   * Reclamo confirmado antes de llamar a Billing: crea la fila, o pasa de `from` (o un PENDING viejo) a PENDING.
+   * Devuelve la fila si otra petición ya la entregó mientras tanto; `null` si el reclamo es nuestro.
+   */
+  private async claim(
+    quoteId: string,
+    previous: BillingHandoff | null,
+    data: Record<string, unknown>,
+    from: BillingStatus[] = ["FAILED"],
+  ) {
     if (!previous) {
       try {
         await this.prisma.billingHandoff.create({ data: { quoteId, ...data } as never });
-        return;
+        return null;
       } catch (error) {
         // P2002: otra petición creó la fila primero (quoteId único).
         if ((error as { code?: string }).code === "P2002") throw new ConflictException(SENDING);
@@ -165,27 +268,34 @@ export class BillingService {
     const { count } = await this.prisma.billingHandoff.updateMany({
       where: {
         quoteId,
-        OR: [{ status: { in: ["FAILED"] } }, { status: "PENDING", updatedAt: { lt: new Date(Date.now() - PENDING_TTL_MS) } }],
+        OR: [{ status: { in: from } }, { status: "PENDING", updatedAt: { lt: new Date(Date.now() - PENDING_TTL_MS) } }],
       },
       data: data as never,
     });
-    if (!count) throw new ConflictException(SENDING);
+    if (count) return null;
+    const current = await this.prisma.billingHandoff.findUnique({ where: { quoteId } });
+    if (current && DELIVERED.includes(current.status)) return current;
+    throw new ConflictException(SENDING);
   }
 
-  private async call(path: string, init: { method?: string; body?: unknown } = {}): Promise<CallResult> {
-    const cfg = this.settings();
+  /** Llamada cruda a Billing: la clave y el tiempo máximo viven aquí. Lanza si no hay red o se agota el tiempo. */
+  private request(cfg: Config, path: string, init: { method?: string; body?: unknown } = {}) {
+    return fetch(cfg.WAVE_BILLING_URL + path, {
+      method: init.method ?? "GET",
+      headers: { "x-api-key": cfg.WAVE_BILLING_API_KEY, "Content-Type": "application/json" },
+      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      signal: AbortSignal.timeout(20_000),
+    });
+  }
+
+  private async call(cfg: Config, path: string, init: { method?: string; body?: unknown } = {}): Promise<CallResult> {
     try {
-      const res = await fetch(cfg.WAVE_BILLING_URL + path, {
-        method: init.method ?? "GET",
-        headers: { "x-api-key": cfg.WAVE_BILLING_API_KEY, "Content-Type": "application/json" },
-        body: init.body === undefined ? undefined : JSON.stringify(init.body),
-        signal: AbortSignal.timeout(20_000),
-      });
+      const res = await this.request(cfg, path, init);
       const text = await res.text();
-      if (res.ok) return { ok: true, data: JSON.parse(text) };
+      if (res.ok) return { ok: true, data: text ? JSON.parse(text) : {} };
       return res.status >= 500
-        ? { ok: false, message: UNREACHABLE, reachable: false }
-        : { ok: false, message: messageOf(text), reachable: true };
+        ? { ok: false, message: UNREACHABLE, reachable: false, status: res.status }
+        : { ok: false, message: messageOf(text, res.status), reachable: true, status: res.status };
     } catch {
       // Nunca el message del error: puede traer la URL.
       return { ok: false, message: UNREACHABLE, reachable: false };

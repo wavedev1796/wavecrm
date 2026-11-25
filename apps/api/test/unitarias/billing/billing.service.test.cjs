@@ -35,7 +35,7 @@ function setup({ status = "WON", quotes, co = company, ct = contact, handoff = n
         state.quotes.filter((q) => q.dealId === where.dealId && q.status === where.status).sort((a, b) => b.createdAt - a.createdAt)[0] ?? null,
     },
     billingHandoff: {
-      findUnique: async () => state.handoff,
+      findUnique: async () => state.handoff && { ...state.handoff },
       create: async ({ data }) => (state.handoff = { id: "h1", attempts: 0, messages: [], accessKey: null, sequential: null, authorizationNumber: null, authorizedAt: null, ...data, updatedAt: new Date() }),
       updateMany: async ({ where, data }) => {
         const h = state.handoff;
@@ -45,14 +45,14 @@ function setup({ status = "WON", quotes, co = company, ct = contact, handoff = n
       },
       update: async ({ data }) => {
         const { attempts, ...rest } = data;
-        Object.assign(state.handoff, rest, { attempts: state.handoff.attempts + attempts.increment });
+        Object.assign(state.handoff, rest, { attempts: state.handoff.attempts + (attempts?.increment ?? 0) });
         return state.handoff;
       },
     },
     auditLog: { create: async ({ data }) => state.audit.push(data) },
   };
   const service = new BillingService(prisma, { get: (k) => env[k] });
-  return { state, service };
+  return { state, service, prisma };
 }
 
 const dto = { buyer: "COMPANY", paymentMethod: "20" };
@@ -105,6 +105,7 @@ test("envío exitoso: cuerpo, fila y auditoría", async () => {
   assert.deepEqual(state.audit.map((a) => [a.action, a.entityType, a.entityId, a.userId]), [["BILLING_SENT", "Deal", "deal-1", "user-1"]]);
   assert.deepEqual(state.audit[0].changes, { quoteNumber: "COT-000001", status: "AUTHORIZED", sequential: "000000001" });
   assert.ok(!everything(state.audit).includes(ACCESS_KEY));
+  assert.ok(!everything([view, state.audit]).includes(KEY));
 });
 
 test("fila ya autorizada: no llama a Billing", async () => {
@@ -160,4 +161,118 @@ test("find entrega la entrega y las opciones de comprador", async () => {
   assert.deepEqual(found.buyer, { options: ["COMPANY"], default: "COMPANY" });
   assert.equal((await setup({ status: "OPEN" }).service.find("deal-1", vendedor)).handoff, null);
   await rejects(service.find("deal-1", otro), 404);
+});
+
+const row = (status, extra = {}) => ({ id: "h1", quoteId: "q1", status, buyer: {}, paymentMethod: "20", attempts: 1, messages: [], accessKey: ACCESS_KEY, sequential: "000000001", updatedAt: new Date(), ...extra });
+const NEW_KEY = "2011202601172391437800110010010000000021234567810";
+
+test("claim: otra petición ya entregó la fila, se devuelve sin 409", async () => {
+  mockFetch(() => reply(200, ok));
+  const { state, service, prisma } = setup({ handoff: row("FAILED") });
+  prisma.billingHandoff.updateMany = async () => { Object.assign(state.handoff, { status: "AUTHORIZED" }); return { count: 0 }; };
+  const view = await service.send("deal-1", dto, vendedor);
+  assert.equal(view.status, "AUTHORIZED");
+  assert.equal(calls.length, 0);
+});
+
+test("primera creación simultánea (P2002) responde 409", async () => {
+  mockFetch(() => reply(200, ok));
+  const { service, prisma } = setup();
+  prisma.billingHandoff.create = async () => { throw Object.assign(new Error("dup"), { code: "P2002" }); };
+  await rejects(service.send("deal-1", dto, vendedor), 409);
+});
+
+test("4xx sin cuerpo y mensaje no textual", async () => {
+  mockFetch(() => new Response("", { status: 422 }));
+  assert.deepEqual((await setup().service.send("deal-1", dto, vendedor)).messages, ["Wave Billing respondió 422."]);
+  mockFetch(() => reply(400, { message: { campo: "ruc" } }));
+  assert.deepEqual((await setup().service.send("deal-1", dto, vendedor)).messages, ['{"campo":"ruc"}']);
+});
+
+test("refresh: SENT pasa a AUTHORIZED y audita; 404 deja la fila; AUTHORIZED 409", async () => {
+  mockFetch(() => reply(200, ok));
+  const a = setup({ handoff: row("SENT") });
+  const view = await a.service.refresh("deal-1", vendedor);
+  assert.equal(calls[0].url, "https://billing.test/api/v1/facturas/por-venta/q1?emisorId=emisor-1&ambiente=1");
+  assert.equal(calls[0].init.headers["x-api-key"], KEY);
+  assert.equal(view.status, "AUTHORIZED");
+  assert.deepEqual(a.state.audit.map((x) => x.action), ["BILLING_STATUS"]);
+  mockFetch(() => reply(404, { message: "no existe" }));
+  const b = setup({ handoff: row("FAILED") });
+  assert.equal((await b.service.refresh("deal-1", vendedor)).status, "FAILED");
+  assert.equal(b.state.audit.length, 0);
+  await rejects(setup({ handoff: row("AUTHORIZED") }).service.refresh("deal-1", vendedor), 409);
+  await rejects(setup().service.refresh("deal-1", vendedor), 409);
+  mockFetch(() => reply(200, { ...ok, estado: "ENVIADA" }));
+  const c = setup({ handoff: row("SENT") });
+  await c.service.refresh("deal-1", vendedor);
+  assert.equal(c.state.audit.length, 0);
+});
+
+test("reissue: comprador actual, nueva clave y auditoría; AUTHORIZED 409", async () => {
+  mockFetch(() => reply(200, { ...ok, claveAcceso: NEW_KEY, secuencial: "000000002" }));
+  const a = setup({ handoff: row("RETURNED"), co: { ...company, legalName: "NUEVA S.A." } });
+  const view = await a.service.reissue("deal-1", { buyer: "COMPANY" }, vendedor);
+  assert.equal(calls[0].url, `https://billing.test/api/v1/facturas/${ACCESS_KEY}/reemitir`);
+  assert.equal(JSON.parse(calls[0].init.body).comprador.razonSocial, "NUEVA S.A.");
+  assert.equal(view.accessKey, NEW_KEY);
+  assert.equal(view.sequential, "000000002");
+  assert.deepEqual(a.state.audit.map((x) => [x.action, x.changes.previousAccessKey, x.changes.accessKey]), [["BILLING_REISSUED", ACCESS_KEY, NEW_KEY]]);
+  await rejects(setup({ handoff: row("AUTHORIZED") }).service.reissue("deal-1", { buyer: "COMPANY" }, vendedor), 409);
+  await rejects(setup({ handoff: row("RETURNED"), co: null }).service.reissue("deal-1", { buyer: "COMPANY" }, vendedor), 400);
+});
+
+test("reissue fallido restaura el estado anterior", async () => {
+  mockFetch(() => reply(400, { message: "RUC inválido" }));
+  const a = setup({ handoff: row("RETURNED") });
+  await rejects(a.service.reissue("deal-1", { buyer: "COMPANY" }, vendedor), 422);
+  assert.equal(a.state.handoff.status, "RETURNED");
+});
+
+test("dos reissue simultáneos: el segundo recibe 409", async () => {
+  let release;
+  mockFetch(() => new Promise((resolve) => (release = () => resolve(reply(200, ok)))));
+  const { service } = setup({ handoff: row("RETURNED") });
+  const first = service.reissue("deal-1", { buyer: "COMPANY" }, vendedor);
+  await new Promise((r) => setTimeout(r, 10));
+  await assert.rejects(service.reissue("deal-1", { buyer: "COMPANY" }, vendedor), (e) => e.getStatus() === 409 && e.message === "Ya se está enviando.");
+  release();
+  assert.equal((await first).status, "AUTHORIZED");
+});
+
+test("email: solo AUTHORIZED; con y sin correo; audita", async () => {
+  mockFetch(() => reply(200, {}));
+  const a = setup({ handoff: row("AUTHORIZED") });
+  await a.service.email("deal-1", { email: "x@y.ec" }, vendedor);
+  await a.service.email("deal-1", {}, vendedor);
+  assert.equal(calls[0].url, `https://billing.test/api/v1/facturas/${ACCESS_KEY}/enviar-correo`);
+  assert.deepEqual([JSON.parse(calls[0].init.body), JSON.parse(calls[1].init.body)], [{ email: "x@y.ec" }, {}]);
+  assert.deepEqual(a.state.audit.map((x) => [x.action, x.changes.email]), [["BILLING_EMAILED", "x@y.ec"], ["BILLING_EMAILED", undefined]]);
+  await rejects(setup({ handoff: row("RETURNED") }).service.email("deal-1", {}, vendedor), 409);
+});
+
+test("file: ride y xml devuelven los bytes", async () => {
+  mockFetch(() => new Response(new Uint8Array([1, 2, 3]), { status: 200 }));
+  const { service } = setup({ handoff: row("RETURNED") });
+  const ride = await service.file("deal-1", "ride", vendedor);
+  assert.equal(calls[0].url, `https://billing.test/api/v1/facturas/${ACCESS_KEY}/ride.pdf`);
+  assert.equal(calls[0].init.headers["x-api-key"], KEY);
+  assert.deepEqual([...ride.data], [1, 2, 3]);
+  assert.deepEqual([ride.type, ride.name], ["application/pdf", `${ACCESS_KEY}.pdf`]);
+  const xml = await service.file("deal-1", "xml", vendedor);
+  assert.equal(calls[1].url, `https://billing.test/api/v1/facturas/${ACCESS_KEY}/xml`);
+  assert.deepEqual([xml.type, xml.name], ["application/xml", `${ACCESS_KEY}.xml`]);
+});
+
+test("file: errores y alcance", async () => {
+  mockFetch(() => reply(200, {}));
+  await assert.rejects(setup({ handoff: row("FAILED", { accessKey: null }) }).service.file("deal-1", "ride", vendedor), (e) => e.getStatus() === 409 && e.message === "Aún no hay factura en Wave Billing.");
+  await rejects(setup().service.file("deal-1", "xml", vendedor), 409);
+  mockFetch(() => reply(404, {}));
+  await assert.rejects(setup({ handoff: row("RETURNED") }).service.file("deal-1", "ride", vendedor), (e) => e.getStatus() === 404 && e.message === "Wave Billing no encontró la factura.");
+  mockFetch(() => { throw new Error("https://billing.test " + KEY); });
+  await assert.rejects(setup({ handoff: row("RETURNED") }).service.file("deal-1", "ride", vendedor), (e) => e.getStatus() === 502 && e.message === "No se pudo contactar a Wave Billing.");
+  calls = [];
+  await rejects(setup({ handoff: row("RETURNED") }).service.file("deal-1", "ride", otro), 404);
+  assert.equal(calls.length, 0);
 });
