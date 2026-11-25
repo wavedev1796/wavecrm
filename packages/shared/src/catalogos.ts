@@ -97,3 +97,14 @@ export type TransitionCheck = (typeof TRANSITION_CHECKS)[number];
 
 // IVA de un producto: entero de 0 a 100 (CHECK "DealItem_taxRate_range"). Solo sugerencias; la primera es la por defecto.
 export const IVA_SUGGESTIONS = [15, 12, 0] as const;
+
+// Wave Billing (CRM-31): código de IVA que pide la factura, por tarifa. Una tarifa fuera de la tabla no se factura.
+export const TAX_CODES: Record<number, string> = { 15: "4", 8: "8", 5: "5", 0: "0" };
+
+// Formas de pago de la factura; la primera es la por defecto.
+export const PAYMENT_METHODS = ["20", "01", "16", "19"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+// A quién se factura: la empresa del negocio o su contacto.
+export const BUYER_PARTIES = ["COMPANY", "CONTACT"] as const;
+export type BuyerParty = (typeof BUYER_PARTIES)[number];
