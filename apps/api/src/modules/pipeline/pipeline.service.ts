@@ -522,6 +522,7 @@ export class PipelineService {
     await this.write(async (tx) => {
       const deal = await tx.deal.findUnique({ where: { id }, select: { status: true } });
       if (deal) this.assertCanChange(deal, actor);
+      if (deal?.status === "WON") await this.assertNoInvoice(tx, id, "eliminar");
       return tx.deal.delete({ where: { id } });
     });
   }
@@ -1088,6 +1089,7 @@ export class PipelineService {
     if (to === "REOPEN") {
       if (deal.status === "OPEN")
         throw new ConflictException("Este negocio ya está abierto.");
+      if (deal.status === "WON") await this.assertNoInvoice(tx, deal.id, "reversar");
       // Un ganado vuelve a la etapa de donde vino; un perdido o un rechazado se queda donde estaba.
       const stageId =
         deal.status === "WON" && deal.stage.probability === 100
@@ -1112,7 +1114,19 @@ export class PipelineService {
     }
     if (!stage || (stage.id === deal.stageId && deal.status === "OPEN"))
       return null;
+    // Mover un ganado a otra etapa lo reabre: misma regla que reversar.
+    if (deal.status === "WON") await this.assertNoInvoice(tx, deal.id, "reversar");
     return { kind: "stage", stage };
+  }
+  /** Una factura enviada o autorizada vive en Wave Billing: borrar o reabrir el negocio la dejaría huérfana. */
+  private async assertNoInvoice(tx: Tx, dealId: string, verb: "reversar" | "eliminar") {
+    const invoiced = await tx.billingHandoff.count({
+      where: { status: { in: ["SENT", "AUTHORIZED"] }, quote: { dealId } },
+    });
+    if (invoiced)
+      throw new ConflictException(
+        `Esta venta ya tiene factura; anúlala en Wave Billing antes de ${verb}.`,
+      );
   }
   /** Etapa de ganado: la actual si ya es de 100 % o la primera de 100 % del pipeline (puede no haber). */
   private wonStage(tx: Tx, deal: GateDeal) {

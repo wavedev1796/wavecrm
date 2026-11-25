@@ -30,6 +30,7 @@ function mockPrisma({
   stageId = "stage-a",
   quotes = [],
   activities = [],
+  handoff = null,
   deal: overrides = {},
 } = {}) {
   const pipeline = { id: "pipe-1", name: "Ventas", isDefault: true };
@@ -123,6 +124,9 @@ function mockPrisma({
       deleteMany: async ({ where }) => {
         state.deleted = where;
       },
+    },
+    billingHandoff: {
+      count: async ({ where }) => (handoff && where.status.in.includes(handoff) && where.quote.dealId === "deal-1" ? 1 : 0),
     },
     dealItem: {
       findMany: async () => state.items,
@@ -886,4 +890,32 @@ test("P1: los días sin actividad de la etapa los cambia solo un ADMIN", async (
   assert.equal((await service(prisma).updateStage("stage-a", { staleDays: 7 }, admin)).staleDays, 7);
   // Guardar sin cambiarlos (el formulario los reenvía) no exige ADMIN.
   assert.equal((await service(prisma).updateStage("stage-a", { name: "Contacto", staleDays: 7 }, vendedor)).name, "Contacto");
+});
+
+const REVERSE_MSG = "Esta venta ya tiene factura; anúlala en Wave Billing antes de reversar.";
+const DELETE_MSG = "Esta venta ya tiene factura; anúlala en Wave Billing antes de eliminar.";
+const blocked = (message) => (error) => error instanceof ConflictException && error.message === message;
+
+test("un ganado con factura SENT o AUTHORIZED no se reversa ni se mueve a una etapa anterior", async () => {
+  for (const handoff of ["SENT", "AUTHORIZED"])
+    for (const to of ["REOPEN", "stage-a"]) {
+      const { prisma, state } = mockPrisma({ status: "WON", stageId: "stage-g", handoff });
+      await assert.rejects(service(prisma).transition("deal-1", to, { reason: "Error" }, admin), blocked(REVERSE_MSG));
+      assert.equal(state.deal.status, "WON");
+    }
+});
+
+test("un ganado con entrega RETURNED o sin entrega sí se reabre", async () => {
+  for (const handoff of ["RETURNED", null]) {
+    const { prisma, state } = mockPrisma({ status: "WON", stageId: "stage-g", handoff });
+    await service(prisma).transition("deal-1", "REOPEN", { reason: "Error" }, admin);
+    assert.equal(state.deal.status, "OPEN");
+  }
+});
+
+test("deleteDeal: un ADMIN no elimina un ganado con factura, pero sí uno sin ella", async () => {
+  for (const handoff of ["SENT", "AUTHORIZED"])
+    await assert.rejects(service(mockPrisma({ status: "WON", stageId: "stage-g", handoff }).prisma).deleteDeal("deal-1", admin), blocked(DELETE_MSG));
+  await service(mockPrisma({ status: "WON", stageId: "stage-g", handoff: "RETURNED" }).prisma).deleteDeal("deal-1", admin);
+  await service(mockPrisma({ status: "WON", stageId: "stage-g" }).prisma).deleteDeal("deal-1", admin);
 });
