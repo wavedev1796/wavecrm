@@ -13,6 +13,7 @@ import { ActivitiesModule } from "./modules/activities/activities.module";
 import { TimelineModule } from "./modules/timeline/timeline.module";
 import { NotesModule } from "./modules/notes/notes.module";
 import { BillingModule } from "./modules/billing/billing.module";
+import { SettingsModule } from "./modules/settings/settings.module";
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { BillingModule } from "./modules/billing/billing.module";
     TimelineModule,
     NotesModule,
     BillingModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

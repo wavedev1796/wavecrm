@@ -78,7 +78,7 @@ const isoDate = (message: string) =>
 const AMOUNT_INVALID = "Ingresa un monto valido con hasta dos decimales.";
 const POSITION_INVALID = "La posicion debe ser un entero.";
 const PROBABILITY_INVALID = "La probabilidad debe estar entre 0 y 100.";
-const IVA_INVALID = "El IVA debe ser un porcentaje entero entre 0 y 100.";
+export const IVA_INVALID = "El IVA debe ser un porcentaje entero entre 0 y 100.";
 const REQUIREMENTS_INVALID = "Elige requisitos válidos y sin repetir.";
 const STALE_DAYS_INVALID = "Los días sin actividad deben ser un entero entre 1 y 365.";
 const PAYMENT_CONFIRMED_INVALID = "Indica si se comprobó el pago con true o false.";
