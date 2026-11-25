@@ -121,7 +121,7 @@ export class BillingService {
   /** Consulta a Billing una entrega `SENT` (o `FAILED`, por si el tiempo agotado sí llegó). */
   async refresh(dealId: string, actor: Actor): Promise<HandoffView> {
     const from: BillingStatus[] = ["SENT", "FAILED"];
-    const { quote, row, cfg } = await this.existing(dealId, actor, from, "Esta entrega no se puede consultar.");
+    const { quote, row, cfg } = await this.existing(dealId, actor, from, "Esta entrega no se puede consultar.", false);
     const raced = await this.claim(quote.id, row, { status: "PENDING" }, from);
     if (raced) return this.view(raced, quote.number);
     const query = `?emisorId=${encodeURIComponent(cfg.WAVE_BILLING_EMISOR_ID)}&ambiente=${encodeURIComponent(cfg.WAVE_BILLING_AMBIENTE)}`;
@@ -130,7 +130,7 @@ export class BillingService {
       const restored = await this.prisma.billingHandoff.update({ where: { quoteId: quote.id }, data: { status: row.status } });
       // 404: aún no existe en Billing, la fila queda como estaba.
       if (result.status === 404) return this.view(restored, quote.number);
-      throw new BadGatewayException(result.message);
+      throw result.reachable ? new UnprocessableEntityException(result.message) : new BadGatewayException(result.message);
     }
     const data = fromBilling(result.data);
     const saved = await this.prisma.billingHandoff.update({ where: { quoteId: quote.id }, data });
@@ -151,8 +151,10 @@ export class BillingService {
     if (raced) return this.view(raced, quote.number);
     const result = await this.call(cfg, `/api/v1/facturas/${row.accessKey}/reemitir`, { method: "POST", body: { comprador } });
     if (!result.ok) {
-      await this.prisma.billingHandoff.update({ where: { quoteId: quote.id }, data: { status: row.status, buyer: row.buyer as never } });
-      throw result.reachable ? new UnprocessableEntityException(result.message) : new BadGatewayException(result.message);
+      // Sin respuesta: la reemisión pudo haber ocurrido, así que no se vuelve a ofrecer la clave vieja; Consultar reconcilia desde FAILED.
+      const data = result.reachable ? { status: row.status } : { status: "FAILED" as const, messages: [UNREACHABLE] };
+      await this.prisma.billingHandoff.update({ where: { quoteId: quote.id }, data: { ...data, buyer: row.buyer as never } });
+      throw result.reachable ? new UnprocessableEntityException(result.message) : new BadGatewayException(UNREACHABLE);
     }
     const data = fromBilling(result.data);
     const saved = await this.prisma.billingHandoff.update({ where: { quoteId: quote.id }, data: { ...data, attempts: { increment: 1 } } });
@@ -190,8 +192,14 @@ export class BillingService {
     } catch {
       throw new BadGatewayException(UNREACHABLE);
     }
-    if (res.status === 404) throw new NotFoundException("Wave Billing no encontró la factura.");
-    if (!res.ok) throw new BadGatewayException(UNREACHABLE);
+    if (res.status === 404) {
+      await res.body?.cancel();
+      throw new NotFoundException("Wave Billing no encontró la factura.");
+    }
+    if (!res.ok) {
+      await res.body?.cancel();
+      throw new BadGatewayException(UNREACHABLE);
+    }
     return {
       data: Buffer.from(await res.arrayBuffer()),
       type: kind === "ride" ? "application/pdf" : (res.headers.get("content-type") ?? "application/xml"),
@@ -200,12 +208,14 @@ export class BillingService {
   }
 
   /** Negocio y cotización aceptada con fila en alguno de los estados `allowed`; un `PENDING` es «Ya se está enviando.». */
-  private async existing(dealId: string, actor: Actor, allowed: BillingStatus[], notAllowed: string) {
+  private async existing(dealId: string, actor: Actor, allowed: BillingStatus[], notAllowed: string, needKey = true) {
     const { deal, quote } = await this.load(dealId, actor);
     const row = quote && (await this.prisma.billingHandoff.findUnique({ where: { quoteId: quote.id } }));
     if (!quote || !row) throw new ConflictException(NO_INVOICE);
-    if (row.status === "PENDING") throw new ConflictException(SENDING);
-    if (!allowed.includes(row.status)) throw new ConflictException(notAllowed);
+    const stalePending = row.status === "PENDING" && row.updatedAt.getTime() < Date.now() - PENDING_TTL_MS;
+    if (row.status === "PENDING" && !stalePending) throw new ConflictException(SENDING);
+    if (!stalePending && !allowed.includes(row.status)) throw new ConflictException(notAllowed);
+    if (needKey && !row.accessKey) throw new ConflictException(NO_INVOICE);
     return { deal, quote, row, cfg: this.settings() };
   }
 

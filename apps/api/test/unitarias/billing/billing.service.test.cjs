@@ -224,9 +224,41 @@ test("reissue: comprador actual, nueva clave y auditoría; AUTHORIZED 409", asyn
 
 test("reissue fallido restaura el estado anterior", async () => {
   mockFetch(() => reply(400, { message: "RUC inválido" }));
-  const a = setup({ handoff: row("RETURNED") });
+  const a = setup({ handoff: row("RETURNED", { buyer: { previo: true } }) });
   await rejects(a.service.reissue("deal-1", { buyer: "COMPANY" }, vendedor), 422);
   assert.equal(a.state.handoff.status, "RETURNED");
+  assert.deepEqual(a.state.handoff.buyer, { previo: true });
+});
+
+test("reissue sin respuesta deja FAILED, restaura el comprador y responde 502", async () => {
+  mockFetch(() => { throw new DOMException("https://billing.test " + KEY, "TimeoutError"); });
+  const a = setup({ handoff: row("RETURNED", { buyer: { previo: true } }) });
+  await assert.rejects(a.service.reissue("deal-1", { buyer: "COMPANY" }, vendedor), (e) => e.getStatus() === 502 && e.message === "No se pudo contactar a Wave Billing.");
+  assert.equal(a.state.handoff.status, "FAILED");
+  assert.deepEqual(a.state.handoff.messages, ["No se pudo contactar a Wave Billing."]);
+  assert.deepEqual(a.state.handoff.buyer, { previo: true });
+  assert.ok(!everything([a.state.handoff, a.state.audit]).includes(KEY));
+});
+
+test("un PENDING viejo se puede consultar; un 4xx de Billing responde 422 y un 5xx 502", async () => {
+  mockFetch(() => reply(200, ok));
+  const stale = setup({ handoff: row("PENDING", { accessKey: null, updatedAt: new Date(Date.now() - 3 * 60_000) }) });
+  assert.equal((await stale.service.refresh("deal-1", vendedor)).status, "AUTHORIZED");
+  mockFetch(() => reply(400, { message: "mal" }));
+  const a = setup({ handoff: row("SENT") });
+  await assert.rejects(a.service.refresh("deal-1", vendedor), (e) => e.getStatus() === 422 && e.message === "mal");
+  assert.equal(a.state.handoff.status, "SENT");
+  mockFetch(() => reply(503, {}));
+  await rejects(setup({ handoff: row("SENT") }).service.refresh("deal-1", vendedor), 502);
+});
+
+test("vendedor ajeno: 404 y Billing no se llama", async () => {
+  mockFetch(() => reply(200, ok));
+  const mk = (status) => setup({ handoff: row(status) });
+  await rejects(mk("SENT").service.refresh("deal-1", otro), 404);
+  await rejects(mk("RETURNED").service.reissue("deal-1", { buyer: "COMPANY" }, otro), 404);
+  await rejects(mk("AUTHORIZED").service.email("deal-1", {}, otro), 404);
+  assert.equal(calls.length, 0);
 });
 
 test("dos reissue simultáneos: el segundo recibe 409", async () => {
