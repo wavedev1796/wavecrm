@@ -362,6 +362,7 @@ model Quote {
   snapshot  Json        @default("{}")
   dealId    String
   deal      Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  billing   BillingHandoff?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
@@ -446,4 +447,39 @@ model AuditLog {
 
   @@index([entityType, entityId, createdAt])
   @@index([userId, createdAt])
+}
+
+enum BillingStatus {
+  PENDING // intento en curso
+  FAILED // Billing no respondió o rechazó los datos antes de crear el comprobante
+  SENT // ENVIADA: esperando al SRI
+  AUTHORIZED // AUTORIZADO
+  RETURNED // DEVUELTA
+  NOT_AUTHORIZED // NO_AUTORIZADO
+}
+
+/// Entrega de una cotización aceptada a Wave Billing. Una fila por cotización: quoteId es el ventaId.
+model BillingHandoff {
+  id                  String        @id @default(cuid())
+  quoteId             String        @unique
+  quote               Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  status              BillingStatus
+  /// Comprador enviado (copia): tipo e identificación, razón social, dirección, correo, teléfono.
+  buyer               Json
+  paymentMethod       String
+  accessKey           String? // claveAcceso vigente (cambia al reemitir)
+  sequential          String?
+  authorizationNumber String?
+  authorizedAt        DateTime?
+  /// Mensajes del SRI o del error, tal como llegan.
+  messages            Json          @default("[]")
+  attempts            Int           @default(0)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+}
+
+/// Configuración general (una sola fila, id = 1).
+model AppSettings {
+  id      Int @id @default(1)
+  taxRate Int @default(15) // 0 a 100: CHECK en la migración, igual que DealItem
 }
