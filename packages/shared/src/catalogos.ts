@@ -108,3 +108,7 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 // A quién se factura: la empresa del negocio o su contacto.
 export const BUYER_PARTIES = ["COMPANY", "CONTACT"] as const;
 export type BuyerParty = (typeof BUYER_PARTIES)[number];
+
+// Estado de la entrega a Wave Billing (enum BillingStatus del schema).
+export const BILLING_STATUSES = ["PENDING", "FAILED", "SENT", "AUTHORIZED", "RETURNED", "NOT_AUTHORIZED"] as const;
+export type BillingStatus = (typeof BILLING_STATUSES)[number];

@@ -99,3 +99,15 @@ test("al completar el cambio avisa y refresca la ficha", async () => {
   await user.click(await screen.findByRole("button", { name: "Guardar y continuar" }));
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cuenta Andina pasó a Ganado."));
 });
+
+test("con factura enviada o autorizada, Reversar no aparece y se ve el motivo; devuelta sí lo permite", () => {
+  const won = { ...baseDeal, status: "WON" as const };
+  const { unmount } = render(
+    <DealActions deal={won} pipelines={[]} contacts={[]} companies={[]} users={[]} canReopen billingStatus="AUTHORIZED" />,
+  );
+  expect(screen.queryByRole("button", { name: "Reversar" })).toBeNull();
+  expect(screen.getByText("Esta venta ya tiene factura; anúlala en Wave Billing antes de reversar.")).toBeInTheDocument();
+  unmount();
+  render(<DealActions deal={won} pipelines={[]} contacts={[]} companies={[]} users={[]} canReopen billingStatus="RETURNED" />);
+  expect(screen.getByRole("button", { name: "Reversar" })).toBeInTheDocument();
+});

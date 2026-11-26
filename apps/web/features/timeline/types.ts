@@ -1,4 +1,4 @@
-import type { ActivityStatus, ActivityType, DealStatus, LossReason } from "@wave/shared";
+import type { ActivityStatus, ActivityType, BillingStatus, DealStatus, LossReason } from "@wave/shared";
 
 type Ref = { id: string; name: string };
 
@@ -37,7 +37,7 @@ export type EventChanges = {
   quoteNumber?: string | null;
   lossReason?: LossReason | null;
   lossDetail?: string | null;
-  from?: DealStatus;
+  from?: DealStatus | BillingStatus;
   reason?: string | null;
   total?: string;
   validUntil?: string;
@@ -52,6 +52,11 @@ export type EventChanges = {
   amount?: string;
   paidAt?: string;
   note?: string | null;
+  /** BILLING_*: número secuencial de la factura, estado, mensaje del error y correo de destino. */
+  sequential?: string | null;
+  status?: BillingStatus;
+  message?: string;
+  email?: string;
 };
 
 /** Evento armado en el servidor: textos y fechas ya formateados, listos para pintar. */

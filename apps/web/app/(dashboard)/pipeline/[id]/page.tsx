@@ -4,6 +4,7 @@ import { IVA_SUGGESTIONS } from "@wave/shared";
 import { Alert } from "@/components/ui/alert";
 import { NEGOCIO } from "@/content/pipeline";
 import { authenticatedApi } from "@/lib/authenticated-api";
+import { loadBilling } from "../../../../features/billing/load";
 import { dealFormOptions } from "../../../../features/pipeline/data";
 import { DealDetailTabs } from "../../../../features/pipeline/deal-detail-tabs";
 import type { DealDetail } from "../../../../features/pipeline/types";
@@ -14,11 +15,12 @@ export default async function DealPage({
 }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params;
   // El historial se pide aparte (paginado y con su propio alcance): un 404 suyo no oculta la ficha.
-  const [response, me, settings, timeline] = await Promise.all([
+  const [response, me, settings, timeline, billing] = await Promise.all([
     authenticatedApi("/deals/" + encodeURIComponent(id)),
     authenticatedApi("/auth/me"),
     authenticatedApi("/settings"),
     loadTimeline("deals", id),
+    loadBilling(id),
   ]);
   if (response.status === 404) notFound();
   // Solo un ADMIN reabre o modifica un negocio cerrado; el API lo exige igual (403).
@@ -39,7 +41,7 @@ export default async function DealPage({
       <Link className="back-link" href={"/pipeline?pipelineId=" + encodeURIComponent(deal.pipelineId)}>
         {NEGOCIO.volver}
       </Link>
-      <DealDetailTabs deal={deal} options={options} canReopen={canReopen} timeline={timeline} members={options.users} defaultTaxRate={taxRate ?? IVA_SUGGESTIONS[0]} />
+      <DealDetailTabs deal={deal} options={options} canReopen={canReopen} timeline={timeline} billing={billing} members={options.users} defaultTaxRate={taxRate ?? IVA_SUGGESTIONS[0]} />
     </div>
   );
 }

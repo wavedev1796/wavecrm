@@ -1,4 +1,5 @@
-import { ESTADO_ACTIVIDAD, MOTIVO_CIERRE, TIPO_ACTIVIDAD } from "@/content/catalogos";
+import type { BillingStatus } from "@wave/shared";
+import { ESTADO_ACTIVIDAD, ESTADO_FACTURA, MOTIVO_CIERRE, TIPO_ACTIVIDAD } from "@/content/catalogos";
 import { TABLERO } from "@/content/pipeline";
 import { TIMELINE } from "@/content/timeline";
 import { formatDate, formatDateTime, formatDay, formatMoney } from "@/lib/format";
@@ -16,6 +17,14 @@ const EVENTS: Record<string, (c: EventChanges) => [string, string | null]> = {
   WON: (c) => [texto.ganado(c.quoteNumber ?? ""), c.paymentConfirmed ? texto.pagoComprobado : null],
   PAYMENT_ADDED: (c) => [texto.abonoRegistrado(formatMoney(c.amount ?? 0)), notes(c.paidAt && texto.pagadoEl(formatDay(c.paidAt)), c.note)],
   PAYMENT_DELETED: (c) => [texto.abonoBorrado(formatMoney(c.amount ?? 0)), notes(c.paidAt && texto.pagadoEl(formatDay(c.paidAt)), c.note)],
+  BILLING_SENT: (c) => [texto.facturacion.enviada(c.sequential ?? ""), null],
+  BILLING_FAILED: (c) => [texto.facturacion.fallida, c.message ?? null],
+  BILLING_STATUS: (c) => [
+    texto.facturacion.estado(c.status ? ESTADO_FACTURA[c.status] : ""),
+    c.from && c.from in ESTADO_FACTURA ? texto.facturacion.antes(ESTADO_FACTURA[c.from as BillingStatus]) : null,
+  ],
+  BILLING_REISSUED: (c) => [texto.facturacion.reemitida(c.sequential ?? ""), null],
+  BILLING_EMAILED: (c) => [texto.facturacion.reenviada, c.email ?? null],
   LOST: (c) => [
     texto.perdido(c.lossReason ? MOTIVO_CIERRE[c.lossReason] : ""),
     notes(c.lossDetail, c.followUpAt && texto.seguimiento(formatDay(c.followUpAt))),

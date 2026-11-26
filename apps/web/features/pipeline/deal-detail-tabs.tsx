@@ -28,6 +28,8 @@ import { ESTADO_COTIZACION, ESTADO_NEGOCIO, MOTIVO_CIERRE } from "@/content/cata
 import { NEGOCIO, TABLERO } from "@/content/pipeline";
 import { formatDateTime, formatDay, formatMoney } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
+import { BillingCard } from "../billing/billing-card";
+import type { BillingLoad } from "../billing/types";
 import { DealActions } from "./deal-actions";
 import { DealPayments } from "./deal-payments";
 import { DealPreparation } from "./deal-preparation";
@@ -57,7 +59,8 @@ export function DealDetailTabs({
   timeline,
   members,
   defaultTaxRate,
-}: Readonly<{ deal: DealDetail; options: Options; canReopen: boolean; timeline: TimelineResult; members: Member[]; defaultTaxRate: number }>) {
+  billing,
+}: Readonly<{ deal: DealDetail; billing: BillingLoad; options: Options; canReopen: boolean; timeline: TimelineResult; members: Member[]; defaultTaxRate: number }>) {
   const [active, setActive] = useState<TabId>("summary");
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const locked = deal.status !== "OPEN";
@@ -104,7 +107,7 @@ export function DealDetailTabs({
           {hasActions && (
             <details className="deal-action-menu">
               <summary aria-label={text.abrirAcciones}><ChevronDown aria-hidden />{text.acciones}</summary>
-              <DealActions deal={deal} {...options} canReopen={canReopen} />
+              <DealActions deal={deal} {...options} canReopen={canReopen} billingStatus={"handoff" in billing ? billing.handoff?.status : null} />
             </details>
           )}
         </div>
@@ -137,6 +140,7 @@ export function DealDetailTabs({
             deal={deal}
             quote={quote}
             timeline={timeline}
+            billing={billing}
             onSelect={selectTab}
           />
       </section>
@@ -161,8 +165,9 @@ function DealOverview({
   deal,
   quote,
   timeline,
+  billing,
   onSelect,
-}: Readonly<{ deal: DealDetail; quote?: DealDetail["quotes"][number]; timeline: TimelineResult; onSelect: (tab: TabId) => void }>) {
+}: Readonly<{ deal: DealDetail; quote?: DealDetail["quotes"][number]; timeline: TimelineResult; billing: BillingLoad; onSelect: (tab: TabId) => void }>) {
   const fields = NEGOCIO.campos;
   const close = NEGOCIO.cierre;
   const acceptedQuote = deal.quotes.find((item) => item.status === "ACCEPTED");
@@ -225,6 +230,8 @@ function DealOverview({
         </Card>
 
       </div>
+
+      {deal.status === "WON" && <BillingCard deal={deal} load={billing} />}
 
       <div className="deal-overview-bottom">
         <Card className="contact-data-card deal-overview-created">

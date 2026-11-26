@@ -84,6 +84,15 @@ export const TIMELINE = {
   movido: (de: string, a: string) => `${de} → ${a}`,
   ganado: (cotizacion: string) => `Ganado · cotización ${cotizacion}`,
   pagoComprobado: "Pago comprobado",
+  // CRM-31: puente a Wave Billing.
+  facturacion: {
+    enviada: (numero: string) => `Enviada a facturación${numero ? ` · factura ${numero}` : ""}`,
+    fallida: "No se pudo enviar a facturación",
+    estado: (estado: string) => `Factura: ${estado}`,
+    antes: (estado: string) => `Antes: ${estado}`,
+    reemitida: (numero: string) => `Factura reemitida${numero ? ` · factura ${numero}` : ""}`,
+    reenviada: "Factura reenviada por correo",
+  },
   abonoRegistrado: (monto: string) => `Abono de ${monto} registrado`,
   abonoBorrado: (monto: string) => `Abono de ${monto} borrado`,
   pagadoEl: (fecha: string) => `Pagado el ${fecha}`,

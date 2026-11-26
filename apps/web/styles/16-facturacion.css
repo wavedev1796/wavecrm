@@ -1,0 +1,60 @@
+/* Tarjeta Facturación de la ficha del negocio (CRM-31): ocupa el ancho de la rejilla del resumen. */
+.deal-overview-billing {
+  display: grid;
+  gap: 12px;
+}
+.deal-overview-billing header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.deal-overview-billing header h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  font-size: 0.96rem;
+}
+.deal-overview-billing header h2 svg {
+  width: 18px;
+  height: 18px;
+  color: var(--wave-blue);
+}
+.billing-lines,
+.billing-messages {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+.billing-lines strong {
+  font-size: 0.9rem;
+}
+.billing-messages {
+  color: var(--wave-danger);
+}
+.billing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.billing-notice {
+  margin: 0;
+  color: var(--wave-muted-strong);
+  font-size: 0.82rem;
+}
+.billing-buyers label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+.billing-buyers input {
+  accent-color: var(--wave-blue);
+}

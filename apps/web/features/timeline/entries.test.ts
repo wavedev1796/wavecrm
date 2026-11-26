@@ -190,3 +190,18 @@ test("P3: editar el negocio muestra «campo: antes → después» por línea, co
   expect(lines[4]).toBe("Viable: Sin dato → Sí");
   expect(lines[5]).toBe(`Necesidad: Sin dato → ${"x".repeat(79)}…`);
 });
+
+test("los eventos de facturación llevan el número de factura o el mensaje del error", () => {
+  const [sent, failed, status, reissued, emailed] = toEntries([
+    action("b1", "BILLING_SENT", { quoteNumber: "COT-000004", status: "SENT", sequential: "000000012" }, "10"),
+    action("b2", "BILLING_FAILED", { quoteNumber: "COT-000004", status: "FAILED", message: "No se pudo contactar a Wave Billing." }, "11"),
+    action("b3", "BILLING_STATUS", { quoteNumber: "COT-000004", from: "SENT", status: "AUTHORIZED" }, "12"),
+    action("b4", "BILLING_REISSUED", { quoteNumber: "COT-000004", sequential: "000000013", status: "SENT" }, "13"),
+    action("b5", "BILLING_EMAILED", { quoteNumber: "COT-000004", email: "ana@acme.ec" }, "14"),
+  ]);
+  expect(sent).toMatchObject({ title: "Enviada a facturación · factura 000000012", note: null });
+  expect(failed).toMatchObject({ title: "No se pudo enviar a facturación", note: "No se pudo contactar a Wave Billing." });
+  expect(status).toMatchObject({ title: "Factura: Autorizada", note: "Antes: En el SRI" });
+  expect(reissued?.title).toBe("Factura reemitida · factura 000000013");
+  expect(emailed).toMatchObject({ title: "Factura reenviada por correo", note: "ana@acme.ec" });
+});

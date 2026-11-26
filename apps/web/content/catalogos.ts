@@ -1,9 +1,11 @@
 import type {
   ActivityStatus,
   ActivityType,
+  BillingStatus,
   DealStatus,
   DocumentType,
   LossReason,
+  PaymentMethod,
   QuoteStatus,
   StageRequirement,
   UserRole,
@@ -83,3 +85,20 @@ export const REQUISITO_ETAPA = {
   EXPECTED_CLOSE: "Fecha estimada de cierre",
   PROPOSAL_SENT: "Propuesta enviada",
 } as const satisfies Record<StageRequirement, string>;
+
+// Wave Billing (CRM-31): estado de la entrega de una factura y forma de pago del SRI.
+export const ESTADO_FACTURA = {
+  PENDING: "Enviando",
+  FAILED: "Con error",
+  SENT: "En el SRI",
+  AUTHORIZED: "Autorizada",
+  RETURNED: "Devuelta",
+  NOT_AUTHORIZED: "No autorizada",
+} as const satisfies Record<BillingStatus, string>;
+
+export const FORMA_PAGO = {
+  "20": "Transferencia",
+  "01": "Efectivo",
+  "16": "Tarjeta de débito",
+  "19": "Tarjeta de crédito",
+} as const satisfies Record<PaymentMethod, string>;
