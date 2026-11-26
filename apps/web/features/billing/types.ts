@@ -8,7 +8,7 @@ export type HandoffView = {
   quoteId: string;
   status: BillingStatus;
   /** Comprador enviado: tipo e identificación, razón social, dirección, correo, teléfono. */
-  buyer: { identificacion?: string; razonSocial?: string; email?: string };
+  buyer: { tipoIdentificacion?: string; identificacion?: string; razonSocial?: string; email?: string };
   paymentMethod: PaymentMethod;
   accessKey: string | null;
   sequential: string | null;

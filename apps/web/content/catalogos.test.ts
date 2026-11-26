@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   ACTIVITY_STATUSES,
   ACTIVITY_TYPES,
+  BILLING_STATUSES,
   CLOSE_REASONS,
   DEAL_STATUSES,
   DOCUMENT_TYPES,
@@ -21,7 +22,7 @@ const schema = readFileSync(
 
 function prismaEnum(name: string) {
   const block = new RegExp(`enum ${name} \\{([^}]*)\\}`).exec(schema)?.[1] ?? "";
-  return block.split(/\s+/).filter(Boolean);
+  return block.replaceAll(/\/\/.*/g, "").split(/\s+/).filter(Boolean);
 }
 
 test.each([
@@ -29,6 +30,7 @@ test.each([
   ["DealStatus", DEAL_STATUSES],
   ["ActivityType", ACTIVITY_TYPES],
   ["ActivityStatus", ACTIVITY_STATUSES],
+  ["BillingStatus", BILLING_STATUSES],
   ["QuoteStatus", QUOTE_STATUSES],
   ["DocumentType", DOCUMENT_TYPES],
   ["LossReason", CLOSE_REASONS],

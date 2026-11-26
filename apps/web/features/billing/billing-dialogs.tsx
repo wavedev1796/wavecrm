@@ -15,20 +15,20 @@ const texto = FACTURACION;
 export type BillingMode = "send" | "reissue" | "email";
 type Props = Readonly<{
   mode: BillingMode;
+  title: string;
   dealId: string;
   handoff: HandoffView | null;
   buyer: NonNullable<BillingInfo["buyer"]>;
   /** Nombre de la empresa y del contacto del negocio, para decir a quién se factura. */
   names: Record<BuyerParty, string | undefined>;
   onCancel: () => void;
-  onDone: (handoff: HandoffView, message: string) => void;
+  onDone: (message: string) => void;
 }>;
 
 /** Enviar/Reintentar, Reemitir y Reenviar: el mismo diálogo con los campos de cada caso. El botón queda deshabilitado mientras envía (doble clic). */
-export function BillingDialog({ mode, dealId, handoff, buyer, names, onCancel, onDone }: Props) {
+export function BillingDialog({ mode, title, dealId, handoff, buyer, names, onCancel, onDone }: Props) {
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
-  const title = mode === "send" ? (handoff ? texto.dialogo.reintentar : texto.dialogo.enviar) : texto.dialogo[mode === "email" ? "reenviar" : "reemitir"];
   const submitLabel = { send: handoff ? texto.acciones.reintentar : texto.acciones.enviar, reissue: texto.acciones.reemitir, email: texto.acciones.reenviar }[mode];
   const run = { send: sendBillingAction, reissue: reissueBillingAction, email: emailBillingAction }[mode];
   const done = { send: texto.resultado.enviada, reissue: texto.resultado.reemitida, email: texto.resultado.reenviada }[mode];
@@ -38,7 +38,7 @@ export function BillingDialog({ mode, dealId, handoff, buyer, names, onCancel, o
     startTransition(async () => {
       setError("");
       const result: BillingResult = await run(dealId, form);
-      if (result.handoff) onDone(result.handoff, done);
+      if (result.handoff) onDone(done);
       else setError(result.error ?? texto.errorCarga);
     });
   };

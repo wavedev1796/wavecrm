@@ -22,7 +22,7 @@ const handoff = (status: BillingStatus, extra: Partial<HandoffView> = {}): Hando
   id: "h1",
   quoteId: "q1",
   status,
-  buyer: { identificacion: "1792458123001", razonSocial: "GRUPO ANDINO S.A.", email: "compras@andino.ec" },
+  buyer: { identificacion: "1792458123001", tipoIdentificacion: "04", razonSocial: "GRUPO ANDINO S.A.", email: "compras@andino.ec" },
   paymentMethod: "20",
   accessKey: null,
   sequential: null,
@@ -36,7 +36,8 @@ const handoff = (status: BillingStatus, extra: Partial<HandoffView> = {}): Hando
 });
 const delivered = { accessKey: "2011202601".padEnd(49, "0"), invoiceNumber: "001-001-000000012" };
 const two: BillingInfo["buyer"] = { options: ["COMPANY", "CONTACT"], default: "COMPANY" };
-const view = (h: HandoffView | null, buyer = two) => render(<BillingCard deal={deal} load={{ handoff: h, buyer }} />);
+const loaded = (h: HandoffView | null, buyer = two) => ({ handoff: h, buyer });
+const view = (h: HandoffView | null, buyer = two) => render(<BillingCard deal={deal} load={loaded(h, buyer)} />);
 
 test("sin entrega: «Enviar a facturación» abre el diálogo con dos compradores y Transferencia elegida", async () => {
   send.mockImplementation(() => new Promise(() => {}));
@@ -67,12 +68,14 @@ test("con un solo comprador posible no se pregunta: se dice a quién se factura"
 test("enviar con éxito cierra el diálogo y deja la tarjeta con el estado nuevo", async () => {
   send.mockResolvedValue({ handoff: handoff("SENT", delivered) });
   const user = userEvent.setup();
-  view(null);
+  const { rerender } = view(null);
   await user.click(screen.getByRole("button", { name: "Enviar a facturación" }));
   await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Enviar a facturación" }));
-  expect(await screen.findByRole("button", { name: "Consultar estado" })).toBeInTheDocument();
+  expect(await screen.findByText("Enviada a facturación.")).toBeInTheDocument();
+  // La acción revalida la ficha: el estado nuevo llega como props.
+  rerender(<BillingCard deal={deal} load={loaded(handoff("SENT", delivered))} />);
+  expect(screen.getByRole("button", { name: "Consultar estado" })).toBeInTheDocument();
   expect(screen.getByText("En el SRI")).toBeInTheDocument();
-  expect(screen.getByText("Enviada a facturación.")).toBeInTheDocument();
 });
 
 test("un error del API se queda en el diálogo, que sigue abierto", async () => {
@@ -95,7 +98,7 @@ test("FAILED: mensaje y «Reintentar», sin PDF ni XML", () => {
 test("SENT: «Consultar estado» llama al API y muestra el resultado; hay PDF y XML", async () => {
   refresh.mockResolvedValue({ handoff: handoff("AUTHORIZED", { ...delivered, authorizationNumber: "2011202601" }) });
   const user = userEvent.setup();
-  view(handoff("SENT", delivered));
+  const { rerender } = view(handoff("SENT", delivered));
   const pdf = screen.getByRole("link", { name: "Ver PDF" });
   expect(pdf).toHaveAttribute("href", "/api/deals/d1/billing/ride");
   expect(pdf).toHaveAttribute("target", "_blank");
@@ -104,8 +107,10 @@ test("SENT: «Consultar estado» llama al API y muestra el resultado; hay PDF y 
   expect(xml).toHaveAttribute("href", "/api/deals/d1/billing/xml");
   expect(xml).toHaveAttribute("download");
   await user.click(screen.getByRole("button", { name: "Consultar estado" }));
-  await waitFor(() => expect(screen.getByText("Autorizada")).toBeInTheDocument());
+  expect(await screen.findByText("Estado consultado.")).toBeInTheDocument();
   expect(refresh).toHaveBeenCalledWith("d1");
+  rerender(<BillingCard deal={deal} load={loaded(handoff("AUTHORIZED", delivered))} />);
+  expect(screen.getByText("Autorizada")).toBeInTheDocument();
 });
 
 test("RETURNED: mensaje del SRI y «Reemitir» con el aviso de número nuevo", async () => {
@@ -129,7 +134,7 @@ test("AUTHORIZED: número de factura, autorización y «Reenviar por correo» co
   view(handoff("AUTHORIZED", { ...delivered, authorizationNumber: "2011202601AUTH" }));
   expect(screen.getByText(/Factura 001-001-000000012 · COT-000034/)).toBeInTheDocument();
   expect(screen.getByText(/Autorización: 2011202601AUTH/)).toBeInTheDocument();
-  expect(screen.getByText(/GRUPO ANDINO S.A. \(1792458123001\)/)).toBeInTheDocument();
+  expect(screen.getByText(/GRUPO ANDINO S.A. \(RUC 1792458123001\)/)).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Reenviar por correo" }));
   const dialog = screen.getByRole("dialog", { name: "Reenviar la factura por correo" });
   expect(within(dialog).getByLabelText("Correo de destino")).toHaveValue("compras@andino.ec");
@@ -137,6 +142,12 @@ test("AUTHORIZED: número de factura, autorización y «Reenviar por correo» co
   await waitFor(() => expect(email).toHaveBeenCalled());
   expect(email.mock.calls[0]![1].get("email")).toBe("compras@andino.ec");
   expect(await screen.findByText("Factura reenviada por correo.")).toBeInTheDocument();
+});
+
+test("un mensaje de Billing que es objeto muestra su `mensaje` con la información adicional", () => {
+  view(handoff("RETURNED", { ...delivered, messages: [{ mensaje: "RUC no habilitado.", informacionAdicional: "Revisa el emisor." }, { codigo: 7 }] }));
+  expect(screen.getByText("RUC no habilitado. Revisa el emisor.")).toBeInTheDocument();
+  expect(screen.getByText('{"codigo":7}')).toBeInTheDocument();
 });
 
 test("si la carga falló, la tarjeta muestra el error", () => {

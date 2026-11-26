@@ -6,10 +6,10 @@ export const FACTURACION = {
   errorDatos: "Elige a quién facturar y la forma de pago.",
   sinEnviar: "Esta venta aún no se envía a facturación.",
   sinComprador: "No hay a quién facturar: agrega una empresa con RUC o un contacto con documento.",
-  enviando: "Enviando…",
   factura: (numero: string, cotizacion: string) => `Factura ${numero} · ${cotizacion}`,
   facturaPendiente: (cotizacion: string) => `Cotización ${cotizacion}`,
   facturadoA: (nombre: string, documento: string) => `Facturado a: ${nombre} (${documento})`,
+  mensajeDe: (mensaje: string, adicional: string) => (adicional ? `${mensaje} ${adicional}` : mensaje),
   autorizacion: (numero: string) => `Autorización: ${numero}`,
   mensajes: "Mensajes",
   acciones: {
@@ -21,7 +21,6 @@ export const FACTURACION = {
     verPdf: "Ver PDF",
     descargarXml: "Descargar XML",
     cancelar: "Cancelar",
-    cerrar: "Cerrar",
   },
   dialogo: {
     enviar: "Enviar a facturación",

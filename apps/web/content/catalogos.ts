@@ -96,6 +96,9 @@ export const ESTADO_FACTURA = {
   NOT_AUTHORIZED: "No autorizada",
 } as const satisfies Record<BillingStatus, string>;
 
+// Tipo de identificación del comprador en Billing (tabla 6 del SRI).
+export const TIPO_IDENTIFICACION: Record<string, string> = { "04": "RUC", "05": "Cédula", "06": "Pasaporte" };
+
 export const FORMA_PAGO = {
   "20": "Transferencia",
   "01": "Efectivo",

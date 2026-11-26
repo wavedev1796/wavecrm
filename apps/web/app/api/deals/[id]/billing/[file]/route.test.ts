@@ -1,4 +1,6 @@
 import { expect, test, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({ unstable_rethrow: vi.fn() }));
 import { authenticatedApi } from "@/lib/authenticated-api";
 import { GET } from "./route";
 
@@ -36,4 +38,11 @@ test("un error del API sale como JSON con su estado y mensaje", async () => {
   const response = await get("d1", "xml");
   expect(response.status).toBe(409);
   expect(await response.json()).toEqual({ error: "Esta venta no tiene factura." });
+});
+
+test("si el API no responde, 502 con el mensaje de conexión", async () => {
+  api.mockRejectedValue(new Error("ECONNREFUSED"));
+  const response = await get("d1", "ride");
+  expect(response.status).toBe(502);
+  expect(await response.json()).toEqual({ error: "No pudimos conectar con el servidor. Tus datos se conservan; intenta de nuevo." });
 });

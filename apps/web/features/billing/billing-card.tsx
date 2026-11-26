@@ -6,7 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ESTADO_FACTURA } from "@/content/catalogos";
+import { ESTADO_FACTURA, TIPO_IDENTIFICACION } from "@/content/catalogos";
 import { FACTURACION } from "@/content/facturacion";
 import { PIPELINE } from "@/content/pipeline";
 import type { DealDetail } from "../pipeline/types";
@@ -18,13 +18,17 @@ const texto = FACTURACION;
 const tone = { PENDING: "neutral", FAILED: "danger", SENT: "blue", AUTHORIZED: "success", RETURNED: "warning", NOT_AUTHORIZED: "danger" } as const;
 // Con clave de acceso hay comprobante en Billing: PDF y XML.
 const DELIVERED: BillingStatus[] = ["SENT", "AUTHORIZED", "RETURNED", "NOT_AUTHORIZED"];
-const line = (message: unknown) => (typeof message === "string" ? message : JSON.stringify(message));
+/** Mensaje de Billing: texto, o un objeto con `mensaje` (+ `informacionAdicional`); lo demás, tal cual en JSON. */
+function line(message: unknown) {
+  if (typeof message === "string") return message;
+  const { mensaje, informacionAdicional } = (message ?? {}) as { mensaje?: unknown; informacionAdicional?: unknown };
+  return typeof mensaje === "string" ? texto.mensajeDe(mensaje, typeof informacionAdicional === "string" ? informacionAdicional : "") : JSON.stringify(message);
+}
 
 /** Facturación del negocio ganado: estado de la entrega a Wave Billing y la acción que toca en cada estado. Si la carga falló, solo el error. */
 export function BillingCard({ deal, load }: Readonly<{ deal: DealDetail; load: BillingLoad }>) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [mode, setMode] = useState<BillingMode | null>(null);
-  const [handoff, setHandoff] = useState("error" in load ? null : load.handoff);
   const [feedback, setFeedback] = useState<{ tone: "error" | "success"; message: string } | null>(null);
   const [pending, startTransition] = useTransition();
   useEffect(() => {
@@ -44,7 +48,8 @@ export function BillingCard({ deal, load }: Readonly<{ deal: DealDetail; load: B
       </Card>
     );
 
-  const buyer = load.buyer;
+  // request() revalida la ficha: tras cada acción llegan props nuevas con la entrega al día.
+  const { buyer, handoff } = load;
   // El correo no necesita comprador: sin él, el diálogo de correo no pregunta nada de «Facturar a».
   const dialogBuyer = buyer ?? { options: [], default: "COMPANY" as const };
   const status = handoff?.status;
@@ -52,16 +57,15 @@ export function BillingCard({ deal, load }: Readonly<{ deal: DealDetail; load: B
     dialog.current?.close();
     setMode(null);
   };
-  const done = (next: NonNullable<typeof handoff>, message: string) => {
+  const done = (message: string) => {
     close();
-    setHandoff(next);
     setFeedback({ tone: "success", message });
   };
   const refresh = () =>
     startTransition(async () => {
       setFeedback(null);
       const result = await refreshBillingAction(deal.id);
-      if (result.handoff) done(result.handoff, texto.resultado.consultada);
+      if (result.handoff) done(texto.resultado.consultada);
       else setFeedback({ tone: "error", message: result.error ?? texto.errorCarga });
     });
   const open = (label: string, next: BillingMode) => (
@@ -70,6 +74,7 @@ export function BillingCard({ deal, load }: Readonly<{ deal: DealDetail; load: B
     </Button>
   );
   const base = `/api/deals/${encodeURIComponent(deal.id)}/billing`;
+  const title = mode ? texto.dialogo[({ send: handoff ? "reintentar" : "enviar", reissue: "reemitir", email: "reenviar" } as const)[mode]] : texto.titulo;
   const names = { COMPANY: deal.company?.name, CONTACT: [deal.contact?.firstName, deal.contact?.lastName].filter(Boolean).join(" ") || undefined };
 
   return (
@@ -81,7 +86,7 @@ export function BillingCard({ deal, load }: Readonly<{ deal: DealDetail; load: B
       {handoff && (
         <div className="billing-lines">
           <strong>{handoff.invoiceNumber ? texto.factura(handoff.invoiceNumber, handoff.quoteNumber) : texto.facturaPendiente(handoff.quoteNumber)}</strong>
-          {handoff.buyer.razonSocial && <span>{texto.facturadoA(handoff.buyer.razonSocial, handoff.buyer.identificacion ?? "")}</span>}
+          {handoff.buyer.razonSocial && <span>{texto.facturadoA(handoff.buyer.razonSocial, [TIPO_IDENTIFICACION[handoff.buyer.tipoIdentificacion ?? ""], handoff.buyer.identificacion].filter(Boolean).join(" "))}</span>}
           {handoff.authorizationNumber && <span>{texto.autorizacion(handoff.authorizationNumber)}</span>}
         </div>
       )}
@@ -116,8 +121,8 @@ export function BillingCard({ deal, load }: Readonly<{ deal: DealDetail; load: B
           </>
         )}
       </div>
-      <FormDialog dialogRef={dialog} label={mode ? texto.dialogo[({ send: handoff ? "reintentar" : "enviar", reissue: "reemitir", email: "reenviar" } as const)[mode]] : texto.titulo} closeLabel={PIPELINE.close} onClose={() => setMode(null)}>
-        {mode && <BillingDialog key={mode} mode={mode} dealId={deal.id} handoff={handoff} buyer={dialogBuyer} names={names} onCancel={close} onDone={done} />}
+      <FormDialog dialogRef={dialog} label={title} closeLabel={PIPELINE.close} onClose={() => setMode(null)}>
+        {mode && <BillingDialog key={mode} mode={mode} title={title} dealId={deal.id} handoff={handoff} buyer={dialogBuyer} names={names} onCancel={close} onDone={done} />}
       </FormDialog>
     </Card>
   );
