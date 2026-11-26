@@ -9,7 +9,7 @@ import {
 } from "@nestjs/common";
 import { createHash } from "node:crypto";
 import { Prisma } from "@wave/database";
-import type { ActivityType, LossReason, UserRole } from "@wave/shared";
+import { BILLING_UNREACHABLE, type ActivityType, type LossReason, type UserRole } from "@wave/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   AcceptQuoteDto,
@@ -522,7 +522,7 @@ export class PipelineService {
     await this.write(async (tx) => {
       const deal = await tx.deal.findUnique({ where: { id }, select: { status: true } });
       if (deal) this.assertCanChange(deal, actor);
-      if (deal?.status === "WON") await this.assertNoInvoice(tx, id, "eliminar");
+      if (deal) await this.assertNoInvoice(tx, id, "eliminar");
       return tx.deal.delete({ where: { id } });
     });
   }
@@ -546,6 +546,7 @@ export class PipelineService {
         throw new ConflictException(
           "Solo se eliminan negocios rechazados. Actualiza la papelera.",
         );
+      for (const { id } of deals) await this.assertNoInvoice(tx, id, "eliminar");
       await tx.deal.deleteMany({ where: { id: { in: ids }, status: "REJECTED" } });
       await tx.auditLog.createMany({
         data: deals.map(({ id, value, ...deal }) => ({
@@ -1118,15 +1119,22 @@ export class PipelineService {
     if (deal.status === "WON") await this.assertNoInvoice(tx, deal.id, "reversar");
     return { kind: "stage", stage };
   }
-  /** Una factura enviada o autorizada vive en Wave Billing: borrar o reabrir el negocio la dejaría huérfana. */
+  /**
+   * Una factura enviada, autorizada o en camino vive en Wave Billing: borrar o reabrir el negocio la dejaría huérfana.
+   * Un FAILED sin respuesta de Billing también bloquea: la factura pudo emitirse; «Reintentar» lo aclara.
+   */
   private async assertNoInvoice(tx: Tx, dealId: string, verb: "reversar" | "eliminar") {
-    const invoiced = await tx.billingHandoff.count({
-      where: { status: { in: ["SENT", "AUTHORIZED"] }, quote: { dealId } },
+    const rows = await tx.billingHandoff.findMany({
+      where: { status: { in: ["SENT", "AUTHORIZED", "PENDING", "FAILED"] }, quote: { dealId } },
+      select: { status: true, messages: true },
     });
-    if (invoiced)
-      throw new ConflictException(
-        `Esta venta ya tiene factura; anúlala en Wave Billing antes de ${verb}.`,
-      );
+    // ponytail: `messages` es Json; se filtra en memoria (a lo sumo una fila por cotización) en vez de array_contains.
+    const unknown = (row: (typeof rows)[number]) =>
+      row.status === "FAILED" && Array.isArray(row.messages) && row.messages.includes(BILLING_UNREACHABLE);
+    if (rows.some((row) => row.status !== "FAILED"))
+      throw new ConflictException(`Esta venta ya tiene factura; anúlala en Wave Billing antes de ${verb}.`);
+    if (rows.some(unknown))
+      throw new ConflictException(`No se sabe si Wave Billing emitió la factura; usa Reintentar antes de ${verb}.`);
   }
   /** Etapa de ganado: la actual si ya es de 100 % o la primera de 100 % del pipeline (puede no haber). */
   private wonStage(tx: Tx, deal: GateDeal) {

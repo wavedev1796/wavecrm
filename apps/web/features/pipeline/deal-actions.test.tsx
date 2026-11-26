@@ -100,14 +100,24 @@ test("al completar el cambio avisa y refresca la ficha", async () => {
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Cuenta Andina pasó a Ganado."));
 });
 
-test("con factura enviada o autorizada, Reversar no aparece y se ve el motivo; devuelta sí lo permite", () => {
-  const won = { ...baseDeal, status: "WON" as const };
-  const { unmount } = render(
-    <DealActions deal={won} pipelines={[]} contacts={[]} companies={[]} users={[]} canReopen billingStatus="AUTHORIZED" />,
-  );
+const won = { ...baseDeal, status: "WON" as const };
+const withHandoff = (status: "SENT" | "AUTHORIZED" | "PENDING" | "FAILED" | "RETURNED", messages: unknown[] = []) => (
+  <DealActions deal={won} pipelines={[]} contacts={[]} companies={[]} users={[]} canReopen billingHandoff={{ status, messages }} />
+);
+
+test.each(["SENT", "AUTHORIZED", "PENDING"] as const)("con entrega %s, Reversar no aparece y se ve el motivo", (status) => {
+  render(withHandoff(status));
   expect(screen.queryByRole("button", { name: "Reversar" })).toBeNull();
   expect(screen.getByText("Esta venta ya tiene factura; anúlala en Wave Billing antes de reversar.")).toBeInTheDocument();
-  unmount();
-  render(<DealActions deal={won} pipelines={[]} contacts={[]} companies={[]} users={[]} canReopen billingStatus="RETURNED" />);
+});
+
+test("un FAILED sin respuesta de Billing bloquea Reversar con su propio motivo", () => {
+  render(withHandoff("FAILED", ["No se pudo contactar a Wave Billing."]));
+  expect(screen.queryByRole("button", { name: "Reversar" })).toBeNull();
+  expect(screen.getByText("No se sabe si Wave Billing emitió la factura; usa Reintentar antes de reversar.")).toBeInTheDocument();
+});
+
+test.each([["RETURNED", []], ["FAILED", ["RUC inválido"]]] as const)("con entrega %s por otro motivo, Reversar sí aparece", (status, messages) => {
+  render(withHandoff(status, [...messages]));
   expect(screen.getByRole("button", { name: "Reversar" })).toBeInTheDocument();
 });

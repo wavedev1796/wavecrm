@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Download, FileText, Receipt } from "lucide-react";
+import type { DocumentCode } from "@wave/shared";
 import { FormDialog } from "@/components/form/form-dialog";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -86,7 +87,7 @@ export function BillingCard({ deal, load }: Readonly<{ deal: DealDetail; load: B
       {handoff && (
         <div className="billing-lines">
           <strong>{handoff.invoiceNumber ? texto.factura(handoff.invoiceNumber, handoff.quoteNumber) : texto.facturaPendiente(handoff.quoteNumber)}</strong>
-          {handoff.buyer.razonSocial && <span>{texto.facturadoA(handoff.buyer.razonSocial, [TIPO_IDENTIFICACION[handoff.buyer.tipoIdentificacion ?? ""], handoff.buyer.identificacion].filter(Boolean).join(" "))}</span>}
+          {handoff.buyer.razonSocial && <span>{texto.facturadoA(handoff.buyer.razonSocial, [TIPO_IDENTIFICACION[handoff.buyer.tipoIdentificacion as DocumentCode], handoff.buyer.identificacion].filter(Boolean).join(" "))}</span>}
           {handoff.authorizationNumber && <span>{texto.autorizacion(handoff.authorizationNumber)}</span>}
         </div>
       )}

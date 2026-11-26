@@ -1,5 +1,6 @@
 import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
+import { FACTURACION } from "@/content/facturacion";
 import { PIPELINE } from "@/content/pipeline";
 import { apiError, authenticatedApi } from "@/lib/authenticated-api";
 
@@ -11,7 +12,7 @@ const FILES = ["ride", "xml"];
 /** El PDF y el XML pasan por la web para llevar la sesión; solo se reenvían el tipo y la disposición. */
 export async function GET(_request: Request, { params }: Context) {
   const { id, file } = await params;
-  if (!FILES.includes(file)) return NextResponse.json({ error: "Archivo no encontrado." }, { status: 404 });
+  if (!FILES.includes(file)) return NextResponse.json({ error: FACTURACION.archivoNoEncontrado }, { status: 404 });
   try {
     const response = await authenticatedApi(`/deals/${encodeURIComponent(id)}/billing/${file}`);
     if (!response.ok) return NextResponse.json({ error: await apiError(response) }, { status: response.status });

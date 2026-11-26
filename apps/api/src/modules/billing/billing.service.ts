@@ -9,13 +9,13 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { BillingHandoff, BillingStatus } from "@wave/database";
+import { BILLING_UNREACHABLE as UNREACHABLE } from "@wave/shared";
 import { ownerScope, type Actor } from "../pipeline/pipeline.service";
 import { PrismaService } from "../prisma/prisma.service";
 import type { EmailBillingDto, ReissueBillingDto, SendBillingDto } from "./billing.dto";
 import { billingStatus, buyerOptions, toBuyer, toInvoiceLines } from "./billing-rules";
 
 const NOT_CONFIGURED = "La facturación no está configurada.";
-const UNREACHABLE = "No se pudo contactar a Wave Billing.";
 const SENDING = "Ya se está enviando.";
 const NO_INVOICE = "Aún no hay factura en Wave Billing.";
 const SETTINGS = [
@@ -58,6 +58,8 @@ const fromBilling = (d: any) => ({
   authorizationNumber: d.numeroAutorizacion,
   authorizedAt: d.fechaAutorizacion ? new Date(d.fechaAutorizacion) : null,
   messages: d.mensajes ?? [],
+  // El comprador que Billing registró manda sobre el que se eligió en el diálogo; sin él, queda el enviado.
+  ...(d.comprador && typeof d.comprador === "object" ? { buyer: d.comprador } : {}),
 });
 
 @Injectable()
@@ -121,7 +123,7 @@ export class BillingService {
   /** Consulta a Billing una entrega `SENT` (o `FAILED`, por si el tiempo agotado sí llegó). */
   async refresh(dealId: string, actor: Actor): Promise<HandoffView> {
     const from: BillingStatus[] = ["SENT", "FAILED"];
-    const { quote, row, cfg } = await this.existing(dealId, actor, from, "Esta entrega no se puede consultar.", false);
+    const { quote, row, cfg } = await this.existing(dealId, actor, from, "Esta entrega no se puede consultar.", true);
     const raced = await this.claim(quote.id, row, { status: "PENDING" }, from);
     if (raced) return this.view(raced, quote.number);
     const query = `?emisorId=${encodeURIComponent(cfg.WAVE_BILLING_EMISOR_ID)}&ambiente=${encodeURIComponent(cfg.WAVE_BILLING_AMBIENTE)}`;
@@ -207,15 +209,19 @@ export class BillingService {
     };
   }
 
-  /** Negocio y cotización aceptada con fila en alguno de los estados `allowed`; un `PENDING` es «Ya se está enviando.». */
-  private async existing(dealId: string, actor: Actor, allowed: BillingStatus[], notAllowed: string, needKey = true) {
+  /**
+   * Negocio y cotización aceptada con fila en alguno de los estados `allowed`; un `PENDING` es «Ya se está enviando.».
+   * `refresh` (consultar) no pide clave ni que el negocio siga ganado, y es el único que reclama un PENDING vencido.
+   */
+  private async existing(dealId: string, actor: Actor, allowed: BillingStatus[], notAllowed: string, refresh = false) {
     const { deal, quote } = await this.load(dealId, actor);
     const row = quote && (await this.prisma.billingHandoff.findUnique({ where: { quoteId: quote.id } }));
     if (!quote || !row) throw new ConflictException(NO_INVOICE);
-    const stalePending = row.status === "PENDING" && row.updatedAt.getTime() < Date.now() - PENDING_TTL_MS;
+    if (!refresh && deal.status !== "WON") throw new ConflictException("El negocio ya no está ganado.");
+    const stalePending = refresh && row.status === "PENDING" && row.updatedAt.getTime() < Date.now() - PENDING_TTL_MS;
     if (row.status === "PENDING" && !stalePending) throw new ConflictException(SENDING);
     if (!stalePending && !allowed.includes(row.status)) throw new ConflictException(notAllowed);
-    if (needKey && !row.accessKey) throw new ConflictException(NO_INVOICE);
+    if (!refresh && !row.accessKey) throw new ConflictException(NO_INVOICE);
     return { deal, quote, row, cfg: this.settings() };
   }
 

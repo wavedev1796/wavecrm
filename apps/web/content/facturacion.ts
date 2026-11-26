@@ -42,4 +42,6 @@ export const FACTURACION = {
     reenviada: "Factura reenviada por correo.",
   },
   bloqueaReversar: "Esta venta ya tiene factura; anúlala en Wave Billing antes de reversar.",
+  bloqueaReversarSinSaber: "No se sabe si Wave Billing emitió la factura; usa Reintentar antes de reversar.",
+  archivoNoEncontrado: "Archivo no encontrado.",
 } as const;

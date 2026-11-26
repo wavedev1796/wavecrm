@@ -31,6 +31,7 @@ function mockPrisma({
   quotes = [],
   activities = [],
   handoff = null,
+  handoffMessages = [],
   deal: overrides = {},
 } = {}) {
   const pipeline = { id: "pipe-1", name: "Ventas", isDefault: true };
@@ -126,7 +127,8 @@ function mockPrisma({
       },
     },
     billingHandoff: {
-      count: async ({ where }) => (handoff && where.status.in.includes(handoff) && where.quote.dealId === "deal-1" ? 1 : 0),
+      findMany: async ({ where }) =>
+        handoff && where.status.in.includes(handoff) && where.quote.dealId === "deal-1" ? [{ status: handoff, messages: handoffMessages }] : [],
     },
     dealItem: {
       findMany: async () => state.items,
@@ -911,6 +913,34 @@ test("un ganado con entrega RETURNED o sin entrega sí se reabre", async () => {
     await service(prisma).transition("deal-1", "REOPEN", { reason: "Error" }, admin);
     assert.equal(state.deal.status, "OPEN");
   }
+});
+
+test("reversar: PENDING bloquea; FAILED sin respuesta de Billing bloquea con su mensaje; FAILED por otro motivo no", async () => {
+  const wonWith = (extra) => mockPrisma({ status: "WON", stageId: "stage-g", ...extra });
+  await assert.rejects(service(wonWith({ handoff: "PENDING" }).prisma).transition("deal-1", "REOPEN", { reason: "Error" }, admin), blocked(REVERSE_MSG));
+  await assert.rejects(
+    service(wonWith({ handoff: "FAILED", handoffMessages: ["No se pudo contactar a Wave Billing."] }).prisma).transition("deal-1", "REOPEN", { reason: "Error" }, admin),
+    blocked("No se sabe si Wave Billing emitió la factura; usa Reintentar antes de reversar."),
+  );
+  const { prisma, state } = wonWith({ handoff: "FAILED", handoffMessages: ["RUC inválido"] });
+  await service(prisma).transition("deal-1", "REOPEN", { reason: "Error" }, admin);
+  assert.equal(state.deal.status, "OPEN");
+});
+
+test("eliminar un negocio con entrega en curso o dudosa es 409 sea cual sea su estado", async () => {
+  await assert.rejects(service(mockPrisma({ status: "OPEN", handoff: "SENT" }).prisma).deleteDeal("deal-1", admin), blocked(DELETE_MSG));
+  await assert.rejects(
+    service(mockPrisma({ status: "OPEN", handoff: "FAILED", handoffMessages: ["No se pudo contactar a Wave Billing."] }).prisma).deleteDeal("deal-1", admin),
+    blocked("No se sabe si Wave Billing emitió la factura; usa Reintentar antes de eliminar."),
+  );
+  await service(mockPrisma({ status: "OPEN", handoff: "FAILED", handoffMessages: ["RUC inválido"] }).prisma).deleteDeal("deal-1", admin);
+});
+
+test("la papelera no borra un rechazado con entrega a Billing", async () => {
+  const { prisma, state } = mockPrisma({ handoff: "AUTHORIZED" });
+  prisma.deal.findMany = async () => [{ id: "deal-1", title: "N", value: new Prisma.Decimal(50), lossReason: "OTHER", lossDetail: null, contactId: null, companyId: null, ownerId: "user-1" }];
+  await assert.rejects(service(prisma).deleteRejected(["deal-1"], "user-1"), blocked(DELETE_MSG));
+  assert.equal(state.deleted, undefined);
 });
 
 test("deleteDeal: un ADMIN no elimina un ganado con factura, pero sí uno sin ella", async () => {

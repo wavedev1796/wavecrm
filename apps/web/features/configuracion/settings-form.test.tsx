@@ -20,6 +20,17 @@ test("un IVA fuera de 0 a 100 muestra el error y no llama a la acción", async (
   expect(save).not.toHaveBeenCalled();
 });
 
+test("un IVA sin código de Billing muestra el mensaje y no llama a la acción", async () => {
+  const user = userEvent.setup();
+  render(<SettingsForm taxRate={15} />);
+  const input = screen.getByLabelText(/IVA general/);
+  await user.clear(input);
+  await user.type(input, "12");
+  await user.click(screen.getByRole("button", { name: "Guardar" }));
+  expect(await screen.findByText("Elige un IVA que Wave Billing acepte: 15, 8, 5 o 0.")).toBeInTheDocument();
+  expect(save).not.toHaveBeenCalled();
+});
+
 test("un IVA válido llama a la acción y avisa que se guardó", async () => {
   save.mockResolvedValue({ saved: true });
   const user = userEvent.setup();
@@ -27,10 +38,10 @@ test("un IVA válido llama a la acción y avisa que se guardó", async () => {
   const input = screen.getByLabelText(/IVA general/);
   expect(input).toHaveValue("15");
   await user.clear(input);
-  await user.type(input, "12");
+  await user.type(input, "8");
   await user.click(screen.getByRole("button", { name: "Guardar" }));
   expect(save).toHaveBeenCalledTimes(1);
-  expect((save.mock.calls[0]?.[1] as FormData).get("taxRate")).toBe("12");
+  expect((save.mock.calls[0]?.[1] as FormData).get("taxRate")).toBe("8");
   expect(await screen.findByText("Configuración guardada.")).toBeInTheDocument();
 });
 

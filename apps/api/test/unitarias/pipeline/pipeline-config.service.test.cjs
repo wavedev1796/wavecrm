@@ -244,6 +244,7 @@ test("eliminar, ver ficha e historial de un negocio", async () => {
 
   const { service, called } = mockPrisma({
     deal: { findUnique: { id: "d1", title: "Cuenta", status: "OPEN", value: "40", items: [], payments: [] }, count: 1 },
+    billingHandoff: { findMany: [] },
     dealStageHistory: { findMany: [{ id: "h1" }] },
   });
   await service.deleteDeal("d1", vendedor);

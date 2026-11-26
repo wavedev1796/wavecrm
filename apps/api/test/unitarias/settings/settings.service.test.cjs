@@ -55,9 +55,15 @@ test("guardar el mismo valor no escribe auditoría; sin fila, parte de 15", asyn
   assert.equal(empty.audit[0].changes.taxRate.from, 15);
 });
 
-test("el DTO acepta 0 a 100 enteros y rechaza 101, -1 y 12.5 con IVA_INVALID", async () => {
+test("el DTO solo acepta una tarifa con código de Billing y lo dice", async () => {
   const check = async (taxRate) => (await validate(plainToInstance(UpdateSettingsDto, { taxRate }))).flatMap((e) => Object.values(e.constraints));
-  for (const ok of [0, 12, "100"]) assert.deepEqual(await check(ok), []);
-  for (const bad of [101, -1, 12.5, "12.5"])
+  for (const ok of [15, 8, 5, 0, "15"]) assert.deepEqual(await check(ok), []);
+  for (const bad of [12, 14, 100])
+    assert.ok((await check(bad)).includes("Elige un IVA que Wave Billing acepte: 15, 8, 5 o 0."), String(bad));
+});
+
+test("el DTO rechaza 101, -1 y 12.5 con IVA_INVALID", async () => {
+  const check = async (taxRate) => (await validate(plainToInstance(UpdateSettingsDto, { taxRate }))).flatMap((e) => Object.values(e.constraints));
+    for (const bad of [101, -1, 12.5, "12.5"])
     assert.ok((await check(bad)).includes("El IVA debe ser un porcentaje entero entre 0 y 100."), String(bad));
 });

@@ -39,6 +39,22 @@ const two: BillingInfo["buyer"] = { options: ["COMPANY", "CONTACT"], default: "C
 const loaded = (h: HandoffView | null, buyer = two) => ({ handoff: h, buyer });
 const view = (h: HandoffView | null, buyer = two) => render(<BillingCard deal={deal} load={loaded(h, buyer)} />);
 
+test("PENDING: insignia «Enviando», número pendiente y se puede reintentar", () => {
+  view(handoff("PENDING"));
+  expect(screen.getByText("Enviando")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Consultar" })).toBeNull();
+});
+
+test("sin a quién facturar (buyer null): sin entrega no ofrece enviar; con entrega fallida no ofrece reintentar ni reemitir", () => {
+  const { unmount } = render(<BillingCard deal={deal} load={{ handoff: null, buyer: null }} />);
+  expect(screen.queryByRole("button", { name: "Enviar a facturación" })).toBeNull();
+  unmount();
+  render(<BillingCard deal={deal} load={{ handoff: handoff("FAILED", { messages: ["RUC inválido"] }), buyer: null }} />);
+  expect(screen.queryByRole("button", { name: "Reintentar" })).toBeNull();
+  expect(screen.getByText("RUC inválido")).toBeInTheDocument();
+});
+
 test("sin entrega: «Enviar a facturación» abre el diálogo con dos compradores y Transferencia elegida", async () => {
   send.mockImplementation(() => new Promise(() => {}));
   const user = userEvent.setup();

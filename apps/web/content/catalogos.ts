@@ -3,6 +3,7 @@ import type {
   ActivityType,
   BillingStatus,
   DealStatus,
+  DocumentCode,
   DocumentType,
   LossReason,
   PaymentMethod,
@@ -97,7 +98,7 @@ export const ESTADO_FACTURA = {
 } as const satisfies Record<BillingStatus, string>;
 
 // Tipo de identificación del comprador en Billing (tabla 6 del SRI).
-export const TIPO_IDENTIFICACION: Record<string, string> = { "04": "RUC", "05": "Cédula", "06": "Pasaporte" };
+export const TIPO_IDENTIFICACION = { "04": "RUC", "05": "Cédula", "06": "Pasaporte" } as const satisfies Record<DocumentCode, string>;
 
 export const FORMA_PAGO = {
   "20": "Transferencia",

@@ -65,7 +65,7 @@ test("edita el descuento y actualiza subtotal e IVA como el API", async () => {
   expect(screen.getByTestId("deal-total")).toHaveTextContent("92,00");
 });
 
-test("el IVA se escribe por fila, sugiere 15, 12 y 0 y recalcula el total", async () => {
+test("el IVA se escribe por fila, sugiere 15, 8, 5 y 0 y recalcula el total", async () => {
   const user = userEvent.setup();
   render(
     <DealItems
@@ -79,7 +79,7 @@ test("el IVA se escribe por fila, sugiere 15, 12 y 0 y recalcula el total", asyn
   const iva = screen.getByLabelText("IVA del producto 1");
   expect(iva).toHaveValue("15");
   const list = document.getElementById(iva.getAttribute("list") ?? "");
-  expect([...(list?.querySelectorAll("option") ?? [])].map((o) => o.value)).toEqual(["15", "12", "0"]);
+  expect([...(list?.querySelectorAll("option") ?? [])].map((o) => o.value)).toEqual(["15", "8", "5", "0"]);
   await user.clear(iva);
   await user.type(iva, "12");
   expect(screen.getByTestId("deal-total")).toHaveTextContent("112,00");

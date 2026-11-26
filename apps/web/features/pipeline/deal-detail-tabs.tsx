@@ -107,7 +107,7 @@ export function DealDetailTabs({
           {hasActions && (
             <details className="deal-action-menu">
               <summary aria-label={text.abrirAcciones}><ChevronDown aria-hidden />{text.acciones}</summary>
-              <DealActions deal={deal} {...options} canReopen={canReopen} billingStatus={"handoff" in billing ? billing.handoff?.status : null} />
+              <DealActions deal={deal} {...options} canReopen={canReopen} billingHandoff={"handoff" in billing ? billing.handoff : null} />
             </details>
           )}
         </div>

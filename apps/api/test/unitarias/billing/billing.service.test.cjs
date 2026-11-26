@@ -272,6 +272,34 @@ test("dos reissue simultáneos: el segundo recibe 409", async () => {
   assert.equal((await first).status, "AUTHORIZED");
 });
 
+test("reissue y email con el negocio ya no ganado: 409 sin llamar a Billing; refresh sigue permitido", async () => {
+  mockFetch(() => reply(200, ok));
+  await rejects(setup({ status: "OPEN", handoff: row("RETURNED") }).service.reissue("deal-1", { buyer: "COMPANY" }, vendedor), 409);
+  await rejects(setup({ status: "OPEN", handoff: row("AUTHORIZED") }).service.email("deal-1", {}, vendedor), 409);
+  assert.equal(calls.length, 0);
+  assert.equal((await setup({ status: "OPEN", handoff: row("SENT") }).service.refresh("deal-1", vendedor)).status, "AUTHORIZED");
+});
+
+test("un PENDING vencido no se reclama con reissue ni email", async () => {
+  mockFetch(() => reply(200, ok));
+  const stale = { updatedAt: new Date(Date.now() - 3 * 60_000) };
+  await rejects(setup({ handoff: row("PENDING", stale) }).service.reissue("deal-1", { buyer: "COMPANY" }, vendedor), 409);
+  await rejects(setup({ handoff: row("PENDING", stale) }).service.email("deal-1", {}, vendedor), 409);
+  assert.equal(calls.length, 0);
+});
+
+test("el comprador que devuelve Billing reemplaza al elegido; sin él se conserva", async () => {
+  const registrado = { tipoIdentificacion: "04", identificacion: "1792458123001", razonSocial: "ACME REGISTRADA" };
+  mockFetch(() => reply(200, { ...ok, comprador: registrado }));
+  const a = setup();
+  await a.service.send("deal-1", dto, vendedor);
+  assert.deepEqual(a.state.handoff.buyer, registrado);
+  mockFetch(() => reply(200, ok));
+  const b = setup();
+  await b.service.send("deal-1", dto, vendedor);
+  assert.equal(b.state.handoff.buyer.razonSocial, "ACME S.A.");
+});
+
 test("email: solo AUTHORIZED; con y sin correo; audita", async () => {
   mockFetch(() => reply(200, {}));
   const a = setup({ handoff: row("AUTHORIZED") });

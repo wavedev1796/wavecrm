@@ -9,7 +9,7 @@ import { invalidProps } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { CONFIGURACION } from "@/content/configuracion";
 import { saveSettingsAction } from "./actions";
-import { isTaxRate } from "./tax-rate";
+import { taxRateError } from "./tax-rate";
 
 const texto = CONFIGURACION.iva;
 type State = { error?: string; saved?: boolean; invalid?: boolean };
@@ -18,7 +18,8 @@ export function SettingsForm({ taxRate }: Readonly<{ taxRate: number }>) {
   const [state, formAction, pending] = useActionState(
     async (previous: State, form: FormData): Promise<State> => {
       // Se valida aquí para no viajar al servidor con un valor que el API va a rechazar.
-      if (!isTaxRate(String(form.get("taxRate") ?? "").trim())) return { error: texto.error, invalid: true };
+      const invalid = taxRateError(String(form.get("taxRate") ?? "").trim());
+      if (invalid) return { error: invalid, invalid: true };
       return saveSettingsAction(previous, form);
     },
     {},

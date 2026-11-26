@@ -26,6 +26,17 @@ test("ride devuelve el cuerpo con solo el tipo y la disposición del API", async
   expect(response.headers.get("x-secret")).toBeNull();
 });
 
+test("xml pasa con su tipo y su disposición de descarga", async () => {
+  api.mockResolvedValue(
+    new Response("<factura/>", { headers: { "content-type": "application/xml", "content-disposition": 'attachment; filename="k.xml"' } }),
+  );
+  const response = await get("d1", "xml");
+  expect(api).toHaveBeenCalledWith("/deals/d1/billing/xml");
+  expect(await response.text()).toBe("<factura/>");
+  expect(response.headers.get("content-type")).toBe("application/xml");
+  expect(response.headers.get("content-disposition")).toBe('attachment; filename="k.xml"');
+});
+
 test("un archivo que no es ride ni xml es 404 sin llamar al API", async () => {
   api.mockClear();
   const response = await get("d1", "otro");

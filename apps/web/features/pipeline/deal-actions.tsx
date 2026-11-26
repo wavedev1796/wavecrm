@@ -6,7 +6,8 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FACTURACION } from "@/content/facturacion";
 import { NEGOCIO, PIPELINE, TRANSICION } from "@/content/pipeline";
-import type { BillingStatus } from "../billing/types";
+import { BILLING_UNREACHABLE } from "@wave/shared";
+import type { HandoffView } from "../billing/types";
 import { DealForm } from "./deal-form";
 import { TransitionDialog } from "./transition-dialog";
 import type { DealDetail, Option, Pipeline } from "./types";
@@ -20,8 +21,8 @@ type Props = {
   users: Option[];
   /** Solo un ADMIN reabre o modifica un negocio cerrado. */
   canReopen: boolean;
-  /** Estado de la entrega a Wave Billing: con factura enviada o autorizada no se reversa (el API responde 409). */
-  billingStatus?: BillingStatus | null;
+  /** Entrega a Wave Billing: con factura enviada, autorizada, en camino o de la que no se sabe, no se reversa (el API responde 409). */
+  billingHandoff?: Pick<HandoffView, "status" | "messages"> | null;
 };
 const TITLES = {
   WON: NEGOCIO.ganar.titulo,
@@ -35,7 +36,7 @@ const TITLES = {
  * Ganar, perder, enmendar (rechazar) y reversar (reabrir) abren el mismo modal de transición que el tablero: las reglas son las del API.
  * Cualquiera rechaza un abierto o un perdido; reversar sigue siendo de ADMIN.
  */
-export function DealActions({ deal, canReopen, billingStatus, ...options }: Readonly<Props>) {
+export function DealActions({ deal, canReopen, billingHandoff, ...options }: Readonly<Props>) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [mode, setMode] = useState<Mode | null>(null);
   const [message, setMessage] = useState("");
@@ -52,7 +53,13 @@ export function DealActions({ deal, canReopen, billingStatus, ...options }: Read
   };
   const acciones = NEGOCIO.acciones;
   const open = deal.status === "OPEN";
-  const invoiced = billingStatus === "SENT" || billingStatus === "AUTHORIZED";
+  const status = billingHandoff?.status;
+  const blockReason =
+    status === "SENT" || status === "AUTHORIZED" || status === "PENDING"
+      ? FACTURACION.bloqueaReversar
+      : status === "FAILED" && billingHandoff?.messages.includes(BILLING_UNREACHABLE)
+        ? FACTURACION.bloqueaReversarSinSaber
+        : null;
   return (
     <div className="deal-actions">
       {open && (
@@ -73,13 +80,13 @@ export function DealActions({ deal, canReopen, billingStatus, ...options }: Read
           {acciones.rechazar}
         </Button>
       )}
-      {!open && canReopen && !invoiced && (
+      {!open && canReopen && !blockReason && (
         <Button variant="secondary" className="action-button action-button--restore" onClick={() => setMode("REOPEN")}>
           <Undo2 aria-hidden />
           {acciones.reabrir}
         </Button>
       )}
-      {!open && canReopen && invoiced && <p className="field-hint">{FACTURACION.bloqueaReversar}</p>}
+      {!open && canReopen && blockReason && <p className="field-hint">{blockReason}</p>}
       {(open || canReopen) && (
         <Button variant="ghost" className="action-button action-button--edit" onClick={() => setMode("edit")}>
           <Pencil aria-hidden />

@@ -96,10 +96,17 @@ export const TRANSITION_CHECKS = [
 export type TransitionCheck = (typeof TRANSITION_CHECKS)[number];
 
 // IVA de un producto: entero de 0 a 100 (CHECK "DealItem_taxRate_range"). Solo sugerencias; la primera es la por defecto.
-export const IVA_SUGGESTIONS = [15, 12, 0] as const;
+export const IVA_SUGGESTIONS = [15, 8, 5, 0] as const;
 
 // Wave Billing (CRM-31): código de IVA que pide la factura, por tarifa. Una tarifa fuera de la tabla no se factura.
 export const TAX_CODES: Record<number, string> = { 15: "4", 8: "8", 5: "5", 0: "0" };
+
+// Tipo de identificación del comprador que pide la factura, por tipo de documento del contacto. La empresa siempre es RUC.
+export const DOCUMENT_CODES = { CEDULA: "05", RUC: "04", PASAPORTE: "06" } as const;
+export type DocumentCode = (typeof DOCUMENT_CODES)[keyof typeof DOCUMENT_CODES];
+
+// Mensaje fijo de una entrega que no obtuvo respuesta de Billing: la factura pudo haberse emitido.
+export const BILLING_UNREACHABLE = "No se pudo contactar a Wave Billing.";
 
 // Formas de pago de la factura; la primera es la por defecto.
 export const PAYMENT_METHODS = ["20", "01", "16", "19"] as const;

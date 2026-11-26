@@ -1,6 +1,6 @@
 import { UnprocessableEntityException } from "@nestjs/common";
 import { Prisma, type BillingStatus } from "@wave/database";
-import { TAX_CODES, type BuyerParty } from "@wave/shared";
+import { DOCUMENT_CODES, TAX_CODES, type BuyerParty } from "@wave/shared";
 import { dealTotals } from "../pipeline/deal-rules";
 
 export type Buyer = {
@@ -44,7 +44,6 @@ export type InvoiceLine = {
 
 const NO_ITEMS =
   "Esta cotización no guarda sus productos; registra y acepta una nueva.";
-const DOCUMENT_CODES = { CEDULA: "05", RUC: "04", PASAPORTE: "06" } as const;
 
 /** Quién puede recibir la factura: la empresa (su taxId es RUC), o el contacto con RUC; sin RUC en ninguno, el contacto. */
 export function buyerOptions(
@@ -69,7 +68,7 @@ export function toBuyer(
 ): Buyer {
   if (party === "COMPANY" && company) {
     return {
-      tipoIdentificacion: "04",
+      tipoIdentificacion: DOCUMENT_CODES.RUC,
       identificacion: company.taxId,
       razonSocial: company.legalName || company.name,
       direccion: company.address || company.city || "Ecuador",
