@@ -12,15 +12,17 @@ import { saveSettingsAction } from "./actions";
 import { taxRateError } from "./tax-rate";
 
 const texto = CONFIGURACION.iva;
-type State = { error?: string; saved?: boolean; invalid?: boolean };
+type State = { error?: string; saved?: boolean; invalid?: boolean; value?: string };
 
 export function SettingsForm({ taxRate }: Readonly<{ taxRate: number }>) {
   const [state, formAction, pending] = useActionState(
     async (previous: State, form: FormData): Promise<State> => {
+      // React reinicia el formulario tras la acción: se guarda lo escrito para que no vuelva al valor anterior.
+      const value = String(form.get("taxRate") ?? "").trim();
       // Se valida aquí para no viajar al servidor con un valor que el API va a rechazar.
-      const invalid = taxRateError(String(form.get("taxRate") ?? "").trim());
-      if (invalid) return { error: invalid, invalid: true };
-      return saveSettingsAction(previous, form);
+      const invalid = taxRateError(value);
+      if (invalid) return { error: invalid, invalid: true, value };
+      return { ...(await saveSettingsAction(previous, form)), value };
     },
     {},
   );
@@ -38,7 +40,7 @@ export function SettingsForm({ taxRate }: Readonly<{ taxRate: number }>) {
             inputMode="numeric"
             maxLength={3}
             list="settings-tax-rate-options"
-            defaultValue={taxRate}
+            defaultValue={state.value ?? taxRate}
             {...invalidProps("settings-tax-rate", fieldError)}
           />
           <datalist id="settings-tax-rate-options">
